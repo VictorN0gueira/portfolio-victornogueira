@@ -70,11 +70,11 @@ export default function Header() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-6 relative z-50">
+          <div className={`flex items-center gap-6 relative ${isMenuOpen ? 'z-[70]' : 'z-50'}`}>
             <a 
               href="#contato" 
               className={`hidden sm:block text-xs font-bold uppercase tracking-widest px-8 py-3 rounded-full transition-all transform hover:scale-105 active:scale-95 shadow-lg ${
-                isScrolled 
+                isScrolled || isMenuOpen
                   ? 'bg-white text-black hover:bg-zinc-200 shadow-white/5' 
                   : 'bg-black text-white hover:bg-zinc-800 shadow-black/10'
               }`}
@@ -111,14 +111,14 @@ export default function Header() {
       {/* Mobile Menu Overlay - Refined Sidebar Panels */}
       <AnimatePresence>
         {isMenuOpen && (
-          <div className="fixed inset-0 z-40 md:hidden">
+          <div className="fixed inset-0 z-[60] md:hidden">
             {/* Backdrop Blur */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMenuOpen(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
             />
             
             {/* Slide-in Panel */}
@@ -127,7 +127,7 @@ export default function Header() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="absolute top-0 right-0 bottom-0 w-[85%] max-w-sm bg-zinc-950 border-l border-white/10 p-8 md:p-12 flex flex-col"
+              className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-zinc-950 border-l border-white/10 p-8 md:p-12 flex flex-col"
             >
               <nav className="flex flex-col gap-6 mt-16 md:mt-20">
                 <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">Navegação</p>
