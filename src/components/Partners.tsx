@@ -16,6 +16,14 @@ const PARTNERS = [
   {
     name: "Micael Santiago",
     logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Micael%20Santiago%2FMicaelsantiago.png&version_id=null"
+  },
+  {
+    name: "Loja Karla Alvarés",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Loja%20Karla%20Alvares%2FLogo%20-%20Loja%20Karla%20%C3%81lvares.png&version_id=null"
+  },
+  {
+    name: "Mercadinho Irmão Cruz",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Mercadinho%20Irm%C3%A3o%20Cruz%2FLogo.png&version_id=null"
   }
 ];
 

@@ -174,7 +174,7 @@ export default function Header() {
                 </a>
                 
                 <p className="text-[9px] md:text-[10px] text-zinc-500 uppercase tracking-widest text-center">
-                  © 2024 Victor Nogueira
+                  © 2026 Victor Nogueira
                 </p>
               </motion.div>
 
