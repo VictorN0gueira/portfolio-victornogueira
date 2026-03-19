@@ -18,9 +18,26 @@ export default function ContactForm() {
     whatsapp: '',
     mensagem: ''
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    const newErrors: Record<string, string> = {};
+    if (method === 'whatsapp') {
+      const digits = formData.whatsapp.replace(/\D/g, '');
+      if (digits.length < 10 || digits.length > 13) {
+        newErrors.whatsapp = 'Por favor, insira um número válido com DDD';
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     setStatus('sending');
 
     const webhookUrl = method === 'email' ? WEBHOOKS.email : WEBHOOKS.whatsapp;
@@ -74,8 +91,9 @@ export default function ContactForm() {
           onClick={() => {
             setStatus('idle');
             setFormData({ nome: '', email: '', whatsapp: '', mensagem: '' });
+            setErrors({});
           }}
-          className="text-xs md:text-sm font-bold uppercase tracking-widest hover:text-white transition-colors"
+          className="px-8 py-3 bg-white text-black rounded-full text-xs md:text-sm font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-xl active:scale-95"
         >
           Enviar Outra
         </button>
@@ -150,10 +168,16 @@ export default function ContactForm() {
                 required
                 type="tel" 
                 value={formData.whatsapp}
-                onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
+                onChange={(e) => {
+                  setFormData({...formData, whatsapp: e.target.value});
+                  if (errors.whatsapp) setErrors({...errors, whatsapp: ''});
+                }}
                 placeholder="+55 (11) 99999-9999"
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-zinc-600 text-sm"
+                className={`w-full bg-white/5 border ${errors.whatsapp ? 'border-red-500/50 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/20'} rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 transition-all placeholder:text-zinc-600 text-sm`}
               />
+              {errors.whatsapp && (
+                <p className="text-[10px] text-red-400 ml-4 mt-1">{errors.whatsapp}</p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

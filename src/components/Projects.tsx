@@ -5,6 +5,9 @@ import { projects, Project } from '../data/projects';
 
 export default function Projects() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [activeTab, setActiveTab] = useState<'personal' | 'client'>('personal');
+  
+  const filteredProjects = projects.filter(p => (p.type || 'personal') === activeTab);
   
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -37,26 +40,74 @@ export default function Projects() {
         </div>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 gap-12 lg:gap-20">
-        {projects.map((project, index) => (
-          <motion.div
-            key={project.id}
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: index * 0.1 }}
-            className="group cursor-pointer"
-            onClick={() => setSelectedProject(project)}
-          >
-            <div className="aspect-16/10 bg-zinc-100 rounded-4xl mb-8 overflow-hidden relative shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-black/5 hover:-translate-y-2">
+      {/* Tab Selector */}
+      <div className="flex flex-wrap justify-center gap-6 md:gap-8 mb-16 md:mb-24 px-4">
+        <button 
+          onClick={() => setActiveTab('personal')}
+          className={`relative px-4 py-2 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${activeTab === 'personal' ? 'text-black' : 'text-zinc-400 hover:text-zinc-600'}`}
+        >
+          <span className="relative z-10 whitespace-nowrap">01. Produtos Próprios</span>
+          {activeTab === 'personal' && (
+            <motion.div 
+              layoutId="activeTab"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            />
+          )}
+        </button>
+        <button 
+          onClick={() => setActiveTab('client')}
+          className={`relative px-4 py-2 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${activeTab === 'client' ? 'text-black' : 'text-zinc-400 hover:text-zinc-600'}`}
+        >
+          <span className="relative z-10 whitespace-nowrap">02. Cases de Clientes</span>
+          {activeTab === 'client' && (
+            <motion.div 
+              layoutId="activeTab"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            />
+          )}
+        </button>
+      </div>
+
+      <motion.div 
+        layout
+        className="grid md:grid-cols-2 gap-12 lg:gap-20"
+      >
+        <AnimatePresence mode="popLayout">
+          {filteredProjects.map((project, index) => (
+            <motion.div
+              key={project.id}
+              layout
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.4, delay: index * 0.05 }}
+              className="group cursor-pointer"
+              onClick={() => setSelectedProject(project)}
+            >
+            <div className="aspect-16/10 rounded-4xl mb-8 overflow-hidden relative shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-black/10 hover:-translate-y-2 flex items-center justify-center bg-black">
+              {/* Blurred Background Layer (Premium Effect) */}
+              <div 
+                className="absolute inset-0 bg-cover bg-center blur-3xl opacity-60 transform scale-150"
+                style={{ backgroundImage: `url(${project.image})` }}
+              />
+              
               <img 
                 src={project.image} 
                 alt={project.title}
-                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                className="relative z-10 w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105"
                 referrerPolicy="no-referrer"
               />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-700" />
               
+              <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-700 z-20" />
+              
+              {project.type === 'client' && (
+                <div className="absolute top-6 right-6 px-3 py-1 bg-black/80 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-xl border border-white/10 z-10">
+                  Case de Cliente
+                </div>
+              )}
+
               {/* Floating Tags */}
               <div className="absolute top-6 left-6 flex flex-wrap gap-2">
                 {project.tags.slice(0, 3).map((tag) => (
@@ -86,7 +137,8 @@ export default function Projects() {
             </div>
           </motion.div>
         ))}
-      </div>
+        </AnimatePresence>
+      </motion.div>
 
       {/* Project Detail Modal */}
       <AnimatePresence>
@@ -114,8 +166,14 @@ export default function Projects() {
               </button>
 
               {/* Gallery Side */}
-              <div className="w-full md:w-[60%] h-[40vh] md:h-auto bg-black relative flex flex-col overflow-hidden shrink-0 border-b md:border-b-0 md:border-r border-white/5">
-                <div className="flex md:flex-col overflow-x-auto md:overflow-y-auto snap-x snap-mandatory scrollbar-hide p-4 md:p-6 space-x-4 md:space-x-0 md:space-y-6 h-full">
+              <div className="w-full md:w-[60%] h-[40vh] md:h-auto bg-zinc-950 relative flex flex-col overflow-hidden shrink-0 border-b md:border-b-0 md:border-r border-white/5">
+                {/* Dynamic Background Blur for Modal */}
+                <div 
+                  className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30 transform scale-125 pointer-events-none"
+                  style={{ backgroundImage: `url(${selectedProject.image})` }}
+                />
+                
+                <div className="relative z-10 flex md:flex-col overflow-x-auto md:overflow-y-auto snap-x snap-mandatory scrollbar-hide p-4 md:p-6 space-x-4 md:space-x-0 md:space-y-6 h-full">
                   {[selectedProject.image, ...(selectedProject.gallery || [])].map((img, i) => (
                     <motion.div 
                       key={i}
@@ -149,6 +207,11 @@ export default function Projects() {
               {/* Content Side */}
               <div className="flex-1 p-8 md:p-16 flex flex-col overflow-y-auto bg-zinc-950 md:bg-zinc-900 custom-scrollbar">
                 <div className="mb-8 md:mb-12">
+                  {selectedProject.type === 'client' && (
+                    <span className="inline-block px-3 py-1 bg-white/10 text-white/50 text-[9px] font-black uppercase tracking-[0.2em] rounded-full border border-white/10 mb-6">
+                      Projeto p/ Cliente
+                    </span>
+                  )}
                   <p className="text-zinc-500 font-bold uppercase tracking-[0.3em] text-[10px] mb-3 md:mb-4">{selectedProject.category}</p>
                   <h3 className="text-3xl md:text-5xl font-bold text-white mb-4 md:mb-6 font-display italic tracking-tight">{selectedProject.title}</h3>
                   <div className="w-12 h-1 bg-white/20 mb-6 rounded-full" />
@@ -168,14 +231,19 @@ export default function Projects() {
                       </div>
                     </div>
 
-                    <a 
-                      href={selectedProject.link === '#' ? undefined : selectedProject.link}
-                      target={selectedProject.link === '#' ? undefined : "_blank"}
-                      rel={selectedProject.link === '#' ? undefined : "noopener noreferrer"}
-                      className="inline-flex items-center justify-center gap-3 bg-white text-black px-10 py-5 rounded-full font-bold uppercase tracking-widest text-[10px] md:text-xs hover:bg-zinc-200 shadow-xl shadow-white/10 active:scale-95 transition-all"
-                    >
-                      Acessar Projeto <ArrowUpRight className="w-4 h-4" />
-                    </a>
+                      <a 
+                        href={selectedProject.link === '#' ? undefined : selectedProject.link}
+                        target={selectedProject.link === '#' ? undefined : "_blank"}
+                        rel={selectedProject.link === '#' ? undefined : "noopener noreferrer"}
+                        className={`inline-flex items-center justify-center gap-3 px-10 py-5 rounded-full font-bold uppercase tracking-widest text-[10px] md:text-xs transition-all ${
+                          selectedProject.link === '#' 
+                          ? 'bg-zinc-800 text-zinc-400 cursor-default opacity-50' 
+                          : 'bg-white text-black hover:bg-zinc-200 shadow-xl shadow-white/5 active:scale-95'
+                        }`}
+                      >
+                        {selectedProject.link === '#' ? 'Acesso Restrito' : 'Acessar Projeto'} 
+                        {selectedProject.link !== '#' && <ArrowUpRight className="w-4 h-4" />}
+                      </a>
                   </div>
                 </div>
               </div>

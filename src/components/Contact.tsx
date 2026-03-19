@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { MessageCircle } from 'lucide-react';
 import ContactForm from './ContactForm';
 
 export default function Contact() {
@@ -24,8 +25,20 @@ export default function Contact() {
               <a href="mailto:contato@vnone.com.br" className="text-xl md:text-2xl font-light hover:text-zinc-400 transition-colors">contato@vnone.com.br</a>
             </div>
             <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">WhatsApp</p>
+              <a 
+                href="https://wa.me/5581987348633" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zinc-400 hover:text-white transition-colors"
+              >
+                +55 (81) 98734-8633
+                <MessageCircle className="w-5 h-5 text-green-500" />
+              </a>
+            </div>
+            <div>
               <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Localização</p>
-              <p className="text-xl md:text-2xl font-light">Brasil & Remoto</p>
+              <p className="text-xl md:text-2xl font-light">Recife, Brasil & Remoto</p>
             </div>
           </div>
         </motion.div>

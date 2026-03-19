@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Github, Linkedin, ArrowUpRight, MousePointer2 } from 'lucide-react';
+import { Github, Linkedin, ArrowUpRight, MessageCircle } from 'lucide-react';
 import HeroBackground from './HeroBackground';
 
 export default function Hero() {
@@ -42,7 +42,7 @@ export default function Hero() {
           </h2>
         </motion.div>
 
-        <h1 className="text-6xl sm:text-7xl md:text-9xl font-bold tracking-tighter leading-none mb-8 font-display italic flex flex-col items-center select-none">
+        <h1 className="text-5xl sm:text-7xl md:text-9xl font-bold tracking-tighter leading-none mb-8 font-display italic flex flex-col items-center select-none whitespace-nowrap">
           <span className="block text-gradient">Victor Nogueira.</span>
           <span className="relative flex w-full justify-center overflow-hidden text-center md:pb-4 md:pt-1 not-italic text-zinc-400 min-h-[1.1em]">
             &nbsp;
@@ -91,6 +91,16 @@ export default function Hero() {
             >
               <ArrowUpRight className="w-5 h-5" />
             </motion.div>
+          </a>
+          
+          <a 
+            href="https://wa.me/5581987348633" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group w-full sm:w-auto border border-zinc-200 bg-white/50 backdrop-blur-sm text-zinc-900 px-8 py-4 md:py-5 rounded-full font-medium hover:border-black transition-all flex items-center justify-center gap-3 active:scale-95"
+          >
+            WhatsApp
+            <MessageCircle className="w-5 h-5 text-green-500 group-hover:fill-green-500/10" />
           </a>
           
           <div className="flex items-center gap-4">
