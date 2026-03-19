@@ -101,15 +101,17 @@ export default function Projects() {
               />
               
               <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-700 z-20" />
-              
               {project.type === 'client' && (
-                <div className="absolute top-6 right-6 px-3 py-1 bg-black/80 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-xl border border-white/10 z-10">
+                <div className="absolute top-6 right-6 px-3 py-1 bg-black/80 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-xl border border-white/10 z-30">
                   Case de Cliente
                 </div>
               )}
 
+              {/* Gradient for Text Legibility */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent z-20 pointer-events-none" />
+
               {/* Floating Tags */}
-              <div className="absolute top-6 left-6 flex flex-wrap gap-2">
+              <div className="absolute top-6 left-6 flex flex-wrap gap-2 z-30">
                 {project.tags.slice(0, 3).map((tag) => (
                   <span key={tag} className="px-3 py-1 bg-white/90 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm text-black opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                     {tag}
