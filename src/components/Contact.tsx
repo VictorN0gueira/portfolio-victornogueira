@@ -30,10 +30,10 @@ export default function Contact() {
                 href="https://wa.me/5581987348633" 
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-zinc-400 hover:text-white transition-colors"
+                className="flex items-center gap-2 text-xl md:text-2xl font-light text-zinc-400 hover:text-white transition-colors"
               >
                 +55 (81) 98734-8633
-                <MessageCircle className="w-5 h-5 text-green-500" />
+                <MessageCircle className="w-6 h-6 text-green-500" />
               </a>
             </div>
             <div>
