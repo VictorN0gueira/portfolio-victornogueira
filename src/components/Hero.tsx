@@ -22,7 +22,7 @@ export default function Hero() {
   }, [titleNumber, titles]);
 
   return (
-    <section className="relative pt-32 pb-20 px-6 md:px-12 w-full min-h-screen flex flex-col justify-center items-center text-center overflow-hidden">
+    <section className="relative pt-32 pb-32 md:pb-20 px-6 md:px-12 w-full min-h-screen flex flex-col justify-center items-center text-center overflow-hidden">
       <HeroBackground />
       
       <motion.div
@@ -131,7 +131,7 @@ export default function Hero() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5, duration: 1 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 hidden md:flex flex-col items-center gap-2"
       >
         <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">Descubra</span>
         <motion.div

@@ -168,7 +168,7 @@ export default function Projects() {
               </button>
 
               {/* Gallery Side */}
-              <div className="w-full md:w-[60%] h-[40vh] md:h-auto bg-zinc-950 relative flex flex-col overflow-hidden shrink-0 border-b md:border-b-0 md:border-r border-white/5">
+              <div className="w-full md:w-[60%] h-[45vh] md:h-auto bg-zinc-950 relative flex flex-col overflow-hidden shrink-0 border-b md:border-b-0 md:border-r border-white/5">
                 {/* Dynamic Background Blur for Modal */}
                 <div 
                   className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30 transform scale-125 pointer-events-none"
@@ -195,14 +195,14 @@ export default function Projects() {
                 </div>
                 
                 {/* Mobile swipe indicator */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white/10 backdrop-blur-xl px-5 py-2.5 rounded-full border border-white/20 md:hidden pointer-events-none shadow-2xl">
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 backdrop-blur-xl px-5 py-2.5 rounded-full border border-white/10 md:hidden pointer-events-none shadow-2xl z-50">
                   <motion.div 
                     animate={{ x: [0, 5, 0] }}
                     transition={{ repeat: Infinity, duration: 1.5 }}
                   >
                     <ChevronRight className="w-3 h-3 text-white" />
                   </motion.div>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">Arraste para ver</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white whitespace-nowrap">Deslize para ver mais</span>
                 </div>
               </div>
 
