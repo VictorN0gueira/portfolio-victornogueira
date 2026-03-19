@@ -6,6 +6,7 @@ import Projects from './components/Projects';
 import Partners from './components/Partners';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
+import Chatbot from './components/Chatbot';
 
 export default function App() {
   const { scrollYProgress } = useScroll();
@@ -34,6 +35,7 @@ export default function App() {
       </main>
 
       <Footer />
+      <Chatbot />
     </div>
   );
 }
