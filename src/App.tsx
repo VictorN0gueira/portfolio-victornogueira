@@ -1,14 +1,18 @@
+import { Suspense, lazy } from 'react';
 import { motion, useScroll, useSpring } from 'motion/react';
 import Header from './components/Header';
 import Hero from './components/Hero';
-import Stats from './components/Stats';
-import About from './components/About';
-import Skills from './components/Skills';
-import Projects from './components/Projects';
-import Partners from './components/Partners';
-import Contact from './components/Contact';
-import Footer from './components/Footer';
-import Chatbot from './components/Chatbot';
+import CustomCursor from './components/CustomCursor';
+
+// Lazy loading components below the fold for better performance
+const Stats = lazy(() => import('./components/Stats'));
+const About = lazy(() => import('./components/About'));
+const Skills = lazy(() => import('./components/Skills'));
+const Projects = lazy(() => import('./components/Projects'));
+const Partners = lazy(() => import('./components/Partners'));
+const Contact = lazy(() => import('./components/Contact'));
+const Footer = lazy(() => import('./components/Footer'));
+const Chatbot = lazy(() => import('./components/Chatbot'));
 
 const revealProps: any = {
   initial: { opacity: 0, y: 30 },
@@ -38,33 +42,38 @@ export default function App() {
       <main>
         <Hero />
         
-        <motion.div {...revealProps}>
-          <Stats />
-        </motion.div>
+        <Suspense fallback={<div className="h-32 flex items-center justify-center opacity-50">Carregando...</div>}>
+          <motion.div {...revealProps}>
+            <Stats />
+          </motion.div>
 
-        <motion.div {...revealProps}>
-          <About />
-        </motion.div>
+          <motion.div {...revealProps}>
+            <About />
+          </motion.div>
 
-        <motion.div {...revealProps}>
-          <Skills />
-        </motion.div>
+          <motion.div {...revealProps}>
+            <Skills />
+          </motion.div>
 
-        <motion.div {...revealProps}>
-          <Projects />
-        </motion.div>
+          <motion.div {...revealProps}>
+            <Projects />
+          </motion.div>
 
-        <motion.div {...revealProps}>
-          <Partners />
-        </motion.div>
+          <motion.div {...revealProps}>
+            <Partners />
+          </motion.div>
 
-        <motion.div {...revealProps}>
-          <Contact />
-        </motion.div>
+          <motion.div {...revealProps}>
+            <Contact />
+          </motion.div>
+        </Suspense>
       </main>
 
-      <Footer />
-      <Chatbot />
+      <Suspense fallback={null}>
+        <Footer />
+        <Chatbot />
+      </Suspense>
+      <CustomCursor />
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import { motion } from 'motion/react';
+import { useRef, useEffect } from 'react';
+import { motion, useInView, useSpring, useTransform } from 'motion/react';
 import { Clock, Zap, Building2, TrendingUp } from 'lucide-react';
 
 const STATS = [
@@ -28,6 +29,34 @@ const STATS = [
   }
 ];
 
+function AnimatedNumber({ value }: { value: string }) {
+  const match = value.match(/(\d+)(.*)/);
+  if (!match) return <>{value}</>;
+  
+  const num = parseInt(match[1], 10);
+  const suffix = match[2];
+  
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "0px 0px -50px 0px" });
+  
+  const spring = useSpring(0, { duration: 2500, bounce: 0 });
+  
+  useEffect(() => {
+    if (isInView) {
+      spring.set(num);
+    }
+  }, [isInView, num, spring]);
+  
+  const display = useTransform(spring, (current) => Math.round(current));
+  
+  return (
+    <span ref={ref} className="inline-flex">
+      <motion.span>{display}</motion.span>
+      <span>{suffix}</span>
+    </span>
+  );
+}
+
 export default function Stats() {
   return (
     <section className="py-24 bg-zinc-950 text-white overflow-hidden relative">
@@ -48,15 +77,15 @@ export default function Stats() {
               <div className="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group-hover:bg-white/10 group-hover:border-white/20 group-hover:-translate-y-2">
                 <stat.icon className="w-6 h-6 text-white" />
               </div>
-              <motion.span 
+              <motion.div 
                 initial={{ scale: 0.5, opacity: 0 }}
                 whileInView={{ scale: 1, opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 + 0.3, type: "spring", stiffness: 100 }}
                 className="text-4xl md:text-5xl font-bold tracking-tighter mb-2"
               >
-                {stat.value}
-              </motion.span>
+                <AnimatedNumber value={stat.value} />
+              </motion.div>
               <span className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">
                 {stat.label}
               </span>

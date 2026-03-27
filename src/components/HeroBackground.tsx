@@ -15,7 +15,7 @@ export default function HeroBackground() {
 
       {/* Subtle light beam effect */}
       <motion.div
-        className="absolute inset-0 bg-radial-gradient from-black/[0.02] via-transparent to-transparent"
+        className="absolute inset-0 bg-radial-[at_50%_50%] from-black/2 via-transparent to-transparent"
         animate={{
           opacity: [0.4, 0.6, 0.4],
         }}
@@ -26,15 +26,17 @@ export default function HeroBackground() {
         }}
       />
 
-      {/* Dynamic dotted grid */}
+      {/* Tech Grid Pattern */}
       <div
         className="absolute inset-0"
         style={{
           backgroundImage: `
-            radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px)
+            linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px)
           `,
           backgroundSize: '40px 40px',
-          opacity: 1,
+          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%)',
         }}
       />
 
