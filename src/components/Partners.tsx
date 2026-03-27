@@ -24,6 +24,10 @@ const PARTNERS = [
   {
     name: "Mercadinho Irmão Cruz",
     logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Mercadinho%20Irm%C3%A3o%20Cruz%2FLogo.png&version_id=null"
+  },
+  {
+    name: "Criativa Marketing",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Criativa%20Marketing%2Flogo.png&version_id=null"
   }
 ];
 
