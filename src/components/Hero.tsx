@@ -31,16 +31,30 @@ export default function Hero() {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="relative z-10 max-w-4xl flex flex-col items-center"
       >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="mb-8 p-1 px-3 rounded-full bg-black/5 border border-black/10 backdrop-blur-sm shadow-sm"
-        >
-          <h2 className="text-zinc-500 font-medium tracking-[0.2em] uppercase text-[10px] md:text-xs">
-            Soluções em Automação & IA
-          </h2>
-        </motion.div>
+        <div className="flex items-center gap-3 mb-8 flex-wrap justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="p-1 px-3 rounded-full bg-black/5 border border-black/10 backdrop-blur-sm shadow-sm"
+          >
+            <h2 className="text-zinc-500 font-medium tracking-[0.2em] uppercase text-[10px] md:text-xs">
+              Soluções em Automação & IA
+            </h2>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.35, duration: 0.5 }}
+            className="p-1 px-3 rounded-full bg-emerald-50 border border-emerald-200 backdrop-blur-sm shadow-sm"
+          >
+            <span className="text-emerald-600 font-medium tracking-[0.2em] uppercase text-[10px] md:text-xs flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+              Disponível para projetos
+            </span>
+          </motion.div>
+        </div>
 
         <h1 className="text-5xl sm:text-7xl md:text-9xl font-bold tracking-tighter leading-none mb-8 font-display italic flex flex-col items-center select-none whitespace-nowrap">
           <span className="block text-gradient">Victor Nogueira.</span>

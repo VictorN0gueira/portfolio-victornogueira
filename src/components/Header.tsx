@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 
 const LOGO_URL = "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FLogo%20-%20s.%20fundo.png&version_id=null";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
+  const isHome = location.pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,9 +29,10 @@ export default function Header() {
   }, [isMenuOpen]);
 
   const navItems = [
-    { name: 'Sobre', href: '#sobre' },
-    { name: 'Projetos', href: '#projetos' },
-    { name: 'Contato', href: '#contato' },
+    { name: 'Sobre', href: '#sobre', isRoute: false },
+    { name: 'Projetos', href: '#projetos', isRoute: false },
+    { name: 'Contato', href: '#contato', isRoute: false },
+    { name: 'Blog', href: '/blog', isRoute: true },
   ];
 
   return (
@@ -54,20 +58,39 @@ export default function Header() {
           
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-10">
-            {navItems.map((item) => (
-              <a 
-                key={item.name}
-                href={item.href} 
-                className={`text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 relative group ${
-                  isScrolled ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'
-                }`}
-              >
-                {item.name}
-                <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${
-                  isScrolled ? 'bg-white' : 'bg-black'
-                }`}></span>
-              </a>
-            ))}
+            {navItems.map((item) => {
+              if (item.isRoute) {
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 relative group ${
+                      isScrolled ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'
+                    }`}
+                  >
+                    {item.name}
+                    <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${
+                      isScrolled ? 'bg-white' : 'bg-black'
+                    }`}></span>
+                  </Link>
+                );
+              }
+              const anchorHref = isHome ? item.href : `/${item.href}`;
+              return (
+                <a 
+                  key={item.name}
+                  href={anchorHref}
+                  className={`text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 relative group ${
+                    isScrolled ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'
+                  }`}
+                >
+                  {item.name}
+                  <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${
+                    isScrolled ? 'bg-white' : 'bg-black'
+                  }`}></span>
+                </a>
+              );
+            })}
           </nav>
 
           <div className={`flex items-center gap-6 relative ${isMenuOpen ? 'z-[70]' : 'z-50'}`}>
@@ -138,13 +161,23 @@ export default function Header() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 + idx * 0.1 }}
                   >
-                    <a
-                      href={item.href}
-                      onClick={() => setIsMenuOpen(false)}
-                      className="text-3xl md:text-4xl font-bold tracking-tighter text-white hover:text-zinc-300 transition-colors block italic"
-                    >
-                      {item.name}
-                    </a>
+                    {item.isRoute ? (
+                      <Link
+                        to={item.href}
+                        onClick={() => setIsMenuOpen(false)}
+                        className="text-3xl md:text-4xl font-bold tracking-tighter text-white hover:text-zinc-300 transition-colors block italic"
+                      >
+                        {item.name}
+                      </Link>
+                    ) : (
+                      <a
+                        href={isHome ? item.href : `/${item.href}`}
+                        onClick={() => setIsMenuOpen(false)}
+                        className="text-3xl md:text-4xl font-bold tracking-tighter text-white hover:text-zinc-300 transition-colors block italic"
+                      >
+                        {item.name}
+                      </a>
+                    )}
                   </motion.div>
                 ))}
               </nav>

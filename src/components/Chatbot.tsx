@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageSquare, X, Send, Sparkles, Loader2, Trash2, ChevronDown } from 'lucide-react';
+import { X, Send, Loader2, Trash2, ChevronDown, Rocket, Briefcase, Phone, CalendarCheck } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 
 interface Message {
@@ -10,6 +10,7 @@ interface Message {
   text: string;
   sender: 'user' | 'bot';
   timestamp: Date;
+  quickReplies?: string[];
 }
 
 const WEBHOOK_URL = 'https://n8n.vnone.com.br/webhook/chatbot-site-vn';
@@ -20,17 +21,35 @@ const INITIAL_MESSAGE: Message = {
   text: 'Olá! Eu sou a Vicky, da VN One. Como posso ajudar você hoje?',
   sender: 'bot',
   timestamp: new Date(),
+  quickReplies: ['Quero automatizar meu negócio', 'Ver projetos e cases', 'Agendar reunião', 'Falar com o Victor'],
 };
+
+const QUICK_ACTIONS = [
+  { label: 'Quero automatizar', icon: Rocket, message: 'Quero automatizar meu negócio' },
+  { label: 'Ver projetos', icon: Briefcase, message: 'Quero ver os projetos e cases' },
+  { label: 'Agendar reunião', icon: CalendarCheck, message: 'Quero agendar uma reunião com o Victor' },
+  { label: 'Falar com Victor', icon: Phone, message: 'Quero falar com o Victor' },
+];
+
+const PLACEHOLDER_TEXTS = [
+  'Pergunte sobre automação...',
+  'Quanto custa um projeto?',
+  'Como funciona o processo?',
+  'Quais tecnologias você usa?',
+];
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize sessionId
   useEffect(() => {
     let id = localStorage.getItem('portfolio_session_id');
     if (!id) {
@@ -38,36 +57,55 @@ export default function Chatbot() {
       localStorage.setItem('portfolio_session_id', id);
     }
     setSessionId(id);
+
+    const interacted = localStorage.getItem('chatbot_interacted');
+    if (interacted) {
+      setShowWelcome(false);
+      setHasInteracted(true);
+    }
   }, []);
 
-  const scrollToBottom = () => {
+  // Rotating placeholder
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDER_TEXTS.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
         top: scrollRef.current.scrollHeight,
         behavior: 'smooth',
       });
     }
-  };
+  }, []);
 
-  // Scroll when messages change
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
+  useEffect(() => { scrollToBottom(); }, [messages, isLoading, scrollToBottom]);
 
-  // Scroll when opening chat
   useEffect(() => {
-    if (isOpen) {
-      const timeout = setTimeout(scrollToBottom, 100);
+    if (isOpen && !showWelcome) {
+      const timeout = setTimeout(() => {
+        scrollToBottom();
+        inputRef.current?.focus();
+      }, 150);
       return () => clearTimeout(timeout);
     }
-  }, [isOpen]);
+  }, [isOpen, showWelcome, scrollToBottom]);
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return;
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isLoading) return;
+
+    if (showWelcome) {
+      setShowWelcome(false);
+      setHasInteracted(true);
+      localStorage.setItem('chatbot_interacted', 'true');
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputValue,
+      text,
       sender: 'user',
       timestamp: new Date(),
     };
@@ -79,9 +117,7 @@ export default function Chatbot() {
     try {
       const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMessage.text,
           timestamp: userMessage.timestamp.toISOString(),
@@ -93,8 +129,6 @@ export default function Chatbot() {
       if (!response.ok) throw new Error('Failed to send message');
 
       const data = await response.json().catch(() => ({}));
-      
-      // Try to find the reply in common response fields
       const replyText = data.reply || data.response || data.output || data.text || data.message || (typeof data === 'string' ? data : null);
 
       const botMessage: Message = {
@@ -102,6 +136,7 @@ export default function Chatbot() {
         text: replyText || 'Recebi sua mensagem! O Victor entrará em contato com você em breve.',
         sender: 'bot',
         timestamp: new Date(),
+        quickReplies: ['Saber mais', 'Ver preços', 'Agendar reunião'],
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
@@ -118,158 +153,351 @@ export default function Chatbot() {
     }
   };
 
+  const handleSendMessage = () => sendMessage(inputValue);
+
+  const handleQuickReply = (text: string) => {
+    // Remove quick replies from all messages to keep UI clean
+    setMessages((prev) =>
+      prev.map((msg) => ({ ...msg, quickReplies: undefined }))
+    );
+    sendMessage(text);
+  };
+
   const clearChat = () => {
     setMessages([INITIAL_MESSAGE]);
+    setShowWelcome(true);
   };
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-      {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="mb-4 w-[min(90vw,400px)] sm:w-[400px] h-[min(80vh,600px)] flex flex-col glass-dark rounded-4xl overflow-hidden shadow-2xl border border-white/20"
+            exit={{ opacity: 0, scale: 0.92, y: 20 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="mb-4 w-[min(92vw,420px)] h-[min(82vh,620px)] flex flex-col rounded-[2rem] overflow-hidden shadow-[0_25px_80px_rgba(0,0,0,0.5)] border border-white/10"
+            style={{
+              background: 'linear-gradient(180deg, #1a1a2e 0%, #16162a 40%, #0f0f1a 100%)',
+            }}
           >
-            {/* Header */}
-            <div className="p-6 bg-white/10 border-b border-white/10 flex items-center justify-between backdrop-blur-xl">
+            {/* ── Header ── */}
+            <div className="relative px-5 py-4 flex items-center justify-between shrink-0">
+              {/* Glow line */}
+              <div className="absolute bottom-0 left-4 right-4 h-px bg-linear-to-r from-transparent via-white/15 to-transparent" />
+
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white overflow-hidden flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.4)] border border-white/20">
-                  <img src={VICKY_AVATAR} alt="Vicky Avatar" className="w-full h-full object-cover" />
+                <div className="relative">
+                  <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-purple-500/30 ring-offset-2 ring-offset-[#1a1a2e]">
+                    <img src={VICKY_AVATAR} alt="Vicky" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-[#1a1a2e]" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white leading-none">Vicky</h3>
-                  <p className="text-[10px] text-emerald-300 mt-1.5 uppercase tracking-widest font-black flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                    Responde em minutos
+                  <h3 className="text-sm font-bold text-white leading-none tracking-tight">
+                    Vicky
+                  </h3>
+                  <p className="text-[10px] text-emerald-400/80 mt-1 font-medium tracking-wide">
+                    {isLoading ? (
+                      <span className="flex items-center gap-1.5">
+                        <span className="flex gap-0.5">
+                          <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                          <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                          <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce" />
+                        </span>
+                        Digitando
+                      </span>
+                    ) : (
+                      'Assistente VN One'
+                    )}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+
+              <div className="flex items-center gap-0.5">
                 <button
                   onClick={clearChat}
                   title="Limpar conversa"
-                  className="p-2 hover:bg-white/20 rounded-xl transition-all text-zinc-100/80 hover:text-red-400 group relative"
+                  className="p-2 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-white/5 transition-all"
                 >
                   <Trash2 className="w-4 h-4" />
-                  <span className="absolute -bottom-8 right-0 text-[8px] bg-black/80 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Limpar</span>
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-2 hover:bg-white/20 rounded-xl transition-all text-white hover:bg-white/30"
+                  className="p-2 rounded-xl text-zinc-500 hover:text-white hover:bg-white/5 transition-all"
                 >
                   <ChevronDown className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            {/* Messages */}
-            <div 
-              ref={scrollRef}
-              className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar scroll-smooth"
-            >
-              {messages.map((msg) => (
+            {/* ── Welcome Screen ── */}
+            <AnimatePresence mode="wait">
+              {showWelcome && !hasInteracted ? (
                 <motion.div
-                  initial={{ opacity: 0, x: msg.sender === 'user' ? 20 : -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  key={msg.id}
-                  className={cn(
-                    "flex flex-col max-w-[85%]",
-                    msg.sender === 'user' ? "ml-auto items-end" : "items-start"
-                  )}
-                >
-                  <div className={cn(
-                    "px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap",
-                    msg.sender === 'user' 
-                      ? "bg-white text-black font-semibold rounded-tr-none shadow-lg" 
-                      : "bg-zinc-700/90 text-white border border-white/10 rounded-tl-none shadow-sm"
-                  )}>
-                    {msg.sender === 'bot' ? (
-                      <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          p: ({ children }) => <span className="block mb-2 last:mb-0">{children}</span>,
-                          a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline hover:text-emerald-300">{children}</a>,
-                          ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
-                          li: ({ children }) => <li className="mb-0.5">{children}</li>,
-                          strong: ({ children }) => <strong className="font-bold text-white">{children}</strong>,
-                        }}
-                      >
-                        {msg.text}
-                      </ReactMarkdown>
-                    ) : (
-                      msg.text
-                    )}
-                  </div>
-                  <span className="text-[10px] text-zinc-300 mt-1.5 px-1 font-bold tracking-tight">
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </motion.div>
-              ))}
-              {isLoading && (
-                <motion.div
+                  key="welcome"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="flex items-center gap-2 text-zinc-300 text-xs px-2"
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex-1 flex flex-col items-center justify-center px-8 text-center"
                 >
-                  <div className="flex gap-1.5">
-                    <span className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                    <span className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                    <span className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce"></span>
+                  {/* Avatar glow */}
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 blur-2xl bg-purple-500/20 rounded-full scale-150" />
+                    <div className="relative w-24 h-24 rounded-full overflow-hidden ring-2 ring-purple-500/40 ring-offset-4 ring-offset-[#16162a]">
+                      <img src={VICKY_AVATAR} alt="Vicky" className="w-full h-full object-cover" />
+                    </div>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-white mb-1 font-display tracking-tight">
+                    Olá! Eu sou a Vicky 👋
+                  </h3>
+                  <p className="text-zinc-400 text-sm mb-8 leading-relaxed max-w-[280px]">
+                    Assistente virtual da VN One. Como posso ajudar você hoje?
+                  </p>
+
+                  {/* Quick Actions */}
+                  <div className="flex flex-col gap-2.5 w-full max-w-[280px]">
+                    {QUICK_ACTIONS.map((action, i) => (
+                      <motion.button
+                        key={action.label}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 + i * 0.1 }}
+                        onClick={() => handleQuickReply(action.message)}
+                        className="group flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-purple-500/30 transition-all text-left"
+                      >
+                        <div className="w-9 h-9 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0 group-hover:bg-purple-500/20 transition-colors">
+                          <action.icon className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <span className="text-sm text-zinc-300 group-hover:text-white transition-colors font-medium">
+                          {action.label}
+                        </span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="chat"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex-1 flex flex-col min-h-0"
+                >
+                  {/* ── Messages ── */}
+                  <div
+                    ref={scrollRef}
+                    className="flex-1 overflow-y-auto px-4 py-4 space-y-3 custom-scrollbar scroll-smooth"
+                  >
+                    {messages.map((msg, idx) => (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.25 }}
+                        key={msg.id}
+                        className={cn(
+                          'flex gap-2.5 max-w-[88%]',
+                          msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'items-start'
+                        )}
+                      >
+                        {/* Bot avatar */}
+                        {msg.sender === 'bot' && (
+                          <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mt-0.5 ring-1 ring-white/10">
+                            <img src={VICKY_AVATAR} alt="V" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+
+                        <div className={cn(
+                          'flex flex-col',
+                          msg.sender === 'user' ? 'items-end' : 'items-start'
+                        )}>
+                          <div
+                            className={cn(
+                              'px-4 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap',
+                              msg.sender === 'user'
+                                ? 'bg-purple-500 text-white rounded-2xl rounded-tr-md shadow-lg shadow-purple-500/20'
+                                : 'bg-white/[0.06] text-zinc-200 border border-white/[0.08] rounded-2xl rounded-tl-md'
+                            )}
+                          >
+                            {msg.sender === 'bot' ? (
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  p: ({ children }) => <span className="block mb-1.5 last:mb-0">{children}</span>,
+                                  a: ({ href, children }) => (
+                                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-purple-400 underline underline-offset-2 hover:text-purple-300 transition-colors">
+                                      {children}
+                                    </a>
+                                  ),
+                                  ul: ({ children }) => <ul className="list-disc pl-4 mb-1.5 space-y-0.5">{children}</ul>,
+                                  ol: ({ children }) => <ol className="list-decimal pl-4 mb-1.5 space-y-0.5">{children}</ol>,
+                                  li: ({ children }) => <li>{children}</li>,
+                                  strong: ({ children }) => <strong className="font-bold text-white">{children}</strong>,
+                                }}
+                              >
+                                {msg.text}
+                              </ReactMarkdown>
+                            ) : (
+                              msg.text
+                            )}
+                          </div>
+
+                          <span className="text-[9px] text-zinc-600 mt-1 px-1 tabular-nums">
+                            {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+
+                          {/* Quick Replies */}
+                          {msg.sender === 'bot' && msg.quickReplies && idx === messages.length - 1 && !isLoading && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.3 }}
+                              className="flex flex-wrap gap-1.5 mt-2"
+                            >
+                              {msg.quickReplies.map((reply) => (
+                                <button
+                                  key={reply}
+                                  onClick={() => handleQuickReply(reply)}
+                                  className="px-3 py-1.5 text-[11px] font-medium text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-full hover:bg-purple-500/20 hover:text-purple-200 transition-all"
+                                >
+                                  {reply}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+
+                    {/* Typing indicator */}
+                    {isLoading && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-start gap-2.5"
+                      >
+                        <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mt-0.5 ring-1 ring-white/10">
+                          <img src={VICKY_AVATAR} alt="V" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="px-4 py-3 bg-white/[0.06] border border-white/[0.08] rounded-2xl rounded-tl-md">
+                          <div className="flex gap-1">
+                            <span className="w-2 h-2 bg-purple-400/60 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                            <span className="w-2 h-2 bg-purple-400/60 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                            <span className="w-2 h-2 bg-purple-400/60 rounded-full animate-bounce" />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
                 </motion.div>
               )}
-            </div>
+            </AnimatePresence>
 
-            {/* Input Area */}
-            <div className="p-4 bg-white/10 border-t border-white/10 backdrop-blur-2xl">
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSendMessage();
-                }}
-                className="relative flex items-center"
-              >
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Escreva sua mensagem..."
-                  className="w-full bg-zinc-950/60 border border-white/20 rounded-2xl pl-5 pr-12 py-3.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/40 transition-all placeholder:text-zinc-400 font-medium"
-                />
-                <button
-                  type="submit"
-                  disabled={!inputValue.trim() || isLoading}
-                  className="absolute right-2 p-2 bg-white text-black rounded-xl disabled:opacity-40 disabled:grayscale hover:bg-zinc-200 transition-all shadow-xl"
+            {/* ── Input Area ── */}
+            {(!showWelcome || hasInteracted) && (
+              <div className="px-4 pb-4 pt-2 shrink-0">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }}
+                  className="relative flex items-center"
                 >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                </button>
-              </form>
-            </div>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder={PLACEHOLDER_TEXTS[placeholderIndex]}
+                    className="w-full bg-white/[0.05] border border-white/[0.1] rounded-2xl pl-5 pr-12 py-3 text-sm text-white focus:outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all placeholder:text-zinc-600 font-medium"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!inputValue.trim() || isLoading}
+                    className={cn(
+                      'absolute right-1.5 p-2.5 rounded-xl transition-all',
+                      inputValue.trim() && !isLoading
+                        ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30 hover:bg-purple-400 active:scale-90'
+                        : 'text-zinc-600'
+                    )}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </button>
+                </form>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* FAB */}
+      {/* ── FAB ── */}
       <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
         onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "relative w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 overflow-hidden group",
-          isOpen ? "bg-white text-black rotate-90" : "bg-black text-white border border-white/30"
-        )}
+        className="relative group"
       >
-        <div className="absolute inset-0 bg-linear-to-tr from-white/0 via-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-        {isOpen ? (
-          <X className="w-7 h-7" />
-        ) : (
-          <div className="relative">
-             <MessageSquare className="w-7 h-7" />
-             <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-white rounded-full border-2 border-black shadow-[0_0_8px_rgba(255,255,255,0.6)] animate-pulse" />
+        {/* Pulse ring */}
+        {!isOpen && !hasInteracted && (
+          <div className="absolute inset-0 rounded-full bg-purple-500/30 animate-ping" style={{ animationDuration: '2s' }} />
+        )}
+
+        <div
+          className={cn(
+            'w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 overflow-hidden',
+            isOpen
+              ? 'bg-zinc-800 ring-1 ring-white/10'
+              : 'ring-2 ring-purple-500/40 ring-offset-2 ring-offset-transparent shadow-[0_0_30px_rgba(168,85,247,0.25)]'
+          )}
+        >
+          <AnimatePresence mode="wait">
+            {isOpen ? (
+              <motion.div
+                key="close"
+                initial={{ rotate: -90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: 90, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <X className="w-6 h-6 text-zinc-300" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="avatar"
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.5, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="w-full h-full"
+              >
+                <img
+                  src={VICKY_AVATAR}
+                  alt="Fale com a Vicky"
+                  className="w-full h-full object-cover"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Notification badge */}
+        {!isOpen && !hasInteracted && (
+          <div className="absolute -top-1 -right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/50">
+            <span className="text-[10px] font-black text-white">1</span>
+          </div>
+        )}
+
+        {/* Tooltip */}
+        {!isOpen && (
+          <div className="absolute right-[calc(100%+12px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-zinc-900 border border-white/10 rounded-xl text-xs font-medium text-zinc-300 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl">
+            Fale com a Vicky
+            <div className="absolute right-0 top-1/2 translate-x-1 -translate-y-1/2 w-2 h-2 bg-zinc-900 border-r border-t border-white/10 rotate-45" />
           </div>
         )}
       </motion.button>
