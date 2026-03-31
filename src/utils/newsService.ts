@@ -77,9 +77,13 @@ async function fetchArticles(
     ? encodeURIComponent('"inteligência artificial" OR "automação" OR "machine learning"')
     : encodeURIComponent('"artificial intelligence" OR "automation" OR "machine learning" OR "AI"');
 
-  const url = `${BASE_URL}/search?q=${query}&lang=${lang}&max=${count}&sortby=publishedAt&apikey=${API_KEY}`;
+  const targetUrl = `${BASE_URL}/search?q=${query}&lang=${lang}&max=${count}&sortby=publishedAt&apikey=${API_KEY}`;
+  
+  // Utilizando um proxy CORS confiável, pois a GNews API bloqueia requisições 
+  // diretas de navegadores em produção (exceto localhost)
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
-  const response = await fetch(url);
+  const response = await fetch(proxyUrl);
 
   if (!response.ok) {
     throw new Error(`GNews API error: ${response.status}`);
