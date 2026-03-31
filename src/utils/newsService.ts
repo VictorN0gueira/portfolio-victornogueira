@@ -79,9 +79,9 @@ async function fetchArticles(
 
   const targetUrl = `${BASE_URL}/search?q=${query}&lang=${lang}&max=${count}&sortby=publishedAt&apikey=${API_KEY}`;
   
-  // Utilizando um proxy CORS confiável, pois a GNews API bloqueia requisições 
-  // diretas de navegadores em produção (exceto localhost)
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+  // Utilizando o CodeTabs proxy CORS, pois a GNews API bloqueia algumas
+  // ferramentas públicas de proxy (como allorigins) e requisições diretas de produção.
+  const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
 
   const response = await fetch(proxyUrl);
 
