@@ -66,11 +66,14 @@ export default function Testimonials() {
     []
   );
 
+  const [isHovered, setIsHovered] = useState(false);
+
   // Auto-play
   useEffect(() => {
+    if (isHovered) return;
     const timer = setInterval(() => paginate(1), 6000);
     return () => clearInterval(timer);
-  }, [paginate]);
+  }, [paginate, isHovered]);
 
   const t = testimonials[current];
 
@@ -84,8 +87,8 @@ export default function Testimonials() {
     <section className="py-32 px-6 md:px-12 bg-zinc-950 text-white relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[20%] -left-[15%] w-[500px] h-[500px] bg-purple-500/4 rounded-full blur-[150px]" />
-        <div className="absolute bottom-[10%] -right-[10%] w-[400px] h-[400px] bg-cyan-500/4 rounded-full blur-[150px]" />
+        <div className="absolute top-[20%] -left-[15%] w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_rgba(168,85,247,0.06)_0%,_transparent_70%)] rounded-full" />
+        <div className="absolute bottom-[10%] -right-[10%] w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_rgba(6,182,212,0.06)_0%,_transparent_70%)] rounded-full" />
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
@@ -108,7 +111,11 @@ export default function Testimonials() {
         </motion.div>
 
         {/* Testimonial Card */}
-        <div className="max-w-4xl mx-auto">
+        <div 
+          className="max-w-4xl mx-auto"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
           <div className="relative bg-white/3 border border-white/8 rounded-[2.5rem] p-10 md:p-16 min-h-[340px] flex flex-col justify-center overflow-hidden">
             {/* Decorative quote */}
             <Quote className="absolute top-8 right-8 w-20 h-20 text-white/4 rotate-180" />
@@ -122,6 +129,7 @@ export default function Testimonials() {
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                style={{ willChange: 'transform, opacity' }}
                 className="flex flex-col items-center text-center"
               >
                 {/* Stars */}

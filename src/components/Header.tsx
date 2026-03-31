@@ -108,6 +108,7 @@ export default function Header() {
             {/* Mobile Menu Button - Minimalist Circular Toggle */}
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
+              style={{ willChange: 'transform, background-color, border-color' }}
               className={`md:hidden flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-300 ${
                 isScrolled || isMenuOpen
                   ? 'text-white bg-white/5 hover:bg-white/10 border-white/10' 
@@ -150,6 +151,7 @@ export default function Header() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              style={{ willChange: 'transform' }}
               className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-zinc-950 border-l border-white/10 p-8 md:p-12 flex flex-col"
             >
               <nav className="flex flex-col gap-6 mt-16 md:mt-20">
@@ -211,10 +213,10 @@ export default function Header() {
                 </p>
               </motion.div>
 
-              {/* Subtle Gradient Glow */}
+              {/* Subtle Gradient Glow (Optimized) */}
               <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none -z-10 opacity-30">
-                <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-[80px]" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-white/10 rounded-full blur-[80px]" />
+                <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.15)_0%,_transparent_70%)] rounded-full" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.15)_0%,_transparent_70%)] rounded-full" />
               </div>
             </motion.div>
           </div>

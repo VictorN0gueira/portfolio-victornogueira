@@ -83,13 +83,14 @@ export default function Projects() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
+              style={{ willChange: 'transform, opacity' }}
               className="group cursor-pointer"
               onClick={() => setSelectedProject(project)}
             >
             <div className="aspect-16/10 rounded-4xl mb-8 overflow-hidden relative shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-black/10 hover:-translate-y-2 flex items-center justify-center bg-black">
-              {/* Blurred Background Layer (Premium Effect) */}
+              {/* Blurred Background Layer (Optimized Premium Effect) */}
               <div 
-                className="absolute inset-0 bg-cover bg-center blur-3xl opacity-60 transform scale-150"
+                className="absolute inset-0 bg-cover bg-center blur-xl opacity-40 transform scale-110 will-change-transform"
                 style={{ backgroundImage: `url(${project.image})` }}
               />
               
@@ -158,6 +159,7 @@ export default function Projects() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              style={{ willChange: 'transform, opacity' }}
               className="relative w-full h-full md:h-auto md:max-w-6xl md:max-h-[85vh] bg-zinc-950 md:bg-zinc-900 md:rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row shadow-2xl md:border border-white/10"
             >
               <button 
@@ -169,9 +171,9 @@ export default function Projects() {
 
               {/* Gallery Side */}
               <div className="w-full md:w-[60%] h-[45vh] md:h-auto bg-zinc-950 relative flex flex-col overflow-hidden shrink-0 border-b md:border-b-0 md:border-r border-white/5">
-                {/* Dynamic Background Blur for Modal */}
+                {/* Dynamic Background Blur for Modal (Optimized) */}
                 <div 
-                  className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30 transform scale-125 pointer-events-none"
+                  className="absolute inset-0 bg-cover bg-center blur-2xl opacity-20 transform scale-110 pointer-events-none will-change-transform"
                   style={{ backgroundImage: `url(${selectedProject.image})` }}
                 />
                 

@@ -130,6 +130,10 @@ export async function getNewsArticles(): Promise<NewsArticle[]> {
       }
     }
 
+    if (combined.length === 0) {
+      throw new Error('Nenhuma notícia foi encontrada no momento. A API pode estar com limite excedido.');
+    }
+
     setCachedArticles(combined);
     return combined;
   } catch (error) {
