@@ -155,13 +155,9 @@ export default function BlogPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchNews = useCallback(async (forceRefresh = false) => {
+  const fetchNews = useCallback(async () => {
     setLoading(true);
     setError(null);
-
-    if (forceRefresh) {
-      localStorage.removeItem('blog_news_cache');
-    }
 
     try {
       const data = await getNewsArticles();
@@ -241,22 +237,7 @@ export default function BlogPage() {
               diariamente.
             </p>
 
-            {/* Refresh button */}
-            <button
-              onClick={() => fetchNews(true)}
-              disabled={loading}
-              className="flex items-center gap-2 px-6 py-3 rounded-full bg-white/[0.06] border border-white/[0.1] text-sm text-zinc-300 hover:text-white hover:bg-white/[0.1] hover:border-white/[0.2] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed group"
-            >
-              <RefreshCw
-                className={`w-4 h-4 transition-transform ${
-                  loading ? 'animate-spin' : 'group-hover:rotate-180'
-                }`}
-              />
-              <span className="font-medium">
-                {loading ? 'Atualizando...' : 'Atualizar Notícias'}
-              </span>
-            </button>
-          </motion.div>
+            </motion.div>
         </div>
       </section>
 
@@ -287,13 +268,6 @@ export default function BlogPage() {
                 <p className="text-zinc-400 mb-8 max-w-md text-sm leading-relaxed">
                   {error}
                 </p>
-                <button
-                  onClick={() => fetchNews(true)}
-                  className="flex items-center gap-2 px-8 py-3 rounded-full bg-white text-black text-sm font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Tentar Novamente
-                </button>
               </motion.div>
             )}
 

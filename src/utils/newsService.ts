@@ -79,37 +79,71 @@ async function fetchArticles(
 
   const targetUrl = `${BASE_URL}/search?q=${query}&lang=${lang}&max=${count}&sortby=publishedAt&apikey=${API_KEY}`;
   
-  // Utilizando o CodeTabs proxy CORS, pois a GNews API bloqueia algumas
-  // ferramentas públicas de proxy (como allorigins) e requisições diretas de produção.
   const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
 
-  const response = await fetch(proxyUrl);
+  try {
+    const response = await fetch(proxyUrl);
 
-  if (!response.ok) {
-    throw new Error(`GNews API error: ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`GNews API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Validação crucial: Se a API retornar erro (ex: limite atingido), 'articles' será undefined
+    if (!data.articles || !Array.isArray(data.articles)) {
+      const apiError = data.errors ? (Array.isArray(data.errors) ? data.errors[0] : JSON.stringify(data.errors)) : 'Resposta inválida da API';
+      throw new Error(apiError);
+    }
+
+    return data.articles.map((article: any) => ({
+      ...article,
+      language: lang,
+      // Fallback para imagem quando a API não retorna
+      image: article.image || '',
+    }));
+  } catch (error) {
+    console.error(`Erro ao buscar notícias (${lang}):`, error);
+    throw error;
   }
-
-  const data: GNewsResponse = await response.json();
-
-  return data.articles.map((article) => ({
-    ...article,
-    language: lang,
-    // Fallback para imagem quando a API não retorna
-    image: article.image || '',
-  }));
 }
 
 export async function getNewsArticles(): Promise<NewsArticle[]> {
-  // Verifica cache primeiro
-  const cached = getCachedArticles();
-  if (cached) return cached;
+  const rawCache = localStorage.getItem(CACHE_KEY);
+  let cached: CachedData | null = null;
+  
+  if (rawCache) {
+    try {
+      cached = JSON.parse(rawCache);
+    } catch {
+      localStorage.removeItem(CACHE_KEY);
+    }
+  }
+
+  // Verifica se o cache ainda é válido (mesmo dia e < 24h)
+  if (cached) {
+    const now = new Date();
+    const lastUpdate = new Date(cached.timestamp);
+    const isSameDay = 
+      now.getDate() === lastUpdate.getDate() &&
+      now.getMonth() === lastUpdate.getMonth() &&
+      now.getFullYear() === lastUpdate.getFullYear();
+
+    const isRecent = now.getTime() - cached.timestamp < CACHE_TTL_MS;
+
+    // Se é o mesmo dia e foi atualizado recentemente, usamos o cache para economizar API
+    if (isSameDay && isRecent) {
+      return cached.articles;
+    }
+  }
 
   if (!API_KEY) {
+    if (cached) return cached.articles; // Fallback se não houver chave
     throw new Error('VITE_GNEWS_API_KEY não configurada no .env');
   }
 
   try {
-    // Busca 9 em PT (caso o EN falhe) e 3 em EN em paralelo
+    // Busca notícias em paralelo
     const [ptArticles, enArticles] = await Promise.all([
       fetchArticles('pt', 9),
       fetchArticles('en', 3),
@@ -131,12 +165,20 @@ export async function getNewsArticles(): Promise<NewsArticle[]> {
     }
 
     if (combined.length === 0) {
-      throw new Error('Nenhuma notícia foi encontrada no momento. A API pode estar com limite excedido.');
+      if (cached) return cached.articles;
+      throw new Error('Nenhuma notícia encontrada.');
     }
 
     setCachedArticles(combined);
     return combined;
   } catch (error) {
+    // FALLBACK: Se qualquer erro ocorrer (limite da API, rede, erro no proxy, etc), 
+    // retornamos o cache antigo em vez de apresentar erro ao usuário.
+    if (cached && cached.articles.length > 0) {
+      console.warn('Usando notícias em cache devido a erro na API:', error);
+      return cached.articles;
+    }
+    
     throw new Error(
       error instanceof Error
         ? error.message
