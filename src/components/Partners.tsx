@@ -28,6 +28,10 @@ const PARTNERS = [
   {
     name: "Criativa Marketing",
     logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Criativa%20Marketing%2Flogo.png&version_id=null"
+  },
+  {
+    name: "ShipSmart",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=ShipSmart%2FLogo.jpg&version_id=null"
   }
 ];
 
