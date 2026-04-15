@@ -154,14 +154,20 @@ export default function BlogPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<string>('');
 
-  const fetchNews = useCallback(async () => {
+  const fetchNews = useCallback(async (forceRefresh = false) => {
     setLoading(true);
     setError(null);
 
+    if (forceRefresh) {
+      localStorage.removeItem('blog_news_cache');
+    }
+
     try {
-      const data = await getNewsArticles();
-      setArticles(data);
+      const result = await getNewsArticles();
+      setArticles(result.articles);
+      setDataSource(result.source);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Erro ao carregar notícias'
@@ -236,6 +242,27 @@ export default function BlogPage() {
               benefícios que essas tecnologias trazem para o mundo. Atualizado
               diariamente.
             </p>
+
+            {/* Refresh + Source indicator */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => fetchNews(true)}
+                disabled={loading}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.1] hover:border-white/[0.15] transition-all text-sm text-zinc-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </button>
+              {dataSource && !loading && (
+                <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-600">
+                  {dataSource === 'cache' && '📦 Cache local'}
+                  {dataSource === 'edge-function' && '🟢 Atualizado agora'}
+                  {dataSource === 'fresh' && '🟢 Atualizado agora'}
+                  {dataSource === 'stale-cache' && '⚠️ Cache anterior'}
+                  {dataSource === 'fallback' && '📰 Artigos curados'}
+                </span>
+              )}
+            </div>
 
             </motion.div>
         </div>
@@ -335,7 +362,7 @@ export default function BlogPage() {
           <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mb-12" />
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <p className="text-xs text-zinc-600 uppercase tracking-widest">
-              Notícias via GNews • Atualizado a cada 24h
+              Notícias via GNews • Cache server-side 24h
             </p>
             <Link
               to="/"
