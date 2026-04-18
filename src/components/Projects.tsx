@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowUpRight, X, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ArrowUpRight, X, ChevronRight } from 'lucide-react';
 import { projects, Project } from '../data/projects';
 
 export default function Projects() {
@@ -41,9 +41,11 @@ export default function Projects() {
       </motion.div>
 
       {/* Tab Selector */}
-      <div className="flex flex-wrap justify-center gap-6 md:gap-8 mb-16 md:mb-24 px-4">
+      <div className="flex flex-wrap justify-center gap-6 md:gap-8 mb-16 md:mb-24 px-4" role="tablist" aria-label="Filtros de projetos">
         <button 
           onClick={() => setActiveTab('personal')}
+          role="tab"
+          aria-selected={activeTab === 'personal'}
           className={`relative px-4 py-2 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${activeTab === 'personal' ? 'text-black' : 'text-zinc-400 hover:text-zinc-600'}`}
         >
           <span className="relative z-10 whitespace-nowrap">01. Produtos Próprios</span>
@@ -57,6 +59,8 @@ export default function Projects() {
         </button>
         <button 
           onClick={() => setActiveTab('client')}
+          role="tab"
+          aria-selected={activeTab === 'client'}
           className={`relative px-4 py-2 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${activeTab === 'client' ? 'text-black' : 'text-zinc-400 hover:text-zinc-600'}`}
         >
           <span className="relative z-10 whitespace-nowrap">02. Cases de Clientes</span>
@@ -146,7 +150,7 @@ export default function Projects() {
       {/* Project Detail Modal */}
       <AnimatePresence>
         {selectedProject && (
-          <div className="fixed inset-0 z-100 flex items-center justify-center p-0 md:p-8">
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-0 md:p-8" role="dialog" aria-modal="true" aria-labelledby="modal-title">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -164,6 +168,7 @@ export default function Projects() {
             >
               <button 
                 onClick={() => setSelectedProject(null)}
+                aria-label="Fechar modal"
                 className="absolute top-6 right-6 z-50 w-10 h-10 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all backdrop-blur-md border border-white/10"
               >
                 <X className="w-5 h-5 md:w-6 md:h-6" />
@@ -217,7 +222,7 @@ export default function Projects() {
                     </span>
                   )}
                   <p className="text-zinc-500 font-bold uppercase tracking-[0.3em] text-[10px] mb-3 md:mb-4">{selectedProject.category}</p>
-                  <h3 className="text-3xl md:text-5xl font-bold text-white mb-4 md:mb-6 font-display italic tracking-tight">{selectedProject.title}</h3>
+                  <h3 id="modal-title" className="text-3xl md:text-5xl font-bold text-white mb-4 md:mb-6 font-display italic tracking-tight">{selectedProject.title}</h3>
                   <div className="w-12 h-1 bg-white/20 mb-6 rounded-full" />
                   <p className="text-zinc-400 text-base md:text-xl font-light leading-relaxed mb-6 md:mb-8">
                     {selectedProject.description}

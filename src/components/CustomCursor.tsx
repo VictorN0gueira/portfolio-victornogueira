@@ -4,7 +4,6 @@ import { motion, useMotionValue, useSpring } from 'motion/react';
 export default function CustomCursor() {
   const [isHovering, setIsHovering] = useState(false);
   
-  // Usar MotionValues evita re-renderizações (React state changes) a cada pixel movido, acabando com o travamento.
   const cursorX = useMotionValue(-100);
   const cursorY = useMotionValue(-100);
   
@@ -17,6 +16,10 @@ export default function CustomCursor() {
   const dotYSpring = useSpring(cursorY, dotSpringConfig);
 
   useEffect(() => {
+    // Respeitar prefers-reduced-motion
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
+
     const updateMousePosition = (e: MouseEvent) => {
       cursorX.set(e.clientX);
       cursorY.set(e.clientY);
@@ -45,16 +48,16 @@ export default function CustomCursor() {
     };
   }, [cursorX, cursorY]);
 
-  // Ocultar em touch devices
-  if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
-    return null;
+  // Ocultar em touch devices e quando prefers-reduced-motion
+  if (typeof window !== 'undefined') {
+    if (window.matchMedia('(pointer: coarse)').matches) return null;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
   }
 
   return (
     <>
       <style>{`
-        /* Só esconde o cursor original se não for touch */
-        @media (pointer: fine) {
+        @media (pointer: fine) and (prefers-reduced-motion: no-preference) {
           body, a, button {
             cursor: none !important;
           }

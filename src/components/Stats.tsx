@@ -7,7 +7,7 @@ const STATS = [
     label: "Horas Economizadas / Mês",
     value: "500h+",
     icon: Clock,
-    description: "Redução drástica em tarefas manuais repetitiveis"
+    description: "Redução drástica em tarefas manuais repetitivas"
   },
   {
     label: "Fluxos de Automação Ativos",
@@ -58,12 +58,20 @@ function AnimatedNumber({ value }: { value: string }) {
 }
 
 export default function Stats() {
+  const sectionRef = useRef(null);
+  const isInView = useInView(sectionRef, { once: true, margin: "0px 0px -100px 0px" });
+
   return (
-    <section className="py-24 bg-zinc-950 text-white overflow-hidden relative">
+    <section ref={sectionRef} className="py-24 bg-zinc-950 text-white overflow-hidden relative">
       {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-white/5 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
+      <motion.div 
+        className="max-w-7xl mx-auto px-6 md:px-12 relative z-10"
+        initial={{ opacity: 0, y: 40, clipPath: "inset(100% 0% 0% 0%)" }}
+        animate={isInView ? { opacity: 1, y: 0, clipPath: "inset(0% 0% 0% 0%)" } : {}}
+        transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
+      >
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
           {STATS.map((stat, index) => (
             <motion.div
@@ -95,7 +103,7 @@ export default function Stats() {
             </motion.div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

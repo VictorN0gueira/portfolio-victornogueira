@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, type PanInfo } from 'motion/react';
 import { Quote, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 
 interface Testimonial {
@@ -51,6 +51,8 @@ const testimonials: Testimonial[] = [
   },
 ];
 
+const SWIPE_THRESHOLD = 50;
+
 export default function Testimonials() {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
@@ -81,6 +83,17 @@ export default function Testimonials() {
     enter: (d: number) => ({ x: d > 0 ? 80 : -80, opacity: 0 }),
     center: { x: 0, opacity: 1 },
     exit: (d: number) => ({ x: d > 0 ? -80 : 80, opacity: 0 }),
+  };
+
+  const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const { offset, velocity } = info;
+    if (Math.abs(offset.x) > SWIPE_THRESHOLD || Math.abs(velocity.x) > 300) {
+      if (offset.x > 0) {
+        paginate(-1);
+      } else {
+        paginate(1);
+      }
+    }
   };
 
   return (
@@ -116,7 +129,7 @@ export default function Testimonials() {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <div className="relative bg-white/3 border border-white/8 rounded-[2.5rem] p-10 md:p-16 min-h-[340px] flex flex-col justify-center overflow-hidden">
+          <div className="relative bg-white/3 border border-white/8 rounded-[2.5rem] p-10 md:p-16 min-h-[340px] flex flex-col justify-center overflow-hidden touch-pan-y">
             {/* Decorative quote */}
             <Quote className="absolute top-8 right-8 w-20 h-20 text-white/4 rotate-180" />
 
@@ -131,6 +144,10 @@ export default function Testimonials() {
                 transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
                 style={{ willChange: 'transform, opacity' }}
                 className="flex flex-col items-center text-center"
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.3}
+                onDragEnd={handleDragEnd}
               >
                 {/* Stars */}
                 <div className="flex gap-1 mb-8">
@@ -143,7 +160,7 @@ export default function Testimonials() {
                 </div>
 
                 {/* Quote text */}
-                <blockquote className="text-lg md:text-2xl font-light text-zinc-200 leading-relaxed mb-10 max-w-3xl italic">
+                <blockquote className="text-lg md:text-2xl font-light text-zinc-200 leading-relaxed mb-10 max-w-3xl italic select-none">
                   "{t.text}"
                 </blockquote>
 
@@ -155,6 +172,9 @@ export default function Testimonials() {
                       alt={t.name}
                       className="w-full h-full object-contain"
                       referrerPolicy="no-referrer"
+                      loading="lazy"
+                      width={56}
+                      height={56}
                     />
                   </div>
                   <div className="text-left">
@@ -173,7 +193,7 @@ export default function Testimonials() {
             <button
               onClick={() => paginate(-1)}
               className="w-12 h-12 rounded-full border border-white/10 bg-white/3 flex items-center justify-center text-zinc-400 hover:text-white hover:border-white/20 hover:bg-white/6 transition-all active:scale-90"
-              aria-label="Anterior"
+              aria-label="Depoimento anterior"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -200,7 +220,7 @@ export default function Testimonials() {
             <button
               onClick={() => paginate(1)}
               className="w-12 h-12 rounded-full border border-white/10 bg-white/3 flex items-center justify-center text-zinc-400 hover:text-white hover:border-white/20 hover:bg-white/6 transition-all active:scale-90"
-              aria-label="Próximo"
+              aria-label="Próximo depoimento"
             >
               <ChevronRight className="w-5 h-5" />
             </button>

@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, CheckCircle2, Mail, MessageSquare } from 'lucide-react';
+import { Send, CheckCircle2, Mail, MessageSquare, AlertCircle } from 'lucide-react';
 
 const WEBHOOKS = {
   email: 'https://n8n.vnone.com.br/webhook/portfolio-vn-email',
@@ -66,10 +66,7 @@ export default function ContactForm() {
       }
     } catch (error) {
       console.error('Submission error:', error);
-      // Even if n8n returns an error or is unreachable, we might want to simulate success for UX or show error
       setStatus('error');
-      // Simulate success for demo purposes if needed, but here we'll show error
-      setTimeout(() => setStatus('idle'), 3000);
     }
   };
 
@@ -103,25 +100,7 @@ export default function ContactForm() {
 
   return (
     <div className="space-y-6 md:space-y-8">
-      {/* Method Selector */}
-      <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10">
-        <button
-          onClick={() => setMethod('email')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 md:py-3 rounded-xl transition-all text-sm ${
-            method === 'email' ? 'bg-white text-black font-bold' : 'text-zinc-400 hover:text-white'
-          }`}
-        >
-          <Mail className="w-4 h-4" /> Email
-        </button>
-        <button
-          onClick={() => setMethod('whatsapp')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 md:py-3 rounded-xl transition-all text-sm ${
-            method === 'whatsapp' ? 'bg-white text-black font-bold' : 'text-zinc-400 hover:text-white'
-          }`}
-        >
-          <MessageSquare className="w-4 h-4" /> WhatsApp
-        </button>
-      </div>
+      {/* Contato por Email */}
 
       <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
         <div className="space-y-2">
@@ -194,8 +173,27 @@ export default function ContactForm() {
           ></textarea>
         </div>
 
+        {/* Erro inline persistente */}
+        {status === 'error' && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm"
+          >
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>Erro ao enviar. Verifique sua conexão e tente novamente.</span>
+            <button
+              type="button"
+              onClick={() => setStatus('idle')}
+              className="ml-auto text-red-400 hover:text-red-200 text-xs font-bold uppercase tracking-wide"
+            >
+              Fechar
+            </button>
+          </motion.div>
+        )}
+
         <button 
-          disabled={status === 'sending'}
+          disabled={status === 'sending' || status === 'error'}
           type="submit"
           className="group w-full bg-white text-black font-bold py-4 md:py-5 rounded-2xl flex items-center justify-center gap-3 transition-all hover:bg-zinc-200 disabled:opacity-50 text-sm md:text-base"
         >

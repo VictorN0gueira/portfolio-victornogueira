@@ -1,12 +1,12 @@
 import { Suspense, lazy } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { motion, useScroll, useSpring, AnimatePresence } from 'motion/react';
+import type { ComponentProps } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import SEO from './components/SEO';
 import CustomCursor from './components/CustomCursor';
 
-// Lazy loading components below the fold for better performance
 const Stats = lazy(() => import('./components/Stats'));
 const About = lazy(() => import('./components/About'));
 const Process = lazy(() => import('./components/Process'));
@@ -19,22 +19,41 @@ const Footer = lazy(() => import('./components/Footer'));
 const Chatbot = lazy(() => import('./components/Chatbot'));
 const BlogPage = lazy(() => import('./components/BlogPage'));
 
-const revealProps: any = {
+const revealProps: ComponentProps<typeof motion.div> = {
   initial: { opacity: 0, y: 30 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-100px" },
   transition: { duration: 0.8, ease: "easeOut" }
 };
 
+/* Skeleton de carregamento reutilizável */
+function SectionSkeleton() {
+  return (
+    <div className="py-24 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-2 border-zinc-200 border-t-zinc-500 rounded-full animate-spin" />
+        <span className="text-xs text-zinc-400 uppercase tracking-widest font-medium">Carregando...</span>
+      </div>
+    </div>
+  );
+}
+
 function HomePage() {
   return (
     <>
       <SEO />
       <Header />
-      <main>
+      {/* Skip-to-content para acessibilidade */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[200] focus:px-6 focus:py-3 focus:bg-black focus:text-white focus:rounded-full focus:text-sm focus:font-bold focus:shadow-2xl"
+      >
+        Pular para o conteúdo
+      </a>
+      <main id="main-content">
         <Hero />
         
-        <Suspense fallback={<div className="h-32 flex items-center justify-center opacity-50">Carregando...</div>}>
+        <Suspense fallback={<SectionSkeleton />}>
           <motion.div {...revealProps}>
             <Stats />
           </motion.div>
@@ -77,7 +96,6 @@ function HomePage() {
   );
 }
 
-// Page transition wrapper
 const pageTransition = {
   initial: { opacity: 0 },
   animate: { opacity: 1 },
@@ -87,6 +105,7 @@ const pageTransition = {
 
 export default function App() {
   const location = useLocation();
+  const isBlog = location.pathname === '/blog';
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -96,9 +115,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-brand-white text-zinc-900 font-sans selection:bg-black selection:text-white">
-      {/* Scroll Progress Bar */}
+      {/* Scroll Progress Bar — cor adaptativa por rota */}
       <motion.div
-        className="fixed top-0 left-0 right-0 h-1 bg-black z-100 origin-left"
+        className={`fixed top-0 left-0 right-0 h-1 z-100 origin-left ${
+          isBlog ? 'bg-white/80' : 'bg-black'
+        }`}
         style={{ scaleX }}
       />
 

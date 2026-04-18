@@ -38,7 +38,7 @@ const steps = [
 
 export default function Process() {
   return (
-    <section className="py-32 px-6 md:px-12 bg-white relative overflow-hidden">
+    <section className="py-32 px-6 md:px-12 bg-zinc-50 relative overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -64,7 +64,7 @@ export default function Process() {
 
         <div className="grid md:grid-cols-4 gap-8 md:gap-6 relative">
           {/* Connecting line - desktop only */}
-          <div className="hidden md:block absolute top-24 left-[12.5%] right-[12.5%] h-px bg-linear-to-r from-zinc-200 via-zinc-300 to-zinc-200" />
+          <div className="hidden md:block absolute top-24 left-[12.5%] right-[12.5%] h-px bg-linear-to-r from-transparent via-zinc-300 to-transparent" />
 
           {steps.map((step, index) => (
             <motion.div

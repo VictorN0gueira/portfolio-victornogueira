@@ -7,7 +7,7 @@ interface SEOProps {
   image?: string;
 }
 
-const BASE_URL = 'https://victornogueira.dev';
+const BASE_URL = 'https://vnone.com.br';
 const DEFAULT_IMAGE = 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FLogo%20-%20s.%20fundo.png&version_id=null';
 
 const defaults = {

@@ -37,7 +37,7 @@ const PARTNERS = [
 
 export default function Partners() {
   // Triple the items to ensure seamless loop
-  const duplicatedPartners = [...PARTNERS, ...PARTNERS, ...PARTNERS, ...PARTNERS];
+  const duplicatedPartners = [...PARTNERS, ...PARTNERS];
 
   return (
     <section className="py-32 bg-white overflow-hidden border-y border-zinc-100">
@@ -98,8 +98,11 @@ export default function Partners() {
                 <img 
                   src={partner.logo} 
                   alt={partner.name}
-                  className="max-h-full w-auto filter grayscale opacity-30 group-hover:opacity-100 group-hover:grayscale-0 transition-all duration-700 object-contain"
+                  className="max-h-full w-auto filter grayscale opacity-50 group-hover:opacity-100 group-hover:grayscale-0 transition-all duration-700 object-contain"
                   referrerPolicy="no-referrer"
+                  loading="lazy"
+                  width={160}
+                  height={80}
                 />
               </div>
               <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-300 group-hover:text-zinc-900 transition-colors duration-500">

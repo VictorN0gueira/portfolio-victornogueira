@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const LOGO_URL = "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FLogo%20-%20s.%20fundo.png&version_id=null";
 
@@ -9,7 +9,23 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const isHome = location.pathname === '/';
+
+  const handleAnchorClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    if (isHome) {
+      const el = document.querySelector(href);
+      el?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      navigate('/');
+      setTimeout(() => {
+        const el = document.querySelector(href);
+        el?.scrollIntoView({ behavior: 'smooth' });
+      }, 400);
+    }
+    setIsMenuOpen(false);
+  }, [isHome, navigate]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -75,11 +91,11 @@ export default function Header() {
                   </Link>
                 );
               }
-              const anchorHref = isHome ? item.href : `/${item.href}`;
               return (
                 <a 
                   key={item.name}
-                  href={anchorHref}
+                  href={item.href}
+                  onClick={(e) => handleAnchorClick(e, item.href)}
                   className={`text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 relative group ${
                     isScrolled ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'
                   }`}
@@ -96,7 +112,8 @@ export default function Header() {
           <div className={`flex items-center gap-6 relative ${isMenuOpen ? 'z-[70]' : 'z-50'}`}>
             <a 
               href="#contato" 
-              className={`hidden sm:block text-xs font-bold uppercase tracking-widest px-8 py-3 rounded-full transition-all transform hover:scale-105 active:scale-95 shadow-lg ${
+              onClick={(e) => handleAnchorClick(e, '#contato')}
+              className={`shimmer hidden sm:block text-xs font-bold uppercase tracking-widest px-8 py-3 rounded-full transition-all transform hover:scale-105 active:scale-95 shadow-lg ${
                 isScrolled || isMenuOpen
                   ? 'bg-white text-black hover:bg-zinc-200 shadow-white/5' 
                   : 'bg-black text-white hover:bg-zinc-800 shadow-black/10'
@@ -173,8 +190,8 @@ export default function Header() {
                       </Link>
                     ) : (
                       <a
-                        href={isHome ? item.href : `/${item.href}`}
-                        onClick={() => setIsMenuOpen(false)}
+                        href={item.href}
+                        onClick={(e) => handleAnchorClick(e, item.href)}
                         className="text-3xl md:text-4xl font-bold tracking-tighter text-white hover:text-zinc-300 transition-colors block italic"
                       >
                         {item.name}

@@ -38,9 +38,9 @@ export default function Hero() {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="p-1 px-3 rounded-full bg-black/5 border border-black/10 backdrop-blur-sm shadow-sm"
           >
-            <h2 className="text-zinc-500 font-medium tracking-[0.2em] uppercase text-[10px] md:text-xs">
+            <span className="text-zinc-500 font-medium tracking-[0.2em] uppercase text-[10px] md:text-xs">
               Soluções em Automação & IA
-            </h2>
+            </span>
           </motion.div>
 
           <motion.div
@@ -57,7 +57,7 @@ export default function Hero() {
         </div>
 
         <h1 className="text-5xl sm:text-7xl md:text-9xl font-bold tracking-tighter leading-none mb-8 font-display italic flex flex-col items-center select-none whitespace-nowrap">
-          <span className="block text-gradient">Victor Nogueira.</span>
+          <span className="block text-gradient pr-2">Victor Nogueira</span>
           <span className="relative flex w-full justify-center overflow-hidden text-center md:pb-4 md:pt-1 not-italic text-zinc-400 min-h-[1.1em]">
             &nbsp;
             <AnimatePresence mode="popLayout">
@@ -107,16 +107,7 @@ export default function Hero() {
             </motion.div>
           </a>
           
-          <a 
-            href="https://wa.me/5581987348633" 
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group w-full sm:w-auto border border-zinc-200 bg-white/50 backdrop-blur-sm text-zinc-900 px-8 py-4 md:py-5 rounded-full font-medium hover:border-black transition-all flex items-center justify-center gap-3 active:scale-95"
-          >
-            WhatsApp
-            <MessageCircle className="w-5 h-5 text-green-500 group-hover:fill-green-500/10" />
-          </a>
-          
+
           <div className="flex items-center gap-4">
             <a 
               href="https://www.linkedin.com/in/victornogueira-vn" 

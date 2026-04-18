@@ -20,7 +20,28 @@ export default function About() {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <h3 className="text-4xl md:text-6xl font-bold tracking-tight mb-8 font-display italic">Sobre mim</h3>
+          {/* Foto com efeito premium */}
+          <div className="relative mb-10 flex items-start gap-8">
+            <div className="relative shrink-0 hidden sm:block">
+              <div className="w-28 h-28 md:w-36 md:h-36 rounded-3xl overflow-hidden ring-4 ring-zinc-100 shadow-2xl shadow-black/10">
+                <img
+                  src="/victor-photo.jpg"
+                  alt="Victor Nogueira"
+                  className="w-full h-full object-cover object-top grayscale hover:grayscale-0 transition-all duration-700"
+                  loading="lazy"
+                  width={144}
+                  height={144}
+                />
+              </div>
+              {/* Decorative dot */}
+              <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-black rounded-full border-4 border-white" />
+            </div>
+            <div>
+              <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 font-display italic">Sobre mim</h2>
+              <p className="text-sm text-zinc-400 font-medium uppercase tracking-widest">Recife, PE · Remoto Global</p>
+            </div>
+          </div>
+
           <div className="space-y-8 text-lg md:text-xl text-zinc-500 leading-relaxed font-light mb-12">
             <p>
               Especialista em transformar processos manuais e complexos em fluxos <span className="text-black font-medium">automatizados e inteligentes</span>. 
@@ -49,13 +70,13 @@ export default function About() {
           className="relative"
         >
           <div className="bg-[#F8F9FA] p-10 md:p-16 rounded-[3rem] border border-zinc-100 relative z-10">
-            <h4 className="text-2xl font-bold mb-10 font-display">Minhas Especialidades</h4>
+            <h3 className="text-2xl font-bold mb-10 font-display">Minhas Especialidades</h3>
             <div className="space-y-8">
               {specialties.map((skill) => (
                 <div key={skill.id} className="group flex items-start gap-6 border-b border-zinc-200 pb-8 last:border-0 last:pb-0">
                   <span className="text-zinc-300 font-mono text-lg transition-colors group-hover:text-black">{skill.id}</span>
                   <div>
-                    <h5 className="font-bold text-zinc-900 group-hover:text-black transition-colors mb-1">{skill.title}</h5>
+                    <h4 className="font-bold text-zinc-900 group-hover:text-black transition-colors mb-1">{skill.title}</h4>
                     <p className="text-sm text-zinc-400">{skill.desc}</p>
                   </div>
                 </div>
