@@ -21,8 +21,8 @@ export default function About() {
           transition={{ duration: 0.8 }}
         >
           {/* Foto com efeito premium */}
-          <div className="relative mb-10 flex items-start gap-8">
-            <div className="relative shrink-0 hidden sm:block">
+          <div className="relative mb-10 flex items-center sm:items-start gap-6 sm:gap-8">
+            <div className="relative shrink-0">
               <div className="w-28 h-28 md:w-36 md:h-36 rounded-3xl overflow-hidden ring-4 ring-zinc-100 shadow-2xl shadow-black/10">
                 <img
                   src="/victor-photo.jpg"
