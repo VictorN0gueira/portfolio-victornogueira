@@ -115,6 +115,7 @@ export default function Hero() {
               rel="noopener noreferrer"
               className="p-3 md:p-4 rounded-full border border-zinc-200 bg-white/50 backdrop-blur-sm hover:border-black hover:text-black text-zinc-400 transition-all hover:scale-110 shadow-sm"
               title="LinkedIn"
+              aria-label="Perfil no LinkedIn de Victor Nogueira"
             >
               <Linkedin className="w-5 h-5" />
             </a>
@@ -124,6 +125,7 @@ export default function Hero() {
               rel="noopener noreferrer"
               className="p-3 md:p-4 rounded-full border border-zinc-200 bg-white/50 backdrop-blur-sm hover:border-black hover:text-black text-zinc-400 transition-all hover:scale-110 shadow-sm"
               title="GitHub"
+              aria-label="Repositório no GitHub de Victor Nogueira"
             >
               <Github className="w-5 h-5" />
             </a>
