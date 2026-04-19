@@ -100,8 +100,33 @@ export default function ContactForm() {
 
   return (
     <div className="space-y-6 md:space-y-8">
-      {/* Contato por Email */}
-
+      {/* Method Toggle */}
+      <div className="flex p-1 bg-white/5 border border-white/10 rounded-2xl w-fit">
+        <button
+          type="button"
+          onClick={() => setMethod('email')}
+          className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-[10px] md:text-xs uppercase tracking-widest transition-all ${
+            method === 'email' 
+              ? 'bg-white text-black shadow-sm' 
+              : 'text-zinc-500 hover:text-zinc-300'
+          }`}
+        >
+          <Mail className="w-4 h-4" />
+          Por Email
+        </button>
+        <button
+          type="button"
+          onClick={() => setMethod('whatsapp')}
+          className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-[10px] md:text-xs uppercase tracking-widest transition-all ${
+            method === 'whatsapp' 
+              ? 'bg-emerald-500 text-white shadow-sm' 
+              : 'text-zinc-500 hover:text-zinc-300'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          Por WhatsApp
+        </button>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
         <div className="space-y-2">
           <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-4">Nome</label>
