@@ -1,5 +1,7 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
+
+const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 import { Search, PenTool, Zap, Rocket, ChevronRight } from 'lucide-react';
 import { PaperPlane } from './FloatingIcons';
 
@@ -51,9 +53,9 @@ export default function Process() {
   });
 
   // Formas geométricas com parallax — movem em velocidades diferentes
-  const circleY1 = useTransform(scrollYProgress, [0, 1], ['15%', '-15%']);
-  const circleY2 = useTransform(scrollYProgress, [0, 1], ['-10%', '20%']);
-  const planeY   = useTransform(scrollYProgress, [0, 1], ['5%', '-25%']);
+  const circleY1 = useTransform(scrollYProgress, [0, 1], isTouchDevice ? ['0%', '0%'] : ['15%', '-15%']);
+  const circleY2 = useTransform(scrollYProgress, [0, 1], isTouchDevice ? ['0%', '0%'] : ['-10%', '20%']);
+  const planeY   = useTransform(scrollYProgress, [0, 1], isTouchDevice ? ['0%', '0%'] : ['5%', '-25%']);
 
   return (
     <section

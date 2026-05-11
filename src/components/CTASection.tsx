@@ -4,6 +4,7 @@ import { MessageCircle, ArrowUpRight, Clock, MapPin } from 'lucide-react';
 import { Cursor, Sparkle } from './FloatingIcons';
 
 const WA_LINK = "https://wa.me/5581987348633?text=Ol%C3%A1%2C+Victor!+Quero+agendar+uma+conversa+sobre+automa%C3%A7%C3%B5es.";
+const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 
 export default function CTASection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -13,10 +14,10 @@ export default function CTASection() {
     offset: ['start end', 'end start'],
   });
 
-  const cursorY  = useTransform(scrollYProgress, [0, 1], ['10%', '-20%']);
-  const sparkleY = useTransform(scrollYProgress, [0, 1], ['-5%', '15%']);
-  const circle1Y = useTransform(scrollYProgress, [0, 1], ['8%', '-12%']);
-  const circle2Y = useTransform(scrollYProgress, [0, 1], ['-8%', '10%']);
+  const cursorY  = useTransform(scrollYProgress, [0, 1], isTouchDevice ? ['0%', '0%'] : ['10%', '-20%']);
+  const sparkleY = useTransform(scrollYProgress, [0, 1], isTouchDevice ? ['0%', '0%'] : ['-5%', '15%']);
+  const circle1Y = useTransform(scrollYProgress, [0, 1], isTouchDevice ? ['0%', '0%'] : ['8%', '-12%']);
+  const circle2Y = useTransform(scrollYProgress, [0, 1], isTouchDevice ? ['0%', '0%'] : ['-8%', '10%']);
 
   return (
     <section ref={sectionRef} className="py-32 px-6 md:px-12 bg-zinc-950 relative overflow-hidden">

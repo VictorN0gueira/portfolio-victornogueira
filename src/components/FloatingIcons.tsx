@@ -5,13 +5,15 @@ interface IconProps {
   style?: React.CSSProperties;
 }
 
+const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
 // Avião de papel outline — inspirado no criacao.cc
 export function PaperPlane({ className = '', style }: IconProps) {
   return (
     <motion.div
       className={`pointer-events-none select-none ${className}`}
       style={style}
-      animate={{ y: [0, -18, 0], rotate: [-18, -12, -18] }}
+      animate={isTouchDevice ? undefined : { y: [0, -18, 0], rotate: [-18, -12, -18] }}
       transition={{ repeat: Infinity, duration: 7, ease: 'easeInOut' }}
     >
       <svg viewBox="0 0 100 84" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
@@ -45,7 +47,7 @@ export function Cursor({ className = '', style }: IconProps) {
     <motion.div
       className={`pointer-events-none select-none ${className}`}
       style={style}
-      animate={{ y: [0, 12, 0], x: [0, 6, 0] }}
+      animate={isTouchDevice ? undefined : { y: [0, 12, 0], x: [0, 6, 0] }}
       transition={{ repeat: Infinity, duration: 5, ease: 'easeInOut' }}
     >
       <svg viewBox="0 0 52 68" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
@@ -61,7 +63,7 @@ export function Sparkle({ className = '', style }: IconProps) {
     <motion.div
       className={`pointer-events-none select-none ${className}`}
       style={style}
-      animate={{ rotate: [0, 180, 360], scale: [1, 1.1, 1] }}
+      animate={isTouchDevice ? undefined : { rotate: [0, 180, 360], scale: [1, 1.1, 1] }}
       transition={{ repeat: Infinity, duration: 10, ease: 'linear' }}
     >
       <svg viewBox="0 0 60 60" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
@@ -77,7 +79,7 @@ export function RotatingArrow({ className = '', style }: IconProps) {
     <motion.div
       className={`pointer-events-none select-none ${className}`}
       style={style}
-      animate={{ rotate: [0, 360] }}
+      animate={isTouchDevice ? undefined : { rotate: [0, 360] }}
       transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
     >
       <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">

@@ -4,6 +4,8 @@ import { Github, Linkedin, ArrowUpRight, ChevronDown } from 'lucide-react';
 import HeroBackground from './HeroBackground';
 import { PaperPlane, Sparkle, RotatingArrow } from './FloatingIcons';
 
+const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
 export default function Hero() {
   const [titleNumber, setTitleNumber] = useState(0);
   const titles = useMemo(
@@ -12,10 +14,9 @@ export default function Hero() {
   );
 
   const { scrollY } = useScroll();
-  // Ícones decorativos se movem mais devagar que o scroll — efeito parallax
-  const iconY1 = useTransform(scrollY, [0, 600], [0, -80]);
-  const iconY2 = useTransform(scrollY, [0, 600], [0, -40]);
-  const iconY3 = useTransform(scrollY, [0, 600], [0, -120]);
+  const iconY1 = useTransform(scrollY, [0, 600], isTouchDevice ? [0, 0] : [0, -80]);
+  const iconY2 = useTransform(scrollY, [0, 600], isTouchDevice ? [0, 0] : [0, -40]);
+  const iconY3 = useTransform(scrollY, [0, 600], isTouchDevice ? [0, 0] : [0, -120]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -88,9 +89,9 @@ export default function Hero() {
                   <motion.span
                     key={index}
                     className="absolute"
-                    initial={{ opacity: 0, y: 80, filter: "blur(10px)" }}
-                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, y: -80, filter: "blur(10px)" }}
+                    initial={{ opacity: 0, y: 80, filter: isTouchDevice ? 'blur(0px)' : 'blur(10px)' }}
+                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    exit={{ opacity: 0, y: -80, filter: isTouchDevice ? 'blur(0px)' : 'blur(10px)' }}
                     transition={{
                       type: "spring",
                       stiffness: 70,

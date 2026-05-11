@@ -1,5 +1,7 @@
 import { motion } from 'motion/react';
 
+const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
 export default function HeroBackground() {
   return (
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -13,17 +15,12 @@ export default function HeroBackground() {
         }}
       />
 
-      {/* Subtle light beam effect */}
+      {/* Subtle light beam — static on mobile */}
       <motion.div
         className="absolute inset-0 bg-radial-[at_50%_50%] from-black/2 via-transparent to-transparent"
-        animate={{
-          opacity: [0.4, 0.6, 0.4],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          repeatType: "reverse"
-        }}
+        style={{ opacity: 0.5 }}
+        animate={isTouchDevice ? undefined : { opacity: [0.4, 0.6, 0.4] }}
+        transition={{ duration: 8, repeat: Infinity, repeatType: 'reverse' }}
       />
 
       {/* Tech Grid Pattern */}
@@ -40,51 +37,33 @@ export default function HeroBackground() {
         }}
       />
 
-      {/* Ambient light sources (Subtle blobs) */}
+      {/* Ambient blobs — static on mobile (blur+scale animation is very expensive on mobile GPU) */}
       <motion.div
         className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full bg-zinc-200/50 blur-[120px]"
-        animate={{
-          opacity: [0.3, 0.5, 0.3],
-          scale: [1, 1.1, 1],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          repeatType: "reverse",
-        }}
+        style={{ opacity: 0.4 }}
+        animate={isTouchDevice ? undefined : { opacity: [0.3, 0.5, 0.3], scale: [1, 1.1, 1] }}
+        transition={{ duration: 10, repeat: Infinity, repeatType: 'reverse' }}
       />
 
       <motion.div
         className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] rounded-full bg-zinc-200/30 blur-[100px]"
-        animate={{
-          opacity: [0.2, 0.4, 0.2],
-          scale: [1, 1.2, 1],
-        }}
-        transition={{
-          duration: 12,
-          repeat: Infinity,
-          repeatType: "reverse",
-          delay: 2
-        }}
+        style={{ opacity: 0.3 }}
+        animate={isTouchDevice ? undefined : { opacity: [0.2, 0.4, 0.2], scale: [1, 1.2, 1] }}
+        transition={{ duration: 12, repeat: Infinity, repeatType: 'reverse', delay: 2 }}
       />
 
-      {/* Diagonal highlight animation */}
-      <motion.div
-        className="absolute -inset-full h-[300%] w-[200%] opacity-[0.03]"
-        style={{
-          background: 'linear-gradient(115deg, transparent 30%, rgba(0, 0, 0, 0.8) 40%, rgba(0, 0, 0, 0.4) 50%, transparent 60%)',
-          transform: 'rotate(-15deg)',
-        }}
-        animate={{
-          left: ['-100%', '100%'],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          repeatDelay: 5,
-          ease: "easeInOut"
-        }}
-      />
+      {/* Diagonal sweep — desktop only (animates transform, not left) */}
+      {!isTouchDevice && (
+        <motion.div
+          className="absolute -inset-full h-[300%] w-[200%] opacity-[0.03]"
+          style={{
+            background: 'linear-gradient(115deg, transparent 30%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.4) 50%, transparent 60%)',
+            rotate: '-15deg',
+          }}
+          animate={{ x: ['-50%', '150%'] }}
+          transition={{ duration: 10, repeat: Infinity, repeatDelay: 5, ease: 'easeInOut' }}
+        />
+      )}
     </div>
   );
 }
