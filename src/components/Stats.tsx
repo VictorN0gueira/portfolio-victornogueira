@@ -1,0 +1,119 @@
+import { useRef, useEffect } from 'react';
+import { motion, useInView, useSpring, useTransform } from 'motion/react';
+import { Clock, Zap, Building2, TrendingUp } from 'lucide-react';
+
+const STATS = [
+  {
+    label: "Horas Economizadas / Mês",
+    value: "500h+",
+    icon: Clock,
+    description: "Redução drástica em tarefas manuais repetitivas"
+  },
+  {
+    label: "Fluxos de Automação Ativos",
+    value: "100+",
+    icon: Zap,
+    description: "Workflows inteligentes rodando 24/7"
+  },
+  {
+    label: "Empresas Impactadas",
+    value: "10+",
+    icon: Building2,
+    description: "De pequenos negócios a indústrias"
+  },
+  {
+    label: "Aumento em Eficiência",
+    value: "85%",
+    icon: TrendingUp,
+    description: "Melhoria média nos processos internos"
+  }
+];
+
+function AnimatedNumber({ value }: { value: string }) {
+  const match = value.match(/(\d+)(.*)/);
+  if (!match) return <>{value}</>;
+  
+  const num = parseInt(match[1], 10);
+  const suffix = match[2];
+  
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "0px 0px -50px 0px" });
+  
+  const spring = useSpring(0, { duration: 2500, bounce: 0 });
+  
+  useEffect(() => {
+    if (isInView) {
+      spring.set(num);
+    }
+  }, [isInView, num, spring]);
+  
+  const display = useTransform(spring, (current) => Math.round(current));
+  
+  return (
+    <span ref={ref} className="inline-flex">
+      <motion.span>{display}</motion.span>
+      <span>{suffix}</span>
+    </span>
+  );
+}
+
+export default function Stats() {
+  const sectionRef = useRef(null);
+  const isInView = useInView(sectionRef, { once: true, margin: "0px 0px -100px 0px" });
+
+  return (
+    <section ref={sectionRef} className="py-24 bg-zinc-950 text-white overflow-hidden relative">
+      {/* Formas geométricas crisp — estilo criacao.cc */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Semicírculo grande — cortado na base direita */}
+        <div className="absolute -bottom-48 right-[10%] w-[420px] h-[420px] rounded-full bg-white/[0.035]" />
+        {/* Círculo médio — cortado no topo esquerdo */}
+        <div className="absolute -top-36 left-[15%] w-[300px] h-[300px] rounded-full bg-white/[0.025]" />
+        {/* Círculo pequeno — canto inferior esquerdo */}
+        <div className="absolute bottom-[5%] left-[5%] w-[180px] h-[180px] rounded-full border border-white/[0.06]" />
+      </div>
+
+      {/* Background Glow difuso — mantido */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-white/5 blur-[120px] rounded-full pointer-events-none" />
+
+      <motion.div 
+        className="max-w-7xl mx-auto px-6 md:px-12 relative z-10"
+        initial={{ opacity: 0, y: 70 }}
+        animate={isInView ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+      >
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-12">
+          {STATS.map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1, duration: 0.8 }}
+              className="flex flex-col items-center text-center group"
+            >
+              <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group-hover:bg-white/10 group-hover:border-white/20 group-hover:-translate-y-2">
+                <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                whileInView={{ scale: 1, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 + 0.3, type: "spring", stiffness: 100 }}
+                className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter mb-2"
+              >
+                <AnimatedNumber value={stat.value} />
+              </motion.div>
+              <span className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">
+                {stat.label}
+              </span>
+              <p className="text-sm text-zinc-500 max-w-[180px] leading-relaxed opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-500">
+                {stat.description}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+    </section>
+  );
+}

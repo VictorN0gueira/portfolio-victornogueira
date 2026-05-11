@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://vnone.com.br/sitemap.xml
