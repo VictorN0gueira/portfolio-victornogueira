@@ -119,7 +119,7 @@ export default function Process() {
 
         {/* ── Cards + setas conectoras ── */}
         {/* Mobile: scroll horizontal com snap | Desktop: flex com largura igual */}
-        <div className="flex items-stretch gap-0 overflow-x-auto pb-4 md:pb-0 snap-x snap-mandatory md:snap-none scrollbar-hide -mx-6 md:mx-0 px-6 md:px-0">
+        <div className="flex items-stretch gap-0 overflow-x-auto pb-4 md:pb-0 snap-x snap-proximity md:snap-none scrollbar-hide overscroll-x-contain touch-pan-x md:touch-auto -mx-6 md:mx-0 px-6 md:px-0">
           {steps.map((step, index) => (
             <div key={step.number} className="flex items-center gap-0 flex-shrink-0 md:flex-shrink md:flex-1">
 

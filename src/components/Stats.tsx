@@ -2,6 +2,8 @@ import { useRef, useEffect } from 'react';
 import { motion, useInView, useSpring, useTransform } from 'motion/react';
 import { Clock, Zap, Building2, TrendingUp } from 'lucide-react';
 
+const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
 const STATS = [
   {
     label: "Horas Economizadas / Mês",
@@ -32,23 +34,23 @@ const STATS = [
 function AnimatedNumber({ value }: { value: string }) {
   const match = value.match(/(\d+)(.*)/);
   if (!match) return <>{value}</>;
-  
+
   const num = parseInt(match[1], 10);
   const suffix = match[2];
-  
+
+  // Mobile: skip spring entirely — shows final value immediately, no JS animation loop
+  if (isTouchDevice) return <>{num}{suffix}</>;
+
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "0px 0px -50px 0px" });
-  
+  const isInView = useInView(ref, { once: true, margin: '0px 0px -50px 0px' });
   const spring = useSpring(0, { duration: 2500, bounce: 0 });
-  
+
   useEffect(() => {
-    if (isInView) {
-      spring.set(num);
-    }
+    if (isInView) spring.set(num);
   }, [isInView, num, spring]);
-  
+
   const display = useTransform(spring, (current) => Math.round(current));
-  
+
   return (
     <span ref={ref} className="inline-flex">
       <motion.span>{display}</motion.span>
@@ -96,10 +98,10 @@ export default function Stats() {
                 <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
-                whileInView={{ scale: 1, opacity: 1 }}
+                initial={{ opacity: 0, y: isTouchDevice ? 0 : 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1 + 0.3, type: "spring", stiffness: 100 }}
+                transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
                 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter mb-2"
               >
                 <AnimatedNumber value={stat.value} />

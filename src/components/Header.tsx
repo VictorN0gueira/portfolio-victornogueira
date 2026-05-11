@@ -165,7 +165,7 @@ export default function Header() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMenuOpen(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+              className="absolute inset-0 bg-black/70"
               aria-hidden="true"
             />
 
@@ -173,7 +173,7 @@ export default function Header() {
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              transition={{ type: 'tween', duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
               style={{ willChange: 'transform' }}
               className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-zinc-950 border-l border-white/10 p-8 md:p-12 flex flex-col"
               role="dialog"
@@ -181,13 +181,8 @@ export default function Header() {
             >
               <nav className="flex flex-col gap-6 mt-16 md:mt-20" aria-label="Navegação mobile">
                 <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">Navegação</p>
-                {navItems.map((item, idx) => (
-                  <motion.div
-                    key={item.name}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 + idx * 0.1 }}
-                  >
+                {navItems.map((item) => (
+                  <div key={item.name}>
                     {item.isRoute ? (
                       <Link
                         to={item.href}
@@ -205,16 +200,11 @@ export default function Header() {
                         {item.name}
                       </a>
                     )}
-                  </motion.div>
+                  </div>
                 ))}
               </nav>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="mt-auto space-y-6 md:space-y-8"
-              >
+              <div className="mt-auto space-y-6 md:space-y-8">
                 <div className="space-y-3">
                   <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">Contato</p>
                   <a
@@ -236,7 +226,7 @@ export default function Header() {
                 <p className="text-[9px] md:text-[10px] text-zinc-500 uppercase tracking-widest text-center">
                   © 2026 Victor Nogueira
                 </p>
-              </motion.div>
+              </div>
 
               <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none -z-10 opacity-30" aria-hidden="true">
                 <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.15)_0%,_transparent_70%)] rounded-full" />
