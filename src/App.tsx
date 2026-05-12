@@ -6,6 +6,7 @@ import Header from './components/Header';
 import Hero from './components/Hero';
 import SEO from './components/SEO';
 import CustomCursor from './components/CustomCursor';
+import AccessibilityWidget from './components/AccessibilityWidget';
 
 const Stats = lazy(() => import('./components/Stats'));
 const About = lazy(() => import('./components/About'));
@@ -163,6 +164,7 @@ export default function App() {
       </AnimatePresence>
 
       <CustomCursor />
+      <AccessibilityWidget />
     </div>
   );
 }
