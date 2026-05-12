@@ -60,8 +60,7 @@ export default function ContactForm() {
       } else {
         throw new Error('Failed to send');
       }
-    } catch (error) {
-      console.error('Submission error:', error);
+    } catch {
       setStatus('error');
     }
   };

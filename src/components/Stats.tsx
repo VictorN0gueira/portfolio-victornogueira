@@ -1,8 +1,7 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, memo } from 'react';
 import { motion, useInView, useSpring, useTransform } from 'motion/react';
 import { Clock, Zap, Building2, TrendingUp } from 'lucide-react';
-
-const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+import { isTouchDevice } from '../lib/constants';
 
 const STATS = [
   {
@@ -31,7 +30,7 @@ const STATS = [
   }
 ];
 
-function AnimatedNumber({ value }: { value: string }) {
+const AnimatedNumber = memo(function AnimatedNumber({ value }: { value: string }) {
   const match = value.match(/(\d+)(.*)/);
   if (!match) return <>{value}</>;
 
@@ -57,7 +56,7 @@ function AnimatedNumber({ value }: { value: string }) {
       <span>{suffix}</span>
     </span>
   );
-}
+});
 
 export default function Stats() {
   const sectionRef = useRef(null);

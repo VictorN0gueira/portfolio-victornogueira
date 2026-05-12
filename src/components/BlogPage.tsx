@@ -293,22 +293,28 @@ export default function BlogPage() {
   const [catFilter, setCatFilter]     = useState<CatFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchNews = useCallback(async (forceRefresh = false) => {
+  const fetchNews = useCallback(async (forceRefresh = false, signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
     if (forceRefresh) localStorage.removeItem('blog_news_cache');
     try {
       const result = await getNewsArticles();
+      if (signal?.aborted) return;
       setArticles(result.articles);
       setDataSource(result.source);
     } catch (err) {
+      if (signal?.aborted) return;
       setError(err instanceof Error ? err.message : 'Erro ao carregar notícias');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchNews(); }, [fetchNews]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchNews(false, controller.signal);
+    return () => controller.abort();
+  }, [fetchNews]);
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const filteredArticles = useMemo(() => {
@@ -425,7 +431,6 @@ export default function BlogPage() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               <input
                 id="search"
-                aria-label="Buscar artigos"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Buscar artigos..."

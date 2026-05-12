@@ -1,7 +1,6 @@
 import { Github, Linkedin, Instagram, ArrowUpRight, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const LOGO_URL = "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FLogo%20-%20s.%20fundo.png&version_id=null";
+import { LOGO_URL } from '../lib/constants';
 
 const socialLinks = [
   { icon: Linkedin, label: 'LinkedIn', href: 'https://www.linkedin.com/in/victornogueira-vn' },

@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-
-const LOGO_URL = "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FLogo%20-%20s.%20fundo.png&version_id=null";
+import { LOGO_URL } from '../lib/constants';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -28,8 +27,17 @@ export default function Header() {
   }, [isHome, navigate]);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -42,9 +50,10 @@ export default function Header() {
     return () => document.removeEventListener('keydown', handler);
   }, [isMenuOpen]);
 
-  // Prevent body scroll when menu is open
+  // Prevent body scroll when menu is open — restore on unmount too
   useEffect(() => {
-    document.body.style.overflow = isMenuOpen ? 'hidden' : 'unset';
+    document.body.style.overflow = isMenuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
   }, [isMenuOpen]);
 
   const navItems = [
@@ -217,7 +226,7 @@ export default function Header() {
 
                 <a
                   href="#contato"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={(e) => handleAnchorClick(e, '#contato')}
                   className="w-full bg-white text-black px-8 md:px-12 py-4 md:py-5 rounded-full font-bold uppercase tracking-widest text-center block text-xs md:text-sm shadow-xl shadow-white/5 hover:bg-zinc-200 transition-all"
                 >
                   Vamos Conversar

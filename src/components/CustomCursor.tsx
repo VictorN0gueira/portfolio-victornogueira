@@ -16,35 +16,31 @@ export default function CustomCursor() {
   const dotYSpring = useSpring(cursorY, dotSpringConfig);
 
   useEffect(() => {
-    // Respeitar prefers-reduced-motion
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced) return;
 
+    let rafId: number;
+
     const updateMousePosition = (e: MouseEvent) => {
-      cursorX.set(e.clientX);
-      cursorY.set(e.clientY);
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        cursorX.set(e.clientX);
+        cursorY.set(e.clientY);
+        const target = e.target as HTMLElement;
+        setIsHovering(
+          target.tagName === 'A' ||
+          target.tagName === 'BUTTON' ||
+          target.closest('a') !== null ||
+          target.closest('button') !== null
+        );
+      });
     };
 
-    const handleMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName.toLowerCase() === 'a' ||
-        target.tagName.toLowerCase() === 'button' ||
-        target.closest('a') ||
-        target.closest('button')
-      ) {
-        setIsHovering(true);
-      } else {
-        setIsHovering(false);
-      }
-    };
-
-    window.addEventListener('mousemove', updateMousePosition);
-    window.addEventListener('mouseover', handleMouseOver);
+    window.addEventListener('mousemove', updateMousePosition, { passive: true });
 
     return () => {
       window.removeEventListener('mousemove', updateMousePosition);
-      window.removeEventListener('mouseover', handleMouseOver);
+      cancelAnimationFrame(rafId);
     };
   }, [cursorX, cursorY]);
 

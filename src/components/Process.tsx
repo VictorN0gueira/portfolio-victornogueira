@@ -1,9 +1,8 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
-
-const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 import { Search, PenTool, Zap, Rocket, ChevronRight } from 'lucide-react';
 import { PaperPlane } from './FloatingIcons';
+import { isTouchDevice } from '../lib/constants';
 
 const steps = [
   {

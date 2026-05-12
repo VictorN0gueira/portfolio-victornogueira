@@ -3,8 +3,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { Github, Linkedin, ArrowUpRight, ChevronDown } from 'lucide-react';
 import HeroBackground from './HeroBackground';
 import { PaperPlane, Sparkle, RotatingArrow } from './FloatingIcons';
-
-const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+import { isTouchDevice } from '../lib/constants';
 
 export default function Hero() {
   const [titleNumber, setTitleNumber] = useState(0);

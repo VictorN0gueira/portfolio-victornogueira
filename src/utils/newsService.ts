@@ -422,18 +422,16 @@ export async function getNewsArticles(): Promise<{ articles: NewsArticle[]; sour
     const result = await fetchFromPublicAPIs();
     setCachedArticles(result.articles, result.source);
     return result;
-  } catch (error) {
-    console.warn('Public APIs failed:', error);
+  } catch {
+    // APIs públicas indisponíveis — segue para fallback
   }
 
   // 5. Cache expirado (melhor que nada)
   if (cached && cached.articles.length > 0) {
-    console.warn('Usando cache expirado como fallback');
     return { articles: cached.articles, source: 'stale-cache' };
   }
 
   // 6. Último recurso: artigos estáticos curados
-  console.warn('Usando artigos estáticos de fallback');
   return { articles: FALLBACK_ARTICLES, source: 'fallback' };
 }
 

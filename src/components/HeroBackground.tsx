@@ -1,6 +1,5 @@
 import { motion } from 'motion/react';
-
-const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+import { isTouchDevice } from '../lib/constants';
 
 export default function HeroBackground() {
   return (

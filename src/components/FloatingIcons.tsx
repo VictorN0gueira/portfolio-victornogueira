@@ -1,11 +1,10 @@
 import { motion } from 'motion/react';
+import { isTouchDevice } from '../lib/constants';
 
 interface IconProps {
   className?: string;
   style?: React.CSSProperties;
 }
-
-const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 
 // Avião de papel outline — inspirado no criacao.cc
 export function PaperPlane({ className = '', style }: IconProps) {
