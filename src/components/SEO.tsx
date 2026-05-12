@@ -26,7 +26,7 @@ export default function SEO({
   const pageTitle = title ? `${title} | Victor Nogueira` : defaults.title;
   const pageDescription = description || defaults.description;
   const pageUrl = `${BASE_URL}${path}`;
-  const pageImage = image || 'https://vnone.com.br/og-banner.png';
+  const pageImage = image || 'https://vnone.com.br/og-banner.png?v=2';
 
   // Schema: Person
   const personSchema = {
