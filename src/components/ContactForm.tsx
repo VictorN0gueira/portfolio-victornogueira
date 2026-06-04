@@ -10,19 +10,27 @@ const WEBHOOKS = {
 type ContactMethod = 'email' | 'whatsapp';
 
 /**
- * Formata os dígitos para exibição: +55 DD NNNNN-NNNN
- * Aceita apenas números, adicionando o prefixo +55 automaticamente.
+ * Formata para exibição: +55 DD 9 NNNN-NNNN
+ * O +55 e o 9 são inseridos automaticamente. Usuário digita apenas DDD + 8 dígitos.
  */
 function formatWhatsappDisplay(raw: string): string {
   const digits = raw.replace(/\D/g, '');
 
-  // Remove o 55 inicial se o usuário digitou, para reconstruir de forma padronizada
-  const local = digits.startsWith('55') ? digits.substring(2) : digits;
+  // Remove o 55 inicial se o usuário digitou
+  let local = digits.startsWith('55') ? digits.substring(2) : digits;
+
+  // Remove o 9 se o usuário digitou após o DDD (será adicionado automaticamente)
+  if (local.length > 2 && local[2] === '9') {
+    local = local.substring(0, 2) + local.substring(3);
+  }
+
+  // Limita a 10 dígitos (DDD 2 + número 8)
+  local = local.slice(0, 10);
 
   if (local.length === 0) return '+55 ';
   if (local.length <= 2) return `+55 ${local}`;
-  if (local.length <= 7) return `+55 ${local.slice(0, 2)} ${local.slice(2)}`;
-  return `+55 ${local.slice(0, 2)} ${local.slice(2, 7)}-${local.slice(7, 11)}`;
+  if (local.length <= 6) return `+55 ${local.slice(0, 2)} 9 ${local.slice(2)}`;
+  return `+55 ${local.slice(0, 2)} 9 ${local.slice(2, 6)}-${local.slice(6, 10)}`;
 }
 
 /**
