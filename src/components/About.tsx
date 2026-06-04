@@ -1,13 +1,12 @@
 import { motion } from 'motion/react';
-import { Download, Workflow, BrainCircuit, Globe, FileSpreadsheet } from 'lucide-react';
+import { Download, Workflow, BrainCircuit, Globe } from 'lucide-react';
 
 const CV_URL = import.meta.env.VITE_CV_URL || "https://minio.vnone.com.br/api/v1/buckets/victornogueira/objects/download?preview=true&prefix=portfolio%2FCV%20-%20Jo%C3%A3o%20Victor.pdf&version_id=null";
 
 const specialties = [
   { id: '01', title: 'Automação de Processos', desc: 'Fluxos automáticos que eliminam retrabalho e escalam sem esforço manual', icon: Workflow, color: '#8B5CF6' },
   { id: '02', title: 'Inteligência Artificial', desc: 'LLMs e agentes inteligentes integrados às operações do negócio', icon: BrainCircuit, color: '#3B82F6' },
-  { id: '03', title: 'Desenvolvimento Web', desc: 'Interfaces rápidas, modernas e focadas em conversão', icon: Globe, color: '#10B981' },
-  { id: '04', title: 'Google Apps Scripts', desc: 'Automação do ecossistema Google para quem usa planilhas no limite', icon: FileSpreadsheet, color: '#F59E0B' }
+  { id: '03', title: 'Desenvolvimento Web', desc: 'Interfaces rápidas, modernas e focadas em conversão', icon: Globe, color: '#10B981' }
 ];
 
 export default function About() {

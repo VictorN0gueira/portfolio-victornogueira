@@ -13,14 +13,14 @@ export interface Project {
 
 export const projects: Project[] = [
   {
-    id: 1,
+    id: 5,
     title: "Trocô",
     category: "Gestão Financeira + IA",
     description: "Gestão Inteligente via WhatsApp, N8N e Supabase. Processamento automático de áudios e notas fiscais.",
     image: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2Fportfolio%2Ftroco%2FLogin-Troco.png&version_id=null",
-    link: "https://troco-liart.vercel.app/#/",
+    link: '#',
     tags: ["N8N", "Supabase", "API's Financeiras", "Evolution API"],
-    type: 'personal',
+    type: 'client',
     impact: [{ label: "Operação", value: "24/7 automática" }],
     gallery: [
       "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2Fportfolio%2Ftroco%2FDashboard-Troco.png&version_id=null",
@@ -28,32 +28,7 @@ export const projects: Project[] = [
       "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2Fportfolio%2Ftroco%2FInvestimentos-Troco.png&version_id=null"
     ]
   },
-  {
-    id: 5,
-    title: 'Consulta de CNPJ Inteligente',
-    category: 'Automação B2B / Consultas',
-    description: 'Fluxo automatizado para consulta de dados cadastrais via CNPJ com interface intuitiva e integração de dados em tempo real para otimizar processos comerciais.',
-    image: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2FCP%2Fsite1-consultarcnpj.png&version_id=null',
-    tags: ['N8N', 'API de Dados', 'Workflow', 'B2B'],
-    link: '#',
-    type: 'client',
-    impact: [{ label: "Consulta", value: "Manual → Instantânea" }],
-    gallery: [
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2FCP%2Fsite2-consultarcnpj.png&version_id=null',
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2FCP%2Ffluxo-consultarcnpj.png&version_id=null'
-    ]
-  },
-  {
-    id: 6,
-    title: 'Onboarding de Clientes Automático',
-    category: 'Automação de Processos / Onboarding',
-    description: 'Fluxo inteligente de boas-vindas e coleta de dados integrando Notion, Google Drive e APIs para uma experiência de cliente 100% fluida.',
-    image: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2FCP%2Ffluxo-onboarding.png&version_id=null',
-    tags: ['Notion', 'Google Drive', 'n8n', 'Business Automation'],
-    link: '#',
-    type: 'client',
-    impact: [{ label: "Onboarding", value: "3 dias → minutos" }],
-  },
+
   {
     id: 7,
     title: 'Dashboard de Consumo CRM',
@@ -80,27 +55,40 @@ export const projects: Project[] = [
     type: 'client',
     impact: [{ label: "Volume", value: "Milhares de NFs/dia" }],
   },
+
   {
-    id: 9,
-    title: 'Cloud Storage de Notas Fiscais',
-    category: 'Cloud Infrastructure / Backoffice',
-    description: 'Fluxo em tempo real via Webhook para armazenamento imediato de Notas Fiscais no Supabase, garantindo backup e disponibilidade instantânea.',
-    image: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2FProplast%2Ffluxo-importacaodenotas.png&version_id=null',
-    tags: ['Webhook', 'Supabase', 'n8n', 'Automation'],
+    id: 11,
+    title: 'Diagnóstico Empresarial',
+    category: 'Captura de Leads / Consultoria',
+    description: 'Sistema completo de captura de leads com WhatsApp integrado, formulário inteligente, pipeline visual (Kanban), qualificação por IA e gestão de oportunidades.',
+    image: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2FProjetos%2Fempresarial-insight%2FLandingpage.png&version_id=null',
+    tags: ['WhatsApp API', 'IA', 'Pipeline', 'Lead Capture'],
     link: '#',
     type: 'client',
-    impact: [{ label: "Backup", value: "Instantâneo via webhook" }],
+    impact: [{ label: "Qualificação", value: "IA automática" }],
+    gallery: [
+      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2FProjetos%2Fempresarial-insight%2Flogin.png&version_id=null',
+      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2FProjetos%2Fempresarial-insight%2Fdashboard.png&version_id=null',
+      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2FProjetos%2Fempresarial-insight%2Fwhatsapp.png&version_id=null',
+      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2FProjetos%2Fempresarial-insight%2Fkanbam.png&version_id=null'
+    ]
   },
   {
-    id: 10,
-    title: 'Captura e Disparo de Leads',
-    category: 'Marketing Automation / Growth',
-    description: 'Motor de geração de leads com disparo automático via WhatsApp e E-mail (SMTP), integrado a Google Sheets para gestão de funil.',
-    image: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2FMicael%20Santiago%2Ffluxo-leads.png&version_id=null',
-    tags: ['WhatsApp API', 'SMTP', 'n8n', 'Lead Gen'],
-    link: '#',
-    type: 'client',
-    impact: [{ label: "Disparo", value: "WhatsApp + Email auto" }],
+    id: 12,
+    title: 'DizPara',
+    category: 'Automação de Marketing / SaaS',
+    description: 'Sistema de captura e disparo de leads via WhatsApp e E-mail, com automação inteligente e IA de qualificação automática de contatos.',
+    image: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FDizPara%2FLandingpage.png&version_id=null',
+    tags: ['WhatsApp API', 'SMTP', 'IA', 'Lead Qualification'],
+    link: 'https://dizpara.com/',
+    type: 'personal',
+    impact: [{ label: "Leads", value: "Qualificação por IA" }],
+    gallery: [
+      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FDizPara%2Flogin.png&version_id=null',
+      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FDizPara%2Fdashboard.png&version_id=null',
+      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FDizPara%2Fleads.png&version_id=null',
+      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FDizPara%2Fcampanhas.png&version_id=null'
+    ]
   },
   {
     id: 2,

@@ -32,6 +32,10 @@ const PARTNERS = [
   {
     name: "ShipSmart",
     logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=ShipSmart%2FLogo.jpg&version_id=null"
+  },
+  {
+    name: "Henrique França",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2Flogo-hf.png&version_id=null"
   }
 ];
 

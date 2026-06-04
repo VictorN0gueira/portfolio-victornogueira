@@ -97,15 +97,11 @@ export default function Projects() {
               className="group cursor-pointer"
               onClick={() => setSelectedProject(project)}
             >
-              <div className="aspect-video md:aspect-[16/10] rounded-3xl md:rounded-4xl mb-6 md:mb-8 overflow-hidden relative shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-black/10 hover:-translate-y-2 flex items-center justify-center bg-black">
-                <div
-                  className="absolute inset-0 bg-cover bg-center blur-xl opacity-40 transform scale-110 will-change-transform"
-                  style={{ backgroundImage: `url(${project.image})` }}
-                />
+              <div className="aspect-video md:aspect-[16/10] rounded-3xl md:rounded-4xl mb-6 md:mb-8 overflow-hidden relative shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-black/10 hover:-translate-y-2 bg-zinc-900">
                 <img
                   src={project.image}
                   alt={`Screenshot do projeto ${project.title}`}
-                  className="relative z-10 w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105"
+                  className="relative z-10 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-700 z-20" />
