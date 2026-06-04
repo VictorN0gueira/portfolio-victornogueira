@@ -9,13 +9,48 @@ const WEBHOOKS = {
 
 type ContactMethod = 'email' | 'whatsapp';
 
+/**
+ * Formata os dígitos para exibição: +55 DD NNNNN-NNNN
+ * Aceita apenas números, adicionando o prefixo +55 automaticamente.
+ */
+function formatWhatsappDisplay(raw: string): string {
+  const digits = raw.replace(/\D/g, '');
+
+  // Remove o 55 inicial se o usuário digitou, para reconstruir de forma padronizada
+  const local = digits.startsWith('55') ? digits.substring(2) : digits;
+
+  if (local.length === 0) return '+55 ';
+  if (local.length <= 2) return `+55 ${local}`;
+  if (local.length <= 7) return `+55 ${local.slice(0, 2)} ${local.slice(2)}`;
+  return `+55 ${local.slice(0, 2)} ${local.slice(2, 7)}-${local.slice(7, 11)}`;
+}
+
+/**
+ * Converte para o formato padrão da Evolution API / N8N: 558195493732
+ * Remove o 9 extra (11 dígitos locais → 10) para compatibilidade.
+ */
+function toEvolutionFormat(raw: string): string {
+  let num = raw.replace(/\D/g, '');
+
+  if (num.startsWith('55') && num.length >= 12) {
+    num = num.substring(2);
+  }
+
+  // Se tem 11 dígitos (com o 9), remove o 9 (índice 2)
+  if (num.length === 11) {
+    num = num.substring(0, 2) + num.substring(3);
+  }
+
+  return '55' + num;
+}
+
 export default function ContactForm() {
   const [method, setMethod] = useState<ContactMethod>('email');
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
-    whatsapp: '',
+    whatsapp: '+55 ',
     mensagem: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -26,8 +61,9 @@ export default function ContactForm() {
     const newErrors: Record<string, string> = {};
     if (method === 'whatsapp') {
       const digits = formData.whatsapp.replace(/\D/g, '');
-      if (digits.length < 10 || digits.length > 13) {
-        newErrors.whatsapp = 'Por favor, insira um número válido com DDD';
+      const local = digits.startsWith('55') ? digits.substring(2) : digits;
+      if (local.length < 10 || local.length > 11) {
+        newErrors.whatsapp = 'Por favor, insira um número válido com DDD (ex: 81 99999-9999)';
       }
     }
 
@@ -43,7 +79,7 @@ export default function ContactForm() {
 
     const payload = {
       nome: formData.nome,
-      [method]: formData[method],
+      [method]: method === 'whatsapp' ? toEvolutionFormat(formData.whatsapp) : formData.email,
       mensagem: formData.mensagem,
       timestamp: new Date().toISOString()
     };
@@ -82,7 +118,7 @@ export default function ContactForm() {
         <button
           onClick={() => {
             setStatus('idle');
-            setFormData({ nome: '', email: '', whatsapp: '', mensagem: '' });
+            setFormData({ nome: '', email: '', whatsapp: '+55 ', mensagem: '' });
             setErrors({});
           }}
           className="px-8 py-3 bg-white text-black rounded-full text-xs md:text-sm font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-xl active:scale-95"
@@ -189,10 +225,11 @@ export default function ContactForm() {
                 type="tel"
                 value={formData.whatsapp}
                 onChange={(e) => {
-                  setFormData({...formData, whatsapp: e.target.value});
+                  const formatted = formatWhatsappDisplay(e.target.value);
+                  setFormData({...formData, whatsapp: formatted});
                   if (errors.whatsapp) setErrors({...errors, whatsapp: ''});
                 }}
-                placeholder="+55 (11) 99999-9999"
+                placeholder="+55 81 99999-9999"
                 className={`w-full bg-white/5 border ${errors.whatsapp ? 'border-red-500/50 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/20'} rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 transition-all placeholder:text-zinc-600 text-sm`}
               />
               {errors.whatsapp && (
