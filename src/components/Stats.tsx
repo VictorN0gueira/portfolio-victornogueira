@@ -83,7 +83,7 @@ export default function Stats() {
         animate={isInView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-6 md:gap-8 lg:gap-12">
           {STATS.map((stat, index) => (
             <motion.div
               key={stat.label}
@@ -108,7 +108,7 @@ export default function Stats() {
               <span className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">
                 {stat.label}
               </span>
-              <p className="text-sm text-zinc-500 max-w-[180px] leading-relaxed opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-500">
+              <p className="text-sm text-zinc-500 max-w-xs sm:max-w-[180px] leading-relaxed opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-500">
                 {stat.description}
               </p>
             </motion.div>

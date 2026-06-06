@@ -51,6 +51,7 @@ export default function Hero() {
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: "easeOut" }}
+        style={{ willChange: 'transform, opacity' }}
         className="relative z-10 max-w-4xl flex flex-col items-center"
       >
         <div className="flex items-center gap-3 mb-8 flex-wrap justify-center">
@@ -88,14 +89,14 @@ export default function Hero() {
                   <motion.span
                     key={index}
                     className="absolute"
-                    initial={{ opacity: 0, y: 80, filter: isTouchDevice ? 'blur(0px)' : 'blur(10px)' }}
+                    initial={{ opacity: 0, y: 40, filter: isTouchDevice ? 'blur(0px)' : 'blur(10px)' }}
                     animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                    exit={{ opacity: 0, y: -80, filter: isTouchDevice ? 'blur(0px)' : 'blur(10px)' }}
+                    exit={{ opacity: 0, y: -40, filter: isTouchDevice ? 'blur(0px)' : 'blur(10px)' }}
+                    style={{ willChange: 'transform, opacity, filter' }}
                     transition={{
-                      type: "spring",
-                      stiffness: 70,
-                      damping: 20,
-                      opacity: { duration: 0.4 }
+                      type: "tween",
+                      duration: 0.4,
+                      ease: "easeOut"
                     }}
                   >
                     {title}

@@ -50,10 +50,14 @@ export default function Header() {
     return () => document.removeEventListener('keydown', handler);
   }, [isMenuOpen]);
 
-  // Prevent body scroll when menu is open — restore on unmount too
+  // Prevent body scroll when menu is open — but delay it to avoid layout thrashing during animation
   useEffect(() => {
-    document.body.style.overflow = isMenuOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    if (isMenuOpen) {
+      const timer = setTimeout(() => { document.body.style.overflow = 'hidden'; }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      document.body.style.overflow = '';
+    }
   }, [isMenuOpen]);
 
   const navItems = [
