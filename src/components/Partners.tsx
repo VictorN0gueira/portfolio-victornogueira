@@ -81,6 +81,7 @@ export default function Partners() {
 
         <motion.div 
           className="flex whitespace-nowrap gap-16 md:gap-32 py-4 items-center"
+          style={{ willChange: 'transform' }}
           animate={{
             x: ["0%", "-50%"],
           }}

@@ -129,7 +129,7 @@ export default function Testimonials() {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <div className="relative bg-white/3 border border-white/8 rounded-[2.5rem] p-10 md:p-16 min-h-[340px] flex flex-col justify-center overflow-hidden touch-pan-y">
+          <div className="relative bg-white/3 border border-white/8 rounded-[2.5rem] p-8 md:p-12 min-h-[280px] flex flex-col justify-center overflow-hidden touch-pan-y">
             {/* Decorative quote */}
             <Quote className="absolute top-8 right-8 w-20 h-20 text-white/4 rotate-180" />
 
@@ -150,7 +150,7 @@ export default function Testimonials() {
                 onDragEnd={handleDragEnd}
               >
                 {/* Stars */}
-                <div className="flex gap-1 mb-8">
+                <div className="flex gap-1 mb-6">
                   {Array.from({ length: t.rating }).map((_, i) => (
                     <Star
                       key={i}
@@ -160,21 +160,21 @@ export default function Testimonials() {
                 </div>
 
                 {/* Quote text */}
-                <blockquote className="text-lg md:text-2xl font-light text-zinc-200 leading-relaxed mb-10 max-w-3xl italic select-none">
+                <blockquote className="text-lg md:text-2xl font-light text-zinc-200 leading-relaxed mb-8 max-w-3xl italic select-none">
                   "{t.text}"
                 </blockquote>
 
                 {/* Author */}
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-full bg-white/10 border border-white/10 overflow-hidden flex items-center justify-center p-2">
+                  <div className="w-12 h-12 rounded-2xl bg-white overflow-hidden flex items-center justify-center shrink-0">
                     <img
                       src={t.avatar}
                       alt={`Logo de ${t.company}`}
-                      className="w-full h-full object-contain"
+                      className="w-10 h-10 object-contain"
                       referrerPolicy="no-referrer"
                       loading="lazy"
-                      width={56}
-                      height={56}
+                      width={40}
+                      height={40}
                     />
                   </div>
                   <div className="text-left">

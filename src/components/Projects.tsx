@@ -106,14 +106,14 @@ export default function Projects() {
                 />
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-700 z-20" />
                 {project.type === 'client' && (
-                  <div className="absolute top-4 md:top-6 right-4 md:right-6 px-3 py-1 bg-black/80 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-xl border border-white/10 z-30">
+                  <div className="absolute top-4 md:top-6 right-4 md:right-6 px-3 py-1 bg-black/90 md:bg-black/80 backdrop-blur-none md:backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-xl border border-white/10 z-30">
                     Case de Cliente
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent z-20 pointer-events-none" />
                 <div className="absolute top-4 md:top-6 left-4 md:left-6 flex flex-wrap gap-2 z-30">
                   {project.tags.slice(0, 3).map((tag) => (
-                    <span key={tag} className="px-3 py-1 bg-white/90 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm text-black opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    <span key={tag} className="px-3 py-1 bg-white/95 md:bg-white/90 backdrop-blur-none md:backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm text-black opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                       {tag}
                     </span>
                   ))}
@@ -163,12 +163,12 @@ export default function Projects() {
             aria-modal="true"
             aria-labelledby="modal-title"
           >
-            <motion.div
+              <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeModal}
-              className="absolute inset-0 bg-black/98 backdrop-blur-2xl"
+              className="absolute inset-0 bg-black/98 md:bg-black/90 backdrop-blur-none md:backdrop-blur-2xl"
               aria-hidden="true"
             />
 
@@ -183,7 +183,7 @@ export default function Projects() {
                 ref={closeButtonRef}
                 onClick={closeModal}
                 aria-label="Fechar modal"
-                className="absolute top-4 right-4 md:top-6 md:right-6 z-50 w-11 h-11 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all backdrop-blur-md border border-white/10"
+                className="absolute top-4 right-4 md:top-6 md:right-6 z-50 w-11 h-11 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all backdrop-blur-none md:backdrop-blur-md border border-white/10"
               >
                 <X className="w-5 h-5 md:w-6 md:h-6" />
               </button>
@@ -212,7 +212,7 @@ export default function Projects() {
                     </motion.div>
                   ))}
                 </div>
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 backdrop-blur-xl px-5 py-2.5 rounded-full border border-white/10 md:hidden pointer-events-none shadow-2xl z-50" aria-hidden="true">
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/90 backdrop-blur-none px-5 py-2.5 rounded-full border border-white/10 md:hidden pointer-events-none shadow-2xl z-50" aria-hidden="true">
                   <motion.div animate={{ x: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
                     <ChevronRight className="w-3 h-3 text-white" />
                   </motion.div>

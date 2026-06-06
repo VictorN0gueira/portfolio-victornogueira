@@ -58,7 +58,7 @@ export default function Hero() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="p-1 px-3 rounded-full bg-black/5 border border-black/10 backdrop-blur-sm shadow-sm"
+            className="p-1 px-3 rounded-full bg-black/5 md:bg-black/5 border border-black/10 backdrop-blur-none md:backdrop-blur-sm shadow-sm"
           >
             <span className="text-zinc-500 font-medium tracking-[0.2em] uppercase text-[10px] md:text-xs">
               Soluções em Automação & IA
@@ -69,7 +69,7 @@ export default function Hero() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.35, duration: 0.5 }}
-            className="p-1 px-3 rounded-full bg-emerald-50 border border-emerald-200 backdrop-blur-sm shadow-sm"
+            className="p-1 px-3 rounded-full bg-emerald-50 border border-emerald-200 backdrop-blur-none md:backdrop-blur-sm shadow-sm"
           >
             <span className="text-emerald-600 font-medium tracking-[0.2em] uppercase text-[10px] md:text-xs flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
@@ -140,7 +140,7 @@ export default function Hero() {
               e.preventDefault();
               document.querySelector('#projetos')?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 md:px-10 py-4 md:py-5 rounded-full border border-zinc-200 bg-white/50 backdrop-blur-sm text-zinc-600 font-medium hover:border-black hover:text-black transition-all"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 md:px-10 py-4 md:py-5 rounded-full border border-zinc-200 bg-white/95 md:bg-white/50 backdrop-blur-none md:backdrop-blur-sm text-zinc-600 font-medium hover:border-black hover:text-black transition-all"
           >
             Ver Cases
             <ChevronDown className="w-4 h-4" />
@@ -151,7 +151,7 @@ export default function Hero() {
               href="https://www.linkedin.com/in/victornogueira-vn"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-3 md:p-4 rounded-full border border-zinc-200 bg-white/50 backdrop-blur-sm hover:border-black hover:text-black text-zinc-400 transition-all hover:scale-110 shadow-sm"
+              className="p-3 md:p-4 rounded-full border border-zinc-200 bg-white/95 md:bg-white/50 backdrop-blur-none md:backdrop-blur-sm hover:border-black hover:text-black text-zinc-400 transition-all hover:scale-110 shadow-sm"
               title="LinkedIn"
               aria-label="Perfil no LinkedIn de Victor Nogueira"
             >
@@ -161,7 +161,7 @@ export default function Hero() {
               href="https://github.com/VictorN0gueira"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-3 md:p-4 rounded-full border border-zinc-200 bg-white/50 backdrop-blur-sm hover:border-black hover:text-black text-zinc-400 transition-all hover:scale-110 shadow-sm"
+              className="p-3 md:p-4 rounded-full border border-zinc-200 bg-white/95 md:bg-white/50 backdrop-blur-none md:backdrop-blur-sm hover:border-black hover:text-black text-zinc-400 transition-all hover:scale-110 shadow-sm"
               title="GitHub"
               aria-label="Repositório no GitHub de Victor Nogueira"
             >

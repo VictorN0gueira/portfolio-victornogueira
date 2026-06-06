@@ -103,10 +103,10 @@ export default function AccessibilityWidget() {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 16, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            style={{ willChange: 'transform, opacity', direction: 'ltr' }}
             role="dialog"
             aria-label="Opções de acessibilidade"
-            className="mr-2 w-[min(13rem,calc(100vw-3.5rem))] rounded-2xl border border-white/10 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden max-h-[calc(100svh-8rem)] flex flex-col"
-            style={{ direction: 'ltr' }}
+            className="mr-2 w-[min(13rem,calc(100vw-3.5rem))] rounded-2xl border border-white/10 bg-zinc-950/98 md:bg-zinc-950/95 backdrop-blur-none md:backdrop-blur-xl shadow-2xl overflow-hidden max-h-[calc(100svh-8rem)] flex flex-col"
           >
             <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between shrink-0">
               <span className="text-xs font-semibold text-white/80 uppercase tracking-widest">

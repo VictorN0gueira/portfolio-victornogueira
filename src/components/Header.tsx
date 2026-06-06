@@ -69,7 +69,7 @@ export default function Header() {
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           isScrolled
-            ? 'bg-black/90 backdrop-blur-xl py-4 border-b border-white/5'
+            ? 'bg-black/98 md:bg-black/90 backdrop-blur-none md:backdrop-blur-xl py-4 border-b border-white/5'
             : 'bg-transparent py-6'
         }`}
       >
@@ -182,12 +182,21 @@ export default function Header() {
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'tween', duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
               style={{ willChange: 'transform' }}
               className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-zinc-950 border-l border-white/10 p-8 md:p-12 flex flex-col"
               role="dialog"
               aria-label="Menu de navegação"
             >
+              {/* Botão de Fechar Explícito */}
+              <button
+                onClick={() => setIsMenuOpen(false)}
+                className="absolute top-6 left-6 p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-full transition-all"
+                aria-label="Fechar menu"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
               <nav className="flex flex-col gap-6 mt-16 md:mt-20" aria-label="Navegação mobile">
                 <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">Navegação</p>
                 {navItems.map((item) => (
@@ -235,11 +244,6 @@ export default function Header() {
                 <p className="text-[9px] md:text-[10px] text-zinc-500 uppercase tracking-widest text-center">
                   © 2026 Victor Nogueira
                 </p>
-              </div>
-
-              <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none -z-10 opacity-30" aria-hidden="true">
-                <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.15)_0%,_transparent_70%)] rounded-full" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.15)_0%,_transparent_70%)] rounded-full" />
               </div>
             </motion.div>
           </div>

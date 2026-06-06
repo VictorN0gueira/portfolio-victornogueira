@@ -149,7 +149,7 @@ function FeaturedCard({ article }: { article: NewsArticle }) {
           <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-gradient-to-r ${langColor} shadow-lg`}>
             {langLabel}
           </span>
-          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-white/10 backdrop-blur-md border border-white/10 flex items-center gap-1">
+          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-white/20 md:bg-white/10 backdrop-blur-none md:backdrop-blur-md border border-white/10 flex items-center gap-1">
             {topicIcon}{topicLabel}
           </span>
           {novo && (
@@ -236,7 +236,7 @@ function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
           <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-gradient-to-r ${langColor} shadow-lg`}>
             {langLabel}
           </span>
-          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-white/10 backdrop-blur-md border border-white/10 flex items-center gap-1">
+          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-white/20 md:bg-white/10 backdrop-blur-none md:backdrop-blur-md border border-white/10 flex items-center gap-1">
             {topicIcon}{topicLabel}
           </span>
         </div>
@@ -248,7 +248,7 @@ function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
         )}
 
         {!novo && (
-          <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+          <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 md:bg-white/10 backdrop-blur-none md:backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
             <ExternalLink className="w-3.5 h-3.5 text-white" />
           </div>
         )}
@@ -349,7 +349,7 @@ export default function BlogPage() {
       {/* Back button */}
       <Link
         to="/"
-        className="fixed top-6 left-6 z-50 flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.06] backdrop-blur-xl border border-white/[0.1] text-sm text-zinc-300 hover:text-white hover:bg-white/[0.1] hover:border-white/[0.2] transition-all duration-300 group shadow-lg shadow-black/20"
+        className="fixed top-6 left-6 z-50 flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900 md:bg-white/[0.06] backdrop-blur-none md:backdrop-blur-xl border border-white/[0.1] text-sm text-zinc-300 hover:text-white hover:bg-white/[0.1] hover:border-white/[0.2] transition-all duration-300 group shadow-lg shadow-black/20"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         <span className="font-medium">Portfólio</span>
