@@ -60,11 +60,22 @@ export default function AccessibilityWidget() {
 
   useEffect(() => {
     checkBackground();
-    window.addEventListener('scroll', checkBackground, { passive: true });
-    window.addEventListener('resize', checkBackground, { passive: true });
+    let scrollTimeout: any;
+    
+    const handleScroll = () => {
+      if (scrollTimeout) return;
+      scrollTimeout = setTimeout(() => {
+        checkBackground();
+        scrollTimeout = null;
+      }, 150); // Só roda o cálculo de contraste a cada 150ms durante o scroll
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
     return () => {
-      window.removeEventListener('scroll', checkBackground);
-      window.removeEventListener('resize', checkBackground);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
     };
   }, [checkBackground]);
 
