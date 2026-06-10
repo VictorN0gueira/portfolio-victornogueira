@@ -158,7 +158,7 @@ export default function Projects() {
       <AnimatePresence>
         {selectedProject && (
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8"
+            className="fixed inset-0 z-[100] flex items-start justify-center p-0 sm:p-4 md:p-12 overflow-y-auto custom-scrollbar"
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
@@ -168,7 +168,7 @@ export default function Projects() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeModal}
-              className="absolute inset-0 bg-black/98 md:bg-black/90 backdrop-blur-none md:backdrop-blur-2xl"
+              className="fixed inset-0 bg-black/98 md:bg-black/90 backdrop-blur-none md:backdrop-blur-2xl"
               aria-hidden="true"
             />
 
@@ -177,7 +177,7 @@ export default function Projects() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               style={{ willChange: 'transform, opacity' }}
-              className="relative w-full h-full md:h-auto md:max-w-6xl md:max-h-[85vh] bg-zinc-950 md:bg-zinc-900 md:rounded-[2.5rem] overflow-y-auto md:overflow-hidden flex flex-col md:flex-row shadow-2xl md:border border-white/10 custom-scrollbar"
+              className="relative w-full h-auto min-h-full md:min-h-0 md:max-w-6xl bg-zinc-950 md:bg-zinc-900 md:rounded-[2.5rem] flex flex-col md:flex-row shadow-2xl md:border border-white/10 my-auto"
             >
               <button
                 ref={closeButtonRef}
@@ -221,7 +221,7 @@ export default function Projects() {
               </div>
 
               {/* Content */}
-              <div className="flex-1 p-6 pb-12 md:p-16 flex flex-col overflow-visible md:overflow-y-auto bg-zinc-950 md:bg-zinc-900 custom-scrollbar">
+              <div className="flex-1 p-6 pb-12 md:p-16 flex flex-col bg-zinc-950 md:bg-zinc-900">
                 <div className="mb-8 md:mb-12">
                   {selectedProject.type === 'client' && (
                     <span className="inline-block px-3 py-1 bg-white/10 text-white/50 text-[9px] font-black uppercase tracking-[0.2em] rounded-full border border-white/10 mb-6">
