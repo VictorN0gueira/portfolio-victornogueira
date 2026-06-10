@@ -177,7 +177,7 @@ export default function Projects() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               style={{ willChange: 'transform, opacity' }}
-              className="relative w-full h-full md:h-auto md:max-w-6xl md:max-h-[85vh] bg-zinc-950 md:bg-zinc-900 md:rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row shadow-2xl md:border border-white/10"
+              className="relative w-full h-full md:h-auto md:max-w-6xl md:max-h-[85vh] bg-zinc-950 md:bg-zinc-900 md:rounded-[2.5rem] overflow-y-auto md:overflow-hidden flex flex-col md:flex-row shadow-2xl md:border border-white/10 custom-scrollbar"
             >
               <button
                 ref={closeButtonRef}
@@ -189,12 +189,12 @@ export default function Projects() {
               </button>
 
               {/* Gallery */}
-              <div className="w-full md:w-[60%] h-[40vh] md:h-auto bg-zinc-950 relative flex flex-col overflow-hidden shrink-0 border-b md:border-b-0 md:border-r border-white/5">
+              <div className="w-full md:w-[60%] shrink-0 bg-zinc-950 relative flex flex-col overflow-hidden border-b md:border-b-0 md:border-r border-white/5">
                 <div
                   className="absolute inset-0 bg-cover bg-center blur-2xl opacity-20 transform scale-110 pointer-events-none will-change-transform"
                   style={{ backgroundImage: `url(${selectedProject.image})` }}
                 />
-                <div className="relative z-10 flex md:flex-col overflow-x-auto md:overflow-y-auto snap-x snap-mandatory scrollbar-hide p-4 md:p-6 space-x-4 md:space-x-0 md:space-y-6 h-full">
+                <div className="relative z-10 flex md:flex-col overflow-x-auto md:overflow-y-auto snap-x snap-mandatory scrollbar-hide p-4 md:p-6 space-x-4 md:space-x-0 md:space-y-6 md:h-full">
                   {[selectedProject.image, ...(selectedProject.gallery || [])].map((img, i) => (
                     <motion.div
                       key={i}
@@ -221,7 +221,7 @@ export default function Projects() {
               </div>
 
               {/* Content */}
-              <div className="flex-1 p-6 md:p-16 flex flex-col overflow-y-auto bg-zinc-950 md:bg-zinc-900 custom-scrollbar">
+              <div className="flex-1 p-6 pb-12 md:p-16 flex flex-col overflow-visible md:overflow-y-auto bg-zinc-950 md:bg-zinc-900 custom-scrollbar">
                 <div className="mb-8 md:mb-12">
                   {selectedProject.type === 'client' && (
                     <span className="inline-block px-3 py-1 bg-white/10 text-white/50 text-[9px] font-black uppercase tracking-[0.2em] rounded-full border border-white/10 mb-6">
