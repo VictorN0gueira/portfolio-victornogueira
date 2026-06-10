@@ -41,6 +41,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
+        onClick={onClose}
       >
         {/* Centralizador que permite rolar quando conteúdo excede viewport */}
         <div className="flex min-h-full items-center justify-center p-4 md:p-10">
