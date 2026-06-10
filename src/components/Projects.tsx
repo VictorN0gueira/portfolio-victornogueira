@@ -1,36 +1,168 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowUpRight, X, ChevronRight, TrendingUp } from 'lucide-react';
 import { projects, Project } from '../data/projects';
 
+// Modal renderizado via Portal diretamente no document.body
+function ProjectModal({ project, onClose }: { project: Project; onClose: () => void }) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => closeButtonRef.current?.focus(), 50);
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return createPortal(
+    <AnimatePresence>
+      {/* Fundo escuro — clique fecha */}
+      <motion.div
+        key="backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        onClick={onClose}
+        className="fixed inset-0 z-[9998] bg-black/90"
+        aria-hidden="true"
+      />
+
+      {/* Scroll container — ocupa a tela toda e rola livremente */}
+      <div
+        key="scroll-container"
+        className="fixed inset-0 z-[9999] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
+        {/* Centralizador que permite rolar quando conteúdo excede viewport */}
+        <div className="flex min-h-full items-center justify-center p-4 md:p-10">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 24 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 24 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            style={{ willChange: 'transform, opacity' }}
+            className="relative w-full md:max-w-6xl bg-zinc-950 md:bg-zinc-900 md:rounded-[2.5rem] flex flex-col md:flex-row shadow-2xl md:border border-white/10 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Botão Fechar */}
+            <button
+              ref={closeButtonRef}
+              onClick={onClose}
+              aria-label="Fechar modal"
+              className="absolute top-4 right-4 md:top-6 md:right-6 z-50 w-11 h-11 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all border border-white/10"
+            >
+              <X className="w-5 h-5 md:w-6 md:h-6" />
+            </button>
+
+            {/* Galeria de imagens */}
+            <div className="w-full md:w-[60%] shrink-0 bg-zinc-950 relative flex flex-col border-b md:border-b-0 md:border-r border-white/5 min-h-[50vw] md:min-h-[480px]">
+              <div
+                className="absolute inset-0 bg-cover bg-center blur-2xl opacity-20 scale-110 pointer-events-none"
+                style={{ backgroundImage: `url(${project.image})` }}
+              />
+              <div className="relative z-10 flex md:flex-col overflow-x-auto md:overflow-y-auto snap-x snap-mandatory scrollbar-hide p-4 md:p-6 gap-4 md:gap-6 h-full">
+                {[project.image, ...(project.gallery || [])].map((img, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.08 }}
+                    className="w-[85vw] md:w-full shrink-0 snap-center flex items-center justify-center"
+                  >
+                    <img
+                      src={img}
+                      alt={i === 0 ? `${project.title} — imagem principal` : `${project.title} — imagem ${i + 1}`}
+                      className="w-full object-contain rounded-2xl shadow-2xl"
+                      referrerPolicy="no-referrer"
+                    />
+                  </motion.div>
+                ))}
+              </div>
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/90 px-4 py-2 rounded-full border border-white/10 md:hidden pointer-events-none z-50" aria-hidden="true">
+                <motion.div animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+                  <ChevronRight className="w-3 h-3 text-white" />
+                </motion.div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white whitespace-nowrap">Deslize para ver mais</span>
+              </div>
+            </div>
+
+            {/* Conteúdo textual */}
+            <div className="flex-1 p-6 pb-10 md:p-16 flex flex-col bg-zinc-950 md:bg-zinc-900">
+              {project.type === 'client' && (
+                <span className="inline-block self-start px-3 py-1 bg-white/10 text-white/50 text-[9px] font-black uppercase tracking-[0.2em] rounded-full border border-white/10 mb-5">
+                  Projeto p/ Cliente
+                </span>
+              )}
+              <p className="text-zinc-500 font-bold uppercase tracking-[0.3em] text-[10px] mb-2">{project.category}</p>
+              <h3 id="modal-title" className="text-2xl md:text-5xl font-bold text-white mb-4 md:mb-6 font-display italic tracking-tight">{project.title}</h3>
+              <div className="w-12 h-1 bg-white/20 mb-5 rounded-full" />
+              <p className="text-zinc-400 text-sm md:text-xl font-light leading-relaxed mb-8">{project.description}</p>
+
+              <div className="space-y-6 md:space-y-8">
+                {project.impact && project.impact.length > 0 && (
+                  <div>
+                    <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mb-3">Resultados</p>
+                    <div className="flex flex-wrap gap-3">
+                      {project.impact.map((m) => (
+                        <div key={m.label} className="px-4 py-3 bg-white/5 rounded-2xl border border-white/10">
+                          <p className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">{m.label}</p>
+                          <p className="text-white font-bold text-sm">{m.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mb-3">Tecnologias principais</p>
+                  <div className="flex flex-wrap gap-2">
+                    {project.tags.map((tag) => (
+                      <span key={tag} className="px-3 md:px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] md:text-xs text-zinc-300 font-medium hover:bg-white/10 transition-colors">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {project.link === '#' ? (
+                  <span className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full font-bold uppercase tracking-widest text-xs bg-zinc-800 text-zinc-500 cursor-default opacity-60">
+                    Acesso Restrito
+                  </span>
+                ) : (
+                  <a
+                    href={project.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-3 px-8 md:px-10 py-4 md:py-5 rounded-full font-bold uppercase tracking-widest text-xs bg-white text-black hover:bg-zinc-200 shadow-xl active:scale-95 transition-all"
+                  >
+                    Acessar Projeto
+                    <ArrowUpRight className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </AnimatePresence>,
+    document.body
+  );
+}
+
 export default function Projects() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState<'personal' | 'client'>('personal');
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const filteredProjects = projects.filter(p => (p.type || 'personal') === activeTab);
-
-  const closeModal = () => setSelectedProject(null);
-
-  // Lock body scroll + Escape key + focus management
-  useEffect(() => {
-    if (selectedProject) {
-      document.body.style.overflow = 'hidden';
-      // Move focus to close button when modal opens
-      setTimeout(() => closeButtonRef.current?.focus(), 50);
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => { document.body.style.overflow = 'unset'; };
-  }, [selectedProject]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && selectedProject) closeModal();
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [selectedProject]);
 
   return (
     <section id="projetos" className="py-32 px-6 md:px-12 max-w-7xl mx-auto">
@@ -62,7 +194,7 @@ export default function Projects() {
             <motion.div
               layoutId="activeTab"
               className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"
-              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
             />
           )}
         </button>
@@ -77,7 +209,7 @@ export default function Projects() {
             <motion.div
               layoutId="activeTab"
               className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"
-              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
             />
           )}
         </button>
@@ -106,26 +238,20 @@ export default function Projects() {
                 />
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-700 z-20" />
                 {project.type === 'client' && (
-                  <div className="absolute top-4 md:top-6 right-4 md:right-6 px-3 py-1 bg-black/90 md:bg-black/80 backdrop-blur-none md:backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-xl border border-white/10 z-30">
+                  <div className="absolute top-4 md:top-6 right-4 md:right-6 px-3 py-1 bg-black/90 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-xl border border-white/10 z-30">
                     Case de Cliente
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent z-20 pointer-events-none" />
                 <div className="absolute top-4 md:top-6 left-4 md:left-6 flex flex-wrap gap-2 z-30">
                   {project.tags.slice(0, 3).map((tag) => (
-                    <span key={tag} className="px-3 py-1 bg-white/95 md:bg-white/90 backdrop-blur-none md:backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm text-black opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    <span key={tag} className="px-3 py-1 bg-white/95 text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm text-black opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                       {tag}
                     </span>
                   ))}
                 </div>
-                {/* Ver Projeto — visível por padrão em touch, hover no desktop */}
-                <div className="absolute inset-0 flex items-center justify-center z-30
-                                opacity-100 md:opacity-0 md:group-hover:opacity-100
-                                transition-opacity duration-500">
-                  <div className="bg-white text-black px-5 md:px-6 py-2.5 md:py-3 rounded-full font-bold uppercase tracking-widest text-[10px] shadow-2xl
-                                  translate-y-0 md:translate-y-4 md:group-hover:translate-y-0
-                                  transition-transform duration-500
-                                  md:bg-white md:opacity-100">
+                <div className="absolute inset-0 flex items-center justify-center z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="bg-white text-black px-5 md:px-6 py-2.5 md:py-3 rounded-full font-bold uppercase tracking-widest text-[10px] shadow-2xl translate-y-0 md:translate-y-4 md:group-hover:translate-y-0 transition-transform duration-500">
                     Ver Projeto
                   </div>
                 </div>
@@ -154,135 +280,10 @@ export default function Projects() {
         </AnimatePresence>
       </motion.div>
 
-      {/* Modal */}
-      <AnimatePresence>
-        {selectedProject && (
-          <div
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-start p-4 md:p-8 overflow-y-auto custom-scrollbar"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="modal-title"
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeModal}
-              className="fixed inset-0 bg-black/98 md:bg-black/90 backdrop-blur-none md:backdrop-blur-2xl"
-              aria-hidden="true"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              style={{ willChange: 'transform, opacity' }}
-              className="relative w-full h-auto min-h-full md:min-h-0 md:max-w-6xl bg-zinc-950 md:bg-zinc-900 md:rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row shadow-2xl md:border border-white/10 md:mt-[5vh] md:mb-[5vh] shrink-0"
-            >
-              <button
-                ref={closeButtonRef}
-                onClick={closeModal}
-                aria-label="Fechar modal"
-                className="absolute top-4 right-4 md:top-6 md:right-6 z-50 w-11 h-11 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all backdrop-blur-none md:backdrop-blur-md border border-white/10"
-              >
-                <X className="w-5 h-5 md:w-6 md:h-6" />
-              </button>
-
-              {/* Gallery */}
-              <div className="w-full md:w-[60%] shrink-0 bg-zinc-950 relative flex flex-col overflow-hidden border-b md:border-b-0 md:border-r border-white/5">
-                <div
-                  className="absolute inset-0 bg-cover bg-center blur-2xl opacity-20 transform scale-110 pointer-events-none will-change-transform"
-                  style={{ backgroundImage: `url(${selectedProject.image})` }}
-                />
-                <div className="relative z-10 flex md:flex-col overflow-x-auto md:overflow-y-auto snap-x snap-mandatory scrollbar-hide p-4 md:p-6 space-x-4 md:space-x-0 md:space-y-6 md:h-full">
-                  {[selectedProject.image, ...(selectedProject.gallery || [])].map((img, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.1 }}
-                      className="w-[85vw] md:w-full shrink-0 snap-center flex items-center justify-center"
-                    >
-                      <img
-                        src={img}
-                        alt={i === 0 ? `${selectedProject.title} — imagem principal` : `${selectedProject.title} — imagem ${i + 1}`}
-                        className="w-full h-full object-contain rounded-2xl shadow-2xl"
-                        referrerPolicy="no-referrer"
-                      />
-                    </motion.div>
-                  ))}
-                </div>
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/90 backdrop-blur-none px-5 py-2.5 rounded-full border border-white/10 md:hidden pointer-events-none shadow-2xl z-50" aria-hidden="true">
-                  <motion.div animate={{ x: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-                    <ChevronRight className="w-3 h-3 text-white" />
-                  </motion.div>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white whitespace-nowrap">Deslize para ver mais</span>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 p-6 pb-12 md:p-16 flex flex-col bg-zinc-950 md:bg-zinc-900">
-                <div className="mb-8 md:mb-12">
-                  {selectedProject.type === 'client' && (
-                    <span className="inline-block px-3 py-1 bg-white/10 text-white/50 text-[9px] font-black uppercase tracking-[0.2em] rounded-full border border-white/10 mb-6">
-                      Projeto p/ Cliente
-                    </span>
-                  )}
-                  <p className="text-zinc-500 font-bold uppercase tracking-[0.3em] text-[10px] mb-3 md:mb-4">{selectedProject.category}</p>
-                  <h3 id="modal-title" className="text-2xl md:text-5xl font-bold text-white mb-4 md:mb-6 font-display italic tracking-tight">{selectedProject.title}</h3>
-                  <div className="w-12 h-1 bg-white/20 mb-6 rounded-full" />
-                  <p className="text-zinc-400 text-sm md:text-xl font-light leading-relaxed mb-6 md:mb-8">
-                    {selectedProject.description}
-                  </p>
-
-                  <div className="space-y-6 md:space-y-10">
-                    {selectedProject.impact && selectedProject.impact.length > 0 && (
-                      <div>
-                        <p className="text-zinc-500 font-bold uppercase tracking-widest text-[9px] md:text-[10px] mb-4">Resultados</p>
-                        <div className="flex flex-wrap gap-3">
-                          {selectedProject.impact.map((m) => (
-                            <div key={m.label} className="px-4 py-3 bg-white/5 rounded-2xl border border-white/10">
-                              <p className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">{m.label}</p>
-                              <p className="text-white font-bold text-sm">{m.value}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div>
-                      <p className="text-zinc-500 font-bold uppercase tracking-widest text-[9px] md:text-[10px] mb-4">Tecnologias principais</p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedProject.tags.map((tag) => (
-                          <span key={tag} className="px-3 md:px-5 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] md:text-xs text-zinc-300 font-medium hover:bg-white/10 transition-colors">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {selectedProject.link === '#' ? (
-                      <span className="inline-flex items-center justify-center gap-3 px-8 md:px-10 py-4 md:py-5 rounded-full font-bold uppercase tracking-widest text-[10px] md:text-xs bg-zinc-800 text-zinc-500 cursor-default opacity-60">
-                        Acesso Restrito
-                      </span>
-                    ) : (
-                      <a
-                        href={selectedProject.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-3 px-8 md:px-10 py-4 md:py-5 rounded-full font-bold uppercase tracking-widest text-[10px] md:text-xs bg-white text-black hover:bg-zinc-200 shadow-xl shadow-white/5 active:scale-95 transition-all"
-                      >
-                        Acessar Projeto
-                        <ArrowUpRight className="w-4 h-4" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Modal via Portal */}
+      {selectedProject && (
+        <ProjectModal project={selectedProject} onClose={() => setSelectedProject(null)} />
+      )}
     </section>
   );
 }
