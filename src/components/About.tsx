@@ -46,7 +46,7 @@ export default function About() {
               Especialista em transformar processos manuais em fluxos <span className="text-black dark:text-white font-medium">automatizados e inteligentes</span> — sem projetos de meses ou equipes grandes.
             </p>
             <p>
-              Foco total em <span className="text-black dark:text-white font-medium">N8N, Inteligência Artificial e Desenvolvimento Web</span> para escalar operações de negócios de forma rápida e mensurável.
+              Foco total em <span className="text-black dark:text-white font-medium">Inteligência Artificial e Desenvolvimento Web</span> para escalar operações de negócios de forma rápida e mensurável.
             </p>
           </div>
 

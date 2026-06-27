@@ -54,31 +54,6 @@ export default function Hero() {
         style={{ willChange: 'transform, opacity' }}
         className="relative z-10 max-w-4xl flex flex-col items-center"
       >
-        <div className="flex items-center gap-3 mb-8 flex-wrap justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="p-1 px-3 rounded-full bg-black/5 md:bg-black/5 border border-black/10 dark:bg-white/5 dark:border-white/10 backdrop-blur-none md:backdrop-blur-sm shadow-sm"
-          >
-            <span className="text-zinc-500 font-medium tracking-[0.2em] uppercase text-[10px] md:text-xs">
-              Soluções em Automação & IA
-            </span>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.35, duration: 0.5 }}
-            className="p-1 px-3 rounded-full bg-emerald-50 border border-emerald-200 backdrop-blur-none md:backdrop-blur-sm shadow-sm"
-          >
-            <span className="text-emerald-600 font-medium tracking-[0.2em] uppercase text-[10px] md:text-xs flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-              Disponível para projetos
-            </span>
-          </motion.div>
-        </div>
-
         <h1 className="text-4xl sm:text-6xl md:text-9xl font-bold tracking-tighter leading-none mb-8 font-display italic flex flex-col items-center select-none">
           <span className="block text-gradient pr-2">Victor Nogueira</span>
           <span className="relative flex w-full justify-center overflow-hidden text-center md:pb-4 md:pt-1 not-italic text-zinc-400 min-h-[1.1em]">
@@ -113,7 +88,7 @@ export default function Hero() {
           transition={{ delay: 0.5, duration: 0.9 }}
           className="text-zinc-500 text-lg md:text-xl font-light max-w-2xl mb-12"
         >
-          Automações com <span className="text-black dark:text-white font-medium">N8N e IA</span> que eliminam processos manuais e escalam operações — sem precisar de uma equipe de TI.
+          Automações que eliminam processos manuais e escalam operações — <span className="text-black dark:text-white font-medium">sistemas que escalam e otimizam suas tarefas.</span>
         </motion.p>
 
         <motion.div
