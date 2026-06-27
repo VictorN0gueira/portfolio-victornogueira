@@ -177,7 +177,7 @@ export default function Projects() {
         <div className="max-w-2xl">
           <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 font-display italic">Cases de Sucesso</h2>
           <p className="text-zinc-500 text-lg md:text-xl font-light">
-            Soluções personalizadas que combinam <span className="text-black font-medium">eficiência, IA e design</span> de ponta para escalar negócios.
+            Soluções personalizadas que combinam <span className="text-black dark:text-white font-medium">eficiência, IA e design</span> de ponta para escalar negócios.
           </p>
         </div>
       </motion.div>
@@ -188,13 +188,13 @@ export default function Projects() {
           onClick={() => setActiveTab('personal')}
           role="tab"
           aria-selected={activeTab === 'personal'}
-          className={`relative px-4 py-2 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${activeTab === 'personal' ? 'text-black' : 'text-zinc-400 hover:text-zinc-600'}`}
+          className={`relative px-4 py-2 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${activeTab === 'personal' ? 'text-black dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}
         >
           <span className="relative z-10 whitespace-nowrap">01. Produtos Próprios</span>
           {activeTab === 'personal' && (
             <motion.div
               layoutId="activeTab"
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-black dark:bg-white"
               transition={{ type: 'spring', stiffness: 380, damping: 30 }}
             />
           )}
@@ -203,13 +203,13 @@ export default function Projects() {
           onClick={() => setActiveTab('client')}
           role="tab"
           aria-selected={activeTab === 'client'}
-          className={`relative px-4 py-2 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${activeTab === 'client' ? 'text-black' : 'text-zinc-400 hover:text-zinc-600'}`}
+          className={`relative px-4 py-2 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${activeTab === 'client' ? 'text-black dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}
         >
           <span className="relative z-10 whitespace-nowrap">02. Cases de Clientes</span>
           {activeTab === 'client' && (
             <motion.div
               layoutId="activeTab"
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-black dark:bg-white"
               transition={{ type: 'spring', stiffness: 380, damping: 30 }}
             />
           )}
@@ -269,10 +269,10 @@ export default function Projects() {
                       </span>
                     )}
                   </div>
-                  <h3 className="text-xl md:text-2xl font-bold mb-3 font-display transition-colors group-hover:text-zinc-600">{project.title}</h3>
+                  <h3 className="text-xl md:text-2xl font-bold mb-3 font-display transition-colors group-hover:text-zinc-600 dark:group-hover:text-zinc-300">{project.title}</h3>
                   <p className="text-zinc-500 font-light leading-relaxed max-w-sm line-clamp-2">{project.description}</p>
                 </div>
-                <div className="w-12 h-12 md:w-14 md:h-14 rounded-full border border-zinc-200 flex items-center justify-center shrink-0 group-hover:bg-black group-hover:text-white group-hover:border-black transition-all duration-500 transform group-hover:rotate-45">
+                <div className="w-12 h-12 md:w-14 md:h-14 rounded-full border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 group-hover:bg-black dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-black group-hover:border-black dark:group-hover:border-white transition-all duration-500 transform group-hover:rotate-45">
                   <ArrowUpRight className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
               </div>
