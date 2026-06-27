@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Dark mode via .dark class on <html> */
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -7,6 +10,22 @@
   --color-brand-black: #050505;
   --color-brand-white: #F8F9FA;
   --color-brand-gray: #E5E7EB;
+}
+
+/* CSS custom properties for theme-aware values */
+:root {
+  --grid-line-color: rgba(0, 0, 0, 0.04);
+  --roi-slider-fill: #18181b;
+  --roi-slider-track: #e4e4e7;
+}
+
+/* Dark mode token overrides — auto-flips all bg-brand-white usages */
+.dark {
+  --color-brand-white: #18181b;
+  --color-brand-gray: #27272a;
+  --grid-line-color: rgba(255, 255, 255, 0.06);
+  --roi-slider-fill: #ffffff;
+  --roi-slider-track: #3f3f46;
 }
 
 @layer base {
@@ -61,6 +80,10 @@
   
   .text-gradient {
     @apply bg-clip-text text-transparent bg-linear-to-r from-black via-zinc-700 to-zinc-500;
+  }
+
+  .text-gradient-dark {
+    @apply bg-clip-text text-transparent bg-linear-to-r from-white via-zinc-200 to-zinc-400;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -145,6 +168,11 @@
   letter-spacing: 0.01em !important;
 }
 
+/* Dark mode gradient text override */
+.dark .text-gradient {
+  background-image: linear-gradient(to right, #ffffff, #e4e4e7, #a1a1aa);
+}
+
 /* ── ROI Calculator range slider ── */
 .roi-slider {
   -webkit-appearance: none;
@@ -186,4 +214,33 @@
 
 .roi-slider::-moz-range-thumb:hover {
   transform: scale(1.15);
+}
+
+/* Dark mode slider overrides */
+.dark .roi-slider::-webkit-slider-thumb {
+  background: #ffffff;
+  border-color: #27272a;
+  box-shadow: 0 0 0 1.5px #52525b;
+}
+
+.dark .roi-slider::-moz-range-thumb {
+  background: #ffffff;
+  border-color: #27272a;
+  box-shadow: 0 0 0 1.5px #52525b;
+}
+
+/* ── 404 glitch effect ── */
+@keyframes glitch-1 {
+  0%, 100% { transform: translate(0); clip-path: none; }
+  15% { transform: translate(-3px, 1px); clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%); color: #34d399; }
+  30% { transform: translate(3px, -1px); clip-path: polygon(0 65%, 100% 65%, 100% 80%, 0 80%); color: #ffffff; }
+  45% { transform: translate(-1px, 2px); clip-path: none; }
+  60% { transform: translate(2px, -2px); clip-path: polygon(0 45%, 100% 45%, 100% 60%, 0 60%); color: #a1a1aa; }
+}
+
+@keyframes glitch-2 {
+  0%, 100% { transform: translate(0); opacity: 0.3; }
+  25% { transform: translate(4px, 0); opacity: 0.5; color: #34d399; }
+  50% { transform: translate(-4px, 1px); opacity: 0.2; }
+  75% { transform: translate(2px, -1px); opacity: 0.4; }
 }

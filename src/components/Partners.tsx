@@ -44,7 +44,7 @@ export default function Partners() {
   const duplicatedPartners = [...PARTNERS, ...PARTNERS];
 
   return (
-    <section className="py-32 bg-white overflow-hidden border-y border-zinc-100">
+    <section className="py-32 bg-white dark:bg-zinc-900 overflow-hidden border-y border-zinc-100 dark:border-zinc-800">
       <div className="max-w-7xl mx-auto px-6 md:px-12 mb-20">
         <div className="flex flex-col items-center justify-center text-center">
           <motion.div
@@ -76,8 +76,8 @@ export default function Partners() {
 
       <div className="relative flex whitespace-nowrap overflow-hidden">
         {/* Mask for gradient edges */}
-        <div className="absolute inset-y-0 left-0 w-32 md:w-64 bg-linear-to-r from-white to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-32 md:w-64 bg-linear-to-l from-white to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 left-0 w-32 md:w-64 bg-linear-to-r from-white dark:from-zinc-900 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-32 md:w-64 bg-linear-to-l from-white dark:from-zinc-900 to-transparent z-10 pointer-events-none" />
 
         <motion.div 
           className="flex whitespace-nowrap gap-16 md:gap-32 py-4 items-center"
@@ -110,7 +110,7 @@ export default function Partners() {
                   height={80}
                 />
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-300 group-hover:text-zinc-900 transition-colors duration-500">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors duration-500">
                 {partner.name}
               </span>
             </div>

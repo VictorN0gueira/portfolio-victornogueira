@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { motion, useScroll, useSpring, AnimatePresence } from 'motion/react';
 import type { ComponentProps } from 'react';
+import NotFound from './components/NotFound';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import SEO from './components/SEO';
@@ -36,7 +37,7 @@ function SectionSkeleton() {
   return (
     <div className="py-24 flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-2 border-zinc-200 border-t-zinc-500 rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-zinc-200 dark:border-zinc-700 border-t-zinc-500 dark:border-t-zinc-400 rounded-full animate-spin" />
         <span className="text-xs text-zinc-400 uppercase tracking-widest font-medium">Carregando...</span>
       </div>
     </div>
@@ -131,11 +132,11 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-brand-white text-zinc-900 font-sans selection:bg-black selection:text-white">
-      {/* Scroll Progress Bar — cor adaptativa por rota */}
+    <div className="min-h-screen bg-brand-white text-zinc-900 dark:text-zinc-50 font-sans selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black">
+      {/* Scroll Progress Bar — cor adaptativa por rota e tema */}
       <motion.div
         className={`fixed top-0 left-0 right-0 h-1 z-[100] origin-left ${
-          isBlog ? 'bg-white/80' : 'bg-black'
+          isBlog ? 'bg-white/80' : 'bg-black dark:bg-white'
         }`}
         style={{ scaleX }}
       />
@@ -147,6 +148,14 @@ export default function App() {
             element={
               <motion.div {...pageTransition}>
                 <HomePage />
+              </motion.div>
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <motion.div {...pageTransition}>
+                <NotFound />
               </motion.div>
             }
           />

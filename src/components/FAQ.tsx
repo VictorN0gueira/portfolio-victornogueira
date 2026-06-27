@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Minus } from 'lucide-react';
+import AnimatedText from './AnimatedText';
 
 const faqs = [
   {
@@ -34,7 +35,7 @@ export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section className="py-24 md:py-32 px-6 md:px-12 bg-zinc-50">
+    <section className="py-24 md:py-32 px-6 md:px-12 bg-zinc-50 dark:bg-zinc-900">
       <div className="max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -47,7 +48,7 @@ export default function FAQ() {
             Dúvidas frequentes
           </p>
           <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter font-display italic">
-            Perguntas
+            <AnimatedText text="Perguntas" delay={0.2} />
           </h2>
         </motion.div>
 
@@ -59,7 +60,7 @@ export default function FAQ() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.07 }}
-              className="bg-white rounded-2xl border border-zinc-100 overflow-hidden"
+              className="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-100 dark:border-zinc-700 overflow-hidden"
             >
               <button
                 type="button"
@@ -67,14 +68,14 @@ export default function FAQ() {
                 className="w-full flex items-center justify-between px-5 md:px-6 py-5 text-left gap-4"
                 aria-expanded={openIndex === i}
               >
-                <span className="font-medium text-zinc-900 text-sm md:text-base">
+                <span className="font-medium text-zinc-900 dark:text-zinc-100 text-sm md:text-base">
                   {faq.question}
                 </span>
-                <span className="shrink-0 w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center transition-colors group-hover:bg-zinc-200">
+                <span className="shrink-0 w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center transition-colors group-hover:bg-zinc-200 dark:group-hover:bg-zinc-600">
                   {openIndex === i ? (
-                    <Minus className="w-4 h-4 text-zinc-600" />
+                    <Minus className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />
                   ) : (
-                    <Plus className="w-4 h-4 text-zinc-600" />
+                    <Plus className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />
                   )}
                 </span>
               </button>

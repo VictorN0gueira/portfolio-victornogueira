@@ -1,11 +1,13 @@
 import { Github, Linkedin, Instagram, ArrowUpRight, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { LOGO_URL } from '../lib/constants';
+import MagneticDock from './MagneticDock';
+import type { SocialLink } from './MagneticDock';
 
-const socialLinks = [
+const socialLinks: SocialLink[] = [
   { icon: Linkedin, label: 'LinkedIn', href: 'https://www.linkedin.com/in/victornogueira-vn' },
   { icon: Github, label: 'GitHub', href: 'https://github.com/VictorN0gueira' },
-  { icon: Instagram, label: 'Instagram', href: 'https://www.instagram.com/victornogueira._/' }
+  { icon: Instagram, label: 'Instagram', href: 'https://www.instagram.com/victornogueira._/' },
 ];
 
 const navLinks = [
@@ -62,19 +64,8 @@ export default function Footer() {
           {/* Redes sociais */}
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 mb-5">Conecte-se</p>
-            <div className="flex items-center gap-4 mb-6">
-              {socialLinks.map((social) => (
-                <a 
-                  key={social.label}
-                  href={social.href} 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full border border-white/10 bg-white/[0.03] flex items-center justify-center hover:text-white hover:border-white/20 hover:bg-white/[0.08] transition-all hover:scale-110"
-                  aria-label={social.label}
-                >
-                  <social.icon className="w-4 h-4" />
-                </a>
-              ))}
+            <div className="mb-6">
+              <MagneticDock links={socialLinks} />
             </div>
             <a 
               href="mailto:contato@vnone.com.br"

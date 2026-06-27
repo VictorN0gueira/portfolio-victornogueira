@@ -104,13 +104,13 @@ export default function ROICalculator() {
           className="grid md:grid-cols-[1fr_420px] lg:grid-cols-[1fr_460px] gap-3 md:gap-4"
         >
           {/* ── Left: Inputs ── */}
-          <div className="bg-zinc-50 rounded-3xl p-7 md:p-10 flex flex-col gap-8 border border-zinc-100">
+          <div className="bg-zinc-50 dark:bg-zinc-800 rounded-3xl p-7 md:p-10 flex flex-col gap-8 border border-zinc-100 dark:border-zinc-700">
 
             {/* Slider */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm font-semibold text-zinc-700">Horas/semana em tarefas manuais</p>
-                <span className="text-3xl font-bold tabular-nums leading-none">{hours}h</span>
+                <span className="text-3xl font-bold tabular-nums leading-none text-zinc-900 dark:text-white">{hours}h</span>
               </div>
               <input
                 type="range"
@@ -120,7 +120,7 @@ export default function ROICalculator() {
                 onChange={e => setHours(Number(e.target.value))}
                 className="roi-slider w-full"
                 style={{
-                  background: `linear-gradient(to right, #18181b 0%, #18181b ${trackProgress}%, #e4e4e7 ${trackProgress}%, #e4e4e7 100%)`,
+                  background: `linear-gradient(to right, var(--roi-slider-fill) 0%, var(--roi-slider-fill) ${trackProgress}%, var(--roi-slider-track) ${trackProgress}%, var(--roi-slider-track) 100%)`,
                 }}
                 aria-label="Horas por semana em tarefas manuais"
               />
@@ -132,7 +132,7 @@ export default function ROICalculator() {
 
             {/* Team size */}
             <div>
-              <p className="text-sm font-semibold text-zinc-700 mb-3">Pessoas que executam essa tarefa</p>
+              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Pessoas que executam essa tarefa</p>
               <div className="grid grid-cols-2 gap-2">
                 {TEAM_OPTIONS.map((opt, i) => (
                   <motion.button
@@ -142,8 +142,8 @@ export default function ROICalculator() {
                     whileTap={{ scale: 0.96 }}
                     className={`py-3.5 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
                       teamIndex === i
-                        ? 'bg-zinc-900 text-white shadow-md'
-                        : 'bg-white border border-zinc-200 text-zinc-500 hover:border-zinc-400 hover:text-zinc-800'
+                        ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md'
+                        : 'bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400 dark:hover:border-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
                     }`}
                   >
                     {opt.label}
@@ -154,8 +154,8 @@ export default function ROICalculator() {
 
             {/* Hourly rate */}
             <div>
-              <p className="text-sm font-semibold text-zinc-700 mb-3">Custo médio/hora da equipe (R$)</p>
-              <label className="flex items-center bg-white border border-zinc-200 rounded-xl px-4 py-3.5 gap-2 focus-within:border-zinc-500 focus-within:ring-2 focus-within:ring-zinc-100 transition-all cursor-text">
+              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Custo médio/hora da equipe (R$)</p>
+              <label className="flex items-center bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 rounded-xl px-4 py-3.5 gap-2 focus-within:border-zinc-500 dark:focus-within:border-zinc-400 focus-within:ring-2 focus-within:ring-zinc-100 dark:focus-within:ring-zinc-700 transition-all cursor-text">
                 <span className="text-zinc-400 text-sm font-medium shrink-0">R$</span>
                 <input
                   type="number"
@@ -163,7 +163,7 @@ export default function ROICalculator() {
                   max={5000}
                   value={hourlyRate}
                   onChange={e => setHourlyRate(Math.max(1, Number(e.target.value)))}
-                  className="flex-1 outline-none text-xl font-bold text-zinc-900 bg-transparent min-w-0 tabular-nums"
+                  className="flex-1 outline-none text-xl font-bold text-zinc-900 dark:text-white bg-transparent min-w-0 tabular-nums"
                   aria-label="Custo médio por hora da equipe em reais"
                 />
               </label>

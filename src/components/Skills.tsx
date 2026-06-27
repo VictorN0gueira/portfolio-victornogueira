@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import AnimatedText from './AnimatedText';
 import { 
   Code2, 
   Cpu, 
@@ -164,7 +165,9 @@ export default function Skills() {
           transition={{ duration: 0.8 }}
           className="text-center mb-24"
         >
-          <h2 className="text-4xl md:text-6xl font-bold font-display italic mb-6">Stack Tecnológica</h2>
+          <h2 className="text-4xl md:text-6xl font-bold font-display italic mb-6">
+            <AnimatedText text="Stack Tecnológica" delay={0.1} />
+          </h2>
           <p className="text-zinc-500 text-lg md:text-xl font-light max-w-2xl mx-auto">
             Soluções completas, da orquestração de fluxos à entrega de interfaces de alta performance.
           </p>
@@ -178,7 +181,7 @@ export default function Skills() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: catIndex * 0.1 }}
-                className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-l-4 border-black pl-6"
+                className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-l-4 border-black dark:border-white pl-6"
               >
                 <div className="max-w-xl">
                   <h3 className="text-2xl md:text-3xl font-bold font-display uppercase tracking-tight mb-2">
@@ -202,7 +205,7 @@ export default function Skills() {
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: index * 0.05 }}
                     whileHover={{ y: -5 }}
-                    className="group relative bg-white border border-zinc-100 p-8 rounded-3xl transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:border-zinc-200"
+                    className="group relative bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 p-8 rounded-3xl transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.3)] hover:border-zinc-200 dark:hover:border-zinc-600"
                   >
                     <div className="flex flex-col items-center text-center space-y-4">
                       <div 
@@ -222,7 +225,7 @@ export default function Skills() {
                       </div>
                       
                       <div className="space-y-1">
-                        <h4 className="font-bold text-zinc-900 group-hover:text-black transition-colors">
+                        <h4 className="font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors">
                           {skill.name}
                         </h4>
                       </div>

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LOGO_URL } from '../lib/constants';
+import ThemeToggle from './ThemeToggle';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -84,7 +85,7 @@ export default function Header() {
               src={LOGO_URL}
               alt="VN One Logo"
               className={`h-10 md:h-14 w-auto object-contain transition-all duration-500 group-hover:scale-110 ${
-                isScrolled ? 'brightness-110' : 'brightness-0'
+                isScrolled ? 'brightness-110' : 'brightness-0 dark:brightness-110'
               }`}
               referrerPolicy="no-referrer"
             />
@@ -99,12 +100,12 @@ export default function Header() {
                     key={item.name}
                     to={item.href}
                     className={`text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 relative group ${
-                      isScrolled ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'
+                      isScrolled ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black dark:text-zinc-300 dark:hover:text-white'
                     }`}
                   >
                     {item.name}
                     <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${
-                      isScrolled ? 'bg-white' : 'bg-black'
+                      isScrolled ? 'bg-white' : 'bg-black dark:bg-white'
                     }`} />
                   </Link>
                 );
@@ -115,26 +116,27 @@ export default function Header() {
                   href={item.href}
                   onClick={(e) => handleAnchorClick(e, item.href)}
                   className={`text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 relative group ${
-                    isScrolled ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'
+                    isScrolled ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black dark:text-zinc-300 dark:hover:text-white'
                   }`}
                 >
                   {item.name}
                   <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${
-                    isScrolled ? 'bg-white' : 'bg-black'
+                    isScrolled ? 'bg-white' : 'bg-black dark:bg-white'
                   }`} />
                 </a>
               );
             })}
           </nav>
 
-          <div className={`flex items-center gap-4 relative ${isMenuOpen ? 'z-[70]' : 'z-50'}`}>
+          <div className={`flex items-center gap-3 relative ${isMenuOpen ? 'z-[70]' : 'z-50'}`}>
+            <ThemeToggle scrolled={isScrolled || isMenuOpen} />
             <a
               href="#contato"
               onClick={(e) => handleAnchorClick(e, '#contato')}
               className={`shimmer hidden sm:block text-xs font-bold uppercase tracking-widest px-8 py-3 rounded-full transition-all transform hover:scale-105 active:scale-95 shadow-lg ${
                 isScrolled || isMenuOpen
                   ? 'bg-white text-black hover:bg-zinc-200 shadow-white/5'
-                  : 'bg-black text-white hover:bg-zinc-800 shadow-black/10'
+                  : 'bg-black text-white hover:bg-zinc-800 shadow-black/10 dark:bg-white dark:text-black dark:hover:bg-zinc-200'
               }`}
             >
               Conversar
@@ -147,7 +149,7 @@ export default function Header() {
               className={`md:hidden flex items-center justify-center w-11 h-11 rounded-full border transition-all duration-300 ${
                 isScrolled || isMenuOpen
                   ? 'text-white bg-white/5 hover:bg-white/10 border-white/10'
-                  : 'text-black bg-black/5 hover:bg-black/10 border-black/10'
+                  : 'text-black bg-black/5 hover:bg-black/10 border-black/10 dark:text-white dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10'
               }`}
               aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
               aria-expanded={isMenuOpen}

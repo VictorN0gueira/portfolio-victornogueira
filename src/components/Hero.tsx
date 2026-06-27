@@ -59,7 +59,7 @@ export default function Hero() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="p-1 px-3 rounded-full bg-black/5 md:bg-black/5 border border-black/10 backdrop-blur-none md:backdrop-blur-sm shadow-sm"
+            className="p-1 px-3 rounded-full bg-black/5 md:bg-black/5 border border-black/10 dark:bg-white/5 dark:border-white/10 backdrop-blur-none md:backdrop-blur-sm shadow-sm"
           >
             <span className="text-zinc-500 font-medium tracking-[0.2em] uppercase text-[10px] md:text-xs">
               Soluções em Automação & IA
@@ -113,7 +113,7 @@ export default function Hero() {
           transition={{ delay: 0.5, duration: 0.9 }}
           className="text-zinc-500 text-lg md:text-xl font-light max-w-2xl mb-12"
         >
-          Automações com <span className="text-black font-medium">N8N e IA</span> que eliminam processos manuais e escalam operações — sem precisar de uma equipe de TI.
+          Automações com <span className="text-black dark:text-white font-medium">N8N e IA</span> que eliminam processos manuais e escalam operações — sem precisar de uma equipe de TI.
         </motion.p>
 
         <motion.div
@@ -141,7 +141,7 @@ export default function Hero() {
               e.preventDefault();
               document.querySelector('#projetos')?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 md:px-10 py-4 md:py-5 rounded-full border border-zinc-200 bg-white/95 md:bg-white/50 backdrop-blur-none md:backdrop-blur-sm text-zinc-600 font-medium hover:border-black hover:text-black transition-all"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 md:px-10 py-4 md:py-5 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white/95 dark:bg-zinc-800/60 md:bg-white/50 backdrop-blur-none md:backdrop-blur-sm text-zinc-600 dark:text-zinc-300 font-medium hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white transition-all"
           >
             Ver Cases
             <ChevronDown className="w-4 h-4" />
@@ -152,7 +152,7 @@ export default function Hero() {
               href="https://www.linkedin.com/in/victornogueira-vn"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-3 md:p-4 rounded-full border border-zinc-200 bg-white/95 md:bg-white/50 backdrop-blur-none md:backdrop-blur-sm hover:border-black hover:text-black text-zinc-400 transition-all hover:scale-110 shadow-sm"
+              className="p-3 md:p-4 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white/95 dark:bg-zinc-800/60 md:bg-white/50 backdrop-blur-none md:backdrop-blur-sm hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white text-zinc-400 dark:text-zinc-500 transition-all hover:scale-110 shadow-sm"
               title="LinkedIn"
               aria-label="Perfil no LinkedIn de Victor Nogueira"
             >
@@ -162,7 +162,7 @@ export default function Hero() {
               href="https://github.com/VictorN0gueira"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-3 md:p-4 rounded-full border border-zinc-200 bg-white/95 md:bg-white/50 backdrop-blur-none md:backdrop-blur-sm hover:border-black hover:text-black text-zinc-400 transition-all hover:scale-110 shadow-sm"
+              className="p-3 md:p-4 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white/95 dark:bg-zinc-800/60 md:bg-white/50 backdrop-blur-none md:backdrop-blur-sm hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white text-zinc-400 dark:text-zinc-500 transition-all hover:scale-110 shadow-sm"
               title="GitHub"
               aria-label="Repositório no GitHub de Victor Nogueira"
             >
@@ -183,9 +183,9 @@ export default function Hero() {
         <motion.div
           animate={{ y: [0, 8, 0] }}
           transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-          className="w-5 h-8 border-2 border-zinc-200 rounded-full flex justify-center p-1"
+          className="w-5 h-8 border-2 border-zinc-200 dark:border-zinc-600 rounded-full flex justify-center p-1"
         >
-          <div className="w-1 h-2 bg-zinc-300 rounded-full" />
+          <div className="w-1 h-2 bg-zinc-300 dark:bg-zinc-600 rounded-full" />
         </motion.div>
       </motion.div>
     </section>

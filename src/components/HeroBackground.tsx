@@ -29,8 +29,8 @@ export default function HeroBackground() {
         className="absolute inset-0"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px)
+            linear-gradient(to right, var(--grid-line-color) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--grid-line-color) 1px, transparent 1px)
           `,
           backgroundSize: '40px 40px',
           maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%)',
@@ -40,14 +40,14 @@ export default function HeroBackground() {
 
       {/* Ambient blobs — static on mobile (blur+scale animation is very expensive on mobile GPU) */}
       <motion.div
-        className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full bg-zinc-200/50 blur-[120px]"
+        className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full bg-zinc-200/50 dark:bg-zinc-700/50 blur-[120px]"
         style={{ opacity: 0.4 }}
         animate={isTouchDevice ? undefined : { opacity: [0.3, 0.5, 0.3], scale: [1, 1.1, 1] }}
         transition={{ duration: 10, repeat: Infinity, repeatType: 'reverse' }}
       />
 
       <motion.div
-        className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] rounded-full bg-zinc-200/30 blur-[100px]"
+        className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] rounded-full bg-zinc-200/30 dark:bg-zinc-700/30 blur-[100px]"
         style={{ opacity: 0.3 }}
         animate={isTouchDevice ? undefined : { opacity: [0.2, 0.4, 0.2], scale: [1, 1.2, 1] }}
         transition={{ duration: 12, repeat: Infinity, repeatType: 'reverse', delay: 2 }}
