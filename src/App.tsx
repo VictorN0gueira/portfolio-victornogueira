@@ -16,6 +16,8 @@ const Projects = lazy(() => import('./components/Projects'));
 const Testimonials = lazy(() => import('./components/Testimonials'));
 const Partners = lazy(() => import('./components/Partners'));
 const CTASection = lazy(() => import('./components/CTASection'));
+const ROICalculator = lazy(() => import('./components/ROICalculator'));
+const FAQ = lazy(() => import('./components/FAQ'));
 const Contact = lazy(() => import('./components/Contact'));
 const Footer = lazy(() => import('./components/Footer'));
 const Chatbot = lazy(() => import('./components/Chatbot'));
@@ -83,6 +85,14 @@ function HomePage() {
 
           <motion.div {...revealProps}>
             <Partners />
+          </motion.div>
+
+          <motion.div {...revealProps}>
+            <ROICalculator />
+          </motion.div>
+
+          <motion.div {...revealProps}>
+            <FAQ />
           </motion.div>
 
           <motion.div {...revealProps}>

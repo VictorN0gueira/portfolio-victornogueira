@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import { Download, Workflow, BrainCircuit, Globe } from 'lucide-react';
 
-const CV_URL = import.meta.env.VITE_CV_URL || "https://minio.vnone.com.br/api/v1/buckets/victornogueira/objects/download?preview=true&prefix=portfolio%2FCV%20-%20Jo%C3%A3o%20Victor.pdf&version_id=null";
+const CV_URL = import.meta.env.VITE_CV_URL || "https://minio.vnone.com.br/api/v1/buckets/victornogueira/objects/download?preview=true&prefix=portfolio%2FCV%20-%20Jo%C3%A3o%20Victor%20-%20att.pdf&version_id=null";
 
 const specialties = [
   { id: '01', title: 'Automação de Processos', desc: 'Fluxos automáticos que eliminam retrabalho e escalam sem esforço manual', icon: Workflow, color: '#8B5CF6' },
