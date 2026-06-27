@@ -14,7 +14,7 @@ export default function ThemeToggle({ scrolled = false }: Props) {
     <motion.button
       onClick={toggleTheme}
       whileTap={{ scale: 0.88 }}
-      className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all duration-300 ${
+      className={`w-11 h-11 rounded-full border flex items-center justify-center transition-all duration-300 ${
         scrolled || isDark
           ? 'text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 border-white/10'
           : 'text-zinc-500 hover:text-black bg-black/5 hover:bg-black/10 border-black/10'

@@ -62,7 +62,7 @@ export default function NotFound() {
       />
 
       {/* Ambient glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(600px,100vw)] h-[300px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -102,7 +102,7 @@ export default function NotFound() {
 
         <Link
           to="/"
-          className="inline-flex items-center gap-2.5 bg-white text-black px-8 py-3.5 rounded-full font-bold text-sm uppercase tracking-widest hover:bg-zinc-200 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-white/5"
+          className="inline-flex items-center gap-2.5 bg-white text-black px-5 sm:px-8 py-3.5 rounded-full font-bold text-sm uppercase tracking-wide sm:tracking-widest hover:bg-zinc-200 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-white/5"
         >
           <ArrowLeft className="w-4 h-4" />
           Voltar ao início

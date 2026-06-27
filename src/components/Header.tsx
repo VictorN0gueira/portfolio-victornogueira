@@ -78,13 +78,13 @@ export default function Header() {
             : 'bg-transparent py-6'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 flex justify-between items-center">
           {/* Logo — navega para home */}
           <Link to="/" className="flex items-center gap-2 group relative z-50" aria-label="Victor Nogueira — Página inicial">
             <img
               src={LOGO_URL}
               alt="VN One Logo"
-              className={`h-10 md:h-14 w-auto object-contain transition-all duration-500 group-hover:scale-110 ${
+              className={`h-10 md:h-14 w-auto max-w-[120px] md:max-w-none object-contain transition-all duration-500 group-hover:scale-110 ${
                 isScrolled ? 'brightness-110' : 'brightness-0 dark:brightness-110'
               }`}
               referrerPolicy="no-referrer"
@@ -197,7 +197,7 @@ export default function Header() {
               {/* Botão de Fechar Explícito */}
               <button
                 onClick={() => setIsMenuOpen(false)}
-                className="absolute top-6 left-6 p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-full transition-all"
+                className="absolute top-6 left-6 p-2.5 text-zinc-400 hover:text-white hover:bg-white/5 rounded-full transition-all"
                 aria-label="Fechar menu"
               >
                 <X className="w-6 h-6" />

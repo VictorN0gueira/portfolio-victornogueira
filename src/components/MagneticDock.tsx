@@ -29,7 +29,7 @@ function MagneticItem({ href, label, children, className = '' }: MagneticItemPro
     y.set(0);
   };
 
-  const baseClass = `w-10 h-10 rounded-full border border-white/10 bg-white/[0.03] flex items-center justify-center transition-colors hover:text-white hover:border-white/20 hover:bg-white/[0.08] ${className}`;
+  const baseClass = `w-11 h-11 rounded-full border border-white/10 bg-white/[0.03] flex items-center justify-center transition-colors hover:text-white hover:border-white/20 hover:bg-white/[0.08] ${className}`;
 
   if (isTouchDevice) {
     return (

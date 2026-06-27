@@ -1,4 +1,5 @@
-import { motion, useReducedMotion } from 'motion/react';
+import { useRef } from 'react';
+import { motion, useInView, useReducedMotion } from 'motion/react';
 
 type AnimatedTextProps = {
   text: string;
@@ -14,56 +15,50 @@ export default function AnimatedText({
   underline = true,
 }: AnimatedTextProps) {
   const shouldReduce = useReducedMotion();
-  const characters = text.split('');
+  const containerRef = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(containerRef, { once: true });
+  const words = text.split(' ');
+  const totalChars = text.replace(/ /g, '').length;
+  const underlineDelay = delay + totalChars * 0.03 + 0.08;
 
-  const containerVariants = {
-    hidden: {},
-    visible: {
-      transition: {
-        staggerChildren: shouldReduce ? 0 : 0.03,
-        delayChildren: delay,
-      },
-    },
-  };
-
-  const charVariants = {
-    hidden: { opacity: 0, y: shouldReduce ? 0 : 18 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] as const },
-    },
-  };
-
-  const underlineDelay = delay + characters.length * 0.03 + 0.08;
+  let charIndex = 0;
 
   return (
-    <span className={`relative inline-block ${className}`}>
-      <motion.span
-        className="inline-flex flex-wrap"
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-      >
-        {characters.map((char, i) => (
-          <motion.span
-            key={i}
-            variants={charVariants}
-            className="inline-block"
-            style={{ whiteSpace: char === ' ' ? 'pre' : 'normal' }}
-          >
-            {char === ' ' ? ' ' : char}
-          </motion.span>
+    <span ref={containerRef} className={`relative inline-block ${className}`}>
+      <span className="inline-flex flex-wrap gap-x-[0.25em]">
+        {words.map((word, wi) => (
+          <span key={wi} className="inline-flex">
+            {word.split('').map((char) => {
+              const idx = charIndex++;
+              return (
+                <motion.span
+                  key={idx}
+                  initial={{ opacity: 0, y: shouldReduce ? 0 : 18 }}
+                  animate={
+                    isInView
+                      ? { opacity: 1, y: 0 }
+                      : { opacity: 0, y: shouldReduce ? 0 : 18 }
+                  }
+                  transition={{
+                    duration: 0.28,
+                    ease: [0.4, 0, 0.2, 1] as const,
+                    delay: shouldReduce ? 0 : delay + idx * 0.03,
+                  }}
+                  className="inline-block"
+                >
+                  {char}
+                </motion.span>
+              );
+            })}
+          </span>
         ))}
-      </motion.span>
+      </span>
 
       {underline && (
         <motion.span
           className="absolute -bottom-1 left-0 h-0.5 rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-300"
           initial={{ width: '0%' }}
-          whileInView={{ width: '100%' }}
-          viewport={{ once: true }}
+          animate={isInView ? { width: '100%' } : { width: '0%' }}
           transition={{
             duration: 0.5,
             delay: shouldReduce ? 0 : underlineDelay,
