@@ -63,6 +63,13 @@
     scrollbar-width: thin;
     scrollbar-color: #e4e4e7 transparent;
   }
+
+  /* Dark mode text contrast — bump dark text shades to readable levels.
+     Placed in @layer base so any explicit dark:text-* utility overrides it. */
+  .dark .text-zinc-500 { color: #a1a1aa; } /* zinc-500 → zinc-400 */
+  .dark .text-zinc-600 { color: #a1a1aa; } /* zinc-600 → zinc-400 */
+  .dark .text-zinc-700 { color: #d4d4d8; } /* zinc-700 → zinc-300 */
+  .dark .text-zinc-900 { color: #f4f4f5; } /* zinc-900 → zinc-100 */
 }
 
 @layer utilities {
