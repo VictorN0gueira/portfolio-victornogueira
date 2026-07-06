@@ -4,7 +4,7 @@ import { MessageCircle, ArrowUpRight, Clock, MapPin } from 'lucide-react';
 import { Cursor, Sparkle } from './FloatingIcons';
 import { isTouchDevice } from '../lib/constants';
 
-const WA_LINK = "https://wa.me/5581987348633?text=Ol%C3%A1%2C+Victor!+Quero+agendar+uma+conversa+sobre+automa%C3%A7%C3%B5es.";
+const WA_LINK = "https://wa.me/5581984451243?text=Ol%C3%A1%2C+Victor!+Quero+agendar+uma+conversa+sobre+automa%C3%A7%C3%B5es.";
 
 export default function CTASection() {
   const sectionRef = useRef<HTMLElement>(null);

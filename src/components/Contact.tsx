@@ -27,12 +27,12 @@ export default function Contact() {
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">WhatsApp</p>
               <a 
-                href="https://wa.me/5581987348633" 
+                href="https://wa.me/5581984451243"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-xl md:text-2xl font-light text-zinc-400 hover:text-white transition-colors"
               >
-                +55 (81) 98734-8633
+                +55 (81) 98445-1243
                 <MessageCircle className="w-6 h-6 text-green-500" />
               </a>
             </div>

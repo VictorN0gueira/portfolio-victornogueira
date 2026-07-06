@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { TrendingUp, ArrowUpRight, Sparkles } from 'lucide-react';
 
 const WA_LINK =
-  "https://wa.me/5581987348633?text=Ol%C3%A1%2C+Victor!+Quero+automatizar+meus+processos.";
+  "https://wa.me/5581984451243?text=Ol%C3%A1%2C+Victor!+Quero+automatizar+meus+processos.";
 
 const TEAM_OPTIONS = [
   { label: '1 pessoa', value: 1 },

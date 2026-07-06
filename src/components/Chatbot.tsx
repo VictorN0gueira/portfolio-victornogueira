@@ -13,7 +13,7 @@ export default function Chatbot() {
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
       {/* WhatsApp FAB */}
       <motion.a
-        href="https://wa.me/5581987348633"
+        href="https://wa.me/5581984451243?text=Ol%C3%A1%2C+Victor!+Vim+pelo+seu+portf%C3%B3lio+e+gostaria+de+conversar+sobre+um+projeto."
         target="_blank"
         rel="noopener noreferrer"
         whileHover={{ scale: 1.1, y: -2 }}

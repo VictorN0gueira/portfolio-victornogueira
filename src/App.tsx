@@ -6,7 +6,6 @@ import NotFound from './components/NotFound';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import SEO from './components/SEO';
-import CustomCursor from './components/CustomCursor';
 import AccessibilityWidget from './components/AccessibilityWidget';
 
 const Stats = lazy(() => import('./components/Stats'));
@@ -183,7 +182,6 @@ export default function App() {
         </Routes>
       </AnimatePresence>
 
-      <CustomCursor />
       <AccessibilityWidget />
     </div>
   );
