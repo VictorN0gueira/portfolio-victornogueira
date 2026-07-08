@@ -5,11 +5,9 @@ import ContactForm from './ContactForm';
 interface ContactProps {
   /** Mensagem vinda do ROICalculator para pré-preencher o formulário */
   prefillMessage?: string;
-  /** Economia anual estimada pela calculadora — segue no payload do lead */
-  valorEstimado?: number;
 }
 
-export default function Contact({ prefillMessage, valorEstimado }: ContactProps) {
+export default function Contact({ prefillMessage }: ContactProps) {
   return (
     <section id="contato" className="py-32 px-6 md:px-12 bg-black text-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
@@ -57,7 +55,7 @@ export default function Contact({ prefillMessage, valorEstimado }: ContactProps)
           transition={{ duration: 0.8 }}
           className="relative z-10"
         >
-          <ContactForm initialMessage={prefillMessage} valorEstimado={valorEstimado} />
+          <ContactForm initialMessage={prefillMessage} />
           <p className="text-center text-zinc-600 text-xs mt-5 tracking-wide">
             Respondo em até <span className="text-white font-medium">24 horas</span>
           </p>

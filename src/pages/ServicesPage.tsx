@@ -85,15 +85,9 @@ export default function ServicesPage() {
                   ))}
                 </ul>
 
-                <div className="mt-auto pt-6 border-t border-zinc-200 dark:border-zinc-700 flex items-end justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Investimento</p>
-                    <p className="text-lg font-bold text-zinc-900 dark:text-white leading-tight">{service.preco}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Prazo</p>
-                    <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{service.prazo}</p>
-                  </div>
+                <div className="mt-auto pt-6 border-t border-zinc-200 dark:border-zinc-700">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Prazo estimado</p>
+                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{service.prazo}</p>
                 </div>
               </motion.div>
             ))}

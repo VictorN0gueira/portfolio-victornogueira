@@ -2,9 +2,14 @@ import { useState, useEffect, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, CheckCircle2, Mail, MessageSquare, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CONTACT_ENDPOINT, WHATSAPP_FALLBACK_URL } from '../lib/constants';
+import { WHATSAPP_FALLBACK_URL } from '../lib/constants';
 
-const REQUEST_TIMEOUT_MS = 10_000;
+// Webhooks n8n de ativação — disparam a notificação por email e WhatsApp.
+// NÃO ALTERAR o shape do payload enviado a eles (ver handleSubmit).
+const WEBHOOKS = {
+  email: 'https://n8n.vnone.com.br/webhook/portfolio-vn-email',
+  whatsapp: 'https://n8n.vnone.com.br/webhook/portfolio-vn-whatsapp',
+};
 
 type ContactMethod = 'email' | 'whatsapp';
 
@@ -54,11 +59,9 @@ function toEvolutionFormat(raw: string): string {
 interface ContactFormProps {
   /** Mensagem pré-preenchida (ex.: vinda do ROICalculator) */
   initialMessage?: string;
-  /** Economia anual estimada pela calculadora — vira valor_estimado no lead */
-  valorEstimado?: number;
 }
 
-export default function ContactForm({ initialMessage, valorEstimado }: ContactFormProps) {
+export default function ContactForm({ initialMessage }: ContactFormProps) {
   const [method, setMethod] = useState<ContactMethod>('email');
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [formData, setFormData] = useState({
@@ -68,8 +71,6 @@ export default function ContactForm({ initialMessage, valorEstimado }: ContactFo
     mensagem: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // Honeypot anti-spam: campo invisível que só bots preenchem
-  const [website, setWebsite] = useState('');
   // Consentimento LGPD — obrigatório para enviar
   const [consent, setConsent] = useState(false);
 
@@ -100,35 +101,25 @@ export default function ContactForm({ initialMessage, valorEstimado }: ContactFo
     setErrors({});
     setStatus('sending');
 
-    // A edge function valida, grava o lead e repassa às notificações internas
+    const webhookUrl = method === 'email' ? WEBHOOKS.email : WEBHOOKS.whatsapp;
+
+    // Payload legado — exatamente o que os webhooks n8n esperam. Não adicionar campos.
     const payload = {
       nome: formData.nome,
-      metodo: method,
-      ...(method === 'whatsapp'
-        ? { whatsapp: toEvolutionFormat(formData.whatsapp) }
-        : { email: formData.email }),
+      [method]: method === 'whatsapp' ? toEvolutionFormat(formData.whatsapp) : formData.email,
       mensagem: formData.mensagem,
-      ...(valorEstimado ? { valor_estimado: valorEstimado } : {}),
-      consent,
-      website,
+      timestamp: new Date().toISOString(),
     };
 
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-      const response = await fetch(CONTACT_ENDPOINT, {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: controller.signal,
       });
-      clearTimeout(timer);
 
       if (response.ok) {
         setStatus('success');
-      } else if (response.status === 429) {
-        setErrors({ form: 'Muitas tentativas. Aguarde um minuto e tente novamente.' });
-        setStatus('idle');
       } else {
         throw new Error('Failed to send');
       }
@@ -201,18 +192,6 @@ export default function ContactForm({ initialMessage, valorEstimado }: ContactFo
       </fieldset>
 
       <form name="contact" onSubmit={handleSubmit} className="space-y-4 md:space-y-6" noValidate>
-        {/* Honeypot anti-spam — invisível para humanos, bots preenchem */}
-        <input
-          type="text"
-          name="website"
-          value={website}
-          onChange={(e) => setWebsite(e.target.value)}
-          tabIndex={-1}
-          autoComplete="off"
-          aria-hidden="true"
-          className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden"
-        />
-
         {/* Nome */}
         <div className="space-y-2">
           <label htmlFor="contact-nome" className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-4 block">
@@ -324,19 +303,6 @@ export default function ContactForm({ initialMessage, valorEstimado }: ContactFo
             e autorizo o uso dos meus dados para retorno do contato.
           </span>
         </label>
-
-        {errors.form && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            role="alert"
-            aria-live="polite"
-            className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-sm"
-          >
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errors.form}</span>
-          </motion.div>
-        )}
 
         {status === 'error' && (
           <motion.div

@@ -3,7 +3,6 @@ export interface Service {
   categoria: 'Automação' | 'Inteligência Artificial' | 'Desenvolvimento Web';
   descricao: string;
   inclui: string[];
-  preco: string;
   prazo: string;
 }
 
@@ -26,7 +25,6 @@ export const services: Service[] = [
       'Hospedagem e monitoramento',
       'Documentação de uso',
     ],
-    preco: 'R$ 500 – R$ 1.800',
     prazo: '~1 semana',
   },
   {
@@ -40,7 +38,6 @@ export const services: Service[] = [
       'Componente de IA quando necessário',
       'Monitoramento e alertas',
     ],
-    preco: 'A partir de R$ 2.000',
     prazo: '2 a 3 semanas',
   },
   {
@@ -54,7 +51,6 @@ export const services: Service[] = [
       'Base de conhecimento do seu negócio',
       'Ajustes de comportamento pós-entrega',
     ],
-    preco: 'R$ 1.800 – R$ 3.600',
     prazo: '2 a 3 semanas',
   },
   {
@@ -68,7 +64,6 @@ export const services: Service[] = [
       'SEO técnico configurado',
       'Deploy incluso',
     ],
-    preco: 'R$ 600 – R$ 1.800',
     prazo: '~1 semana',
   },
   {
@@ -82,7 +77,6 @@ export const services: Service[] = [
       'Seções sob medida',
       'Performance otimizada',
     ],
-    preco: 'A partir de R$ 2.000',
     prazo: '1 a 2 semanas',
   },
   {
@@ -96,7 +90,6 @@ export const services: Service[] = [
       'Banco de dados estruturado',
       'Deploy e ambiente de produção',
     ],
-    preco: 'A partir de R$ 6.000',
     prazo: '1 a 2 meses',
   },
 ];
