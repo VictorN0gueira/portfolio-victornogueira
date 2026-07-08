@@ -10,6 +10,8 @@ interface Testimonial {
   avatar: string;
   text: string;
   rating: number;
+  /** 'cover' para logos com fundo próprio opaco (evita o anel branco); padrão 'contain' */
+  logoFit?: 'contain' | 'cover';
 }
 
 const testimonials: Testimonial[] = [
@@ -58,6 +60,7 @@ const testimonials: Testimonial[] = [
     avatar: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2Flogo-hf.png&version_id=null',
     text: 'O sistema de captura e qualificação de leads por IA mudou nosso atendimento. Os contatos chegam organizados no pipeline e o WhatsApp integrado agilizou todo o processo comercial.',
     rating: 5,
+    logoFit: 'cover',
   },
   {
     // TODO: texto rascunho — confirmar/ajustar a fala real do Pierre
@@ -68,6 +71,7 @@ const testimonials: Testimonial[] = [
     avatar: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=ShipSmart%2FLogo.jpg&version_id=null',
     text: 'As automações que o Victor construiu para nossa operação logística eliminaram horas de trabalho manual toda semana. Entregas no prazo e muito profissionalismo do início ao fim.',
     rating: 5,
+    logoFit: 'cover',
   },
 ];
 
@@ -211,21 +215,25 @@ export default function SocialProof() {
                 </blockquote>
 
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-white overflow-hidden flex items-center justify-center shrink-0">
+                  <div className="w-14 h-14 rounded-2xl bg-white overflow-hidden flex items-center justify-center shrink-0">
                     <img
                       src={t.avatar}
                       alt={`Logo de ${t.company}`}
-                      className="w-10 h-10 object-contain"
+                      className={
+                        t.logoFit === 'cover'
+                          ? 'w-full h-full object-cover'
+                          : 'w-full h-full object-contain p-2'
+                      }
                       referrerPolicy="no-referrer"
                       loading="lazy"
-                      width={40}
-                      height={40}
+                      width={56}
+                      height={56}
                     />
                   </div>
                   <div className="text-left">
                     <p className="font-bold text-white text-sm">{t.name}</p>
                     <p className="text-zinc-500 text-xs">
-                      {t.role} · {t.company}
+                      {t.role}{t.company && t.company !== t.name ? ` · ${t.company}` : ''}
                     </p>
                   </div>
                 </div>
