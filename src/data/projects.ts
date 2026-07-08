@@ -1,5 +1,7 @@
 export interface Project {
   id: number;
+  slug: string;
+  featured?: boolean;
   title: string;
   category: string;
   description: string;
@@ -14,6 +16,8 @@ export interface Project {
 export const projects: Project[] = [
   {
     id: 5,
+    slug: "troco",
+    featured: true,
     title: "Trocô",
     category: "Gestão Financeira + IA",
     description: "Gestão Inteligente via WhatsApp com automação e Supabase. Processamento automático de áudios e notas fiscais.",
@@ -31,6 +35,7 @@ export const projects: Project[] = [
 
   {
     id: 7,
+    slug: 'dashboard-consumo-crm',
     title: 'Dashboard de Consumo CRM',
     category: 'BI / Dashboards de Vendas',
     description: 'Centralização de dados de consumo e histórico de compras com gráficos dinâmicos e lista de produtos, integrando APIs de CRM via Webhooks.',
@@ -46,6 +51,7 @@ export const projects: Project[] = [
   },
   {
     id: 8,
+    slug: 'importacao-massiva-nfe',
     title: 'Importação Massiva de NF-e',
     category: 'Logística / Integração ERP',
     description: 'Sincronização de milhares de Notas Fiscais/dia da Tiny API para Supabase, com monitoramento de status e comparativos automatizados.',
@@ -58,6 +64,8 @@ export const projects: Project[] = [
 
   {
     id: 11,
+    slug: 'diagnostico-empresarial',
+    featured: true,
     title: 'Diagnóstico Empresarial',
     category: 'Captura de Leads / Consultoria',
     description: 'Sistema completo de captura de leads com WhatsApp integrado, formulário inteligente, pipeline visual (Kanban), qualificação por IA e gestão de oportunidades.',
@@ -75,6 +83,8 @@ export const projects: Project[] = [
   },
   {
     id: 12,
+    slug: 'dizpara',
+    featured: true,
     title: 'DizPara',
     category: 'Automação de Marketing / SaaS',
     description: 'Sistema de captura e disparo de leads via WhatsApp e E-mail, com automação inteligente e IA de qualificação automática de contatos.',
@@ -92,6 +102,7 @@ export const projects: Project[] = [
   },
   {
     id: 2,
+    slug: 'travel-ia',
     title: 'Travel IA',
     category: 'Roteiro Inteligente',
     description: 'Roteirização baseada em IA para guias personalizados. Planejamento completo de viagens com automação de ponta.',
@@ -106,6 +117,7 @@ export const projects: Project[] = [
   },
   {
     id: 3,
+    slug: 'ai-playlist-maker',
     title: 'AI Playlist Maker',
     category: 'Curadoria Musical',
     description: 'Curadoria musical inteligente via API do Spotify. Crie playlists personalizadas baseadas em seu gosto e humor usando IA.',
@@ -120,6 +132,7 @@ export const projects: Project[] = [
   },
   {
     id: 4,
+    slug: 'portal-link-in-bio',
     title: 'Portal Link-in-Bio',
     category: 'Marketing e Conversão',
     description: 'Hub de links personalizado com alta conversão. Centralize sua presença digital com um design otimizado e automação.',
@@ -134,3 +147,9 @@ export const projects: Project[] = [
     ]
   }
 ];
+
+export const featuredProjects: Project[] = projects.filter((p) => p.featured);
+
+export function getProjectBySlug(slug: string): Project | undefined {
+  return projects.find((p) => p.slug === slug);
+}
