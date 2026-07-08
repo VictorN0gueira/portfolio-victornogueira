@@ -145,6 +145,7 @@ export default function LgpdPage() {
               <ul className="space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
                 <li className="flex gap-3"><span className="text-emerald-500">•</span> Nome informado no formulário</li>
                 <li className="flex gap-3"><span className="text-emerald-500">•</span> E-mail ou WhatsApp (conforme sua escolha)</li>
+                <li className="flex gap-3"><span className="text-emerald-500">•</span> Serviço de interesse selecionado</li>
                 <li className="flex gap-3"><span className="text-emerald-500">•</span> Mensagem enviada</li>
                 <li className="flex gap-3"><span className="text-emerald-500">•</span> Hash anônimo do IP + navegador (antispam)</li>
               </ul>

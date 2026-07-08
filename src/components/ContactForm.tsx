@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Send, CheckCircle2, Mail, MessageSquare, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { WHATSAPP_FALLBACK_URL } from '../lib/constants';
+import { serviceOptions } from '../data/services';
+import ServiceSelect from './ServiceSelect';
 
 // Webhooks n8n de ativação — disparam a notificação por email e WhatsApp.
 // NÃO ALTERAR o shape do payload enviado a eles (ver handleSubmit).
@@ -70,6 +72,7 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
     whatsapp: '+55 ',
     mensagem: ''
   });
+  const [servico, setServico] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   // Consentimento LGPD — obrigatório para enviar
   const [consent, setConsent] = useState(false);
@@ -85,6 +88,9 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
     e.preventDefault();
 
     const newErrors: Record<string, string> = {};
+    if (!servico) {
+      newErrors.servico = 'Selecione o serviço de interesse';
+    }
     if (method === 'whatsapp') {
       const digits = formData.whatsapp.replace(/\D/g, '');
       const local = digits.startsWith('55') ? digits.substring(2) : digits;
@@ -103,10 +109,11 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
 
     const webhookUrl = method === 'email' ? WEBHOOKS.email : WEBHOOKS.whatsapp;
 
-    // Payload legado — exatamente o que os webhooks n8n esperam. Não adicionar campos.
+    // Campos legados intactos (nome, [metodo], mensagem, timestamp) + 'servico' aditivo.
     const payload = {
       nome: formData.nome,
       [method]: method === 'whatsapp' ? toEvolutionFormat(formData.whatsapp) : formData.email,
+      servico,
       mensagem: formData.mensagem,
       timestamp: new Date().toISOString(),
     };
@@ -146,6 +153,8 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
           onClick={() => {
             setStatus('idle');
             setFormData({ nome: '', email: '', whatsapp: '+55 ', mensagem: '' });
+            setServico('');
+            setConsent(false);
             setErrors({});
           }}
           className="px-8 py-3 bg-white text-black rounded-full text-xs md:text-sm font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-xl active:scale-95"
@@ -207,6 +216,28 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
             placeholder="Seu nome"
             className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-zinc-600 text-sm"
           />
+        </div>
+
+        {/* Serviço de interesse — comum a email e WhatsApp */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-4 block">
+            Serviço de interesse
+          </label>
+          <ServiceSelect
+            value={servico}
+            onChange={(v) => {
+              setServico(v);
+              if (errors.servico) setErrors({ ...errors, servico: '' });
+            }}
+            options={serviceOptions}
+            placeholder="Selecione um serviço"
+            invalid={!!errors.servico}
+          />
+          {errors.servico && (
+            <p role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
+              {errors.servico}
+            </p>
+          )}
         </div>
 
         <AnimatePresence mode="wait">

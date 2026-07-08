@@ -55,6 +55,7 @@ export default function PrivacyPage() {
             <ul className="list-disc pl-6 space-y-1.5">
               <li>Nome</li>
               <li>E-mail ou número de WhatsApp (conforme o método escolhido)</li>
+              <li>Serviço de interesse (selecionado no formulário)</li>
               <li>Mensagem</li>
             </ul>
             <p>
