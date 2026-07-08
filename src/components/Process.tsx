@@ -1,5 +1,18 @@
 import { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'motion/react';
+import { motion, useInView, useScroll, useTransform } from 'motion/react';
+
+const stepsContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12 } },
+};
+const stepCard = {
+  hidden: { opacity: 0, y: 60 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.7 } },
+};
+const stepConnector = {
+  hidden: { opacity: 0, scale: 0.5 },
+  show: { opacity: 1, scale: 1, transition: { duration: 0.4, delay: 0.3 } },
+};
 import { Search, PenTool, Zap, Rocket, ChevronRight } from 'lucide-react';
 import { PaperPlane } from './FloatingIcons';
 import { isTouchDevice } from '../lib/constants';
@@ -45,6 +58,8 @@ const steps = [
 
 export default function Process() {
   const sectionRef = useRef<HTMLElement>(null);
+  const contentRef = useRef(null);
+  const isInView = useInView(contentRef, { once: true, margin: "0px 0px -80px 0px" });
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -86,14 +101,13 @@ export default function Process() {
         <PaperPlane className="w-20 h-20 md:w-24 md:h-24 text-white opacity-10" />
       </motion.div>
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div ref={contentRef} className="max-w-7xl mx-auto relative z-10">
 
         {/* ── Cabeçalho ── */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-20">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8 }}
           >
             <p className="text-xs font-bold uppercase tracking-[0.4em] text-zinc-500 mb-4">
@@ -106,8 +120,7 @@ export default function Process() {
 
           <motion.p
             initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.15 }}
             className="text-zinc-500 text-base md:text-lg font-light max-w-sm md:text-right"
           >
@@ -118,16 +131,18 @@ export default function Process() {
 
         {/* ── Cards + setas conectoras ── */}
         {/* Mobile: scroll horizontal com snap | Desktop: flex com largura igual */}
-        <div className="flex items-stretch gap-0 overflow-x-auto pb-4 md:pb-0 snap-x snap-proximity md:snap-none scrollbar-hide overscroll-x-contain touch-pan-x md:touch-auto -mx-6 md:mx-0 px-6 md:px-0">
+        <motion.div
+          className="flex items-stretch gap-0 overflow-x-auto pb-4 md:pb-0 snap-x snap-proximity md:snap-none scrollbar-hide overscroll-x-contain touch-pan-x md:touch-auto -mx-6 md:mx-0 px-6 md:px-0"
+          variants={stepsContainer}
+          initial="hidden"
+          animate={isInView ? "show" : "hidden"}
+        >
           {steps.map((step, index) => (
             <div key={step.number} className="flex items-center gap-0 flex-shrink-0 md:flex-shrink md:flex-1">
 
               {/* ── Card ── */}
               <motion.div
-                initial={{ opacity: 0, y: 60 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 0.7, delay: index * 0.12 }}
+                variants={stepCard}
                 className="group relative flex flex-col w-[280px] md:w-auto md:flex-1 min-h-[280px] p-8 rounded-2xl
                            bg-white/[0.03] border border-zinc-800
                            hover:border-zinc-600 hover:bg-white/[0.05]
@@ -168,10 +183,7 @@ export default function Process() {
               {/* ── Seta conectora (apenas entre cards, desktop) ── */}
               {index < steps.length - 1 && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: index * 0.12 + 0.3 }}
+                  variants={stepConnector}
                   className="hidden md:flex flex-shrink-0 items-center justify-center w-10"
                 >
                   <ChevronRight className="w-5 h-5 text-zinc-700" />
@@ -179,7 +191,7 @@ export default function Process() {
               )}
             </div>
           ))}
-        </div>
+        </motion.div>
 
         {/* ── Indicador de scroll mobile ── */}
         <div className="flex justify-center gap-2 mt-6 md:hidden">

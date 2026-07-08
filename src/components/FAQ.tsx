@@ -1,7 +1,16 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { useRef, useState } from 'react';
+import { motion, useInView, AnimatePresence } from 'motion/react';
 import { Plus, Minus } from 'lucide-react';
 import AnimatedText from './AnimatedText';
+
+const listContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+};
+const listItem = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
 
 const faqs = [
   {
@@ -33,14 +42,15 @@ const faqs = [
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const sectionRef = useRef(null);
+  const isInView = useInView(sectionRef, { once: true, margin: "0px 0px -100px 0px" });
 
   return (
-    <section className="py-24 md:py-32 px-6 md:px-12 bg-zinc-50 dark:bg-zinc-900">
+    <section ref={sectionRef} className="py-24 md:py-32 px-6 md:px-12 bg-zinc-50 dark:bg-zinc-900">
       <div className="max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
           className="mb-12 md:mb-16 text-center"
         >
@@ -52,14 +62,16 @@ export default function FAQ() {
           </h2>
         </motion.div>
 
-        <div className="space-y-3">
+        <motion.div
+          className="space-y-3"
+          variants={listContainer}
+          initial="hidden"
+          animate={isInView ? "show" : "hidden"}
+        >
           {faqs.map((faq, i) => (
             <motion.div
               key={faq.question}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.07 }}
+              variants={listItem}
               className="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-100 dark:border-zinc-700 overflow-hidden"
             >
               <button
@@ -97,7 +109,7 @@ export default function FAQ() {
               </AnimatePresence>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

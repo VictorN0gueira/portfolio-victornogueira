@@ -30,16 +30,11 @@ const STATS = [
   }
 ];
 
-const AnimatedNumber = memo(function AnimatedNumber({ value }: { value: string }) {
-  const match = value.match(/(\d+)(.*)/);
-  if (!match) return <>{value}</>;
+const AnimatedNumberStatic = memo(function AnimatedNumberStatic({ num, suffix }: { num: number; suffix: string }) {
+  return <>{num}{suffix}</>;
+});
 
-  const num = parseInt(match[1], 10);
-  const suffix = match[2];
-
-  // Mobile: skip spring entirely — shows final value immediately, no JS animation loop
-  if (isTouchDevice) return <>{num}{suffix}</>;
-
+const AnimatedNumberSpring = memo(function AnimatedNumberSpring({ num, suffix }: { num: number; suffix: string }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '0px 0px -50px 0px' });
   const spring = useSpring(0, { duration: 2500, bounce: 0 });
@@ -57,6 +52,29 @@ const AnimatedNumber = memo(function AnimatedNumber({ value }: { value: string }
     </span>
   );
 });
+
+const AnimatedNumber = memo(function AnimatedNumber({ value }: { value: string }) {
+  const match = value.match(/(\d+)(.*)/);
+  if (!match) return <>{value}</>;
+  const num = parseInt(match[1], 10);
+  const suffix = match[2];
+  return isTouchDevice
+    ? <AnimatedNumberStatic num={num} suffix={suffix} />
+    : <AnimatedNumberSpring num={num} suffix={suffix} />;
+});
+
+const cardContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } },
+};
+const cardItem = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.8 } },
+};
+const valueItem = {
+  hidden: { opacity: 0, y: isTouchDevice ? 0 : 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, delay: 0.2 } },
+};
 
 export default function Stats() {
   const sectionRef = useRef(null);
@@ -77,30 +95,29 @@ export default function Stats() {
       {/* Background Glow difuso — mantido */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-white/5 blur-[120px] rounded-full pointer-events-none" />
 
-      <motion.div 
+      <motion.div
         className="max-w-7xl mx-auto px-6 md:px-12 relative z-10"
         initial={{ opacity: 0, y: 70 }}
         animate={isInView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-6 md:gap-8 lg:gap-12">
-          {STATS.map((stat, index) => (
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-6 md:gap-8 lg:gap-12"
+          variants={cardContainer}
+          initial="hidden"
+          animate={isInView ? "show" : "hidden"}
+        >
+          {STATS.map((stat) => (
             <motion.div
               key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1, duration: 0.8 }}
+              variants={cardItem}
               className="flex flex-col items-center text-center group"
             >
               <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group-hover:bg-white/10 group-hover:border-white/20 group-hover:-translate-y-2">
                 <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <motion.div
-                initial={{ opacity: 0, y: isTouchDevice ? 0 : 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
+                variants={valueItem}
                 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter mb-2"
               >
                 <AnimatedNumber value={stat.value} />
@@ -113,7 +130,7 @@ export default function Stats() {
               </p>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </motion.div>
     </section>
   );

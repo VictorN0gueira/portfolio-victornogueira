@@ -24,7 +24,7 @@ export default function About() {
             <div className="relative shrink-0">
               <div className="w-28 h-28 md:w-36 md:h-36 rounded-3xl overflow-hidden ring-4 ring-zinc-100 dark:ring-zinc-800 shadow-2xl shadow-black/10">
                 <img
-                  src="/victor-photo.jpg"
+                  src="/victor-photo.webp"
                   alt="Victor Nogueira"
                   className="w-full h-full object-cover object-top grayscale hover:grayscale-0 transition-all duration-700"
                   loading="lazy"

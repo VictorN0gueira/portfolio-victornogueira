@@ -79,29 +79,15 @@ export default function Partners() {
         <div className="absolute inset-y-0 left-0 w-32 md:w-64 bg-linear-to-r from-white dark:from-zinc-900 to-transparent z-10 pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-32 md:w-64 bg-linear-to-l from-white dark:from-zinc-900 to-transparent z-10 pointer-events-none" />
 
-        <motion.div 
-          className="flex whitespace-nowrap gap-16 md:gap-32 py-4 items-center"
-          style={{ willChange: 'transform' }}
-          animate={{
-            x: ["0%", "-50%"],
-          }}
-          transition={{
-            x: {
-              repeat: Infinity,
-              repeatType: "loop",
-              duration: 30,
-              ease: "linear",
-            },
-          }}
-        >
+        <div className="marquee flex whitespace-nowrap gap-16 md:gap-32 py-4 items-center">
           {duplicatedPartners.map((partner, index) => (
-            <div 
+            <div
               key={`${partner.name}-${index}`}
               className="group flex flex-col items-center justify-center shrink-0 w-40 md:w-56"
             >
               <div className="h-16 md:h-20 flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110">
-                <img 
-                  src={partner.logo} 
+                <img
+                  src={partner.logo}
                   alt={partner.name}
                   className="max-h-full w-auto filter grayscale opacity-50 group-hover:opacity-100 group-hover:grayscale-0 transition-all duration-700 object-contain"
                   referrerPolicy="no-referrer"
@@ -115,7 +101,7 @@ export default function Partners() {
               </span>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

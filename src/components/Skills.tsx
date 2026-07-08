@@ -1,5 +1,19 @@
-import { motion } from 'motion/react';
+import { useRef } from 'react';
+import { motion, useInView } from 'motion/react';
 import AnimatedText from './AnimatedText';
+
+const categoryHeader = {
+  hidden: { opacity: 0, x: -20 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.8 } },
+};
+const skillsContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.05 } },
+};
+const skillCard = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
 import { 
   Code2, 
   Cpu, 
@@ -150,6 +164,9 @@ const categories = [
 ];
 
 export default function Skills() {
+  const sectionRef = useRef(null);
+  const isInView = useInView(sectionRef, { once: true, margin: "0px 0px -100px 0px" });
+
   return (
     <section id="habilidades" className="py-32 px-6 md:px-12 bg-brand-white relative overflow-hidden">
       {/* Background purely decorative */}
@@ -157,11 +174,10 @@ export default function Skills() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.02)_0,transparent_70%)]" />
       </div>
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div ref={sectionRef} className="max-w-7xl mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
           className="text-center mb-24"
         >
@@ -177,10 +193,10 @@ export default function Skills() {
           {categories.map((category, catIndex) => (
             <div key={category.title} className="space-y-12">
               <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8, delay: catIndex * 0.1 }}
+                variants={categoryHeader}
+                initial="hidden"
+                animate={isInView ? "show" : "hidden"}
+                transition={{ delay: catIndex * 0.1 }}
                 className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-l-4 border-black dark:border-white pl-6"
               >
                 <div className="max-w-xl">
@@ -196,14 +212,16 @@ export default function Skills() {
                 </div>
               </motion.div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {category.skills.map((skill, index) => (
+              <motion.div
+                className="grid grid-cols-2 md:grid-cols-4 gap-6"
+                variants={skillsContainer}
+                initial="hidden"
+                animate={isInView ? "show" : "hidden"}
+              >
+                {category.skills.map((skill) => (
                   <motion.div
                     key={skill.name}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.05 }}
+                    variants={skillCard}
                     whileHover={{ y: -5 }}
                     className="group relative bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 p-8 rounded-3xl transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.3)] hover:border-zinc-200 dark:hover:border-zinc-600"
                   >
@@ -238,7 +256,7 @@ export default function Skills() {
                     />
                   </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </div>
           ))}
         </div>

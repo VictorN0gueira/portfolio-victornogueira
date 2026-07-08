@@ -50,7 +50,6 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 24 }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-            style={{ willChange: 'transform, opacity' }}
             className="relative w-full md:max-w-6xl bg-zinc-950 md:bg-zinc-900 md:rounded-[2.5rem] flex flex-col md:flex-row shadow-2xl md:border border-white/10 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >

@@ -28,7 +28,6 @@ const revealProps: ComponentProps<typeof motion.div> = {
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-100px" },
   transition: { duration: 0.8, ease: "easeOut" },
-  style: { willChange: "transform, opacity" }
 };
 
 /* Skeleton de carregamento reutilizável */
@@ -59,49 +58,47 @@ function HomePage() {
         <Hero />
         
         <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}>
-            <Stats />
-          </motion.div>
+          <motion.div {...revealProps}><Stats /></motion.div>
+        </Suspense>
 
-          <motion.div {...revealProps}>
-            <About />
-          </motion.div>
+        <Suspense fallback={<SectionSkeleton />}>
+          <motion.div {...revealProps}><About /></motion.div>
+        </Suspense>
 
-          <motion.div {...revealProps}>
-            <Process />
-          </motion.div>
+        <Suspense fallback={<SectionSkeleton />}>
+          <motion.div {...revealProps}><Process /></motion.div>
+        </Suspense>
 
-          <motion.div {...revealProps}>
-            <Skills />
-          </motion.div>
+        <Suspense fallback={<SectionSkeleton />}>
+          <motion.div {...revealProps}><Skills /></motion.div>
+        </Suspense>
 
-          <motion.div {...revealProps}>
-            <Projects />
-          </motion.div>
+        <Suspense fallback={<SectionSkeleton />}>
+          <motion.div {...revealProps}><Projects /></motion.div>
+        </Suspense>
 
-          <motion.div {...revealProps}>
-            <Testimonials />
-          </motion.div>
+        <Suspense fallback={null}>
+          <motion.div {...revealProps}><Testimonials /></motion.div>
+        </Suspense>
 
-          <motion.div {...revealProps}>
-            <Partners />
-          </motion.div>
+        <Suspense fallback={null}>
+          <motion.div {...revealProps}><Partners /></motion.div>
+        </Suspense>
 
-          <motion.div {...revealProps}>
-            <ROICalculator />
-          </motion.div>
+        <Suspense fallback={null}>
+          <motion.div {...revealProps}><ROICalculator /></motion.div>
+        </Suspense>
 
-          <motion.div {...revealProps}>
-            <FAQ />
-          </motion.div>
+        <Suspense fallback={null}>
+          <motion.div {...revealProps}><FAQ /></motion.div>
+        </Suspense>
 
-          <motion.div {...revealProps}>
-            <CTASection />
-          </motion.div>
+        <Suspense fallback={null}>
+          <motion.div {...revealProps}><CTASection /></motion.div>
+        </Suspense>
 
-          <motion.div {...revealProps}>
-            <Contact />
-          </motion.div>
+        <Suspense fallback={null}>
+          <motion.div {...revealProps}><Contact /></motion.div>
         </Suspense>
       </main>
 

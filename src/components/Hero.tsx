@@ -51,7 +51,6 @@ export default function Hero() {
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: "easeOut" }}
-        style={{ willChange: 'transform, opacity' }}
         className="relative z-10 max-w-4xl flex flex-col items-center"
       >
         <h1 className="text-4xl sm:text-6xl md:text-9xl font-bold tracking-tighter leading-none mb-8 font-display italic flex flex-col items-center select-none">
@@ -67,7 +66,6 @@ export default function Hero() {
                     initial={{ opacity: 0, y: 40, filter: isTouchDevice ? 'blur(0px)' : 'blur(10px)' }}
                     animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                     exit={{ opacity: 0, y: -40, filter: isTouchDevice ? 'blur(0px)' : 'blur(10px)' }}
-                    style={{ willChange: 'transform, opacity, filter' }}
                     transition={{
                       type: "tween",
                       duration: 0.4,
@@ -103,7 +101,7 @@ export default function Hero() {
           >
             Vamos conversar
             <motion.div
-              animate={{ x: [0, 5, 0] }}
+              animate={isTouchDevice ? undefined : { x: [0, 5, 0] }}
               transition={{ repeat: Infinity, duration: 1.5 }}
             >
               <ArrowUpRight className="w-5 h-5" />
@@ -156,7 +154,7 @@ export default function Hero() {
       >
         <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">Descubra</span>
         <motion.div
-          animate={{ y: [0, 8, 0] }}
+          animate={isTouchDevice ? undefined : { y: [0, 8, 0] }}
           transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
           className="w-5 h-8 border-2 border-zinc-200 dark:border-zinc-600 rounded-full flex justify-center p-1"
         >

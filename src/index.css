@@ -119,7 +119,7 @@
     content: '';
     position: absolute;
     top: 0;
-    left: -100%;
+    left: 0;
     width: 60%;
     height: 100%;
     background: linear-gradient(
@@ -130,13 +130,24 @@
       rgba(255, 255, 255, 0.15) 55%,
       transparent 100%
     );
+    transform: translateX(-160%);
     animation: shimmer 3s infinite;
     pointer-events: none;
   }
   @keyframes shimmer {
-    0% { left: -100%; }
-    100% { left: 200%; }
+    0% { transform: translateX(-160%); }
+    100% { transform: translateX(320%); }
   }
+}
+
+/* ── Marquee (compositor thread — no JS cost) ── */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee {
+  animation: marquee 30s linear infinite;
+  will-change: transform;
 }
 
 /* ── Acessibilidade: classes aplicadas ao <html> pelo AccessibilityWidget ── */
