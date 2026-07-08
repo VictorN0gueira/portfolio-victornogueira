@@ -1,0 +1,4 @@
+project_id = "keubauybppkesawajpyn"
+
+[functions.contact-proxy]
+verify_jwt = false

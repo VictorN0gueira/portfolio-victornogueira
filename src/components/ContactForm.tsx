@@ -1,11 +1,9 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, CheckCircle2, Mail, MessageSquare, AlertCircle } from 'lucide-react';
+import { CONTACT_ENDPOINT, WHATSAPP_FALLBACK_URL } from '../lib/constants';
 
-const WEBHOOKS = {
-  email: 'https://n8n.vnone.com.br/webhook/portfolio-vn-email',
-  whatsapp: 'https://n8n.vnone.com.br/webhook/portfolio-vn-whatsapp'
-};
+const REQUEST_TIMEOUT_MS = 10_000;
 
 type ContactMethod = 'email' | 'whatsapp';
 
@@ -55,9 +53,11 @@ function toEvolutionFormat(raw: string): string {
 interface ContactFormProps {
   /** Mensagem pré-preenchida (ex.: vinda do ROICalculator) */
   initialMessage?: string;
+  /** Economia anual estimada pela calculadora — vira valor_estimado no lead */
+  valorEstimado?: number;
 }
 
-export default function ContactForm({ initialMessage }: ContactFormProps) {
+export default function ContactForm({ initialMessage, valorEstimado }: ContactFormProps) {
   const [method, setMethod] = useState<ContactMethod>('email');
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [formData, setFormData] = useState({
@@ -67,6 +67,8 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
     mensagem: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Honeypot anti-spam: campo invisível que só bots preenchem
+  const [website, setWebsite] = useState('');
 
   // Pré-preenche a mensagem quando o usuário usa a calculadora de ROI
   useEffect(() => {
@@ -95,24 +97,34 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
     setErrors({});
     setStatus('sending');
 
-    const webhookUrl = method === 'email' ? WEBHOOKS.email : WEBHOOKS.whatsapp;
-
+    // A edge function valida, grava o lead e repassa às notificações internas
     const payload = {
       nome: formData.nome,
-      [method]: method === 'whatsapp' ? toEvolutionFormat(formData.whatsapp) : formData.email,
+      metodo: method,
+      ...(method === 'whatsapp'
+        ? { whatsapp: toEvolutionFormat(formData.whatsapp) }
+        : { email: formData.email }),
       mensagem: formData.mensagem,
-      timestamp: new Date().toISOString()
+      ...(valorEstimado ? { valor_estimado: valorEstimado } : {}),
+      website,
     };
 
     try {
-      const response = await fetch(webhookUrl, {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      const response = await fetch(CONTACT_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (response.ok) {
         setStatus('success');
+      } else if (response.status === 429) {
+        setErrors({ form: 'Muitas tentativas. Aguarde um minuto e tente novamente.' });
+        setStatus('idle');
       } else {
         throw new Error('Failed to send');
       }
@@ -185,6 +197,18 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
       </fieldset>
 
       <form name="contact" onSubmit={handleSubmit} className="space-y-4 md:space-y-6" noValidate>
+        {/* Honeypot anti-spam — invisível para humanos, bots preenchem */}
+        <input
+          type="text"
+          name="website"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden"
+        />
+
         {/* Nome */}
         <div className="space-y-2">
           <label htmlFor="contact-nome" className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-4 block">
@@ -278,16 +302,40 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
           />
         </div>
 
+        {errors.form && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            role="alert"
+            aria-live="polite"
+            className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-sm"
+          >
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errors.form}</span>
+          </motion.div>
+        )}
+
         {status === 'error' && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             role="alert"
             aria-live="assertive"
-            className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm"
+            className="flex flex-wrap items-center gap-3 px-5 py-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm"
           >
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>Erro ao enviar. Verifique sua conexão e tente novamente.</span>
+            <span>
+              Erro ao enviar. Tente novamente ou{' '}
+              <a
+                href={WHATSAPP_FALLBACK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-medium text-red-200 hover:text-white transition-colors"
+              >
+                fale direto pelo WhatsApp
+              </a>
+              .
+            </span>
             <button
               type="button"
               onClick={() => setStatus('idle')}

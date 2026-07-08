@@ -26,9 +26,11 @@ const faqJsonLd = {
 export default function ContactPage() {
   useScrollToHash();
   const [prefillMessage, setPrefillMessage] = useState<string | undefined>();
+  const [valorEstimado, setValorEstimado] = useState<number | undefined>();
 
-  const handleQuoteRequest = useCallback((message: string) => {
+  const handleQuoteRequest = useCallback((message: string, savings: number) => {
     setPrefillMessage(message);
+    setValorEstimado(savings);
     document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
@@ -50,7 +52,7 @@ export default function ContactPage() {
 
         <Suspense fallback={<SectionSkeleton />}>
           <motion.div {...revealProps}>
-            <Contact prefillMessage={prefillMessage} />
+            <Contact prefillMessage={prefillMessage} valorEstimado={valorEstimado} />
           </motion.div>
         </Suspense>
 
