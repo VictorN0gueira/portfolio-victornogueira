@@ -49,6 +49,26 @@ const testimonials: Testimonial[] = [
     text: 'O fluxo de captura e disparo de leads no WhatsApp foi um game-changer. Profissionalismo e agilidade que eu nunca tinha visto em automação.',
     rating: 5,
   },
+  {
+    // TODO: texto rascunho — confirmar/ajustar a fala real do Henrique
+    id: 5,
+    name: 'Henrique França',
+    role: 'CEO',
+    company: 'Henrique França',
+    avatar: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2Flogo-hf.png&version_id=null',
+    text: 'O sistema de captura e qualificação de leads por IA mudou nosso atendimento. Os contatos chegam organizados no pipeline e o WhatsApp integrado agilizou todo o processo comercial.',
+    rating: 5,
+  },
+  {
+    // TODO: texto rascunho — confirmar/ajustar a fala real do Pierre
+    id: 6,
+    name: 'Pierre Jacquin',
+    role: 'CEO',
+    company: 'ShipSmart',
+    avatar: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=ShipSmart%2FLogo.jpg&version_id=null',
+    text: 'As automações que o Victor construiu para nossa operação logística eliminaram horas de trabalho manual toda semana. Entregas no prazo e muito profissionalismo do início ao fim.',
+    rating: 5,
+  },
 ];
 
 const PARTNERS = [

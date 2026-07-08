@@ -13,6 +13,7 @@ const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
 const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const LgpdPage = lazy(() => import('./pages/LgpdPage'));
 const BlogPage = lazy(() => import('./components/BlogPage'));
 
 const pageTransition = {
@@ -74,6 +75,7 @@ export default function App() {
           <Route path="/projetos/:slug" element={<LazyPage><ProjectDetailPage /></LazyPage>} />
           <Route path="/contato" element={<LazyPage><ContactPage /></LazyPage>} />
           <Route path="/privacidade" element={<LazyPage><PrivacyPage /></LazyPage>} />
+          <Route path="/lgpd" element={<LazyPage><LgpdPage /></LazyPage>} />
           <Route
             path="/blog"
             element={

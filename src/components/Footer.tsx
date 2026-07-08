@@ -85,7 +85,11 @@ export default function Footer() {
           <p className="text-xs text-zinc-600 font-light">
             &copy; {new Date().getFullYear()} Victor Nogueira. Todos os direitos reservados. ·{' '}
             <Link to="/privacidade" className="hover:text-zinc-400 transition-colors underline-offset-2 hover:underline">
-              Privacidade
+              Política de Privacidade
+            </Link>{' '}
+            ·{' '}
+            <Link to="/lgpd" className="hover:text-zinc-400 transition-colors underline-offset-2 hover:underline">
+              LGPD
             </Link>
           </p>
           <p className="text-xs text-zinc-600 font-light flex items-center gap-1.5">
