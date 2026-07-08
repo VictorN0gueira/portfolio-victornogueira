@@ -33,7 +33,7 @@ function formatWhatsappDisplay(raw: string): string {
 }
 
 /**
- * Converte para o formato padrão da Evolution API / N8N: 558195493732
+ * Converte para o formato padrão da Evolution API: 558195493732
  * Remove o 9 extra (11 dígitos locais → 10) para compatibilidade.
  */
 function toEvolutionFormat(raw: string): string {
