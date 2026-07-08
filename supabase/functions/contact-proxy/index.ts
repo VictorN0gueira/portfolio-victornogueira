@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
   if (metodo !== 'email' && metodo !== 'whatsapp') fields.metodo = 'invalid';
   if (metodo === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fields.email = 'invalid';
   if (metodo === 'whatsapp' && !/^55\d{10,11}$/.test(whatsapp)) fields.whatsapp = 'invalid';
+  if (!consent) fields.consent = 'required'; // LGPD: sem aceite, sem tratamento
   if (Object.keys(fields).length > 0) {
     return json({ success: false, error: 'validation', fields }, 400, cors);
   }

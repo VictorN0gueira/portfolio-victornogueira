@@ -79,6 +79,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://vnone.com.br/privacidade</loc>
+    <lastmod>2026-07-08</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
     <loc>https://vnone.com.br/blog</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>daily</changefreq>

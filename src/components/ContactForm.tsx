@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, CheckCircle2, Mail, MessageSquare, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { CONTACT_ENDPOINT, WHATSAPP_FALLBACK_URL } from '../lib/constants';
 
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -69,6 +70,8 @@ export default function ContactForm({ initialMessage, valorEstimado }: ContactFo
   const [errors, setErrors] = useState<Record<string, string>>({});
   // Honeypot anti-spam: campo invisível que só bots preenchem
   const [website, setWebsite] = useState('');
+  // Consentimento LGPD — obrigatório para enviar
+  const [consent, setConsent] = useState(false);
 
   // Pré-preenche a mensagem quando o usuário usa a calculadora de ROI
   useEffect(() => {
@@ -106,6 +109,7 @@ export default function ContactForm({ initialMessage, valorEstimado }: ContactFo
         : { email: formData.email }),
       mensagem: formData.mensagem,
       ...(valorEstimado ? { valor_estimado: valorEstimado } : {}),
+      consent,
       website,
     };
 
@@ -302,6 +306,25 @@ export default function ContactForm({ initialMessage, valorEstimado }: ContactFo
           />
         </div>
 
+        {/* Consentimento LGPD */}
+        <label className="flex items-start gap-3 cursor-pointer group px-1">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            required
+            aria-required="true"
+            className="mt-0.5 w-4 h-4 shrink-0 rounded border-white/20 bg-white/5 accent-emerald-500 cursor-pointer"
+          />
+          <span className="text-xs text-zinc-500 leading-relaxed group-hover:text-zinc-400 transition-colors">
+            Li e concordo com a{' '}
+            <Link to="/privacidade" className="underline text-zinc-400 hover:text-white transition-colors">
+              Política de Privacidade
+            </Link>{' '}
+            e autorizo o uso dos meus dados para retorno do contato.
+          </span>
+        </label>
+
         {errors.form && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -347,7 +370,7 @@ export default function ContactForm({ initialMessage, valorEstimado }: ContactFo
         )}
 
         <button
-          disabled={status === 'sending' || status === 'error'}
+          disabled={status === 'sending' || status === 'error' || !consent}
           type="submit"
           aria-busy={status === 'sending'}
           className="group w-full bg-white text-black font-bold py-4 md:py-5 rounded-2xl flex items-center justify-center gap-3 transition-all hover:bg-zinc-200 disabled:opacity-50 text-sm md:text-base"
