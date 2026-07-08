@@ -10,6 +10,7 @@ import { PageFallback } from './lib/reveal';
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ServicesPage = lazy(() => import('./pages/ServicesPage'));
 const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
+const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const BlogPage = lazy(() => import('./components/BlogPage'));
 
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="/sobre" element={<LazyPage><AboutPage /></LazyPage>} />
           <Route path="/servicos" element={<LazyPage><ServicesPage /></LazyPage>} />
           <Route path="/projetos" element={<LazyPage><ProjectsPage /></LazyPage>} />
+          <Route path="/projetos/:slug" element={<LazyPage><ProjectDetailPage /></LazyPage>} />
           <Route path="/contato" element={<LazyPage><ContactPage /></LazyPage>} />
           <Route
             path="/blog"

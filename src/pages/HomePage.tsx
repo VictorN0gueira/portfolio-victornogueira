@@ -7,15 +7,9 @@ import { revealProps, SectionSkeleton } from '../lib/reveal';
 import { useScrollToHash } from '../lib/useScrollToHash';
 
 const Stats = lazy(() => import('../components/Stats'));
-const About = lazy(() => import('../components/About'));
-const Process = lazy(() => import('../components/Process'));
-const Skills = lazy(() => import('../components/Skills'));
-const Projects = lazy(() => import('../components/Projects'));
-const Testimonials = lazy(() => import('../components/Testimonials'));
-const Partners = lazy(() => import('../components/Partners'));
+const ProjectsTeaser = lazy(() => import('../components/ProjectsTeaser'));
+const SocialProof = lazy(() => import('../components/SocialProof'));
 const CTASection = lazy(() => import('../components/CTASection'));
-const ROICalculator = lazy(() => import('../components/ROICalculator'));
-const FAQ = lazy(() => import('../components/FAQ'));
 const Contact = lazy(() => import('../components/Contact'));
 const Footer = lazy(() => import('../components/Footer'));
 const Chatbot = lazy(() => import('../components/Chatbot'));
@@ -42,35 +36,11 @@ export default function HomePage() {
         </Suspense>
 
         <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><About /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><Process /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><Skills /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><Projects /></motion.div>
+          <motion.div {...revealProps}><ProjectsTeaser /></motion.div>
         </Suspense>
 
         <Suspense fallback={null}>
-          <motion.div {...revealProps}><Testimonials /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <motion.div {...revealProps}><Partners /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <motion.div {...revealProps}><ROICalculator /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <motion.div {...revealProps}><FAQ /></motion.div>
+          <motion.div {...revealProps}><SocialProof /></motion.div>
         </Suspense>
 
         <Suspense fallback={null}>

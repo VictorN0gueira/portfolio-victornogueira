@@ -51,24 +51,61 @@ const testimonials: Testimonial[] = [
   },
 ];
 
+const PARTNERS = [
+  {
+    name: "Contador de Padarias",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=CP%2FS%C3%8DMBOLO%20S%20FUNDO%201.png&version_id=null"
+  },
+  {
+    name: "Contas IC",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Contas%2FLogoContas.png&version_id=null"
+  },
+  {
+    name: "Proplast",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Proplast%2FLogo%20-%20Proplast.png&version_id=null"
+  },
+  {
+    name: "Micael Santiago",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Micael%20Santiago%2FMicaelsantiago.png&version_id=null"
+  },
+  {
+    name: "Loja Karla Alvarés",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Loja%20Karla%20Alvares%2FLogo%20-%20Loja%20Karla%20%C3%81lvares.png&version_id=null"
+  },
+  {
+    name: "Mercadinho Irmão Cruz",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Mercadinho%20Irm%C3%A3o%20Cruz%2FLogo.png&version_id=null"
+  },
+  {
+    name: "Criativa Marketing",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Criativa%20Marketing%2Flogo.png&version_id=null"
+  },
+  {
+    name: "ShipSmart",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=ShipSmart%2FLogo.jpg&version_id=null"
+  },
+  {
+    name: "Henrique França",
+    logo: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2Flogo-hf.png&version_id=null"
+  }
+];
+
 const SWIPE_THRESHOLD = 50;
 
-export default function Testimonials() {
+/* Prova social unificada: depoimentos (carousel) + logos de parceiros (marquee CSS)
+   — substitui as antigas seções Testimonials e Partners */
+export default function SocialProof() {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
-
-  const paginate = useCallback(
-    (dir: number) => {
-      setDirection(dir);
-      setCurrent((prev) => {
-        if (dir === 1) return prev === testimonials.length - 1 ? 0 : prev + 1;
-        return prev === 0 ? testimonials.length - 1 : prev - 1;
-      });
-    },
-    []
-  );
-
   const [isHovered, setIsHovered] = useState(false);
+
+  const paginate = useCallback((dir: number) => {
+    setDirection(dir);
+    setCurrent((prev) => {
+      if (dir === 1) return prev === testimonials.length - 1 ? 0 : prev + 1;
+      return prev === 0 ? testimonials.length - 1 : prev - 1;
+    });
+  }, []);
 
   // Auto-play
   useEffect(() => {
@@ -96,15 +133,11 @@ export default function Testimonials() {
     }
   };
 
-  return (
-    <section className="py-32 px-6 md:px-12 bg-zinc-950 text-white relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[20%] -left-[15%] w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_rgba(168,85,247,0.06)_0%,_transparent_70%)] rounded-full" />
-        <div className="absolute bottom-[10%] -right-[10%] w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_rgba(6,182,212,0.06)_0%,_transparent_70%)] rounded-full" />
-      </div>
+  const duplicatedPartners = [...PARTNERS, ...PARTNERS];
 
-      <div className="max-w-7xl mx-auto relative z-10">
+  return (
+    <section className="py-32 bg-zinc-950 text-white relative overflow-hidden">
+      <div className="max-w-7xl mx-auto relative z-10 px-6 md:px-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -113,7 +146,7 @@ export default function Testimonials() {
           className="text-center mb-20"
         >
           <p className="text-xs font-bold uppercase tracking-[0.4em] text-zinc-500 mb-4">
-            Depoimentos
+            Quem confia
           </p>
           <h2 className="text-4xl md:text-6xl font-bold font-display italic tracking-tight">
             O que dizem sobre{' '}
@@ -123,14 +156,13 @@ export default function Testimonials() {
           </h2>
         </motion.div>
 
-        {/* Testimonial Card */}
-        <div 
+        {/* Carousel de depoimentos */}
+        <div
           className="max-w-4xl mx-auto"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
           <div className="relative bg-white/3 border border-white/8 rounded-[2.5rem] p-8 md:p-12 min-h-[280px] flex flex-col justify-center overflow-hidden touch-pan-y">
-            {/* Decorative quote */}
             <Quote className="absolute top-8 right-8 w-20 h-20 text-white/4 rotate-180" />
 
             <AnimatePresence mode="wait" custom={direction}>
@@ -142,29 +174,22 @@ export default function Testimonials() {
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-                style={{ willChange: 'transform, opacity' }}
                 className="flex flex-col items-center text-center"
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.3}
                 onDragEnd={handleDragEnd}
               >
-                {/* Stars */}
                 <div className="flex gap-1 mb-6">
                   {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-4 h-4 fill-amber-400 text-amber-400"
-                    />
+                    <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
                   ))}
                 </div>
 
-                {/* Quote text */}
                 <blockquote className="text-lg md:text-2xl font-light text-zinc-200 leading-relaxed mb-8 max-w-3xl italic select-none">
                   "{t.text}"
                 </blockquote>
 
-                {/* Author */}
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-white overflow-hidden flex items-center justify-center shrink-0">
                     <img
@@ -188,7 +213,7 @@ export default function Testimonials() {
             </AnimatePresence>
           </div>
 
-          {/* Controls */}
+          {/* Controles */}
           <div className="flex items-center justify-center gap-6 mt-10">
             <button
               onClick={() => paginate(-1)}
@@ -198,7 +223,6 @@ export default function Testimonials() {
               <ChevronLeft className="w-5 h-5" />
             </button>
 
-            {/* Dots */}
             <div className="flex gap-2">
               {testimonials.map((_, i) => (
                 <button
@@ -208,9 +232,7 @@ export default function Testimonials() {
                     setCurrent(i);
                   }}
                   className={`h-2 rounded-full transition-all duration-500 ${
-                    i === current
-                      ? 'w-8 bg-white'
-                      : 'w-2 bg-white/20 hover:bg-white/40'
+                    i === current ? 'w-8 bg-white' : 'w-2 bg-white/20 hover:bg-white/40'
                   }`}
                   aria-label={`Depoimento ${i + 1}`}
                 />
@@ -225,6 +247,36 @@ export default function Testimonials() {
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Marquee de logos — CSS puro, compositor thread */}
+      <div className="relative flex whitespace-nowrap overflow-hidden mt-24">
+        <div className="absolute inset-y-0 left-0 w-32 md:w-64 bg-linear-to-r from-zinc-950 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-32 md:w-64 bg-linear-to-l from-zinc-950 to-transparent z-10 pointer-events-none" />
+
+        <div className="marquee flex whitespace-nowrap gap-16 md:gap-32 py-4 items-center">
+          {duplicatedPartners.map((partner, index) => (
+            <div
+              key={`${partner.name}-${index}`}
+              className="group flex flex-col items-center justify-center shrink-0 w-40 md:w-56"
+            >
+              <div className="h-16 md:h-20 flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110">
+                <img
+                  src={partner.logo}
+                  alt={partner.name}
+                  className="max-h-full w-auto filter grayscale invert opacity-40 group-hover:opacity-100 group-hover:grayscale-0 group-hover:invert-0 transition-all duration-700 object-contain"
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                  width={160}
+                  height={80}
+                />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-300 transition-colors duration-500">
+                {partner.name}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </section>
