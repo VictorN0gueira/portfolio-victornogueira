@@ -148,14 +148,6 @@ export default function App() {
             }
           />
           <Route
-            path="*"
-            element={
-              <motion.div {...pageTransition}>
-                <NotFound />
-              </motion.div>
-            }
-          />
-          <Route
             path="/blog"
             element={
               <motion.div {...pageTransition}>
@@ -173,6 +165,14 @@ export default function App() {
                   />
                   <BlogPage />
                 </Suspense>
+              </motion.div>
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <motion.div {...pageTransition}>
+                <NotFound />
               </motion.div>
             }
           />

@@ -9,3 +9,6 @@ coverage/
 tmp_shadcn/
 .playwright-mcp/
 .claude/
+
+# Credenciais locais — NUNCA commitar
+Acessos/
