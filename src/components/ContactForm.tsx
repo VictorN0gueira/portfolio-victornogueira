@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, CheckCircle2, Mail, MessageSquare, AlertCircle } from 'lucide-react';
 
@@ -52,7 +52,12 @@ function toEvolutionFormat(raw: string): string {
   return '55' + num;
 }
 
-export default function ContactForm() {
+interface ContactFormProps {
+  /** Mensagem pré-preenchida (ex.: vinda do ROICalculator) */
+  initialMessage?: string;
+}
+
+export default function ContactForm({ initialMessage }: ContactFormProps) {
   const [method, setMethod] = useState<ContactMethod>('email');
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [formData, setFormData] = useState({
@@ -62,6 +67,13 @@ export default function ContactForm() {
     mensagem: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Pré-preenche a mensagem quando o usuário usa a calculadora de ROI
+  useEffect(() => {
+    if (initialMessage) {
+      setFormData((prev) => ({ ...prev, mensagem: initialMessage }));
+    }
+  }, [initialMessage]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

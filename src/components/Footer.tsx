@@ -11,9 +11,10 @@ const socialLinks: SocialLink[] = [
 ];
 
 const navLinks = [
-  { label: 'Sobre', href: '#sobre' },
-  { label: 'Projetos', href: '#projetos' },
-  { label: 'Contato', href: '#contato' },
+  { label: 'Sobre', href: '/sobre' },
+  { label: 'Serviços', href: '/servicos' },
+  { label: 'Projetos', href: '/projetos' },
+  { label: 'Contato', href: '/contato' },
 ];
 
 export default function Footer() {
@@ -43,13 +44,13 @@ export default function Footer() {
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 mb-5">Navegação</p>
             <nav className="flex flex-col gap-3" aria-label="Rodapé">
               {navLinks.map((link) => (
-                <a
+                <Link
                   key={link.label}
-                  href={link.href}
+                  to={link.href}
                   className="text-sm text-zinc-400 hover:text-white transition-colors w-fit"
                 >
                   {link.label}
-                </a>
+                </Link>
               ))}
               <Link
                 to="/blog"

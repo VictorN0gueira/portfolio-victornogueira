@@ -56,7 +56,12 @@ function formatBRLFull(value: number): string {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
 }
 
-export default function ROICalculator() {
+interface ROICalculatorProps {
+  /** Quando presente, o CTA pré-preenche o formulário de contato em vez de abrir o WhatsApp */
+  onQuoteRequest?: (message: string, savings: number) => void;
+}
+
+export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
   const [hours, setHours] = useState(12);
   const [teamIndex, setTeamIndex] = useState(1);
   const [hourlyRate, setHourlyRate] = useState(50);
@@ -225,18 +230,36 @@ export default function ROICalculator() {
               </div>
             </div>
 
-            {/* CTA */}
-            <motion.a
-              href={WA_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              className="mt-auto w-full bg-white hover:bg-zinc-100 text-zinc-900 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors relative z-10 shadow-lg"
-            >
-              Quero automatizar esse processo
-              <ArrowUpRight className="w-4 h-4" />
-            </motion.a>
+            {/* CTA — com onQuoteRequest pré-preenche o form; sem, abre o WhatsApp */}
+            {onQuoteRequest ? (
+              <motion.button
+                type="button"
+                onClick={() =>
+                  onQuoteRequest(
+                    `Olá, Victor! Usei a calculadora do site: minha empresa perde cerca de ${formatBRLFull(annualCost)} por ano com tarefas manuais (${hours}h/semana). Quero automatizar esse processo.`,
+                    savings
+                  )
+                }
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                className="mt-auto w-full bg-white hover:bg-zinc-100 text-zinc-900 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors relative z-10 shadow-lg"
+              >
+                Quero automatizar esse processo
+                <ArrowUpRight className="w-4 h-4" />
+              </motion.button>
+            ) : (
+              <motion.a
+                href={WA_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                className="mt-auto w-full bg-white hover:bg-zinc-100 text-zinc-900 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors relative z-10 shadow-lg"
+              >
+                Quero automatizar esse processo
+                <ArrowUpRight className="w-4 h-4" />
+              </motion.a>
+            )}
 
             <p className="text-center text-zinc-600 text-[11px] leading-relaxed relative z-10">
               Estimativa baseada em projetos anteriores.<br />Consulta gratuita e sem compromisso.

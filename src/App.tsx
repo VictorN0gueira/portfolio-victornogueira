@@ -1,114 +1,17 @@
 import { Suspense, lazy } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { motion, useScroll, useSpring, AnimatePresence } from 'motion/react';
-import type { ComponentProps } from 'react';
 import NotFound from './components/NotFound';
-import Header from './components/Header';
-import Hero from './components/Hero';
 import SEO from './components/SEO';
 import AccessibilityWidget from './components/AccessibilityWidget';
+import HomePage from './pages/HomePage';
+import { PageFallback } from './lib/reveal';
 
-const Stats = lazy(() => import('./components/Stats'));
-const About = lazy(() => import('./components/About'));
-const Process = lazy(() => import('./components/Process'));
-const Skills = lazy(() => import('./components/Skills'));
-const Projects = lazy(() => import('./components/Projects'));
-const Testimonials = lazy(() => import('./components/Testimonials'));
-const Partners = lazy(() => import('./components/Partners'));
-const CTASection = lazy(() => import('./components/CTASection'));
-const ROICalculator = lazy(() => import('./components/ROICalculator'));
-const FAQ = lazy(() => import('./components/FAQ'));
-const Contact = lazy(() => import('./components/Contact'));
-const Footer = lazy(() => import('./components/Footer'));
-const Chatbot = lazy(() => import('./components/Chatbot'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ServicesPage = lazy(() => import('./pages/ServicesPage'));
+const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
 const BlogPage = lazy(() => import('./components/BlogPage'));
-
-const revealProps: ComponentProps<typeof motion.div> = {
-  initial: { opacity: 0, y: 30 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "-100px" },
-  transition: { duration: 0.8, ease: "easeOut" },
-};
-
-/* Skeleton de carregamento reutilizável */
-function SectionSkeleton() {
-  return (
-    <div className="py-24 flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-2 border-zinc-200 dark:border-zinc-700 border-t-zinc-500 dark:border-t-zinc-400 rounded-full animate-spin" />
-        <span className="text-xs text-zinc-400 uppercase tracking-widest font-medium">Carregando...</span>
-      </div>
-    </div>
-  );
-}
-
-function HomePage() {
-  return (
-    <>
-      <SEO />
-      <Header />
-      {/* Skip-to-content para acessibilidade */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[200] focus:px-6 focus:py-3 focus:bg-black focus:text-white focus:rounded-full focus:text-sm focus:font-bold focus:shadow-2xl"
-      >
-        Pular para o conteúdo
-      </a>
-      <main id="main-content">
-        <Hero />
-        
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><Stats /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><About /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><Process /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><Skills /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><Projects /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <motion.div {...revealProps}><Testimonials /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <motion.div {...revealProps}><Partners /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <motion.div {...revealProps}><ROICalculator /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <motion.div {...revealProps}><FAQ /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <motion.div {...revealProps}><CTASection /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <motion.div {...revealProps}><Contact /></motion.div>
-        </Suspense>
-      </main>
-
-      <Suspense fallback={null}>
-        <Footer />
-        <Chatbot />
-      </Suspense>
-    </>
-  );
-}
 
 const pageTransition = {
   initial: { opacity: 0 },
@@ -116,6 +19,15 @@ const pageTransition = {
   exit: { opacity: 0 },
   transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] as const },
 };
+
+/* Wrapper padrão: transição de página + Suspense com fallback full-screen */
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div {...pageTransition}>
+      <Suspense fallback={<PageFallback />}>{children}</Suspense>
+    </motion.div>
+  );
+}
 
 export default function App() {
   const location = useLocation();
@@ -137,7 +49,14 @@ export default function App() {
         style={{ scaleX }}
       />
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence
+        mode="wait"
+        onExitComplete={() => {
+          // Único ponto seguro para resetar o scroll com mode="wait".
+          // Com hash, o useScrollToHash da página destino assume.
+          if (!location.hash) window.scrollTo(0, 0);
+        }}
+      >
         <Routes location={location} key={location.pathname}>
           <Route
             path="/"
@@ -147,6 +66,10 @@ export default function App() {
               </motion.div>
             }
           />
+          <Route path="/sobre" element={<LazyPage><AboutPage /></LazyPage>} />
+          <Route path="/servicos" element={<LazyPage><ServicesPage /></LazyPage>} />
+          <Route path="/projetos" element={<LazyPage><ProjectsPage /></LazyPage>} />
+          <Route path="/contato" element={<LazyPage><ContactPage /></LazyPage>} />
           <Route
             path="/blog"
             element={
@@ -172,6 +95,7 @@ export default function App() {
             path="*"
             element={
               <motion.div {...pageTransition}>
+                <SEO title="Página não encontrada" noindex />
                 <NotFound />
               </motion.div>
             }

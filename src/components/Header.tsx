@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X } from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { LOGO_URL } from '../lib/constants';
 import ThemeToggle from './ThemeToggle';
 
@@ -9,23 +9,10 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
-  const isHome = location.pathname === '/';
 
-  const handleAnchorClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    e.preventDefault();
-    if (isHome) {
-      const el = document.querySelector(href);
-      el?.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      navigate('/');
-      setTimeout(() => {
-        const el = document.querySelector(href);
-        el?.scrollIntoView({ behavior: 'smooth' });
-      }, 400);
-    }
-    setIsMenuOpen(false);
-  }, [isHome, navigate]);
+  // Ativo também em sub-rotas (ex.: /projetos/troco mantém "Projetos" ativo)
+  const isActive = (href: string) =>
+    location.pathname === href || location.pathname.startsWith(`${href}/`);
 
   useEffect(() => {
     let ticking = false;
@@ -62,11 +49,11 @@ export default function Header() {
   }, [isMenuOpen]);
 
   const navItems = [
-    { name: 'Sobre', href: '#sobre', isRoute: false },
-    { name: 'Processo', href: '#processo', isRoute: false },
-    { name: 'Projetos', href: '#projetos', isRoute: false },
-    { name: 'Contato', href: '#contato', isRoute: false },
-    { name: 'Blog', href: '/blog', isRoute: true },
+    { name: 'Sobre', href: '/sobre' },
+    { name: 'Serviços', href: '/servicos' },
+    { name: 'Projetos', href: '/projetos' },
+    { name: 'Contato', href: '/contato' },
+    { name: 'Blog', href: '/blog' },
   ];
 
   return (
@@ -93,46 +80,31 @@ export default function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-10" aria-label="Navegação principal">
-            {navItems.map((item) => {
-              if (item.isRoute) {
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 relative group ${
-                      isScrolled ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black dark:text-zinc-300 dark:hover:text-white'
-                    }`}
-                  >
-                    {item.name}
-                    <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${
-                      isScrolled ? 'bg-white' : 'bg-black dark:bg-white'
-                    }`} />
-                  </Link>
-                );
-              }
-              return (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  onClick={(e) => handleAnchorClick(e, item.href)}
-                  className={`text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 relative group ${
-                    isScrolled ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black dark:text-zinc-300 dark:hover:text-white'
-                  }`}
-                >
-                  {item.name}
-                  <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${
-                    isScrolled ? 'bg-white' : 'bg-black dark:bg-white'
-                  }`} />
-                </a>
-              );
-            })}
+            {navItems.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                aria-current={isActive(item.href) ? 'page' : undefined}
+                className={`text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 relative group ${
+                  isActive(item.href)
+                    ? isScrolled ? 'text-white' : 'text-black dark:text-white'
+                    : isScrolled ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black dark:text-zinc-300 dark:hover:text-white'
+                }`}
+              >
+                {item.name}
+                <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 h-0.5 transition-all duration-300 group-hover:w-full ${
+                  isActive(item.href) ? 'w-full' : 'w-0'
+                } ${
+                  isScrolled ? 'bg-white' : 'bg-black dark:bg-white'
+                }`} />
+              </Link>
+            ))}
           </nav>
 
           <div className={`flex items-center gap-3 relative ${isMenuOpen ? 'z-[70]' : 'z-50'}`}>
             <ThemeToggle scrolled={isScrolled || isMenuOpen} />
-            <a
-              href="#contato"
-              onClick={(e) => handleAnchorClick(e, '#contato')}
+            <Link
+              to="/contato"
               className={`shimmer hidden sm:block text-xs font-bold uppercase tracking-widest px-8 py-3 rounded-full transition-all transform hover:scale-105 active:scale-95 shadow-lg ${
                 isScrolled || isMenuOpen
                   ? 'bg-white text-black hover:bg-zinc-200 shadow-white/5'
@@ -140,7 +112,7 @@ export default function Header() {
               }`}
             >
               Conversar
-            </a>
+            </Link>
 
             {/* Mobile Menu Button — mínimo 44px para touch */}
             <button
@@ -207,23 +179,16 @@ export default function Header() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">Navegação</p>
                 {navItems.map((item) => (
                   <div key={item.name}>
-                    {item.isRoute ? (
-                      <Link
-                        to={item.href}
-                        onClick={() => setIsMenuOpen(false)}
-                        className="text-2xl sm:text-3xl font-bold tracking-tighter text-white hover:text-zinc-300 transition-colors block italic"
-                      >
-                        {item.name}
-                      </Link>
-                    ) : (
-                      <a
-                        href={item.href}
-                        onClick={(e) => handleAnchorClick(e, item.href)}
-                        className="text-2xl sm:text-3xl font-bold tracking-tighter text-white hover:text-zinc-300 transition-colors block italic"
-                      >
-                        {item.name}
-                      </a>
-                    )}
+                    <Link
+                      to={item.href}
+                      onClick={() => setIsMenuOpen(false)}
+                      aria-current={isActive(item.href) ? 'page' : undefined}
+                      className={`text-2xl sm:text-3xl font-bold tracking-tighter transition-colors block italic ${
+                        isActive(item.href) ? 'text-white underline underline-offset-8' : 'text-white hover:text-zinc-300'
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
                   </div>
                 ))}
               </nav>
@@ -239,13 +204,13 @@ export default function Header() {
                   </a>
                 </div>
 
-                <a
-                  href="#contato"
-                  onClick={(e) => handleAnchorClick(e, '#contato')}
+                <Link
+                  to="/contato"
+                  onClick={() => setIsMenuOpen(false)}
                   className="w-full bg-white text-black px-8 md:px-12 py-4 md:py-5 rounded-full font-bold uppercase tracking-widest text-center block text-xs md:text-sm shadow-xl shadow-white/5 hover:bg-zinc-200 transition-all"
                 >
                   Vamos Conversar
-                </a>
+                </Link>
 
                 <p className="text-[9px] md:text-[10px] text-zinc-500 uppercase tracking-widest text-center">
                   © 2026 Victor Nogueira

@@ -5,6 +5,10 @@ interface SEOProps {
   description?: string;
   path?: string;
   image?: string;
+  /** Bloqueia indexação (ex.: 404, slug inválido) */
+  noindex?: boolean;
+  /** Schemas JSON-LD específicos da página (ex.: FAQPage em /contato) */
+  jsonLd?: object[];
 }
 
 const BASE_URL = 'https://vnone.com.br';
@@ -22,6 +26,8 @@ export default function SEO({
   description,
   path = '/',
   image,
+  noindex,
+  jsonLd,
 }: SEOProps) {
   const pageTitle = title ? `${title} | Victor Nogueira` : defaults.title;
   const pageDescription = description || defaults.description;
@@ -71,38 +77,6 @@ export default function SEO({
     description: DESCRIPTION,
   };
 
-  // Schema: FAQPage — pode aparecer como accordion nos resultados do Google
-  const faqSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: [
-      {
-        '@type': 'Question',
-        name: 'O que é automação de processos?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Automação de processos conecta sistemas e APIs para executar tarefas repetitivas automaticamente — como envio de e-mails, atualização de planilhas, notificações e integrações entre ferramentas — eliminando trabalho manual e reduzindo erros.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: 'Quais processos posso automatizar com IA?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'É possível automatizar integrações entre sistemas (CRM, ERP, planilhas), disparo de e-mails e mensagens, extração e transformação de dados, relatórios automáticos e fluxos de aprovação — eliminando trabalho manual e reduzindo erros operacionais.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: 'Preciso de uma equipe de TI para implementar automações?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Não. A proposta é justamente escalar operações sem a necessidade de uma equipe de TI interna. As automações são criadas, documentadas e entregues prontas para uso, com suporte e manutenção incluídos.',
-        },
-      },
-    ],
-  };
-
   return (
     <Helmet>
       <title>{pageTitle}</title>
@@ -112,6 +86,7 @@ export default function SEO({
         content="automação de processos, automação inteligente, inteligência artificial, agentes de IA, integração de sistemas, automação empresarial, eliminar processos manuais, fluxos automatizados"
       />
       <link rel="canonical" href={pageUrl} />
+      {noindex && <meta name="robots" content="noindex, nofollow" />}
 
       {/* Open Graph */}
       <meta property="og:type" content="website" />
@@ -139,10 +114,16 @@ export default function SEO({
         content="Victor Nogueira — Especialista em Automação Inteligente e IA"
       />
 
-      {/* Structured Data */}
-      <script type="application/ld+json">{JSON.stringify(personSchema)}</script>
-      <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
-      <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
+      {/* Structured Data — Person/WebSite só na home para evitar entidade duplicada */}
+      {path === '/' && (
+        <script type="application/ld+json">{JSON.stringify(personSchema)}</script>
+      )}
+      {path === '/' && (
+        <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
+      )}
+      {jsonLd?.map((schema, i) => (
+        <script key={i} type="application/ld+json">{JSON.stringify(schema)}</script>
+      ))}
     </Helmet>
   );
 }
