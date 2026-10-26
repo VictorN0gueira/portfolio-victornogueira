@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { TrendingUp, ArrowUpRight, Sparkles } from 'lucide-react';
+import { formatBRL, formatBRLCompact } from '../lib/format';
+import {
+  DEFAULT_HOURLY_RATE,
+  TEAM_OPTIONS,
+  annualManualCost,
+  annualSavings,
+  buildQuoteMessage,
+} from '../lib/roi';
 
 const WA_LINK =
   "https://wa.me/5581984451243?text=Ol%C3%A1%2C+Victor!+Quero+automatizar+meus+processos.";
-
-const TEAM_OPTIONS = [
-  { label: '1 pessoa', value: 1 },
-  { label: '2–3 pessoas', value: 2.5 },
-  { label: '4–10 pessoas', value: 7 },
-  { label: '10+ pessoas', value: 15 },
-];
 
 function useAnimatedNumber(target: number) {
   const [display, setDisplay] = useState(target);
@@ -42,20 +43,6 @@ function useAnimatedNumber(target: number) {
   return display;
 }
 
-function formatBRL(value: number): string {
-  if (value >= 1_000_000) {
-    return `R$ ${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (value >= 1_000) {
-    return `R$ ${(value / 1_000).toFixed(0)}K`;
-  }
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
-}
-
-function formatBRLFull(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
-}
-
 interface ROICalculatorProps {
   /** Quando presente, o CTA pré-preenche o formulário de contato em vez de abrir o WhatsApp */
   onQuoteRequest?: (message: string, savings: number) => void;
@@ -64,11 +51,11 @@ interface ROICalculatorProps {
 export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
   const [hours, setHours] = useState(12);
   const [teamIndex, setTeamIndex] = useState(1);
-  const [hourlyRate, setHourlyRate] = useState(50);
+  const [hourlyRate, setHourlyRate] = useState(DEFAULT_HOURLY_RATE);
 
-  const teamMultiplier = TEAM_OPTIONS[teamIndex].value;
-  const annualCost = Math.round(hours * teamMultiplier * hourlyRate * 52);
-  const savings = Math.round(annualCost * 0.8);
+  const roiInput = { hoursPerWeek: hours, teamMultiplier: TEAM_OPTIONS[teamIndex].value, hourlyRate };
+  const annualCost = annualManualCost(roiInput);
+  const savings = annualSavings(roiInput);
 
   const displayCost = useAnimatedNumber(annualCost);
   const displaySavings = useAnimatedNumber(savings);
@@ -193,10 +180,10 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
                 Custo anual atual
               </p>
               <p className="text-4xl md:text-5xl font-bold text-white tabular-nums leading-none">
-                {formatBRL(displayCost)}
+                {formatBRLCompact(displayCost)}
               </p>
               <p className="text-zinc-600 text-xs mt-1.5 tabular-nums">
-                {formatBRLFull(displayCost)} por ano
+                {formatBRL(displayCost)} por ano
               </p>
             </div>
 
@@ -208,7 +195,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
                 Economia com automação
               </p>
               <p className="text-4xl md:text-5xl font-bold text-emerald-400 tabular-nums leading-none">
-                {formatBRL(displaySavings)}
+                {formatBRLCompact(displaySavings)}
               </p>
               <p className="text-zinc-600 text-xs mt-1.5">/ano estimados</p>
             </div>
@@ -234,12 +221,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
             {onQuoteRequest ? (
               <motion.button
                 type="button"
-                onClick={() =>
-                  onQuoteRequest(
-                    `Olá, Victor! Usei a calculadora do site: minha empresa perde cerca de ${formatBRLFull(annualCost)} por ano com tarefas manuais (${hours}h/semana). Quero automatizar esse processo.`,
-                    savings
-                  )
-                }
+                onClick={() => onQuoteRequest(buildQuoteMessage(roiInput), savings)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
                 className="mt-auto w-full bg-white hover:bg-zinc-100 text-zinc-900 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors relative z-10 shadow-lg"
