@@ -525,7 +525,7 @@ export default function BlogPage() {
               </motion.div>
             )}
 
-            {/* Empty state — sem artigos */}
+            {/* Empty state: sem artigos */}
             {!loading && !error && articles.length === 0 && (
               <motion.div key="empty" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center py-32 text-center"
@@ -538,7 +538,7 @@ export default function BlogPage() {
               </motion.div>
             )}
 
-            {/* Empty state — filtros sem resultado */}
+            {/* Empty state: filtros sem resultado */}
             {!loading && !error && articles.length > 0 && filteredArticles.length === 0 && (
               <motion.div key="no-filter-results" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="flex flex-col items-center py-24 text-center gap-4"

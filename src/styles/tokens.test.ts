@@ -53,7 +53,7 @@ describe('tokens.css', () => {
 })
 
 const PALETTE = new Set(['#ffffff', '#f2f2f2', '#c7c7c7', '#8a8a8a', '#4d4d4d', '#1a1a1a', '#0a0a0a', '#00e5a0'])
-const HEX_LITERAL = /#[0-9a-fA-F]{3,8}\b/g
+const HEX_LITERAL = /#[0-9a-fA-F]+\b/g
 const RGB_LITERAL = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/g
 
 /** Lowercase #rrggbb for a hex literal, or null when its length is not a valid color length. */
@@ -109,6 +109,11 @@ describe('palette guard helpers', () => {
     expect(offPaletteHex('a { color: #1234; }')).toEqual(['#1234'])
     expect(offPaletteHex('a { color: #12345; }')).toEqual(['#12345'])
     expect(offPaletteHex('a { color: #1234567; }')).toEqual(['#1234567'])
+  })
+
+  it('rejects hex literals with 9 or more digits instead of skipping them', () => {
+    expect(offPaletteHex('a { color: #1234567890; }')).toEqual(['#1234567890'])
+    expect(offPaletteHex('a { color: #1A1A1A8080; }')).toEqual(['#1A1A1A8080'])
   })
 
   it('still accepts the 6 digit palette values and rejects other 6 digit values', () => {
