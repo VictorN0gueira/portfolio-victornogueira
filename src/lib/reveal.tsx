@@ -20,7 +20,7 @@ export function SectionSkeleton() {
   );
 }
 
-/* Fallback de página inteira — min-h-screen evita flash branco e CLS
+/* Fallback de página inteira: min-h-screen evita flash branco e CLS
    durante a troca de rota com AnimatePresence mode="wait" */
 export function PageFallback() {
   return (

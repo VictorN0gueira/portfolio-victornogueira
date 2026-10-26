@@ -15,12 +15,12 @@ export interface ServiceCombo {
 
 /** Opções de alto nível para o dropdown de interesse no formulário de contato */
 export const serviceOptions: string[] = [
-  'Automação de Processos',
-  'Agente de IA / Chatbot',
-  'Site / Landing Page',
-  'Sistema Web sob medida',
-  'Combo (Site + Automação)',
-  'Ainda não sei / Quero orientação',
+  'Automação de processos',
+  'Agente de IA ou chatbot',
+  'Site ou landing page',
+  'Sistema web sob medida',
+  'Combo de site e automação',
+  'Ainda não sei, quero orientação',
 ];
 
 export const services: Service[] = [
@@ -28,14 +28,14 @@ export const services: Service[] = [
     nome: 'Automação Essencial',
     categoria: 'Automação',
     descricao:
-      'Um processo manual do seu negócio transformado em fluxo automático — rodando sozinho, todos os dias.',
+      'Um processo manual do seu negócio vira um fluxo automático, rodando sozinho todos os dias.',
     inclui: [
       '1 fluxo de automação completo',
       'Integração entre seus sistemas atuais',
       'Hospedagem e monitoramento',
       'Documentação de uso',
     ],
-    prazo: '~1 semana',
+    prazo: 'cerca de 1 semana',
   },
   {
     nome: 'Automação Avançada',
@@ -54,7 +54,7 @@ export const services: Service[] = [
     nome: 'Agente de IA Sob Medida',
     categoria: 'Inteligência Artificial',
     descricao:
-      'Um agente que atende, qualifica e responde pelos seus canais — treinado no contexto do seu negócio.',
+      'Um agente que atende, qualifica e responde pelos seus canais, treinado no contexto do seu negócio.',
     inclui: [
       'Chatbot ou agente customizado',
       'Integração com 1 canal (WhatsApp ou site)',
@@ -64,17 +64,17 @@ export const services: Service[] = [
     prazo: '2 a 3 semanas',
   },
   {
-    nome: 'Landing Page / Site',
+    nome: 'Landing page ou site',
     categoria: 'Desenvolvimento Web',
     descricao:
-      'Presença digital rápida, moderna e focada em conversão — até 5 páginas.',
+      'Presença digital rápida, moderna e focada em conversão, com até 5 páginas.',
     inclui: [
       'React + Tailwind, design responsivo',
       'Até 5 páginas',
       'SEO técnico configurado',
       'Deploy incluso',
     ],
-    prazo: '~1 semana',
+    prazo: 'cerca de 1 semana',
   },
   {
     nome: 'Landing Page Complexa',
@@ -93,7 +93,7 @@ export const services: Service[] = [
     nome: 'Sistema Web Sob Medida',
     categoria: 'Desenvolvimento Web',
     descricao:
-      'Aplicação completa para o seu processo: backend, frontend, login e deploy — do zero ao ar.',
+      'Aplicação completa para o seu processo, do zero ao ar: backend, frontend, login e deploy.',
     inclui: [
       'Backend + frontend completos',
       'Autenticação de usuários',
