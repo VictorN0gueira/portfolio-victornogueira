@@ -5,58 +5,15 @@ import { Link } from 'react-router-dom';
 import { WHATSAPP_FALLBACK_URL } from '../lib/constants';
 import { serviceOptions } from '../data/services';
 import ServiceSelect from './ServiceSelect';
-
-// Webhooks n8n de ativação — disparam a notificação por email e WhatsApp.
-// NÃO ALTERAR o shape do payload enviado a eles (ver handleSubmit).
-const WEBHOOKS = {
-  email: 'https://n8n.vnone.com.br/webhook/portfolio-vn-email',
-  whatsapp: 'https://n8n.vnone.com.br/webhook/portfolio-vn-whatsapp',
-};
-
-type ContactMethod = 'email' | 'whatsapp';
-
-/**
- * Formata para exibição: +55 DD 9 NNNN-NNNN
- * O +55 e o 9 são inseridos automaticamente. Usuário digita apenas DDD + 8 dígitos.
- */
-function formatWhatsappDisplay(raw: string): string {
-  const digits = raw.replace(/\D/g, '');
-
-  // Remove o 55 inicial se o usuário digitou
-  let local = digits.startsWith('55') ? digits.substring(2) : digits;
-
-  // Remove o 9 se o usuário digitou após o DDD (será adicionado automaticamente)
-  if (local.length > 2 && local[2] === '9') {
-    local = local.substring(0, 2) + local.substring(3);
-  }
-
-  // Limita a 10 dígitos (DDD 2 + número 8)
-  local = local.slice(0, 10);
-
-  if (local.length === 0) return '+55 ';
-  if (local.length <= 2) return `+55 ${local}`;
-  if (local.length <= 6) return `+55 ${local.slice(0, 2)} 9 ${local.slice(2)}`;
-  return `+55 ${local.slice(0, 2)} 9 ${local.slice(2, 6)}-${local.slice(6, 10)}`;
-}
-
-/**
- * Converte para o formato padrão da Evolution API: 558195493732
- * Remove o 9 extra (11 dígitos locais → 10) para compatibilidade.
- */
-function toEvolutionFormat(raw: string): string {
-  let num = raw.replace(/\D/g, '');
-
-  if (num.startsWith('55') && num.length >= 12) {
-    num = num.substring(2);
-  }
-
-  // Se tem 11 dígitos (com o 9), remove o 9 (índice 2)
-  if (num.length === 11) {
-    num = num.substring(0, 2) + num.substring(3);
-  }
-
-  return '55' + num;
-}
+import {
+  WEBHOOKS,
+  buildContactPayload,
+  validateContact,
+  type ContactErrors,
+  type ContactFields,
+  type ContactMethod,
+} from '../lib/contact';
+import { formatWhatsappDisplay } from '../lib/phone';
 
 interface ContactFormProps {
   /** Mensagem pré-preenchida (ex.: vinda do ROICalculator) */
@@ -73,9 +30,14 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
     mensagem: ''
   });
   const [servico, setServico] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<ContactErrors>({});
   // Consentimento LGPD — obrigatório para enviar
   const [consent, setConsent] = useState(false);
+
+  // Digitar num campo limpa só o erro daquele campo.
+  const clearError = (field: keyof ContactFields) => {
+    setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+  };
 
   // Pré-preenche a mensagem quando o usuário usa a calculadora de ROI
   useEffect(() => {
@@ -87,17 +49,8 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    const newErrors: Record<string, string> = {};
-    if (!servico) {
-      newErrors.servico = 'Selecione o serviço de interesse';
-    }
-    if (method === 'whatsapp') {
-      const digits = formData.whatsapp.replace(/\D/g, '');
-      const local = digits.startsWith('55') ? digits.substring(2) : digits;
-      if (local.length < 10 || local.length > 11) {
-        newErrors.whatsapp = 'Por favor, insira um número válido com DDD (ex: 81 99999-9999)';
-      }
-    }
+    const fields: ContactFields = { ...formData, servico };
+    const newErrors = validateContact(fields, method);
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -109,14 +62,8 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
 
     const webhookUrl = method === 'email' ? WEBHOOKS.email : WEBHOOKS.whatsapp;
 
-    // Campos legados intactos (nome, [metodo], mensagem, timestamp) + 'servico' aditivo.
-    const payload = {
-      nome: formData.nome,
-      [method]: method === 'whatsapp' ? toEvolutionFormat(formData.whatsapp) : formData.email,
-      servico,
-      mensagem: formData.mensagem,
-      timestamp: new Date().toISOString(),
-    };
+    // Campos legados intactos (nome, email ou whatsapp, mensagem, timestamp) + 'servico' aditivo.
+    const payload = buildContactPayload(fields, method, new Date());
 
     try {
       const response = await fetch(webhookUrl, {
@@ -210,12 +157,22 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
             id="contact-nome"
             required
             aria-required="true"
+            aria-invalid={!!errors.nome}
+            aria-describedby={errors.nome ? 'contact-nome-error' : undefined}
             type="text"
             value={formData.nome}
-            onChange={(e) => setFormData({...formData, nome: e.target.value})}
+            onChange={(e) => {
+              setFormData({...formData, nome: e.target.value});
+              clearError('nome');
+            }}
             placeholder="Seu nome"
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-zinc-600 text-sm"
+            className={`w-full bg-white/5 border ${errors.nome ? 'border-red-500/50 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/20'} rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 transition-all placeholder:text-zinc-600 text-sm`}
           />
+          {errors.nome && (
+            <p id="contact-nome-error" role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
+              {errors.nome}
+            </p>
+          )}
         </div>
 
         {/* Serviço de interesse — comum a email e WhatsApp */}
@@ -227,14 +184,14 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
             value={servico}
             onChange={(v) => {
               setServico(v);
-              if (errors.servico) setErrors({ ...errors, servico: '' });
+              clearError('servico');
             }}
             options={serviceOptions}
             placeholder="Selecione um serviço"
             invalid={!!errors.servico}
           />
           {errors.servico && (
-            <p role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
+            <p id="contact-servico-error" role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
               {errors.servico}
             </p>
           )}
@@ -256,12 +213,22 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
                 id="contact-email"
                 required
                 aria-required="true"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? 'contact-email-error' : undefined}
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) => {
+                  setFormData({...formData, email: e.target.value});
+                  clearError('email');
+                }}
                 placeholder="seu@email.com"
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-zinc-600 text-sm"
+                className={`w-full bg-white/5 border ${errors.email ? 'border-red-500/50 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/20'} rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 transition-all placeholder:text-zinc-600 text-sm`}
               />
+              {errors.email && (
+                <p id="contact-email-error" role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
+                  {errors.email}
+                </p>
+              )}
             </motion.div>
           ) : (
             <motion.div
@@ -279,19 +246,19 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
                 required
                 aria-required="true"
                 aria-invalid={!!errors.whatsapp}
-                aria-describedby={errors.whatsapp ? 'whatsapp-error' : undefined}
+                aria-describedby={errors.whatsapp ? 'contact-whatsapp-error' : undefined}
                 type="tel"
                 value={formData.whatsapp}
                 onChange={(e) => {
                   const formatted = formatWhatsappDisplay(e.target.value);
                   setFormData({...formData, whatsapp: formatted});
-                  if (errors.whatsapp) setErrors({...errors, whatsapp: ''});
+                  clearError('whatsapp');
                 }}
                 placeholder="+55 81 99999-9999"
                 className={`w-full bg-white/5 border ${errors.whatsapp ? 'border-red-500/50 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/20'} rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 transition-all placeholder:text-zinc-600 text-sm`}
               />
               {errors.whatsapp && (
-                <p id="whatsapp-error" role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
+                <p id="contact-whatsapp-error" role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
                   {errors.whatsapp}
                 </p>
               )}
@@ -308,12 +275,22 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
             id="contact-mensagem"
             required
             aria-required="true"
+            aria-invalid={!!errors.mensagem}
+            aria-describedby={errors.mensagem ? 'contact-mensagem-error' : undefined}
             rows={4}
             value={formData.mensagem}
-            onChange={(e) => setFormData({...formData, mensagem: e.target.value})}
+            onChange={(e) => {
+              setFormData({...formData, mensagem: e.target.value});
+              clearError('mensagem');
+            }}
             placeholder="Como posso ajudar você?"
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-zinc-600 resize-none text-sm"
+            className={`w-full bg-white/5 border ${errors.mensagem ? 'border-red-500/50 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/20'} rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 transition-all placeholder:text-zinc-600 resize-none text-sm`}
           />
+          {errors.mensagem && (
+            <p id="contact-mensagem-error" role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
+              {errors.mensagem}
+            </p>
+          )}
         </div>
 
         {/* Consentimento LGPD */}
