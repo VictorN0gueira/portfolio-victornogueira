@@ -1,254 +1,198 @@
+// Gera o banner de compartilhamento (WhatsApp, LinkedIn, Instagram).
+// Uso: npm run og
+// Saidas: public/og-banner.png (1200x630) e e2e/__shots__/og-square.png
+// (recorte central 630x630 que o WhatsApp usa na miniatura, so para conferencia).
 import { chromium } from 'playwright-core';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const html = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+const WIDTH = 1200;
+const HEIGHT = 630;
+const SAFE_SIZE = 630;
+const SAFE_LEFT = (WIDTH - SAFE_SIZE) / 2;
 
+const COLORS = {
+  black: '#0A0A0A',
+  grayMid: '#8A8A8A',
+  white: '#FFFFFF',
+  accent: '#00E5A0',
+};
+
+const FONTS = [
+  { family: 'Space Grotesk', weight: 700, file: 'SpaceGrotesk-Bold.woff2' },
+  { family: 'JetBrains Mono', weight: 400, file: 'JetBrainsMono-Regular.woff2' },
+  { family: 'JetBrains Mono', weight: 500, file: 'JetBrainsMono-Medium.woff2' },
+];
+
+// page.setContent roda em about:blank, onde file:// pode ser bloqueado.
+// Por isso fontes e logo entram como data: URLs em base64.
+function toDataUrl(relativePath, mime) {
+  const bytes = readFileSync(join(root, relativePath));
+  return `data:${mime};base64,${bytes.toString('base64')}`;
+}
+
+function buildFontFaces() {
+  return FONTS.map(
+    ({ family, weight, file }) => `
+  @font-face {
+    font-family: '${family}';
+    font-weight: ${weight};
+    font-style: normal;
+    src: url('${toDataUrl(`public/fonts/${file}`, 'font/woff2')}') format('woff2');
+  }`,
+  ).join('\n');
+}
+
+const STYLES = `
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  body {
-    width: 1200px;
-    height: 630px;
+  html, body {
+    width: ${WIDTH}px;
+    height: ${HEIGHT}px;
     overflow: hidden;
-    background: #080808;
-    font-family: 'Space Grotesk', 'Inter', sans-serif;
-    position: relative;
+    background: ${COLORS.black};
   }
 
-  /* Fundo gradiente sutil */
-  .bg-gradient {
+  body { position: relative; }
+
+  .grid {
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 80% 80% at 50% 50%, #111111 0%, #080808 100%);
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    background-size: 64px 64px;
+    background-position: center center;
   }
 
-  /* Dot grid */
-  .dot-grid {
+  .scan {
     position: absolute;
-    inset: 0;
-    background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
-    background-size: 28px 28px;
+    left: 0;
+    right: 0;
+    top: 552px;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.55) 50%,
+      transparent 100%
+    );
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.18);
   }
 
-  /* Vignette */
-  .vignette {
+  /* Zona segura central 630x630: tudo que o WhatsApp mantem no recorte quadrado. */
+  .safe {
     position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse 100% 100% at 50% 50%, transparent 40%, rgba(0,0,0,0.6) 100%);
-  }
-
-  /* VN monograma — fundo, centralizado */
-  .monogram {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 480px;
-    font-weight: 800;
-    color: rgba(255,255,255,0.032);
-    line-height: 1;
-    letter-spacing: -0.05em;
-    user-select: none;
-    white-space: nowrap;
-  }
-
-  /* Glow central */
-  .glow {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 600px;
-    height: 300px;
-    background: radial-gradient(ellipse, rgba(255,255,255,0.04) 0%, transparent 70%);
-    filter: blur(30px);
-  }
-
-  /* Conteúdo centralizado */
-  .content {
-    position: absolute;
-    inset: 0;
+    top: 0;
+    left: ${SAFE_LEFT}px;
+    width: ${SAFE_SIZE}px;
+    height: ${HEIGHT}px;
+    padding: 0 48px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    z-index: 2;
-    gap: 0;
   }
 
-  /* Badge topo */
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 6px 16px;
-    border: 1px solid rgba(255,255,255,0.14);
-    border-radius: 100px;
-    background: rgba(255,255,255,0.04);
-    margin-bottom: 32px;
-  }
+  .logo { display: block; height: 120px; width: auto; }
 
-  .badge-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.4);
-  }
-
-  .badge-text {
-    font-family: 'Inter', sans-serif;
-    font-size: 11px;
+  .kicker {
+    margin-top: 36px;
+    font-family: 'JetBrains Mono', monospace;
     font-weight: 500;
-    letter-spacing: 0.14em;
-    color: rgba(255,255,255,0.45);
+    font-size: 20px;
+    letter-spacing: 0.18em;
+    margin-right: -0.18em;
     text-transform: uppercase;
+    color: ${COLORS.grayMid};
   }
 
-  /* Nome */
-  .name {
+  .title {
+    margin-top: 28px;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 80px;
     font-weight: 700;
-    color: #ffffff;
-    line-height: 1.0;
+    font-size: 64px;
+    line-height: 0.95;
     letter-spacing: -0.03em;
-    margin-bottom: 16px;
+    text-transform: lowercase;
+    color: ${COLORS.white};
   }
 
-  /* Subtítulo */
-  .subtitle {
-    font-family: 'Inter', sans-serif;
-    font-size: 22px;
-    font-weight: 400;
-    color: #606060;
-    letter-spacing: -0.01em;
-    margin-bottom: 28px;
-  }
+  .title > span { display: block; }
+  .accent { color: ${COLORS.accent}; }
 
-  /* Divisor */
-  .divider {
-    width: 48px;
-    height: 1px;
-    background: rgba(255,255,255,0.12);
-    margin: 0 auto 28px;
-  }
-
-  /* Tagline */
-  .tagline {
-    font-family: 'Inter', sans-serif;
-    font-size: 17px;
-    font-weight: 300;
-    color: rgba(255,255,255,0.32);
-    line-height: 1.7;
-    margin-bottom: 40px;
-  }
-
-  /* Tech badges */
-  .tech-badges {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 40px;
-  }
-
-  .tech-badge {
-    padding: 5px 14px;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 100px;
-    font-family: 'Inter', sans-serif;
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.07em;
-    color: rgba(255,255,255,0.4);
-    text-transform: uppercase;
-  }
-
-  /* URL rodapé */
+  /* Fora da zona segura: so o dominio, embaixo a direita. */
   .url {
-    font-family: 'Inter', sans-serif;
-    font-size: 12px;
-    font-weight: 300;
-    color: rgba(255,255,255,0.15);
-    letter-spacing: 0.05em;
-  }
-
-  /* Linhas decorativas laterais */
-  .deco-left, .deco-right {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    right: 48px;
+    bottom: 40px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 400;
+    font-size: 16px;
+    letter-spacing: 0.08em;
+    color: ${COLORS.grayMid};
   }
-  .deco-left { left: 60px; align-items: flex-start; }
-  .deco-right { right: 60px; align-items: flex-end; }
+`;
 
-  .deco-line {
-    height: 1px;
-    background: rgba(255,255,255,0.07);
-    border-radius: 1px;
-  }
-</style>
+function buildHtml() {
+  const logo = toDataUrl('public/brand/vn-one-logo-chrome.png', 'image/png');
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>${buildFontFaces()}
+${STYLES}</style>
 </head>
 <body>
-  <div class="bg-gradient"></div>
-  <div class="dot-grid"></div>
-  <div class="monogram">VN</div>
-  <div class="glow"></div>
-  <div class="vignette"></div>
-
-  <div class="deco-left">
-    <div class="deco-line" style="width:50px"></div>
-    <div class="deco-line" style="width:32px"></div>
-    <div class="deco-line" style="width:42px"></div>
+  <div class="grid"></div>
+  <div class="scan"></div>
+  <div class="safe">
+    <img class="logo" src="${logo}" alt="VN One">
+    <p class="kicker">AUTOMAÇÃO E IA PARA EMPRESAS</p>
+    <h1 class="title">
+      <span>o trabalho</span>
+      <span>repetitivo vai</span>
+      <span>pros <span class="accent">fluxos</span></span>
+    </h1>
   </div>
-
-  <div class="deco-right">
-    <div class="deco-line" style="width:50px"></div>
-    <div class="deco-line" style="width:32px"></div>
-    <div class="deco-line" style="width:42px"></div>
-  </div>
-
-  <div class="content">
-    <div class="badge">
-      <div class="badge-dot"></div>
-      <span class="badge-text">Automação &amp; IA</span>
-    </div>
-    <div class="name">Victor Nogueira</div>
-    <div class="subtitle">Especialista em Automação N8N &amp; IA</div>
-    <div class="divider"></div>
-    <div class="tagline">
-      Elimine processos manuais.<br>
-      Escale sem equipe de TI.
-    </div>
-    <div class="tech-badges">
-      <span class="tech-badge">N8N</span>
-      <span class="tech-badge">Inteligência Artificial</span>
-      <span class="tech-badge">Automação</span>
-    </div>
-    <div class="url">vnone.com.br</div>
-  </div>
+  <div class="url">vnone.com.br</div>
 </body>
 </html>`;
+}
 
-const browser = await chromium.launch();
-const page = await browser.newPage();
-await page.setViewportSize({ width: 1200, height: 630 });
-await page.setContent(html, { waitUntil: 'networkidle' });
-await page.waitForTimeout(2000);
+async function main() {
+  const bannerPath = join(root, 'public', 'og-banner.png');
+  const squarePath = join(root, 'e2e', '__shots__', 'og-square.png');
+  mkdirSync(dirname(squarePath), { recursive: true });
 
-const outputPath = join(__dirname, '..', 'public', 'og-banner.png');
-await page.screenshot({ path: outputPath, type: 'png' });
-await browser.close();
-console.log(`Banner salvo em: ${outputPath}`);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage({
+      viewport: { width: WIDTH, height: HEIGHT },
+      deviceScaleFactor: 1,
+    });
+    await page.setContent(buildHtml(), { waitUntil: 'load' });
+    await page.evaluate(() => document.fonts.ready);
+
+    await page.screenshot({ path: bannerPath, type: 'png' });
+    await page.screenshot({
+      path: squarePath,
+      type: 'png',
+      clip: { x: SAFE_LEFT, y: 0, width: SAFE_SIZE, height: SAFE_SIZE },
+    });
+  } finally {
+    await browser.close();
+  }
+
+  process.stdout.write(`Banner salvo em: ${bannerPath}\nRecorte quadrado: ${squarePath}\n`);
+}
+
+main().catch((error) => {
+  process.stderr.write(`Falha ao gerar o banner: ${error?.stack ?? error}\n`);
+  process.exit(1);
+});

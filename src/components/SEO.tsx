@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { SITE, pageTitle } from '../lib/site';
 
 interface SEOProps {
   title?: string;
@@ -11,14 +12,36 @@ interface SEOProps {
   jsonLd?: object[];
 }
 
-const BASE_URL = 'https://vnone.com.br';
+const LOGO_URL = `${SITE.url}/brand/vn-one-logo-dark.webp`;
 
-const DESCRIPTION =
-  'Automações inteligentes com IA que eliminam processos manuais e escalam operações — sem equipe de TI. Fluxos que geram resultado real.';
+const FOUNDER_PROFILES = [
+  'https://www.linkedin.com/in/victornogueira-vn',
+  'https://github.com/VictorN0gueira',
+];
 
-const defaults = {
-  title: 'Victor Nogueira | Automação Inteligente & IA',
-  description: DESCRIPTION,
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: SITE.name,
+  url: SITE.url,
+  logo: LOGO_URL,
+  description: SITE.description,
+  email: SITE.email,
+  telephone: SITE.telephone,
+  areaServed: 'BR',
+  founder: {
+    '@type': 'Person',
+    name: 'Victor Nogueira',
+    sameAs: FOUNDER_PROFILES,
+  },
+};
+
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE.name,
+  url: SITE.url,
+  description: SITE.description,
 };
 
 export default function SEO({
@@ -29,96 +52,44 @@ export default function SEO({
   noindex,
   jsonLd,
 }: SEOProps) {
-  const pageTitle = title ? `${title} | Victor Nogueira` : defaults.title;
-  const pageDescription = description || defaults.description;
-  const pageUrl = `${BASE_URL}${path}`;
-  const pageImage = image || 'https://vnone.com.br/og-banner.png?v=2';
-
-  // Schema: Person
-  const personSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'Person',
-    name: 'Victor Nogueira',
-    jobTitle: 'Especialista em Automação Inteligente e IA',
-    description: DESCRIPTION,
-    url: BASE_URL,
-    image: pageImage,
-    sameAs: [
-      'https://www.linkedin.com/in/victornogueira-vn',
-      'https://github.com/VictorN0gueira',
-    ],
-    knowsAbout: [
-      'Automação de Processos',
-      'Inteligência Artificial',
-      'Agentes de IA',
-      'Integração de Sistemas',
-      'Eliminação de Processos Manuais',
-      'Desenvolvimento Web',
-    ],
-    hasOccupation: {
-      '@type': 'Occupation',
-      name: 'Especialista em Automação Inteligente e IA',
-      occupationLocation: { '@type': 'Country', name: 'Brasil' },
-    },
-    offers: {
-      '@type': 'Offer',
-      name: 'Serviços de Automação e Inteligência Artificial',
-      description:
-        'Criação de fluxos automatizados com IA para eliminar processos manuais, integrar sistemas e escalar operações sem equipe de TI.',
-    },
-  };
-
-  // Schema: WebSite
-  const websiteSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'Victor Nogueira — Portfólio',
-    url: BASE_URL,
-    description: DESCRIPTION,
-  };
+  const fullTitle = pageTitle(title);
+  const pageDescription = description || SITE.description;
+  const pageUrl = `${SITE.url}${path}`;
+  const pageImage = image || SITE.ogImage;
+  const isHome = path === '/';
 
   return (
     <Helmet>
-      <title>{pageTitle}</title>
+      <title>{fullTitle}</title>
       <meta name="description" content={pageDescription} />
-      <meta
-        name="keywords"
-        content="automação de processos, automação inteligente, inteligência artificial, agentes de IA, integração de sistemas, automação empresarial, eliminar processos manuais, fluxos automatizados"
-      />
       <link rel="canonical" href={pageUrl} />
       {noindex && <meta name="robots" content="noindex, nofollow" />}
 
       {/* Open Graph */}
       <meta property="og:type" content="website" />
       <meta property="og:url" content={pageUrl} />
-      <meta property="og:title" content={pageTitle} />
+      <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={pageDescription} />
       <meta property="og:image" content={pageImage} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta
-        property="og:image:alt"
-        content="Victor Nogueira — Especialista em Automação Inteligente e IA"
-      />
+      <meta property="og:image:alt" content={SITE.ogImageAlt} />
       <meta property="og:locale" content="pt_BR" />
-      <meta property="og:site_name" content="Victor Nogueira" />
+      <meta property="og:site_name" content={SITE.name} />
 
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:url" content={pageUrl} />
-      <meta name="twitter:title" content={pageTitle} />
+      <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={pageDescription} />
       <meta name="twitter:image" content={pageImage} />
-      <meta
-        name="twitter:image:alt"
-        content="Victor Nogueira — Especialista em Automação Inteligente e IA"
-      />
+      <meta name="twitter:image:alt" content={SITE.ogImageAlt} />
 
-      {/* Structured Data — Person/WebSite só na home para evitar entidade duplicada */}
-      {path === '/' && (
-        <script type="application/ld+json">{JSON.stringify(personSchema)}</script>
+      {/* Dados estruturados: Organization e WebSite só na home para evitar entidade duplicada */}
+      {isHome && (
+        <script type="application/ld+json">{JSON.stringify(organizationSchema)}</script>
       )}
-      {path === '/' && (
+      {isHome && (
         <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
       )}
       {jsonLd?.map((schema, i) => (
