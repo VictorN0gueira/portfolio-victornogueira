@@ -1,0 +1,126 @@
+/* VN One design tokens: self-hosted fonts, palette, easing, radii and shared utilities. */
+
+/* Fonts: self-hosted from /public/fonts. Space Grotesk 400, 500, 700 and JetBrains Mono 400, 500. */
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/SpaceGrotesk-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/SpaceGrotesk-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/SpaceGrotesk-Bold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/JetBrainsMono-Medium.woff2") format("woff2");
+}
+
+@theme {
+  --color-vn-white: #ffffff;
+  --color-vn-cream: #f2f2f2;
+  --color-vn-gray-light: #c7c7c7;
+  --color-vn-gray-mid: #8a8a8a;
+  --color-vn-gray-dark: #4d4d4d;
+  --color-vn-ink: #1a1a1a;
+  --color-vn-black: #0a0a0a;
+  --color-vn-accent: #00e5a0;
+
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+
+  --radius-card: 24px;
+  --radius-shell: 40px;
+}
+
+/* Animated angle for the conic border. */
+@property --vn-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes vn-spin {
+  to { --vn-angle: 360deg; }
+}
+
+@keyframes vn-marquee {
+  to { transform: translateX(-50%); }
+}
+
+@keyframes vn-blink {
+  50% { opacity: 0; }
+}
+
+@keyframes vn-scan {
+  from { transform: translateY(-10vh); }
+  to { transform: translateY(110vh); }
+}
+
+/* Safe-area utilities for fixed elements (notch, home indicator, landscape phones). */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+
+@utility pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+
+/* Chrome gradient text. */
+@utility vn-chrome-text {
+  background: linear-gradient(135deg, #ffffff 0%, #c7c7c7 45%, #8a8a8a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 64px line grid, faded out at the edges. The scan line is a child element that uses vn-scan. */
+@utility vn-scan-grid {
+  background-image:
+    linear-gradient(var(--vn-grid-line, rgba(26, 26, 26, .06)) 1px, transparent 1px),
+    linear-gradient(90deg, var(--vn-grid-line, rgba(26, 26, 26, .06)) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(70% 70% at 50% 40%, #000, transparent);
+  mask-image: radial-gradient(70% 70% at 50% 40%, #000, transparent);
+}
+
+/* Modifier for dark surfaces. */
+@utility vn-scan-grid--dark {
+  --vn-grid-line: rgba(255, 255, 255, .045);
+}
