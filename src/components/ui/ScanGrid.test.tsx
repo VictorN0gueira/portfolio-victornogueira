@@ -32,10 +32,11 @@ describe('ScanGrid', () => {
     expect(renderGrid('dark')).toHaveClass('vn-scan-grid', 'vn-scan-grid--dark');
   });
 
-  it('contains one scan line child', () => {
+  it('contains one scan line child that adds no layout classes of its own', () => {
     const lines = renderGrid().querySelectorAll('.vn-scan-line');
 
     expect(lines).toHaveLength(1);
+    expect(lines[0].className).toBe('vn-scan-line');
   });
 
   it('merges a consumer className', () => {

@@ -22,6 +22,8 @@ const TONE_CLASSES: Record<SectionTone, string> = {
  * A page section with the tone's background and text color and a fluid vertical rhythm.
  * `relative isolate` makes it a stacking context, so a ScanGrid inside it can sit at -z-10:
  * above the section background and below the content.
+ * It also scopes z-index: a non-portal popover that overflows the bottom edge could paint under the
+ * next section (Radix popovers portal to the body, so they are fine).
  */
 export function Section({ id, tone = 'cream', children, className, labelledBy }: SectionProps) {
   return (

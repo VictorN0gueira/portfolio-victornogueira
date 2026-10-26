@@ -11,11 +11,11 @@ import { cn } from '../../lib/utils';
  */
 export const buttonVariants = cva(
   [
-    'inline-flex items-center justify-center gap-2 rounded-full text-center font-medium leading-tight',
+    'inline-flex items-center justify-center gap-2 rounded-full text-center font-medium',
     'cursor-pointer select-none',
     'focus-visible:outline-2 focus-visible:outline-offset-2',
     'transition-[scale] duration-150 ease-out active:scale-[0.97]',
-    'disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50',
+    'disabled:pointer-events-none disabled:opacity-50',
   ],
   {
     variants: {
@@ -27,21 +27,22 @@ export const buttonVariants = cva(
         light: '',
         dark: '',
       },
+      // leading-tight comes after the font size: tailwind-merge drops a leading-* that precedes text-*.
       size: {
-        md: 'min-h-11 px-5 py-2.5 text-sm',
-        lg: 'min-h-14 px-7 py-3.5 text-base',
+        md: 'min-h-11 px-5 py-2.5 text-sm leading-tight',
+        lg: 'min-h-14 px-7 py-3.5 text-base leading-tight',
       },
     },
     compoundVariants: [
       {
         intent: 'primary',
         tone: 'light',
-        class: 'bg-vn-ink text-vn-white hover:bg-vn-black focus-visible:outline-vn-ink',
+        class: 'bg-vn-ink text-vn-white hover:bg-vn-gray-dark focus-visible:outline-vn-ink',
       },
       {
         intent: 'primary',
         tone: 'dark',
-        class: 'bg-vn-white text-vn-black hover:bg-vn-cream focus-visible:outline-vn-white',
+        class: 'bg-vn-white text-vn-black hover:bg-vn-gray-light focus-visible:outline-vn-white',
       },
       {
         intent: 'secondary',
@@ -80,10 +81,18 @@ function assignRef<T>(ref: Ref<T> | undefined, node: T | null): void {
   }
 }
 
+// A plain button defaults to type="button" so it never submits a form by accident, and a consumer
+// `type` (spread after it) overrides the default. With asChild no type is added to the child.
 function ButtonBase({ intent, tone, size, asChild = false, className, ...rest }: ButtonBaseProps) {
   const Comp = asChild ? Slot : 'button';
 
-  return <Comp className={cn(buttonVariants({ intent, tone, size }), className)} {...rest} />;
+  return (
+    <Comp
+      type={asChild ? undefined : 'button'}
+      className={cn(buttonVariants({ intent, tone, size }), className)}
+      {...rest}
+    />
+  );
 }
 
 /**
@@ -122,6 +131,7 @@ function MagneticButton({ ref, onPointerMove, onPointerLeave, ...rest }: ButtonB
   );
 }
 
+/** Use the native `disabled` attribute; aria-disabled is not enforced here. */
 export function Button({ isMagnetic = false, ...rest }: ButtonProps) {
   return isMagnetic ? <MagneticButton {...rest} /> : <ButtonBase {...rest} />;
 }

@@ -47,6 +47,22 @@ describe('Button', () => {
       expect(button).not.toHaveClass('bg-vn-ink');
     });
 
+    it('lightens the primary light button to dark gray on hover', () => {
+      renderWithProviders(<Button>falar com a gente</Button>);
+
+      const button = screen.getByRole('button');
+      expect(button).toHaveClass('hover:bg-vn-gray-dark');
+      expect(button).not.toHaveClass('hover:bg-vn-black');
+    });
+
+    it('darkens the primary dark button to light gray on hover', () => {
+      renderWithProviders(<Button tone="dark">falar com a gente</Button>);
+
+      const button = screen.getByRole('button');
+      expect(button).toHaveClass('hover:bg-vn-gray-light');
+      expect(button).not.toHaveClass('hover:bg-vn-cream');
+    });
+
     it('draws the secondary intent with a gray border and a transparent fill', () => {
       renderWithProviders(<Button intent="secondary">ver projetos</Button>);
 
@@ -108,6 +124,18 @@ describe('Button', () => {
       const button = screen.getByRole('button');
       expect(button).toHaveClass('min-h-14', 'px-7');
       expect(button).not.toHaveClass('min-h-11');
+    });
+
+    it.each([
+      ['md', 'text-sm'],
+      ['lg', 'text-base'],
+    ] as const)('keeps leading-tight after the %s font size so tailwind-merge does not drop it', (size, fontSize) => {
+      renderWithProviders(<Button size={size}>enviar</Button>);
+
+      const classes = screen.getByRole('button').className.split(/\s+/);
+      expect(classes).toContain('leading-tight');
+      expect(classes).toContain(fontSize);
+      expect(classes.indexOf('leading-tight')).toBeGreaterThan(classes.indexOf(fontSize));
     });
 
     it('lets the label wrap on narrow screens', () => {
@@ -191,12 +219,13 @@ describe('Button', () => {
 
       const button = screen.getByRole('button');
       expect(button).toBeDisabled();
-      expect(button).toHaveClass(
-        'disabled:opacity-50',
-        'disabled:pointer-events-none',
-        'aria-disabled:opacity-50',
-        'aria-disabled:pointer-events-none',
-      );
+      expect(button).toHaveClass('disabled:opacity-50', 'disabled:pointer-events-none');
+    });
+
+    it('does not style aria-disabled, because only the native disabled attribute is enforced', () => {
+      renderWithProviders(<Button>enviar</Button>);
+
+      expect(screen.getByRole('button').className).not.toContain('aria-disabled');
     });
 
     it('does not fire onClick', async () => {
@@ -222,15 +251,52 @@ describe('Button', () => {
 
       expect(onClick).toHaveBeenCalledTimes(1);
     });
+  });
 
-    it('exposes aria-disabled on a wrapped anchor', () => {
+  describe('type', () => {
+    it('defaults to type="button" so it never submits a form by accident', () => {
+      renderWithProviders(<Button>enviar</Button>);
+
+      expect(screen.getByRole('button')).toHaveAttribute('type', 'button');
+    });
+
+    it('lets a consumer type="submit" override the default', () => {
+      renderWithProviders(<Button type="submit">enviar</Button>);
+
+      expect(screen.getByRole('button')).toHaveAttribute('type', 'submit');
+    });
+
+    it('keeps type="button" on a magnetic button', () => {
+      renderWithProviders(<Button isMagnetic>enviar</Button>);
+
+      expect(screen.getByRole('button')).toHaveAttribute('type', 'button');
+    });
+
+    it('does not submit a surrounding form by default and submits with type="submit"', async () => {
+      const onSubmit = vi.fn((event: { preventDefault: () => void }) => event.preventDefault());
+      const user = userEvent.setup();
       renderWithProviders(
-        <Button asChild aria-disabled="true">
+        <form onSubmit={onSubmit}>
+          <Button>padrao</Button>
+          <Button type="submit">enviar</Button>
+        </form>,
+      );
+
+      await user.click(screen.getByRole('button', { name: 'padrao' }));
+      expect(onSubmit).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'enviar' }));
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+    });
+
+    it('adds no type attribute to the child when asChild is set', () => {
+      renderWithProviders(
+        <Button asChild>
           <a href="/x">ir para x</a>
         </Button>,
       );
 
-      expect(screen.getByRole('link')).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.getByRole('link')).not.toHaveAttribute('type');
     });
   });
 

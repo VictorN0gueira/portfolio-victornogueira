@@ -106,6 +106,23 @@ describe('tokens.css motion primitives', () => {
     expect(scanLine).toContain('will-change: transform')
   })
 
+  it('makes the scan line a full size layer that draws a 2px line at its bottom edge', () => {
+    const scanLine = rule('.vn-scan-line')
+    expect(scanLine).toMatch(/position:\s*absolute/)
+    expect(scanLine).toMatch(/inset:\s*0/)
+    expect(scanLine).toMatch(/pointer-events:\s*none/)
+    expect(scanLine).toMatch(
+      /background:\s*linear-gradient\(to right, transparent, var\(--vn-scan-line, rgba\([^)]*\)\), transparent\) bottom \/ 100% 2px no-repeat/,
+    )
+  })
+
+  it('moves the scan line by its own height, so one sweep fits the section at any viewport', () => {
+    const keyframes = /@keyframes vn-scan\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? ''
+    expect(keyframes).toMatch(/from\s*\{\s*transform:\s*translateY\(-100%\);\s*\}/)
+    expect(keyframes).toMatch(/to\s*\{\s*transform:\s*translateY\(0\);\s*\}/)
+    expect(keyframes).not.toContain('vh')
+  })
+
   it('stops the cursor and hides the scan line under prefers-reduced-motion', () => {
     const reduced = /@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? ''
     expect(reduced).toMatch(/\.vn-cursor\s*\{\s*animation: none;/)

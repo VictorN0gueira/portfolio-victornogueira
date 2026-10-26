@@ -11,8 +11,10 @@ interface ScanGridProps {
 /**
  * Decorative 64px line grid with a scan line sweeping down it. It fills its nearest positioned
  * ancestor and sits at -z-10, so that ancestor must be a stacking context (Section is one).
- * `overflow-hidden` keeps the sweeping line from adding scroll to the page. The sweep is
- * `.vn-scan-line` in tokens.css and is hidden under reduced motion and `.a11y-no-animations`.
+ * `overflow-hidden` clips the scan line layer while it sits above the grid, so it adds no scroll.
+ * The sweep is `.vn-scan-line` in tokens.css: a full size layer moved by its own height, so one
+ * sweep covers the section top to bottom at any viewport. It is hidden under reduced motion and
+ * `.a11y-no-animations`.
  */
 export function ScanGrid({ tone = 'light', className }: ScanGridProps) {
   return (
@@ -24,7 +26,7 @@ export function ScanGrid({ tone = 'light', className }: ScanGridProps) {
         className,
       )}
     >
-      <span className="vn-scan-line absolute inset-x-0 top-0 block h-px" />
+      <span className="vn-scan-line" />
     </div>
   );
 }

@@ -80,9 +80,10 @@
   50% { opacity: 0; }
 }
 
+/* Percentages are of the element's own height, so a full size layer sweeps top to bottom of its parent. */
 @keyframes vn-scan {
-  from { transform: translateY(-10vh); }
-  to { transform: translateY(110vh); }
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
 }
 
 /* Safe-area utilities for fixed elements (notch, home indicator, landscape phones). */
@@ -110,7 +111,7 @@
   color: transparent;
 }
 
-/* 64px line grid, faded out at the edges. The scan line is a child element that uses vn-scan. */
+/* 64px line grid, faded out at the edges. The scan line is a child layer (.vn-scan-line) that uses vn-scan. */
 @utility vn-scan-grid {
   background-image:
     linear-gradient(var(--vn-grid-line, rgba(26, 26, 26, .06)) 1px, transparent 1px),
@@ -131,9 +132,16 @@
   animation: vn-blink 1.1s steps(1) infinite;
 }
 
-/* Scan line that sweeps down a ScanGrid. It sits inside the grid, so the grid mask fades it out too. */
+/*
+ * Scan line that sweeps down a ScanGrid. The element is a full size layer of the grid and only its
+ * bottom 2px are drawn, so translating it from -100% to 0 moves the line from the top edge to the
+ * bottom edge of the grid, whatever the viewport. It sits inside the grid, so the grid mask fades it too.
+ */
 .vn-scan-line {
-  background: linear-gradient(90deg, transparent, var(--vn-scan-line, rgba(26, 26, 26, .14)), transparent);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--vn-scan-line, rgba(26, 26, 26, .14)), transparent) bottom / 100% 2px no-repeat;
   animation: vn-scan 8s linear infinite;
   will-change: transform;
 }
