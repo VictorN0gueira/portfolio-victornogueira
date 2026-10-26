@@ -90,6 +90,38 @@ function offPaletteRgb(css: string): string[] {
     .map((match) => match[0])
 }
 
+describe('tokens.css motion primitives', () => {
+  const rule = (selector: string): string => {
+    const match = new RegExp(`${selector.replace(/[.]/g, '\\.')}\\s*\\{([^}]*)\\}`).exec(css)
+    return match?.[1] ?? ''
+  }
+
+  it('blinks the cursor with vn-blink for 1.1s in one step', () => {
+    expect(rule('.vn-cursor')).toContain('animation: vn-blink 1.1s steps(1) infinite')
+  })
+
+  it('sweeps the scan line with vn-scan for 8s on the compositor', () => {
+    const scanLine = rule('.vn-scan-line')
+    expect(scanLine).toContain('animation: vn-scan 8s linear infinite')
+    expect(scanLine).toContain('will-change: transform')
+  })
+
+  it('stops the cursor and hides the scan line under prefers-reduced-motion', () => {
+    const reduced = /@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? ''
+    expect(reduced).toMatch(/\.vn-cursor\s*\{\s*animation: none;/)
+    expect(reduced).toMatch(/\.vn-scan-line\s*\{\s*display: none;/)
+  })
+
+  it('stops the cursor and hides the scan line under .a11y-no-animations', () => {
+    expect(rule('.a11y-no-animations .vn-cursor')).toContain('animation: none')
+    expect(rule('.a11y-no-animations .vn-scan-line')).toContain('display: none')
+  })
+
+  it('tints the scan line white on dark grids', () => {
+    expect(rule('@utility vn-scan-grid--dark')).toContain('--vn-scan-line: rgba(255, 255, 255, .16)')
+  })
+})
+
 describe('palette guard helpers', () => {
   it('accepts a 3 digit hex that expands to a palette color', () => {
     expect(offPaletteHex('a { color: #fff; }')).toEqual([])

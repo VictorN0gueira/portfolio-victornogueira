@@ -123,4 +123,36 @@
 /* Modifier for dark surfaces. */
 @utility vn-scan-grid--dark {
   --vn-grid-line: rgba(255, 255, 255, .045);
+  --vn-scan-line: rgba(255, 255, 255, .16);
+}
+
+/* Blinking block cursor. The size and color come from utilities on the element (see Cursor.tsx). */
+.vn-cursor {
+  animation: vn-blink 1.1s steps(1) infinite;
+}
+
+/* Scan line that sweeps down a ScanGrid. It sits inside the grid, so the grid mask fades it out too. */
+.vn-scan-line {
+  background: linear-gradient(90deg, transparent, var(--vn-scan-line, rgba(26, 26, 26, .14)), transparent);
+  animation: vn-scan 8s linear infinite;
+  will-change: transform;
+}
+
+/* Reduced motion: the cursor stays visible and still, the scan line is not drawn. */
+@media (prefers-reduced-motion: reduce) {
+  .vn-cursor {
+    animation: none;
+  }
+
+  .vn-scan-line {
+    display: none;
+  }
+}
+
+.a11y-no-animations .vn-cursor {
+  animation: none;
+}
+
+.a11y-no-animations .vn-scan-line {
+  display: none;
 }
