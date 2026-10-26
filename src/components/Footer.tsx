@@ -1,6 +1,6 @@
 import { Github, Linkedin, Instagram, ArrowUpRight, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { LOGO_URL } from '../lib/constants';
+import Logo from './ui/Logo';
 import MagneticDock from './MagneticDock';
 import type { SocialLink } from './MagneticDock';
 
@@ -25,15 +25,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
           {/* Branding */}
           <div className="space-y-4">
-            <img 
-              src={LOGO_URL} 
-              alt="VN One Logo" 
-              className="h-10 w-auto object-contain brightness-110"
-              referrerPolicy="no-referrer"
-              loading="lazy"
-              width={40}
-              height={40}
-            />
+            <Logo variant="onDark" className="h-10 w-auto object-contain" />
             <p className="text-sm text-zinc-500 font-light leading-relaxed max-w-xs">
               Transformando complexidade em eficiência através de automação inteligente e IA.
             </p>

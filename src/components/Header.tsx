@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { LOGO_URL } from '../lib/constants';
+import Logo from './ui/Logo';
 import ThemeToggle from './ThemeToggle';
 
 export default function Header() {
@@ -68,13 +68,9 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 flex justify-between items-center">
           {/* Logo — navega para home */}
           <Link to="/" className="flex items-center gap-2 group relative z-50" aria-label="Victor Nogueira — Página inicial">
-            <img
-              src={LOGO_URL}
-              alt="VN One Logo"
-              className={`h-10 md:h-14 w-auto max-w-[120px] md:max-w-none object-contain transition-all duration-500 group-hover:scale-110 ${
-                isScrolled ? 'brightness-110' : 'brightness-0 dark:brightness-110'
-              }`}
-              referrerPolicy="no-referrer"
+            <Logo
+              variant={isScrolled ? 'onDark' : 'onLight'}
+              className="h-10 md:h-14 w-auto max-w-[120px] md:max-w-none object-contain transition-transform duration-500 group-hover:scale-110"
             />
           </Link>
 

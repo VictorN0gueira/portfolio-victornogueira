@@ -41,7 +41,7 @@
   src: url("/fonts/JetBrainsMono-Medium.woff2") format("woff2");
 }
 
-@theme {
+@theme static {
   --color-vn-white: #ffffff;
   --color-vn-cream: #f2f2f2;
   --color-vn-gray-light: #c7c7c7;
