@@ -12,7 +12,8 @@ import { integrations } from './integrations';
 import { MAIN_NAV, PRIMARY_CTA } from './navigation';
 import { partners } from './partners';
 import { processSteps } from './process';
-import { serviceOptions } from './services';
+import { faqs } from './faqs';
+import { combos, serviceOptions, services } from './services';
 import { stats } from './stats';
 import { testimonials } from './testimonials';
 
@@ -20,6 +21,19 @@ describe('stats', () => {
   it('has the four headline numbers in order', () => {
     expect(stats).toHaveLength(4);
     expect(stats.map((stat) => stat.value)).toEqual(['500h+', '100+', '10+', '85%']);
+  });
+
+  it('uses the approved labels', () => {
+    expect(stats.map((stat) => stat.label)).toEqual([
+      'Horas economizadas por mês',
+      'Fluxos de automação ativos',
+      'Empresas atendidas',
+      'Aumento médio de eficiência',
+    ]);
+  });
+
+  it('does not repeat "médio" in the efficiency description', () => {
+    expect(stats[3].description).toBe('Melhoria nos processos internos');
   });
 
   it('gives every stat a label and a description without a slash', () => {
@@ -49,6 +63,15 @@ describe('processSteps', () => {
       '1 a 2 dias',
       'sprints semanais',
       'contínuo',
+    ]);
+  });
+
+  it('uses the approved descriptions verbatim', () => {
+    expect(processSteps.map((step) => step.description)).toEqual([
+      'A gente olha os processos de hoje, acha os gargalos e marca onde a automação dá mais retorno.',
+      'Desenhamos os fluxos e as integrações, e definimos onde a IA entra.',
+      'Cada fluxo é construído e testado em ciclos curtos, com entregas parciais pra você validar.',
+      'Colocamos no ar com monitoramento e documentação. Se precisar de ajuste depois, a gente ajusta.',
     ]);
   });
 });
@@ -180,5 +203,54 @@ describe('serviceOptions', () => {
       'Combo de site e automação',
       'Ainda não sei, quero orientação',
     ]);
+  });
+});
+
+describe('services', () => {
+  it('keeps the Title Case service names, with the site service named after the approved copy', () => {
+    expect(services.map((service) => service.nome)).toEqual([
+      'Automação Essencial',
+      'Automação Avançada',
+      'Agente de IA Sob Medida',
+      'Landing Page ou Site',
+      'Landing Page Complexa',
+      'Sistema Web Sob Medida',
+    ]);
+  });
+
+  it('keeps the approximate lead time wording', () => {
+    expect(services.filter((service) => service.prazo.includes('~'))).toEqual([]);
+    expect(services[0].prazo).toBe('cerca de 1 semana');
+    expect(services[3].prazo).toBe('cerca de 1 semana');
+  });
+
+  it('describes the services without sales adjectives', () => {
+    const descriptions = [...services, ...combos].map((item) => item.descricao).join(' ');
+
+    expect(descriptions).not.toMatch(/orquestrad|moderna|inteligente/i);
+    expect(services[3].descricao).toBe('Presença digital rápida e pensada para converter, com até 5 páginas.');
+  });
+
+  it('keeps the combo discounts untouched', () => {
+    expect(combos.map((combo) => combo.desconto)).toEqual(['10% off', '12% off', '15% off']);
+  });
+});
+
+describe('faqs', () => {
+  it('speaks as a team, never in the first person singular', () => {
+    const FIRST_PERSON = /\b(eu|me|meu|minha|mim|estou|construo)\b/i;
+    const offenders = faqs.filter((faq) => FIRST_PERSON.test(faq.answer)).map((faq) => faq.question);
+
+    expect(offenders).toEqual([]);
+  });
+
+  it('closes the support and consultation answers with the approved wording', () => {
+    expect(
+      faqs[3].answer.endsWith(
+        'Construímos as soluções pensando em estabilidade e facilidade de manutenção a longo prazo.',
+      ),
+    ).toBe(true);
+    expect(faqs[4].answer.endsWith('Sem compromisso.')).toBe(true);
+    expect(faqs[4].answer).not.toContain('Sem pressão');
   });
 });

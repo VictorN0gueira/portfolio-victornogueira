@@ -22,11 +22,11 @@ export const faqs: Faq[] = [
   {
     question: 'E se o sistema parar de funcionar depois?',
     answer:
-      'Todo projeto inclui monitoramento, documentação e suporte pós-entrega. Se algo parar de funcionar, a gente está disponível para corrigir. A gente constrói soluções pensando em estabilidade e manutenibilidade a longo prazo.',
+      'Todo projeto inclui monitoramento, documentação e suporte pós-entrega. Se algo parar de funcionar, a gente está disponível para corrigir. Construímos as soluções pensando em estabilidade e facilidade de manutenção a longo prazo.',
   },
   {
     question: 'Como funciona a consulta gratuita?',
     answer:
-      'É uma conversa de 30 minutos via video call ou WhatsApp. Você conta como são seus processos atuais, a gente identifica onde a automação gera mais valor e apresenta um diagnóstico sem cobrar nada. Sem pressão, sem compromisso.',
+      'É uma conversa de 30 minutos via video call ou WhatsApp. Você conta como são seus processos atuais, a gente identifica onde a automação gera mais valor e apresenta um diagnóstico sem cobrar nada. Sem compromisso.',
   },
 ];

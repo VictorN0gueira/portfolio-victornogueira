@@ -19,6 +19,6 @@ export const stats: Stat[] = [
   {
     value: '85%',
     label: 'Aumento médio de eficiência',
-    description: 'Melhoria média nos processos internos',
+    description: 'Melhoria nos processos internos',
   },
 ];

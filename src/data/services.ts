@@ -41,7 +41,7 @@ export const services: Service[] = [
     nome: 'Automação Avançada',
     categoria: 'Automação',
     descricao:
-      'Operações inteiras orquestradas: múltiplos fluxos integrados, lógica complexa e IA onde faz diferença.',
+      'Operações inteiras automatizadas: múltiplos fluxos integrados, lógica complexa e IA onde faz diferença.',
     inclui: [
       'Múltiplos fluxos integrados',
       'Lógica condicional complexa',
@@ -64,10 +64,10 @@ export const services: Service[] = [
     prazo: '2 a 3 semanas',
   },
   {
-    nome: 'Landing page ou site',
+    nome: 'Landing Page ou Site',
     categoria: 'Desenvolvimento Web',
     descricao:
-      'Presença digital rápida, moderna e focada em conversão, com até 5 páginas.',
+      'Presença digital rápida e pensada para converter, com até 5 páginas.',
     inclui: [
       'React + Tailwind, design responsivo',
       'Até 5 páginas',
@@ -115,7 +115,7 @@ export const combos: ServiceCombo[] = [
     nome: 'Automação + IA',
     composicao: 'Automação Avançada + Agente de IA',
     desconto: '12% off',
-    descricao: 'Operação orquestrada com um agente inteligente na frente.',
+    descricao: 'Operação automatizada com um agente de IA na frente.',
   },
   {
     nome: 'Sistema + Automação',

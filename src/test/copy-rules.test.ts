@@ -64,6 +64,9 @@ describe('copy rules', () => {
     expect(scanned).toContain('src/components/SEO.tsx');
     expect(scanned).toContain('src/data/services.ts');
     expect(scanned).toContain('src/lib/constants.ts');
+    // Directories that exist today must really be walked, not silently skipped.
+    expect(scanned.some((file) => file.startsWith('src/hooks/'))).toBe(true);
+    expect(scanned.some((file) => file.startsWith('src/components/ui/'))).toBe(true);
   });
 
   it('never scans test files', () => {
