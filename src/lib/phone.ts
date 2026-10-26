@@ -1,6 +1,7 @@
 const COUNTRY_CODE = '55';
 const COUNTRY_PREFIX = '+55';
-export const LOCAL_PHONE_LENGTHS = [10, 11];
+const MOBILE_NINE = '9';
+export const LOCAL_PHONE_LENGTHS: readonly number[] = [10, 11];
 
 /**
  * Dígitos locais (DDD + número), sem o código do país.
@@ -29,7 +30,7 @@ export function formatWhatsappDisplay(raw: string): string {
   let local = toLocalDigits(raw);
 
   // Remove o 9 se o usuário digitou após o DDD (será adicionado automaticamente)
-  if (local.length > 2 && local[2] === '9') {
+  if (local.length > 2 && local[2] === MOBILE_NINE) {
     local = local.substring(0, 2) + local.substring(3);
   }
 
@@ -44,13 +45,14 @@ export function formatWhatsappDisplay(raw: string): string {
 
 /**
  * Converte para o formato padrão da Evolution API: 558195493732
- * Remove o 9 extra (11 dígitos locais viram 10) para compatibilidade.
+ * Remove o 9 extra do celular (11 dígitos locais viram 10) para compatibilidade;
+ * se o terceiro dígito não for 9, os dígitos ficam como estão.
  */
 export function toEvolutionFormat(raw: string): string {
   let num = toLocalDigits(raw);
 
-  // Se tem 11 dígitos (com o 9), remove o 9 (índice 2)
-  if (num.length === 11) {
+  // Se tem 11 dígitos e o terceiro é o 9 do celular, remove o 9 (índice 2)
+  if (num.length === 11 && num[2] === MOBILE_NINE) {
     num = num.substring(0, 2) + num.substring(3);
   }
 

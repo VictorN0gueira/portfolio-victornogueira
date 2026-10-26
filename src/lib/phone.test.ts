@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { formatWhatsappDisplay, toEvolutionFormat, toLocalDigits } from './phone';
+import {
+  LOCAL_PHONE_LENGTHS,
+  formatWhatsappDisplay,
+  toEvolutionFormat,
+  toLocalDigits,
+} from './phone';
 
 describe('toEvolutionFormat', () => {
   it('converts a fully formatted display number', () => {
@@ -12,6 +17,19 @@ describe('toEvolutionFormat', () => {
 
   it('keeps a 10 digit local number and prefixes 55', () => {
     expect(toEvolutionFormat('8184451243')).toBe('558184451243');
+  });
+
+  it('only removes the third digit of an 11 digit number when it is the mobile 9', () => {
+    expect(toEvolutionFormat('81884451243')).toBe('5581884451243');
+    expect(toEvolutionFormat('81984451243')).toBe('558184451243');
+  });
+});
+
+describe('LOCAL_PHONE_LENGTHS', () => {
+  it('lists the complete local lengths and cannot be mutated', () => {
+    expect(LOCAL_PHONE_LENGTHS).toEqual([10, 11]);
+    // @ts-expect-error the shared list is readonly, so push does not exist on its type
+    void LOCAL_PHONE_LENGTHS.push;
   });
 });
 

@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { serviceOptions } from '../data/services';
 import ContactForm from './ContactForm';
 
@@ -19,6 +19,12 @@ const EMAIL_WEBHOOK = 'https://n8n.vnone.com.br/webhook/portfolio-vn-email';
 const WHATSAPP_WEBHOOK = 'https://n8n.vnone.com.br/webhook/portfolio-vn-whatsapp';
 
 type User = ReturnType<typeof userEvent.setup>;
+
+// Every test starts with a rejecting fetch, so a validation regression can never reach
+// the real n8n webhooks. Tests that need a specific response call stubFetch again.
+beforeEach(() => {
+  stubFetch(() => Promise.reject(new Error('Unexpected network call in a form test')));
+});
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -61,13 +67,12 @@ function readCall(fetchMock: ReturnType<typeof stubFetch>) {
 
 describe('ContactForm validation', () => {
   it('shows per-field errors with aria wiring and clears each one on typing', async () => {
-    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
     const user = renderForm();
 
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
     const nome = screen.getByLabelText('Nome');
     expect(nome).toHaveAttribute('aria-invalid', 'true');
     expect(nome).toHaveAttribute('aria-describedby', 'contact-nome-error');
@@ -105,6 +110,7 @@ describe('ContactForm validation', () => {
     const picked = screen.getByRole('button', { name: serviceOptions[0] });
     expect(picked).not.toHaveAttribute('aria-invalid');
     expect(picked).not.toHaveAttribute('aria-describedby');
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('drops stale errors when the contact method changes', async () => {
@@ -124,6 +130,7 @@ describe('ContactForm validation', () => {
     await user.click(screen.getByRole('button', { name: /por email/i }));
     await waitFor(() => expect(screen.queryAllByRole('alert')).toHaveLength(0));
     expect(await screen.findByLabelText('Email')).toHaveAttribute('aria-invalid', 'false');
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
 
