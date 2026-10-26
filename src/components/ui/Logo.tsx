@@ -1,3 +1,5 @@
+import { assetUrl } from '../../lib/asset';
+
 type LogoVariant = 'onLight' | 'onDark';
 
 interface LogoProps {
@@ -11,8 +13,8 @@ const LOGO_WIDTH = 194;
 const LOGO_HEIGHT = 96;
 
 const LOGO_SRC: Record<LogoVariant, string> = {
-  onLight: '/brand/vn-one-logo-dark.webp',
-  onDark: '/brand/vn-one-logo-chrome.webp',
+  onLight: assetUrl('/brand/vn-one-logo-dark.webp'),
+  onDark: assetUrl('/brand/vn-one-logo-chrome.webp'),
 };
 
 export default function Logo({ variant, className }: LogoProps) {
