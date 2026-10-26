@@ -26,8 +26,14 @@ describe('toEvolutionFormat', () => {
 });
 
 describe('LOCAL_PHONE_LENGTHS', () => {
-  it('lists the complete local lengths and cannot be mutated', () => {
+  it('lists the complete local lengths and is frozen', () => {
     expect(LOCAL_PHONE_LENGTHS).toEqual([10, 11]);
+    expect(Object.isFrozen(LOCAL_PHONE_LENGTHS)).toBe(true);
+    expect(() => (LOCAL_PHONE_LENGTHS as number[]).push(12)).toThrow(TypeError);
+    expect(LOCAL_PHONE_LENGTHS).toEqual([10, 11]);
+  });
+
+  it('is readonly at the type level too', () => {
     // @ts-expect-error the shared list is readonly, so push does not exist on its type
     void LOCAL_PHONE_LENGTHS.push;
   });

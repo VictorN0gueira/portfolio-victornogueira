@@ -1,7 +1,7 @@
 const COUNTRY_CODE = '55';
 const COUNTRY_PREFIX = '+55';
 const MOBILE_NINE = '9';
-export const LOCAL_PHONE_LENGTHS: readonly number[] = [10, 11];
+export const LOCAL_PHONE_LENGTHS: readonly number[] = Object.freeze([10, 11]);
 
 /**
  * Dígitos locais (DDD + número), sem o código do país.
