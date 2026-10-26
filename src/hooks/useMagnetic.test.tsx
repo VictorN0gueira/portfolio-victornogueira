@@ -48,6 +48,19 @@ function Magnet({ strength }: { strength?: { x: number; y: number } }) {
   );
 }
 
+/** A consumer that does not attach `ref`: the hook then moves the event's currentTarget. */
+function DetachedMagnet({ testId = 'magnet' }: { testId?: string }) {
+  const { onPointerMove, onPointerLeave } = useMagnetic<HTMLButtonElement>();
+  return (
+    <button
+      data-testid={testId}
+      type="button"
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
+    />
+  );
+}
+
 function setup(strength?: { x: number; y: number }): HTMLElement {
   renderWithProviders(<Magnet strength={strength} />);
   const el = screen.getByTestId('magnet');
@@ -217,18 +230,100 @@ describe('useMagnetic', () => {
     expect(el.style.transform).toBe('');
   });
 
-  it('works on the event target when the ref is not attached', () => {
-    function Detached() {
-      const { onPointerMove } = useMagnetic<HTMLButtonElement>();
-      return <button data-testid="magnet" type="button" onPointerMove={onPointerMove} />;
-    }
-    renderWithProviders(<Detached />);
-    const el = screen.getByTestId('magnet');
-    stubRect(el);
+  describe('when the ref is not attached', () => {
+    it('moves the event target', () => {
+      renderWithProviders(<DetachedMagnet />);
+      const el = screen.getByTestId('magnet');
+      stubRect(el);
 
-    fireEvent.pointerMove(el, { clientX: 100, clientY: 20 });
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 20 });
 
-    expect(el.style.transform).toBe('translate(9px, 0px)');
+      expect(el.style.transform).toBe('translate(9px, 0px)');
+    });
+
+    it('keeps the pull stable across repeated moves although the rect follows the pull', () => {
+      renderWithProviders(<DetachedMagnet />);
+      const el = screen.getByTestId('magnet');
+      stubRectShiftedByTransform(el);
+
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 40 });
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 40 });
+
+      expect(el.style.transform).toBe('translate(9px, 6px)');
+    });
+
+    it('clears the event target on pointer leave and measures from the resting center again', () => {
+      renderWithProviders(<DetachedMagnet />);
+      const el = screen.getByTestId('magnet');
+      stubRectShiftedByTransform(el);
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 40 });
+      expect(el.style.transform).toBe('translate(9px, 6px)');
+
+      fireEvent.pointerLeave(el);
+      expect(el.style.transform).toBe('');
+
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 40 });
+      expect(el.style.transform).toBe('translate(9px, 6px)');
+    });
+
+    it('clears the event target when animations are turned off mid hover', () => {
+      function DetachedWithToggle() {
+        const { toggle } = useAccessibility();
+        return (
+          <>
+            <DetachedMagnet />
+            <button type="button" onClick={() => toggle('noAnimations')}>
+              toggle
+            </button>
+          </>
+        );
+      }
+      renderWithProviders(<DetachedWithToggle />);
+      const el = screen.getByTestId('magnet');
+      stubRect(el);
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 20 });
+      expect(el.style.transform).toBe('translate(9px, 0px)');
+
+      fireEvent.click(screen.getByRole('button', { name: 'toggle' }));
+
+      expect(el.style.transform).toBe('');
+    });
+
+    it('clears the event target when the system turns reduced motion on mid hover', () => {
+      const media = stubMatchMedia({ [FINE_POINTER_QUERY]: true });
+      renderWithProviders(<DetachedMagnet />);
+      const el = screen.getByTestId('magnet');
+      stubRect(el);
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 20 });
+
+      act(() => media.set(REDUCED_MOTION_QUERY, true));
+
+      expect(el.style.transform).toBe('');
+    });
+
+    it('clears the previous element when one hook instance moves a different target', () => {
+      function Shared() {
+        const { onPointerMove } = useMagnetic<HTMLButtonElement>();
+        return (
+          <>
+            <button data-testid="first" type="button" onPointerMove={onPointerMove} />
+            <button data-testid="second" type="button" onPointerMove={onPointerMove} />
+          </>
+        );
+      }
+      renderWithProviders(<Shared />);
+      const first = screen.getByTestId('first');
+      const second = screen.getByTestId('second');
+      stubRectShiftedByTransform(first);
+      stubRectShiftedByTransform(second);
+
+      fireEvent.pointerMove(first, { clientX: 100, clientY: 40 });
+      expect(first.style.transform).toBe('translate(9px, 6px)');
+      fireEvent.pointerMove(second, { clientX: 100, clientY: 40 });
+
+      expect(first.style.transform).toBe('');
+      expect(second.style.transform).toBe('translate(9px, 6px)');
+    });
   });
 
   it('does not re-render while the pointer moves', () => {

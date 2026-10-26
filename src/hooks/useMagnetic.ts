@@ -13,8 +13,12 @@ interface UseMagneticResult<T extends HTMLElement> {
   onPointerLeave: () => void;
 }
 
+/** The element the hook last wrote a transform to, with the pull it wrote. */
+interface AppliedPull<T extends HTMLElement> extends MagneticStrength {
+  element: T;
+}
+
 const DEFAULT_STRENGTH: MagneticStrength = { x: 0.18, y: 0.3 };
-const NO_PULL: MagneticStrength = { x: 0, y: 0 };
 
 /** Rounds to hundredths so the inline style never carries float noise. */
 function toPx(value: number): number {
@@ -31,20 +35,26 @@ function toPx(value: number): number {
  * into itself. That only holds while the element sits where the last write put it: with a CSS
  * transition on `transform`, the rect reports the in-flight position, so keep that transition
  * short or apply it only on pointer leave.
+ *
+ * `ref` is optional: without it the hook moves the element the handler is attached to
+ * (`event.currentTarget`). Either way it remembers the element it last wrote, so leaving and
+ * turning inactive clear exactly that element.
  */
 export function useMagnetic<T extends HTMLElement>(
   strength: MagneticStrength = DEFAULT_STRENGTH,
 ): UseMagneticResult<T> {
   const ref = useRef<T | null>(null);
-  const pullRef = useRef<MagneticStrength>(NO_PULL);
+  const appliedRef = useRef<AppliedPull<T> | null>(null);
   const hasFinePointer = useFinePointer();
   const isMotionAllowed = useMotionAllowed();
   const isActive = hasFinePointer && isMotionAllowed;
   const { x: strengthX, y: strengthY } = strength;
 
   const clearPull = useCallback(() => {
-    pullRef.current = NO_PULL;
-    ref.current?.style.removeProperty('transform');
+    const applied = appliedRef.current;
+    if (!applied) return;
+    applied.element.style.transform = '';
+    appliedRef.current = null;
   }, []);
 
   // Drop a pull that is still applied when the hook turns inactive (for example when the
@@ -59,17 +69,21 @@ export function useMagnetic<T extends HTMLElement>(
       if (!isActive) return;
 
       const element = ref.current ?? event.currentTarget;
+      // A pull left on another element must not leak into this measurement or stay on screen.
+      if (appliedRef.current?.element !== element) clearPull();
+
       const rect = element.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2 - pullRef.current.x;
-      const centerY = rect.top + rect.height / 2 - pullRef.current.y;
+      const centerX = rect.left + rect.width / 2 - (appliedRef.current?.x ?? 0);
+      const centerY = rect.top + rect.height / 2 - (appliedRef.current?.y ?? 0);
       const pull = {
+        element,
         x: toPx((event.clientX - centerX) * strengthX),
         y: toPx((event.clientY - centerY) * strengthY),
       };
-      pullRef.current = pull;
+      appliedRef.current = pull;
       element.style.transform = `translate(${pull.x}px, ${pull.y}px)`;
     },
-    [isActive, strengthX, strengthY],
+    [isActive, strengthX, strengthY, clearPull],
   );
 
   const onPointerLeave = useCallback(() => {
