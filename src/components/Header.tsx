@@ -41,7 +41,7 @@ export default function Header() {
     return () => document.removeEventListener('keydown', handler);
   }, [isMenuOpen]);
 
-  // Prevent body scroll when menu is open — but delay it to avoid layout thrashing during animation
+  // Prevent body scroll when menu is open, but delay it to avoid layout thrashing during animation
   useEffect(() => {
     if (isMenuOpen) {
       const timer = setTimeout(() => { document.body.style.overflow = 'hidden'; }, 300);
@@ -69,8 +69,8 @@ export default function Header() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 flex justify-between items-center">
-          {/* Logo — navega para home */}
-          <Link to="/" className="flex items-center gap-2 group relative z-50" aria-label="Victor Nogueira — Página inicial">
+          {/* Logo: navega para home */}
+          <Link to="/" className="flex items-center gap-2 group relative z-50" aria-label="VN One, página inicial">
             {/* As duas artes ficam empilhadas e trocam de opacidade junto com o fundo do header. */}
             <span className="relative flex transition-transform duration-500 group-hover:scale-110">
               <Logo
@@ -122,7 +122,7 @@ export default function Header() {
               Conversar
             </Link>
 
-            {/* Mobile Menu Button — mínimo 44px para touch */}
+            {/* Mobile Menu Button: mínimo 44px para touch */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               style={{ willChange: 'transform, background-color, border-color' }}

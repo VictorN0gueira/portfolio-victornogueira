@@ -21,6 +21,15 @@ function scrollTo(y: number) {
   });
 }
 
+describe('Header home link', () => {
+  it('is named VN One, página inicial, without a dash', () => {
+    const { homeLink } = renderHeader();
+
+    expect(homeLink).toHaveAttribute('aria-label', 'VN One, página inicial');
+    expect(homeLink).toHaveAttribute('href', '/');
+  });
+});
+
 describe('Header logo', () => {
   afterEach(() => {
     Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });

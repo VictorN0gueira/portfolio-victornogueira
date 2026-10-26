@@ -367,7 +367,7 @@ export default function BlogPage() {
             <div className="flex items-center gap-3 mb-8 flex-wrap">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08]">
                 <Sparkles className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Blog & Insights</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Blog e insights</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08]">
                 <Globe className="w-4 h-4 text-cyan-400" />

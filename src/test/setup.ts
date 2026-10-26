@@ -39,7 +39,8 @@ function installDefaultMocks(): void {
   vi.stubGlobal('matchMedia', vi.fn(createMatchMediaMock));
 }
 
-// Installed at import time (seen by import-time code and beforeAll) and again before every test.
+// Installed at import time and after every test, so import-time code and any beforeAll (also one scoped
+// to a later describe) see the defaults, and again before every test so a direct assignment never leaks.
 // Per-test overrides belong inside the test or beforeEach: a beforeAll stub is replaced by the next beforeEach.
 installDefaultMocks();
 beforeEach(installDefaultMocks);
@@ -47,4 +48,5 @@ beforeEach(installDefaultMocks);
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  installDefaultMocks();
 });

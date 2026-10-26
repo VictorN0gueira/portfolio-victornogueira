@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 type MockTypes = { io: string; ro: string; matchMedia: string };
 
@@ -16,6 +16,12 @@ let seenInBeforeAll: MockTypes | undefined;
 
 beforeAll(() => {
   seenInBeforeAll = readMockTypes();
+});
+
+// Counts finished tests so the later beforeAll check can tell that it really ran after one.
+let testsFinished = 0;
+afterEach(() => {
+  testsFinished += 1;
 });
 
 const ALL_FUNCTIONS: MockTypes = { io: 'function', ro: 'function', matchMedia: 'function' };
@@ -100,5 +106,26 @@ describe.sequential('isolation between tests', () => {
     if (!stubbedProbe) ctx.skip();
 
     expect((globalThis as Record<string, unknown>).__setupLeakProbe).toBeUndefined();
+  });
+});
+
+// A beforeAll scoped to a describe runs after the tests of the earlier suites, so it only sees the
+// default mocks if they are reinstalled after each test (afterEach unstubs the module scope ones).
+describe('a describe scoped beforeAll that runs after earlier tests', () => {
+  let testsFinishedBefore = 0;
+  let seenInScopedBeforeAll: MockTypes | undefined;
+  let matchesInScopedBeforeAll: boolean | undefined;
+
+  beforeAll(() => {
+    testsFinishedBefore = testsFinished;
+    seenInScopedBeforeAll = readMockTypes();
+    matchesInScopedBeforeAll = window.matchMedia('(min-width: 1px)').matches;
+  });
+
+  it('still sees the default mocks', (ctx) => {
+    if (testsFinishedBefore === 0) ctx.skip();
+
+    expect(seenInScopedBeforeAll).toEqual(ALL_FUNCTIONS);
+    expect(matchesInScopedBeforeAll).toBe(false);
   });
 });
