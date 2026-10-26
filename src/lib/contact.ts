@@ -1,4 +1,4 @@
-import { toEvolutionFormat } from './phone';
+import { LOCAL_PHONE_LENGTHS, toEvolutionFormat, toLocalDigits } from './phone';
 
 // Webhooks n8n de ativação. Disparam a notificação por email e WhatsApp para a VN One
 // e são o único caminho pelo qual um lead chega ao dono do negócio.
@@ -29,7 +29,6 @@ export type ContactPayload = {
 
 const NAME_MIN_LENGTH = 2;
 const MESSAGE_MIN_LENGTH = 10;
-const LOCAL_PHONE_LENGTHS = [10, 11];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const CONTACT_ERRORS = {
@@ -39,12 +38,6 @@ const CONTACT_ERRORS = {
   mensagem: 'Escreve um pouco mais sobre o que você precisa',
   servico: 'Escolhe um serviço',
 } as const;
-
-/** Dígitos do número sem o 55 inicial: DDD + 8 ou 9 dígitos. */
-function localPhoneDigits(raw: string): string {
-  const digits = raw.replace(/\D/g, '');
-  return digits.startsWith('55') ? digits.substring(2) : digits;
-}
 
 /**
  * Valida só os campos do método escolhido: `email` apenas no método email e
@@ -59,7 +52,7 @@ export function validateContact(f: ContactFields, method: ContactMethod): Contac
   if (method === 'email' && !EMAIL_PATTERN.test(f.email.trim())) {
     errors.email = CONTACT_ERRORS.email;
   }
-  if (method === 'whatsapp' && !LOCAL_PHONE_LENGTHS.includes(localPhoneDigits(f.whatsapp).length)) {
+  if (method === 'whatsapp' && !LOCAL_PHONE_LENGTHS.includes(toLocalDigits(f.whatsapp).length)) {
     errors.whatsapp = CONTACT_ERRORS.whatsapp;
   }
   if (f.mensagem.trim().length < MESSAGE_MIN_LENGTH) {

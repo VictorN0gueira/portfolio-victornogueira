@@ -79,6 +79,11 @@ describe('validateContact', () => {
     expect(validateContact({ ...ok, whatsapp: '819844512430' }, 'whatsapp').whatsapp).toBeTruthy();
   });
 
+  it('aceita whatsapp com DDD 55 sem o prefixo do país', () => {
+    expect(validateContact({ ...ok, whatsapp: '55984451243' }, 'whatsapp').whatsapp).toBeUndefined();
+    expect(validateContact({ ...ok, whatsapp: '+55 55 9 8445-1243' }, 'whatsapp').whatsapp).toBeUndefined();
+  });
+
   it('valida whatsapp só no método whatsapp', () => {
     expect(validateContact({ ...ok, whatsapp: '+55 ' }, 'email').whatsapp).toBeUndefined();
   });

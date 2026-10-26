@@ -8,6 +8,8 @@ interface ServiceSelectProps {
   options: string[];
   placeholder?: string;
   invalid?: boolean;
+  /** Id do elemento com a mensagem de erro; só é ligado ao botão enquanto invalid for true. */
+  describedBy?: string;
 }
 
 /* Dropdown customizado no estilo dos campos do form (fundo escuro).
@@ -18,6 +20,7 @@ export default function ServiceSelect({
   options,
   placeholder = 'Selecione uma opção',
   invalid = false,
+  describedBy,
 }: ServiceSelectProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -49,6 +52,8 @@ export default function ServiceSelect({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
+        aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? describedBy : undefined}
         className={`w-full flex items-center justify-between gap-3 bg-white/5 border rounded-2xl px-6 py-3.5 md:py-4 text-sm text-left transition-all focus:outline-none focus:ring-2 ${
           invalid
             ? 'border-red-500/50 focus:ring-red-500/20'

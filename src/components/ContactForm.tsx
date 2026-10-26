@@ -14,6 +14,8 @@ import {
   type ContactMethod,
 } from '../lib/contact';
 import { formatWhatsappDisplay } from '../lib/phone';
+import FieldError from './contact/FieldError';
+import { errorId, fieldProps } from './contact/fieldProps';
 
 interface ContactFormProps {
   /** Mensagem pré-preenchida (ex.: vinda do ROICalculator) */
@@ -31,12 +33,18 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
   });
   const [servico, setServico] = useState('');
   const [errors, setErrors] = useState<ContactErrors>({});
-  // Consentimento LGPD — obrigatório para enviar
+  // Consentimento LGPD: obrigatório para enviar
   const [consent, setConsent] = useState(false);
 
   // Digitar num campo limpa só o erro daquele campo.
   const clearError = (field: keyof ContactFields) => {
     setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+  };
+
+  // Trocar o método descarta os erros do método anterior.
+  const selectMethod = (next: ContactMethod) => {
+    setMethod(next);
+    setErrors({});
   };
 
   // Pré-preenche a mensagem quando o usuário usa a calculadora de ROI
@@ -120,7 +128,7 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
         <div className="flex p-1 bg-white/5 border border-white/10 rounded-2xl w-fit" role="group" aria-label="Método de contato">
           <button
             type="button"
-            onClick={() => setMethod('email')}
+            onClick={() => selectMethod('email')}
             aria-pressed={method === 'email'}
             className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-[10px] md:text-xs uppercase tracking-widest transition-all ${
               method === 'email'
@@ -133,7 +141,7 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
           </button>
           <button
             type="button"
-            onClick={() => setMethod('whatsapp')}
+            onClick={() => selectMethod('whatsapp')}
             aria-pressed={method === 'whatsapp'}
             className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-[10px] md:text-xs uppercase tracking-widest transition-all ${
               method === 'whatsapp'
@@ -157,8 +165,7 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
             id="contact-nome"
             required
             aria-required="true"
-            aria-invalid={!!errors.nome}
-            aria-describedby={errors.nome ? 'contact-nome-error' : undefined}
+            {...fieldProps('nome', errors.nome)}
             type="text"
             value={formData.nome}
             onChange={(e) => {
@@ -166,16 +173,11 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
               clearError('nome');
             }}
             placeholder="Seu nome"
-            className={`w-full bg-white/5 border ${errors.nome ? 'border-red-500/50 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/20'} rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 transition-all placeholder:text-zinc-600 text-sm`}
           />
-          {errors.nome && (
-            <p id="contact-nome-error" role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
-              {errors.nome}
-            </p>
-          )}
+          <FieldError id={errorId('nome')} message={errors.nome} />
         </div>
 
-        {/* Serviço de interesse — comum a email e WhatsApp */}
+        {/* Serviço de interesse, comum a email e WhatsApp */}
         <div className="space-y-2">
           <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-4 block">
             Serviço de interesse
@@ -189,12 +191,9 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
             options={serviceOptions}
             placeholder="Selecione um serviço"
             invalid={!!errors.servico}
+            describedBy={errorId('servico')}
           />
-          {errors.servico && (
-            <p id="contact-servico-error" role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
-              {errors.servico}
-            </p>
-          )}
+          <FieldError id={errorId('servico')} message={errors.servico} />
         </div>
 
         <AnimatePresence mode="wait">
@@ -213,8 +212,7 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
                 id="contact-email"
                 required
                 aria-required="true"
-                aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? 'contact-email-error' : undefined}
+                {...fieldProps('email', errors.email)}
                 type="email"
                 value={formData.email}
                 onChange={(e) => {
@@ -222,13 +220,8 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
                   clearError('email');
                 }}
                 placeholder="seu@email.com"
-                className={`w-full bg-white/5 border ${errors.email ? 'border-red-500/50 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/20'} rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 transition-all placeholder:text-zinc-600 text-sm`}
               />
-              {errors.email && (
-                <p id="contact-email-error" role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
-                  {errors.email}
-                </p>
-              )}
+              <FieldError id={errorId('email')} message={errors.email} />
             </motion.div>
           ) : (
             <motion.div
@@ -245,8 +238,7 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
                 id="contact-whatsapp"
                 required
                 aria-required="true"
-                aria-invalid={!!errors.whatsapp}
-                aria-describedby={errors.whatsapp ? 'contact-whatsapp-error' : undefined}
+                {...fieldProps('whatsapp', errors.whatsapp)}
                 type="tel"
                 value={formData.whatsapp}
                 onChange={(e) => {
@@ -255,13 +247,8 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
                   clearError('whatsapp');
                 }}
                 placeholder="+55 81 99999-9999"
-                className={`w-full bg-white/5 border ${errors.whatsapp ? 'border-red-500/50 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/20'} rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 transition-all placeholder:text-zinc-600 text-sm`}
               />
-              {errors.whatsapp && (
-                <p id="contact-whatsapp-error" role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
-                  {errors.whatsapp}
-                </p>
-              )}
+              <FieldError id={errorId('whatsapp')} message={errors.whatsapp} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -275,8 +262,7 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
             id="contact-mensagem"
             required
             aria-required="true"
-            aria-invalid={!!errors.mensagem}
-            aria-describedby={errors.mensagem ? 'contact-mensagem-error' : undefined}
+            {...fieldProps('mensagem', errors.mensagem, 'resize-none')}
             rows={4}
             value={formData.mensagem}
             onChange={(e) => {
@@ -284,13 +270,8 @@ export default function ContactForm({ initialMessage }: ContactFormProps) {
               clearError('mensagem');
             }}
             placeholder="Como posso ajudar você?"
-            className={`w-full bg-white/5 border ${errors.mensagem ? 'border-red-500/50 focus:ring-red-500/20' : 'border-white/10 focus:ring-white/20'} rounded-2xl px-6 py-3.5 md:py-4 focus:outline-none focus:ring-2 transition-all placeholder:text-zinc-600 resize-none text-sm`}
           />
-          {errors.mensagem && (
-            <p id="contact-mensagem-error" role="alert" aria-live="polite" className="text-[10px] text-red-400 ml-4 mt-1">
-              {errors.mensagem}
-            </p>
-          )}
+          <FieldError id={errorId('mensagem')} message={errors.mensagem} />
         </div>
 
         {/* Consentimento LGPD */}
