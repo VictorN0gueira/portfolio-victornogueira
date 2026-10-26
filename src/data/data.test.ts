@@ -17,6 +17,9 @@ import { combos, serviceOptions, services } from './services';
 import { stats } from './stats';
 import { testimonials } from './testimonials';
 
+// Sales wording that must stay out of the data copy.
+const BANNED_SALES_WORDS = /orquestrad|moderna|inteligente/i;
+
 describe('stats', () => {
   it('has the four headline numbers in order', () => {
     expect(stats).toHaveLength(4);
@@ -30,6 +33,21 @@ describe('stats', () => {
       'Empresas atendidas',
       'Aumento médio de eficiência',
     ]);
+  });
+
+  it('uses the approved descriptions', () => {
+    expect(stats.map((stat) => stat.description)).toEqual([
+      'Menos tempo gasto em tarefas manuais e repetitivas',
+      'Fluxos rodando 24 horas, todos os dias',
+      'De pequenos negócios a indústrias',
+      'Melhoria nos processos internos',
+    ]);
+  });
+
+  it('keeps sales wording out of every stat label and description', () => {
+    const copy = stats.flatMap((stat) => [stat.label, stat.description]).join(' ');
+
+    expect(copy).not.toMatch(BANNED_SALES_WORDS);
   });
 
   it('does not repeat "médio" in the efficiency description', () => {
@@ -227,7 +245,7 @@ describe('services', () => {
   it('describes the services without sales adjectives', () => {
     const descriptions = [...services, ...combos].map((item) => item.descricao).join(' ');
 
-    expect(descriptions).not.toMatch(/orquestrad|moderna|inteligente/i);
+    expect(descriptions).not.toMatch(BANNED_SALES_WORDS);
     expect(services[3].descricao).toBe('Presença digital rápida e pensada para converter, com até 5 páginas.');
   });
 

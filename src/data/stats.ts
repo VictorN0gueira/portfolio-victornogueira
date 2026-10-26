@@ -9,7 +9,7 @@ export const stats: Stat[] = [
   {
     value: '100+',
     label: 'Fluxos de automação ativos',
-    description: 'Workflows inteligentes rodando 24 horas, todos os dias',
+    description: 'Fluxos rodando 24 horas, todos os dias',
   },
   {
     value: '10+',
