@@ -12,8 +12,8 @@ export default function ProjectsPage() {
   return (
     <>
       <SEO
-        title="Projetos & Cases"
-        description="Cases reais de automação, IA e desenvolvimento web — produtos próprios e projetos entregues para clientes, com resultados mensuráveis."
+        title="Projetos e cases"
+        description="Cases reais de automação, IA e desenvolvimento web. Produtos próprios e projetos entregues para clientes, com resultados mensuráveis."
         path="/projetos"
       />
       <Header />

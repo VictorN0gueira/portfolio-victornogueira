@@ -25,7 +25,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
           {/* Branding */}
           <div className="space-y-4">
-            <Logo variant="onDark" className="h-10 w-auto object-contain" />
+            <Logo variant="onDark" loading="lazy" className="h-10 w-auto object-contain" />
             <p className="text-sm text-zinc-500 font-light leading-relaxed max-w-xs">
               Transformando complexidade em eficiência através de automação inteligente e IA.
             </p>

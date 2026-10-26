@@ -5,6 +5,9 @@ import { Link, useLocation } from 'react-router-dom';
 import Logo from './ui/Logo';
 import ThemeToggle from './ThemeToggle';
 
+const LOGO_SIZE = 'h-10 md:h-14 w-auto max-w-[120px] md:max-w-none object-contain';
+const LOGO_FADE = 'transition-opacity duration-500';
+
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -68,10 +71,19 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 flex justify-between items-center">
           {/* Logo — navega para home */}
           <Link to="/" className="flex items-center gap-2 group relative z-50" aria-label="Victor Nogueira — Página inicial">
-            <Logo
-              variant={isScrolled ? 'onDark' : 'onLight'}
-              className="h-10 md:h-14 w-auto max-w-[120px] md:max-w-none object-contain transition-transform duration-500 group-hover:scale-110"
-            />
+            {/* As duas artes ficam empilhadas e trocam de opacidade junto com o fundo do header. */}
+            <span className="relative flex transition-transform duration-500 group-hover:scale-110">
+              <Logo
+                variant="onLight"
+                decorative={isScrolled}
+                className={`${LOGO_SIZE} ${LOGO_FADE} ${isScrolled ? 'opacity-0' : 'opacity-100'}`}
+              />
+              <Logo
+                variant="onDark"
+                decorative={!isScrolled}
+                className={`absolute inset-0 h-full w-full object-contain ${LOGO_FADE} ${isScrolled ? 'opacity-100' : 'opacity-0'}`}
+              />
+            </span>
           </Link>
 
           {/* Desktop Nav */}

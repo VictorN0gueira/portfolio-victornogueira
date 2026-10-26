@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import * as roi from './roi';
 import {
   HERO_HOUR_OPTIONS,
   TEAM_OPTIONS,
@@ -55,6 +56,26 @@ describe('buildQuoteMessage', () => {
       `Olá, VN One! Usei a calculadora do site: a gente perde cerca de R$${NBSP}78.000 por ano com tarefas manuais (12h por semana). Quero automatizar esse processo.`,
     );
     expect(msg).not.toMatch(DASH_OR_SLASH);
+  });
+
+  it('invalid hours print 0h por semana and a cost of R$ 0', () => {
+    const msg = buildQuoteMessage({ hoursPerWeek: NaN, teamMultiplier: 2.5, hourlyRate: 50 });
+
+    expect(msg).toContain('(0h por semana)');
+    expect(msg).toContain(`cerca de R$${NBSP}0 por ano`);
+  });
+
+  it('a negative or non finite rate prints R$ 0 as well', () => {
+    const msg = buildQuoteMessage({ hoursPerWeek: 12, teamMultiplier: 2.5, hourlyRate: -Infinity });
+
+    expect(msg).toContain('(12h por semana)');
+    expect(msg).toContain(`cerca de R$${NBSP}0 por ano`);
+  });
+});
+
+describe('public surface', () => {
+  it('keeps the month count private', () => {
+    expect(roi).not.toHaveProperty('MONTHS_PER_YEAR');
   });
 });
 

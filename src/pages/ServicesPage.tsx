@@ -28,7 +28,7 @@ export default function ServicesPage() {
     <>
       <SEO
         title="Serviços"
-        description="Automação de processos, agentes de IA e desenvolvimento web — escopo claro, prazo definido e preço transparente."
+        description="Automação de processos, agentes de IA e desenvolvimento web. Escopo claro, prazo definido e preço transparente."
         path="/servicos"
       />
       <Header />

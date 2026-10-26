@@ -88,7 +88,7 @@ export default function App() {
                   }
                 >
                   <SEO
-                    title="Blog & Insights"
+                    title="Blog e insights"
                     description="Notícias curadas sobre Inteligência Artificial, Automação e os benefícios que essas tecnologias trazem para o mundo."
                     path="/blog"
                   />

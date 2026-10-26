@@ -16,7 +16,7 @@ export const TEAM_OPTIONS: readonly { label: string; value: number }[] = [
 export const DEFAULT_HOURLY_RATE = 50;
 export const SAVINGS_RATE = 0.8;
 export const WEEKS_PER_YEAR = 52;
-export const MONTHS_PER_YEAR = 12;
+const MONTHS_PER_YEAR = 12;
 
 /** Horas por semana oferecidas na frase do hero. */
 export const HERO_HOUR_OPTIONS = [5, 10, 20, 40] as const;
@@ -34,9 +34,13 @@ function sanitize(input: RoiInput): RoiInput {
   };
 }
 
-function rawAnnualCost(input: RoiInput): number {
-  const { hoursPerWeek, teamMultiplier, hourlyRate } = sanitize(input);
+/** Custo anual sem arredondar. Recebe a entrada já saneada, por isso não sanitiza de novo. */
+function costOfSafeInput({ hoursPerWeek, teamMultiplier, hourlyRate }: RoiInput): number {
   return hoursPerWeek * teamMultiplier * hourlyRate * WEEKS_PER_YEAR;
+}
+
+function rawAnnualCost(input: RoiInput): number {
+  return costOfSafeInput(sanitize(input));
 }
 
 /** Custo anual das tarefas manuais, em reais inteiros. */
@@ -56,6 +60,7 @@ export function monthlySavings(input: RoiInput): number {
 
 /** Mensagem pré-preenchida do CTA da calculadora. */
 export function buildQuoteMessage(input: RoiInput): string {
-  const { hoursPerWeek } = sanitize(input);
-  return `Olá, VN One! Usei a calculadora do site: a gente perde cerca de ${formatBRL(annualManualCost(input))} por ano com tarefas manuais (${hoursPerWeek}h por semana). Quero automatizar esse processo.`;
+  const safeInput = sanitize(input);
+  const annualCost = formatBRL(Math.round(costOfSafeInput(safeInput)));
+  return `Olá, VN One! Usei a calculadora do site: a gente perde cerca de ${annualCost} por ano com tarefas manuais (${safeInput.hoursPerWeek}h por semana). Quero automatizar esse processo.`;
 }

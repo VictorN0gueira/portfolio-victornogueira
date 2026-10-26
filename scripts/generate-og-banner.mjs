@@ -2,7 +2,7 @@
 // Uso: npm run og
 // Saidas: public/og-banner.png (1200x630) e e2e/__shots__/og-square.png
 // (recorte central 630x630 que o WhatsApp usa na miniatura, so para conferencia).
-import { chromium } from 'playwright-core';
+import { chromium } from 'playwright';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -177,7 +177,13 @@ async function main() {
       deviceScaleFactor: 1,
     });
     await page.setContent(buildHtml(), { waitUntil: 'load' });
-    await page.evaluate(() => document.fonts.ready);
+    // Carrega cada face usada de forma explicita: document.fonts.ready resolve
+    // cedo demais quando nada ainda pediu a fonte.
+    await page.evaluate(
+      (faces) =>
+        Promise.all(faces.map((face) => document.fonts.load(`${face.weight} 20px "${face.family}"`))),
+      FONTS,
+    );
 
     await page.screenshot({ path: bannerPath, type: 'png' });
     await page.screenshot({

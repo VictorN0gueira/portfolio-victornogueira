@@ -33,13 +33,16 @@ function createMatchMediaMock(query: string): MediaQueryList {
   };
 }
 
-// Reinstalled before every test so a test that overrides any of these
-// (vi.stubGlobal(...) or window.matchMedia = ...) never leaks into the next one.
-beforeEach(() => {
+function installDefaultMocks(): void {
   vi.stubGlobal('IntersectionObserver', IntersectionObserverMock);
   vi.stubGlobal('ResizeObserver', ResizeObserverMock);
   vi.stubGlobal('matchMedia', vi.fn(createMatchMediaMock));
-});
+}
+
+// Installed at import time (seen by import-time code and beforeAll) and again before every test.
+// Per-test overrides belong inside the test or beforeEach: a beforeAll stub is replaced by the next beforeEach.
+installDefaultMocks();
+beforeEach(installDefaultMocks);
 
 afterEach(() => {
   cleanup();

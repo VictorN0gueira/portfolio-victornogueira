@@ -18,7 +18,10 @@ const WEBP_HEIGHT = 96;
 const WEBP_QUALITY = 90;
 const BANNER_PNG_HEIGHT = 240;
 const ICON_BACKGROUND = '#0A0A0A';
-const ICON_PADDING_RATIO = 0.12;
+const APPLE_TOUCH_PADDING_RATIO = 0.12;
+// The 2:1 mark would be only ~24x12 inside a 32px favicon with the 12% padding, so the
+// favicon uses a much smaller padding to stay legible in a browser tab.
+const FAVICON_PADDING_RATIO = 0.04;
 const FAVICON_SIZE = 32;
 const APPLE_TOUCH_SIZE = 180;
 
@@ -74,8 +77,8 @@ async function writeResized(buffer, file, height, format) {
 }
 
 // The chrome logo centered on a solid square, scaled to fit inside the padding.
-async function writeIcon(buffer, file, size) {
-  const inner = Math.round(size * (1 - ICON_PADDING_RATIO * 2));
+async function writeIcon(buffer, file, size, paddingRatio) {
+  const inner = Math.round(size * (1 - paddingRatio * 2));
   const logo = await sharp(buffer)
     .resize({ width: inner, height: inner, fit: 'inside' })
     .toBuffer();
@@ -98,10 +101,11 @@ async function main() {
   await writeResized(chrome, 'vn-one-logo-chrome.webp', WEBP_HEIGHT, 'webp');
   await writeResized(dark, 'vn-one-logo-dark.webp', WEBP_HEIGHT, 'webp');
   await writeResized(chrome, 'vn-one-logo-chrome.png', BANNER_PNG_HEIGHT, 'png');
-  await writeIcon(chrome, 'favicon-32.png', FAVICON_SIZE);
-  await writeIcon(chrome, 'apple-touch-icon.png', APPLE_TOUCH_SIZE);
+  await writeIcon(chrome, 'favicon-32.png', FAVICON_SIZE, FAVICON_PADDING_RATIO);
+  await writeIcon(chrome, 'apple-touch-icon.png', APPLE_TOUCH_SIZE, APPLE_TOUCH_PADDING_RATIO);
 }
 
 main().catch((error) => {
-  fail(error instanceof Error ? error.message : String(error));
+  // Print the stack, not just the message, so a failing sharp call can be traced.
+  fail(error instanceof Error ? (error.stack ?? error.message) : String(error));
 });

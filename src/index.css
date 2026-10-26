@@ -13,9 +13,9 @@
 
 /* Legacy values still read by old components (HeroBackground, ROICalculator). */
 :root {
-  --grid-line-color: rgba(0, 0, 0, 0.04);
-  --roi-slider-fill: #18181b;
-  --roi-slider-track: #e4e4e7;
+  --grid-line-color: rgba(10, 10, 10, 0.04);
+  --roi-slider-fill: #1A1A1A;
+  --roi-slider-track: #C7C7C7;
 }
 
 @layer base {
@@ -80,11 +80,11 @@
 @layer utilities {
   /* Still used by ServiceSelect until the contact form is rebuilt. */
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(26, 26, 26, 0.2);
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(26, 26, 26, 0.35);
   }
 
   .scrollbar-hide::-webkit-scrollbar {
@@ -159,26 +159,26 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #18181b;
+  background: #1A1A1A;
   cursor: pointer;
-  border: 3px solid white;
-  box-shadow: 0 0 0 1.5px #d4d4d8;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 0 0 1.5px #C7C7C7;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .roi-slider::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 0 0 0 3px #d4d4d8;
+  box-shadow: 0 0 0 3px #C7C7C7;
 }
 
 .roi-slider::-moz-range-thumb {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #18181b;
+  background: #1A1A1A;
   cursor: pointer;
-  border: 3px solid white;
-  box-shadow: 0 0 0 1.5px #d4d4d8;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 0 0 1.5px #C7C7C7;
   transition: transform 0.15s ease;
 }
 
@@ -189,15 +189,15 @@
 /* 404 glitch effect */
 @keyframes glitch-1 {
   0%, 100% { transform: translate(0); clip-path: none; }
-  15% { transform: translate(-3px, 1px); clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%); color: #34d399; }
+  15% { transform: translate(-3px, 1px); clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%); color: #00E5A0; }
   30% { transform: translate(3px, -1px); clip-path: polygon(0 65%, 100% 65%, 100% 80%, 0 80%); color: #ffffff; }
   45% { transform: translate(-1px, 2px); clip-path: none; }
-  60% { transform: translate(2px, -2px); clip-path: polygon(0 45%, 100% 45%, 100% 60%, 0 60%); color: #a1a1aa; }
+  60% { transform: translate(2px, -2px); clip-path: polygon(0 45%, 100% 45%, 100% 60%, 0 60%); color: #8A8A8A; }
 }
 
 @keyframes glitch-2 {
   0%, 100% { transform: translate(0); opacity: 0.3; }
-  25% { transform: translate(4px, 0); opacity: 0.5; color: #34d399; }
+  25% { transform: translate(4px, 0); opacity: 0.5; color: #00E5A0; }
   50% { transform: translate(-4px, 1px); opacity: 0.2; }
   75% { transform: translate(2px, -1px); opacity: 0.4; }
 }

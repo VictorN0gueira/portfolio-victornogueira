@@ -88,6 +88,60 @@ describe('SEO', () => {
     );
   });
 
+  it('keeps the Organization schema to the agreed fields, without a description', () => {
+    renderSeo();
+
+    const organization = readJsonLd().find((schema) => schema['@type'] === 'Organization');
+
+    expect(organization).not.toHaveProperty('description');
+    expect(Object.keys(organization ?? {}).sort()).toEqual([
+      '@context',
+      '@type',
+      'areaServed',
+      'email',
+      'founder',
+      'logo',
+      'name',
+      'telephone',
+      'url',
+    ]);
+  });
+
+  describe('share image', () => {
+    const CUSTOM_IMAGE = 'https://vnone.com.br/projetos/troco.png';
+
+    it('declares 1200x630 for the default banner', () => {
+      renderSeo();
+
+      expect(readMeta('property', 'og:image')).toBe('https://vnone.com.br/og-banner.png?v=3');
+      expect(readMeta('property', 'og:image:width')).toBe('1200');
+      expect(readMeta('property', 'og:image:height')).toBe('630');
+    });
+
+    it('does not claim 1200x630 for a custom image', () => {
+      renderSeo({ image: CUSTOM_IMAGE });
+
+      expect(readMeta('property', 'og:image')).toBe(CUSTOM_IMAGE);
+      expect(readMeta('name', 'twitter:image')).toBe(CUSTOM_IMAGE);
+      expect(readMeta('property', 'og:image:width')).toBeNull();
+      expect(readMeta('property', 'og:image:height')).toBeNull();
+    });
+
+    it('describes the default banner in both alt tags', () => {
+      renderSeo();
+
+      expect(readMeta('property', 'og:image:alt')).toBe('VN One, automação e IA para empresas');
+      expect(readMeta('name', 'twitter:image:alt')).toBe('VN One, automação e IA para empresas');
+    });
+
+    it('uses imageAlt for both alt tags when it is given', () => {
+      renderSeo({ image: CUSTOM_IMAGE, imageAlt: 'Tela do projeto Troco' });
+
+      expect(readMeta('property', 'og:image:alt')).toBe('Tela do projeto Troco');
+      expect(readMeta('name', 'twitter:image:alt')).toBe('Tela do projeto Troco');
+    });
+  });
+
   it('does not emit a keywords meta', () => {
     renderSeo();
 

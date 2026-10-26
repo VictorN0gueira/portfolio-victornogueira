@@ -6,6 +6,8 @@ interface SEOProps {
   description?: string;
   path?: string;
   image?: string;
+  /** Texto alternativo da imagem de compartilhamento. Padrão: o do banner do site */
+  imageAlt?: string;
   /** Bloqueia indexação (ex.: 404, slug inválido) */
   noindex?: boolean;
   /** Schemas JSON-LD específicos da página (ex.: FAQPage em /contato) */
@@ -25,7 +27,6 @@ const organizationSchema = {
   name: SITE.name,
   url: SITE.url,
   logo: LOGO_URL,
-  description: SITE.description,
   email: SITE.email,
   telephone: SITE.telephone,
   areaServed: 'BR',
@@ -49,6 +50,7 @@ export default function SEO({
   description,
   path = '/',
   image,
+  imageAlt,
   noindex,
   jsonLd,
 }: SEOProps) {
@@ -56,6 +58,9 @@ export default function SEO({
   const pageDescription = description || SITE.description;
   const pageUrl = `${SITE.url}${path}`;
   const pageImage = image || SITE.ogImage;
+  const pageImageAlt = imageAlt || SITE.ogImageAlt;
+  // O banner padrão tem 1200x630. Uma imagem própria pode ter outro tamanho.
+  const isDefaultImage = !image;
   const isHome = path === '/';
 
   return (
@@ -71,9 +76,9 @@ export default function SEO({
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={pageDescription} />
       <meta property="og:image" content={pageImage} />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content={SITE.ogImageAlt} />
+      {isDefaultImage && <meta property="og:image:width" content="1200" />}
+      {isDefaultImage && <meta property="og:image:height" content="630" />}
+      <meta property="og:image:alt" content={pageImageAlt} />
       <meta property="og:locale" content="pt_BR" />
       <meta property="og:site_name" content={SITE.name} />
 
@@ -83,7 +88,7 @@ export default function SEO({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={pageDescription} />
       <meta name="twitter:image" content={pageImage} />
-      <meta name="twitter:image:alt" content={SITE.ogImageAlt} />
+      <meta name="twitter:image:alt" content={pageImageAlt} />
 
       {/* Dados estruturados: Organization e WebSite só na home para evitar entidade duplicada */}
       {isHome && (
