@@ -1,5 +1,6 @@
 import { useRef } from 'react';
-import { motion, useInView, useReducedMotion } from 'motion/react';
+import { motion, useInView } from 'motion/react';
+import { useMotionAllowed } from '../hooks/useMotionAllowed';
 
 type AnimatedTextProps = {
   text: string;
@@ -14,7 +15,7 @@ export default function AnimatedText({
   delay = 0,
   underline = true,
 }: AnimatedTextProps) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = !useMotionAllowed();
   const containerRef = useRef<HTMLSpanElement>(null);
   const isInView = useInView(containerRef, { once: true });
   const words = text.split(' ');

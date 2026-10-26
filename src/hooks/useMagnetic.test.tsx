@@ -1,38 +1,37 @@
-import { fireEvent, screen } from '@testing-library/react';
-import { useReducedMotion } from 'motion/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAccessibility } from '../contexts/AccessibilityContext';
+import { FINE_POINTER_QUERY, REDUCED_MOTION_QUERY, stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import { useMagnetic } from './useMagnetic';
 
-vi.mock('motion/react', () => ({ useReducedMotion: vi.fn() }));
-
-const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 const A11Y_STORAGE_KEY = 'a11y-preferences';
+const ELEMENT_WIDTH = 100;
+const ELEMENT_HEIGHT = 40;
 
-function stubFinePointer(isFine: boolean): void {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn((query: string) => ({
-      matches: query === FINE_POINTER_QUERY ? isFine : false,
-      media: query,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    })),
-  );
+function boxAt(left: number, top: number): DOMRect {
+  return {
+    left,
+    top,
+    right: left + ELEMENT_WIDTH,
+    bottom: top + ELEMENT_HEIGHT,
+    width: ELEMENT_WIDTH,
+    height: ELEMENT_HEIGHT,
+    x: left,
+    y: top,
+    toJSON: () => ({}),
+  };
 }
 
 function stubRect(el: HTMLElement): void {
-  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
-    left: 0,
-    top: 0,
-    right: 100,
-    bottom: 40,
-    width: 100,
-    height: 40,
-    x: 0,
-    y: 0,
-    toJSON: () => ({}),
+  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(boxAt(0, 0));
+}
+
+/** Like the browser: the rect of an element is shifted by the translate currently applied to it. */
+function stubRectShiftedByTransform(el: HTMLElement): void {
+  vi.spyOn(el, 'getBoundingClientRect').mockImplementation(() => {
+    const match = /translate\((-?[\d.]+)px, (-?[\d.]+)px\)/.exec(el.style.transform);
+    return boxAt(match ? Number(match[1]) : 0, match ? Number(match[2]) : 0);
   });
 }
 
@@ -58,9 +57,8 @@ function setup(strength?: { x: number; y: number }): HTMLElement {
 
 describe('useMagnetic', () => {
   beforeEach(() => {
-    vi.mocked(useReducedMotion).mockReturnValue(false);
     localStorage.clear();
-    stubFinePointer(true);
+    stubMatchMedia({ [FINE_POINTER_QUERY]: true });
   });
 
   it('pulls toward the pointer by the default strength', () => {
@@ -97,6 +95,45 @@ describe('useMagnetic', () => {
     expect(el.style.transform).toBe('translate(25px, 20px)');
   });
 
+  describe('pull feedback', () => {
+    it('gives the same pull on repeated moves at one position although the rect follows the pull', () => {
+      renderWithProviders(<Magnet />);
+      const el = screen.getByTestId('magnet');
+      stubRectShiftedByTransform(el);
+
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 40 });
+      const first = el.style.transform;
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 40 });
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 40 });
+
+      expect(first).toBe('translate(9px, 6px)');
+      expect(el.style.transform).toBe(first);
+    });
+
+    it('does not flip the sign at full strength', () => {
+      renderWithProviders(<Magnet strength={{ x: 1, y: 1 }} />);
+      const el = screen.getByTestId('magnet');
+      stubRectShiftedByTransform(el);
+
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 40 });
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 40 });
+
+      expect(el.style.transform).toBe('translate(50px, 20px)');
+    });
+
+    it('measures from the resting center again after the pointer leaves', () => {
+      renderWithProviders(<Magnet />);
+      const el = screen.getByTestId('magnet');
+      stubRectShiftedByTransform(el);
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 40 });
+
+      fireEvent.pointerLeave(el);
+      fireEvent.pointerMove(el, { clientX: 100, clientY: 40 });
+
+      expect(el.style.transform).toBe('translate(9px, 6px)');
+    });
+  });
+
   it('resets the transform when the pointer leaves', () => {
     const el = setup();
     fireEvent.pointerMove(el, { clientX: 100, clientY: 20 });
@@ -108,7 +145,7 @@ describe('useMagnetic', () => {
   });
 
   it('does nothing on a coarse pointer', () => {
-    stubFinePointer(false);
+    stubMatchMedia({ [FINE_POINTER_QUERY]: false });
     const el = setup();
 
     fireEvent.pointerMove(el, { clientX: 100, clientY: 20 });
@@ -117,7 +154,7 @@ describe('useMagnetic', () => {
   });
 
   it('does nothing when the system prefers reduced motion', () => {
-    vi.mocked(useReducedMotion).mockReturnValue(true);
+    stubMatchMedia({ [FINE_POINTER_QUERY]: true, [REDUCED_MOTION_QUERY]: true });
     const el = setup();
 
     fireEvent.pointerMove(el, { clientX: 100, clientY: 20 });
@@ -134,8 +171,21 @@ describe('useMagnetic', () => {
     expect(el.style.transform).toBe('');
   });
 
+  it('goes inert and drops the pull when the system turns reduced motion on mid hover', () => {
+    const media = stubMatchMedia({ [FINE_POINTER_QUERY]: true });
+    const el = setup();
+    fireEvent.pointerMove(el, { clientX: 100, clientY: 20 });
+    expect(el.style.transform).toBe('translate(9px, 0px)');
+
+    act(() => media.set(REDUCED_MOTION_QUERY, true));
+    expect(el.style.transform).toBe('');
+
+    fireEvent.pointerMove(el, { clientX: 100, clientY: 20 });
+    expect(el.style.transform).toBe('');
+  });
+
   it('leaves the element alone on pointer leave while inactive', () => {
-    stubFinePointer(false);
+    stubMatchMedia({ [FINE_POINTER_QUERY]: false });
     const el = setup();
     el.style.transform = 'rotate(3deg)';
 

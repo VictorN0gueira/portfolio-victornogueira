@@ -156,7 +156,50 @@ describe('useCycle', () => {
     act(() => result.current.select(3));
     rerender({ length: 2 });
 
-    expect(result.current.index).toBeLessThan(2);
+    expect(result.current.index).toBe(1);
+  });
+
+  it('keeps the identity of select, pause and resume when length changes', () => {
+    const { result, rerender } = renderHook(({ length }) => useCycle(length, INTERVAL_MS), {
+      initialProps: { length: 4 },
+    });
+    const first = result.current;
+
+    rerender({ length: 2 });
+    rerender({ length: 6 });
+
+    expect(result.current.select).toBe(first.select);
+    expect(result.current.pause).toBe(first.pause);
+    expect(result.current.resume).toBe(first.resume);
+  });
+
+  it('keeps the derived index in range through a length change in either direction', () => {
+    const { result, rerender } = renderHook(({ length }) => useCycle(length, INTERVAL_MS), {
+      initialProps: { length: 4 },
+    });
+    act(() => result.current.select(3));
+
+    for (const length of [3, 2, 1, 5, 4]) {
+      rerender({ length });
+      expect(result.current.index).toBeGreaterThanOrEqual(0);
+      expect(result.current.index).toBeLessThan(length);
+    }
+  });
+
+  it('keeps auto advancing inside the new range after length shrinks', () => {
+    const { result, rerender } = renderHook(({ length }) => useCycle(length, INTERVAL_MS), {
+      initialProps: { length: 4 },
+    });
+    act(() => vi.advanceTimersByTime(3 * INTERVAL_MS));
+    expect(result.current.index).toBe(3);
+
+    rerender({ length: 2 });
+    expect(result.current.index).toBe(1);
+
+    act(() => vi.advanceTimersByTime(INTERVAL_MS));
+    expect(result.current.index).toBe(0);
+    act(() => vi.advanceTimersByTime(INTERVAL_MS));
+    expect(result.current.index).toBe(1);
   });
 
   it('returns stable select, pause and resume across renders', () => {
@@ -173,14 +216,17 @@ describe('useCycle', () => {
 
   it('clears every timer and listener on unmount', () => {
     const removeSpy = vi.spyOn(document, 'removeEventListener');
-    const { unmount } = renderHook(() => useCycle(4, INTERVAL_MS));
-    expect(vi.getTimerCount()).toBe(1);
+    try {
+      const { unmount } = renderHook(() => useCycle(4, INTERVAL_MS));
+      expect(vi.getTimerCount()).toBe(1);
 
-    unmount();
+      unmount();
 
-    expect(vi.getTimerCount()).toBe(0);
-    expect(removeSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
-    removeSpy.mockRestore();
+      expect(vi.getTimerCount()).toBe(0);
+      expect(removeSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+    } finally {
+      removeSpy.mockRestore();
+    }
   });
 
   it('restarts the interval when the interval length changes', () => {

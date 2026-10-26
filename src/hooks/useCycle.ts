@@ -25,6 +25,8 @@ function wrapIndex(index: number, length: number): number {
  * Steps through `length` items every `intervalMs`.
  * It only auto-advances while enabled, not paused, in auto mode and with the tab visible.
  * `select` pins an index and ends auto mode for good; `pause` and `resume` are for hover and focus.
+ * `select`, `pause` and `resume` keep their identity for the life of the component, also when
+ * `length` changes; the returned `index` is always wrapped into the current range.
  */
 export function useCycle(
   length: number,
@@ -32,7 +34,7 @@ export function useCycle(
   opts: UseCycleOptions = {},
 ): UseCycleResult {
   const { enabled = true } = opts;
-  const [index, setIndex] = useState(0);
+  const [requested, setRequested] = useState(0);
   const [isAuto, setIsAuto] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [isVisible, setIsVisible] = useState(isDocumentVisible);
@@ -48,19 +50,19 @@ export function useCycle(
   useEffect(() => {
     if (!isRunning) return;
 
-    const timer = setInterval(() => setIndex((current) => (current + 1) % length), intervalMs);
+    const timer = setInterval(
+      () => setRequested((current) => wrapIndex(current + 1, length)),
+      intervalMs,
+    );
     return () => clearInterval(timer);
   }, [isRunning, length, intervalMs]);
 
-  const select = useCallback(
-    (next: number) => {
-      setIsAuto(false);
-      setIndex(wrapIndex(next, length));
-    },
-    [length],
-  );
+  const select = useCallback((next: number) => {
+    setIsAuto(false);
+    setRequested(Number.isFinite(next) ? Math.trunc(next) : 0);
+  }, []);
   const pause = useCallback(() => setIsPaused(true), []);
   const resume = useCallback(() => setIsPaused(false), []);
 
-  return { index: index < length ? index : 0, select, pause, resume, isAuto };
+  return { index: wrapIndex(requested, length), select, pause, resume, isAuto };
 }

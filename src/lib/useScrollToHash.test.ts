@@ -54,6 +54,18 @@ describe('useScrollToHash', () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
   });
 
+  it('still scrolls when the element mounts just inside the one second window', () => {
+    renderHook(() => useScrollToHash(), { wrapper: routerAt('/#x') });
+    vi.advanceTimersByTime(RETRY_WINDOW_MS - 100);
+
+    const scrollIntoView = mountTarget('x');
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(2 * FRAME_MS);
+
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+  });
+
   it('stops scrolling retries after the element is found', () => {
     mountTarget('x');
 
