@@ -12,6 +12,7 @@ import { integrations } from './integrations';
 import { MAIN_NAV, PRIMARY_CTA } from './navigation';
 import { partners } from './partners';
 import { processSteps } from './process';
+import { getProjectBySlug, projects } from './projects';
 import { faqs } from './faqs';
 import { combos, serviceOptions, services } from './services';
 import { stats } from './stats';
@@ -270,5 +271,33 @@ describe('faqs', () => {
     ).toBe(true);
     expect(faqs[4].answer.endsWith('Sem compromisso.')).toBe(true);
     expect(faqs[4].answer).not.toContain('Sem pressão');
+  });
+});
+
+describe('projects', () => {
+  it('keeps sales wording out of every title, category and description', () => {
+    const offenders = projects.flatMap((project) =>
+      [project.title, project.category, project.description]
+        .filter((text) => BANNED_SALES_WORDS.test(text))
+        .map((text) => `${project.slug}: ${text}`),
+    );
+
+    expect(offenders).toEqual([]);
+  });
+
+  it('pins the reworded descriptions and category', () => {
+    expect(getProjectBySlug('troco')?.description).toBe(
+      'Gestão financeira via WhatsApp com automação e Supabase. Processamento automático de áudios e notas fiscais.',
+    );
+    expect(getProjectBySlug('diagnostico-empresarial')?.description).toBe(
+      'Sistema completo de captura de leads com WhatsApp integrado, formulário, pipeline visual (Kanban), qualificação por IA e gestão de oportunidades.',
+    );
+    expect(getProjectBySlug('dizpara')?.description).toBe(
+      'Sistema de captura e disparo de leads via WhatsApp e E-mail, com automação e IA de qualificação automática de contatos.',
+    );
+    expect(getProjectBySlug('ai-playlist-maker')?.description).toBe(
+      'Curadoria musical via API do Spotify. Crie playlists personalizadas baseadas em seu gosto e humor usando IA.',
+    );
+    expect(getProjectBySlug('travel-ia')?.category).toBe('Roteiro com IA');
   });
 });
