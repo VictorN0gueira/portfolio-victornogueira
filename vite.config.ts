@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -5,12 +6,7 @@ import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
-  
-  // LOG PARA DEBUG NO EASYPANEL (aparecerá nos logs de build)
-  console.log('=== BUILD ENV DEBUG ===');
-  console.log('VITE_GNEWS_API_KEY (from system):', process.env.VITE_GNEWS_API_KEY ? 'PRESENTE' : 'AUSENTE');
-  console.log('VITE_GNEWS_API_KEY (from loadEnv):', env.VITE_GNEWS_API_KEY ? 'PRESENTE' : 'AUSENTE');
-  console.log('=======================');
+
   return {
     base: process.env.GITHUB_PAGES === 'true' ? '/portfolio-victornogueira/' : '/',
     plugins: [react(), tailwindcss()],
@@ -38,6 +34,24 @@ export default defineConfig(({mode}) => {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
+    },
+    test: {
+      environment: 'jsdom',
+      globals: false,
+      setupFiles: './src/test/setup.ts',
+      css: true,
+      exclude: ['e2e/**', 'node_modules/**'],
+      coverage: {
+        provider: 'v8',
+        include: ['src/lib/**', 'src/hooks/**'],
+        exclude: ['**/*.test.*'],
+        thresholds: {
+          lines: 80,
+          functions: 80,
+          branches: 80,
+          statements: 80,
+        },
+      },
     },
   };
 });

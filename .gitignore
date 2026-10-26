@@ -13,3 +13,7 @@ tmp_shadcn/
 # Credenciais locais — NUNCA commitar
 Acessos/
 supabase/.temp/
+
+# Playwright
+test-results/
+playwright-report/
