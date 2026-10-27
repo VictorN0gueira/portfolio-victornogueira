@@ -1,13 +1,20 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { animate } from 'motion/react';
 import { describe, expect, it, vi } from 'vitest';
 import { homeCopy } from '../../data/homeCopy';
 import type { HeroTaskId } from '../../data/heroFlows';
-import { DEFAULT_HOURLY_RATE, SAVINGS_RATE } from '../../lib/roi';
+import { DEFAULT_HOURLY_RATE, SAVINGS_RATE, monthlySavings } from '../../lib/roi';
 import { triggerIntersection } from '../../test/intersection';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import { HeroAnnotation, HeroFinePrint, HeroSentence } from './HeroSentence';
+
+// The real animate, wrapped so a test can see each count that starts and the controls it returned.
+vi.mock('motion/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('motion/react')>();
+  return { ...actual, animate: vi.fn(actual.animate) };
+});
 
 const NBSP = String.fromCharCode(0x00a0);
 const INITIAL_RESULT = `R$${NBSP}1.733`;
@@ -19,6 +26,11 @@ const FULL_SENTENCE =
   'Sua equipe perde 10 horas por semana com planilha e WhatsApp. Automatizando, a gente devolve R$ 1.733 por mês.';
 const TWEEN_WAIT_MS = 3000;
 const QUIET_WINDOW_MS = 800;
+// A whole count takes 0.55s: waiting this long after it started is waiting past the end of any count.
+const PAST_A_COUNT_MS = 800;
+const FIVE_HOURS_RESULT = `R$${NBSP}867`;
+// Lets a mutation observer deliver its last records before a test reads them.
+const SETTLE_MS = 50;
 // The arrow waits for the sentence to finish (1.2s) and then draws for 0.8s.
 const ARROW_WAIT_MS = 5000;
 
@@ -35,12 +47,28 @@ function renderHero({ task = 'planilha-whatsapp', onTaskChange = vi.fn(), isMoti
   return { user, onTaskChange, ...view };
 }
 
+/** The monthly savings the hero shows for a number of weekly hours. */
+function monthlyOf(hoursPerWeek: number): number {
+  return monthlySavings({ hoursPerWeek, teamMultiplier: 1, hourlyRate: DEFAULT_HOURLY_RATE });
+}
+
 function getResult(): HTMLOutputElement {
   return screen.getByRole('status') as HTMLOutputElement;
 }
 
 function getVisualNumber(): HTMLElement {
   return getResult().querySelector('[data-value]') as HTMLElement;
+}
+
+interface CountControls {
+  stop: () => void;
+}
+
+/** The count that started last: its first number and a spy on the stop of its controls. */
+function spyOnLastCount() {
+  const { calls, results } = vi.mocked(animate).mock;
+  const controls = results.at(-1)?.value as CountControls;
+  return { stop: vi.spyOn(controls, 'stop'), from: calls.at(-1)?.[0] as number };
 }
 
 async function choose(user: ReturnType<typeof userEvent.setup>, triggerName: string, optionName: string) {
@@ -83,6 +111,24 @@ describe('HeroSentence sentence', () => {
     expect(within(heading).getByRole('button', { name: HOURS_TRIGGER })).toHaveAttribute('aria-haspopup', 'listbox');
     expect(within(heading).getByRole('button', { name: TASK_TRIGGER })).toHaveAttribute('aria-haspopup', 'listbox');
     expect(within(heading).getByRole('status')).toBe(getResult());
+  });
+
+  it('has no div inside the h1, because a heading only holds phrasing content', () => {
+    renderHero();
+
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading.querySelectorAll('div')).toHaveLength(0);
+    heading.querySelectorAll('[data-reveal-item]').forEach((item) => expect(item.tagName).toBe('SPAN'));
+  });
+
+  // dom-accessibility-api, the library behind toHaveAccessibleName, reads a pill by its content ("10 horas"),
+  // where Chromium reads its aria-label and leaves the result out of a heading name (see the Task 10 report).
+  it('has the accessible name the library computes from its content: the pill values and the result, in sentence order', () => {
+    renderHero();
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveAccessibleName(
+      `Sua equipe perde 10 horas por semana com planilha e WhatsApp . Automatizando, a gente devolve ${INITIAL_RESULT} por mês.`,
+    );
   });
 
   it('follows the copy file, word by word, with the pills where the slots are', () => {
@@ -227,15 +273,71 @@ describe('HeroSentence result', () => {
     expect(shown.at(-1)).toBe(FORTY_HOURS_RESULT);
   });
 
+  it('writes no text while it counts: the frames only touch data-value and the text changes once, to the final value', async () => {
+    const { user } = renderHero();
+    const output = getResult();
+    const number = getVisualNumber();
+    const textRecords: MutationRecord[] = [];
+    const textSeen: string[] = [];
+    const textObserver = new MutationObserver((records) => {
+      textRecords.push(...records);
+      textSeen.push(output.textContent ?? '');
+    });
+    textObserver.observe(output, { childList: true, characterData: true, subtree: true });
+    const frames: string[] = [];
+    const frameObserver = new MutationObserver(() => frames.push(number.dataset.value ?? ''));
+    frameObserver.observe(number, { attributes: true, attributeFilter: ['data-value'] });
+
+    await choose(user, HOURS_TRIGGER, '40 horas');
+    await waitFor(() => expect(number).toHaveAttribute('data-value', FORTY_HOURS_RESULT), { timeout: TWEEN_WAIT_MS });
+    await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+    textObserver.disconnect();
+    frameObserver.disconnect();
+
+    // The count really ran (frames in between) while the text of the region never showed a number in between.
+    expect(frames.length).toBeGreaterThan(1);
+    expect(textRecords.length).toBeGreaterThan(0);
+    expect([...new Set(textSeen)]).toEqual([FORTY_HOURS_RESULT]);
+    expect(textRecords.some((record) => number.contains(record.target))).toBe(false);
+  });
+
+  it('lands on the exact value when a second choice interrupts the count', async () => {
+    const { user } = renderHero();
+    await choose(user, HOURS_TRIGGER, '40 horas');
+    const firstCount = spyOnLastCount();
+
+    await choose(user, 'Horas por semana: 40 horas. Alterar', '5 horas');
+    const secondCount = spyOnLastCount();
+
+    expect(firstCount.stop).toHaveBeenCalled();
+    // The second count starts from the number on screen: somewhere between the two values.
+    expect(secondCount.from).toBeGreaterThanOrEqual(monthlyOf(5));
+    expect(secondCount.from).toBeLessThanOrEqual(monthlyOf(40));
+    await waitFor(() => expect(getVisualNumber()).toHaveAttribute('data-value', FIVE_HOURS_RESULT), {
+      timeout: TWEEN_WAIT_MS,
+    });
+    // A late frame of the first count would overwrite the number: stay past the length of a whole count.
+    await new Promise((resolve) => setTimeout(resolve, PAST_A_COUNT_MS));
+    expect(getVisualNumber()).toHaveAttribute('data-value', FIVE_HOURS_RESULT);
+    expect(getResult().textContent).toBe(FIVE_HOURS_RESULT);
+  });
+
+  it('draws the number from data-value with a pseudo element, which jsdom cannot compute, so the class is pinned', () => {
+    renderHero();
+
+    expect(getVisualNumber()).toHaveClass('before:content-[attr(data-value)]');
+    expect(getVisualNumber().textContent).toBe('');
+  });
+
   it('counts back down when the hours go down, and ends on the exact value', async () => {
     const { user } = renderHero();
 
     await choose(user, HOURS_TRIGGER, '5 horas');
 
-    await waitFor(() => expect(getVisualNumber()).toHaveAttribute('data-value', `R$${NBSP}867`), {
+    await waitFor(() => expect(getVisualNumber()).toHaveAttribute('data-value', FIVE_HOURS_RESULT), {
       timeout: TWEEN_WAIT_MS,
     });
-    expect(getResult().textContent).toBe(`R$${NBSP}867`);
+    expect(getResult().textContent).toBe(FIVE_HOURS_RESULT);
   });
 });
 
@@ -320,15 +422,29 @@ describe('HeroSentence entrance', () => {
     });
   });
 
-  it('reveals the words one after another, about 0.05s apart', async () => {
+  it('reveals the words one after another, in reading order, and ends with all of them shown', async () => {
     renderHero();
     const items = getItems();
+    // The batch (one frame of mutations) in which each word first left opacity 0. Time never enters the check:
+    // a loaded machine may put several words in one batch, but a word can never start before the one before it.
+    const startedIn = new Map<HTMLElement, number>();
+    let batch = 0;
+    const observer = new MutationObserver(() => {
+      batch += 1;
+      items.forEach((item) => {
+        if (!startedIn.has(item) && item.style.opacity !== '0') startedIn.set(item, batch);
+      });
+    });
+    items.forEach((item) => observer.observe(item, { attributes: true, attributeFilter: ['style'] }));
 
     triggerIntersection(screen.getByRole('heading', { level: 1 }));
+    await waitFor(() => expect(startedIn.size).toBe(items.length), { timeout: TWEEN_WAIT_MS });
+    await waitFor(() => items.forEach((item) => expect(item.style.opacity).toBe('1')), { timeout: TWEEN_WAIT_MS });
+    observer.disconnect();
 
-    await waitFor(() => expect(items[0].style.opacity).not.toBe('0'), { timeout: TWEEN_WAIT_MS });
-    // The last word waits 0.05s per word before it, which is more than a second for this sentence.
-    expect(items.at(-1)?.style.opacity).toBe('0');
+    const order = items.map((item) => startedIn.get(item) as number);
+    expect(order).toEqual([...order].sort((first, second) => first - second));
+    items.forEach((item) => expect(item.style.filter).toMatch(/^(none|blur\(0(px)?\))$/));
   });
 
   it('shows the whole sentence at once, with no hidden style, when motion is reduced', () => {
@@ -398,11 +514,25 @@ describe('HeroAnnotation', () => {
   });
 });
 
-describe('HeroSentence act safety', () => {
-  it('can be unmounted in the middle of a count without errors', async () => {
+describe('HeroSentence unmount', () => {
+  it('stops counting when it unmounts, and nothing writes to the number afterwards', async () => {
     const { user, unmount } = renderHero();
     await choose(user, HOURS_TRIGGER, '40 horas');
+    const number = getVisualNumber();
+    const count = spyOnLastCount();
 
-    expect(() => act(() => unmount())).not.toThrow();
+    act(() => unmount());
+    // Stopping a count may write one last frame while the component is torn down, so the number is read after that.
+    const valueAfterUnmount = number.dataset.value;
+    // The node is detached now, but it can still be observed: a frame landing late would show up here.
+    const writes: MutationRecord[] = [];
+    const observer = new MutationObserver((records) => writes.push(...records));
+    observer.observe(number, { attributes: true, attributeFilter: ['data-value'] });
+    await new Promise((resolve) => setTimeout(resolve, PAST_A_COUNT_MS));
+    observer.disconnect();
+
+    expect(count.stop).toHaveBeenCalled();
+    expect(writes).toEqual([]);
+    expect(number.dataset.value).toBe(valueAfterUnmount);
   });
 });

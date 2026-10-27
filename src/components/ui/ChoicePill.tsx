@@ -14,8 +14,8 @@ interface ChoicePillProps<T extends string | number> {
   onChange: (value: T) => void;
   /** Builds the accessible name of the trigger from the label of the current option. */
   ariaLabel: (label: string) => string;
-  /** Accessible name of the list. Falls back to the name of the trigger. */
-  listLabel?: string;
+  /** Accessible name of the list: what is being chosen ("Horas por semana"), never the action of the trigger. */
+  listLabel: string;
   /** Extra classes for the trigger, for example `lowercase` inside a heading. */
   className?: string;
 }
@@ -176,7 +176,7 @@ export function ChoicePill<T extends string | number>({
         >
           <ul
             role="listbox"
-            aria-label={listLabel ?? ariaLabel(selectedLabel)}
+            aria-label={listLabel}
             className={PANEL_CLASSES}
             onKeyDown={handleKeyDown}
           >

@@ -121,6 +121,8 @@ export function RevealGroup({ as = 'div', stagger = 0.08, delay = 0, className, 
 
 interface RevealItemProps {
   variant?: RevealVariant;
+  /** The tag to render: a div by default, a span where a div is not allowed (inside a heading or a paragraph). */
+  as?: 'div' | 'span';
   className?: string;
   children?: ReactNode;
 }
@@ -129,15 +131,17 @@ interface RevealItemProps {
  * Fades and slides its children in when the surrounding RevealGroup enters the view.
  * Without motion (system preference or the accessibility toggle), or outside a group, it renders its
  * children in their final state at once, with no hidden style at all. It always renders the same element
- * (a motion.div), so switching motion on or off while the page is open keeps its children mounted: their
- * state and focus survive. If motion goes off while the item is still hidden, it jumps to its final state.
+ * (a motion.div, or a motion.span with `as="span"`), so switching motion on or off while the page is open keeps
+ * its children mounted: their state and focus survive. If motion goes off while the item is still hidden, it jumps to its final state.
  * An item that mounts after its group was already revealed (or after motion was switched back on) also
  * appears in its final state, so content is never hidden again. Needs AccessibilityProvider above it.
  */
-export function RevealItem({ variant = 'up', className, children }: RevealItemProps) {
+export function RevealItem({ variant = 'up', as = 'div', className, children }: RevealItemProps) {
   const group = useContext(RevealGroupContext);
   const isMotionAllowed = useMotionAllowed();
   const isWide = useMediaQuery(WIDE_QUERY);
+  // Typed as the div variant only to keep TypeScript from building a union of both tags: they take the same props here.
+  const Tag = (as === 'span' ? motion.span : motion.div) as typeof motion.div;
   const ref = useRef<HTMLDivElement>(null);
   const isActive = group !== null && isMotionAllowed;
 
@@ -163,8 +167,8 @@ export function RevealItem({ variant = 'up', className, children }: RevealItemPr
   }
 
   return (
-    <motion.div ref={ref} data-reveal-item="" className={className} {...motionProps}>
+    <Tag ref={ref} data-reveal-item="" className={className} {...motionProps}>
       {children}
-    </motion.div>
+    </Tag>
   );
 }

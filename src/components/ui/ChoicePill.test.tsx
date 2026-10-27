@@ -102,19 +102,32 @@ describe('ChoicePill trigger', () => {
 
   it('merges a className given by the parent', () => {
     renderWithProviders(
-      <ChoicePill value={5} options={OPTIONS} ariaLabel={ariaLabel} onChange={() => undefined} className="lowercase" />,
+      <ChoicePill
+        value={5}
+        options={OPTIONS}
+        ariaLabel={ariaLabel}
+        listLabel="Horas por semana"
+        onChange={() => undefined}
+        className="lowercase"
+      />,
     );
 
     expect(screen.getByRole('button', { name: 'Horas por semana: 5 horas. Alterar' })).toHaveClass('lowercase', 'min-h-11');
   });
 
-  it('names the listbox after the trigger label when no list label is given', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<ChoicePill value={5} options={OPTIONS} ariaLabel={ariaLabel} onChange={() => undefined} />);
+  it('names the listbox with the list label, not with the label of the trigger', async () => {
+    const { user } = setup();
 
-    await user.click(screen.getByRole('button', { name: 'Horas por semana: 5 horas. Alterar' }));
+    const list = await openList(user);
 
-    expect(await screen.findByRole('listbox', { name: 'Horas por semana: 5 horas. Alterar' })).toBeInTheDocument();
+    expect(list).toHaveAccessibleName('Horas por semana');
+  });
+
+  it('requires a list label, so a list is never named after the action of its trigger', () => {
+    // @ts-expect-error listLabel is required
+    const rejected = <ChoicePill value={5} options={OPTIONS} ariaLabel={ariaLabel} onChange={() => undefined} />;
+
+    expect(rejected).toBeDefined();
   });
 });
 
@@ -329,7 +342,13 @@ describe('ChoicePill keyboard', () => {
     const onChange = vi.fn();
     const user = userEvent.setup();
     renderWithProviders(
-      <ChoicePill value="planilha" options={TASK_OPTIONS} ariaLabel={(l) => `Tarefa: ${l}. Alterar`} onChange={onChange} />,
+      <ChoicePill
+        value="planilha"
+        options={TASK_OPTIONS}
+        ariaLabel={(l) => `Tarefa: ${l}. Alterar`}
+        listLabel="Tarefa"
+        onChange={onChange}
+      />,
     );
     await user.click(screen.getByRole('button', { name: 'Tarefa: planilha e WhatsApp. Alterar' }));
     await screen.findByRole('listbox');
@@ -347,7 +366,9 @@ describe('ChoicePill keyboard', () => {
       { value: 'b', label: 'beta' },
       { value: 'c', label: 'alto' },
     ];
-    renderWithProviders(<ChoicePill value="a" options={options} ariaLabel={(l) => `Letra: ${l}`} onChange={() => undefined} />);
+    renderWithProviders(
+      <ChoicePill value="a" options={options} ariaLabel={(l) => `Letra: ${l}`} listLabel="Letra" onChange={() => undefined} />,
+    );
     await user.click(screen.getByRole('button', { name: 'Letra: alfa' }));
     await screen.findByRole('listbox');
 

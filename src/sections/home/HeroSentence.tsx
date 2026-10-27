@@ -23,6 +23,8 @@ const STICKY_PUNCTUATION = /^[.,;:!?)]/;
 const ONLY_PUNCTUATION = /^[.,;:!?)]+$/;
 const WHITESPACE = /\s+/;
 
+// leading-[1.22] is the documented exception to the title line height (0.92 to 0.98) for this interactive sentence:
+// inline pills are 44px tall and bordered, so at the tight title leading the pills of one line collide with the next.
 const HEADING_CLASSES = [
   'font-display font-bold lowercase tracking-[-0.03em] leading-[1.22] break-words',
   'text-[length:clamp(1.75rem,0.95rem+2.9vw,3.75rem)]',
@@ -136,6 +138,50 @@ function ResultPill({ amount }: ResultPillProps) {
   );
 }
 
+interface SentenceSlotProps {
+  slot: HeroSentenceSlot;
+  hours: HeroHourOption['value'];
+  task: HeroTaskId;
+  amount: number;
+  /** True when punctuation follows the pill in the same item, so the pill leaves room for it. */
+  hasSuffix: boolean;
+  onHoursChange: (hours: HeroHourOption['value']) => void;
+  onTaskChange: (task: HeroTaskId) => void;
+}
+
+/** The interactive piece that fills a slot of the sentence: one of the two pills, or the result. */
+function SentenceSlot({ slot, hours, task, amount, hasSuffix, onHoursChange, onTaskChange }: SentenceSlotProps) {
+  const { aria, hourOptions } = homeCopy.hero;
+  // A pill with punctuation after it leaves room for it, so a pill as wide as the screen cannot push it off the line.
+  const pillClasses = hasSuffix ? `lowercase ${PILL_ROOM_FOR_SUFFIX}` : 'lowercase';
+
+  if (slot === 'hours') {
+    return (
+      <ChoicePill
+        value={hours}
+        options={hourOptions}
+        onChange={onHoursChange}
+        ariaLabel={aria.hoursPill}
+        listLabel={aria.hoursList}
+        className={pillClasses}
+      />
+    );
+  }
+  if (slot === 'task') {
+    return (
+      <ChoicePill
+        value={task}
+        options={heroTasks}
+        onChange={onTaskChange}
+        ariaLabel={aria.taskPill}
+        listLabel={aria.taskList}
+        className={pillClasses}
+      />
+    );
+  }
+  return <ResultPill amount={amount} />;
+}
+
 interface HeroSentenceProps {
   task: HeroTaskId;
   onTaskChange: (task: HeroTaskId) => void;
@@ -147,44 +193,13 @@ interface HeroSentenceProps {
  * flow panel next to the headline shows the automation for that task; the hours are local. The pills sit inside
  * the h1 as buttons, each with its own accessible name. Every word enters with a rise and a blur, 0.05s apart,
  * and the heading wraps by itself, so the pills move to the next line when they do not fit (nothing is nowrap).
+ * The reveal items are spans, because a heading only holds phrasing content.
  * Needs AccessibilityProvider above it. The annotation and the fine print are separate components
  * (HeroAnnotation, HeroFinePrint) so the hero layout can place them.
  */
 export function HeroSentence({ task, onTaskChange }: HeroSentenceProps) {
   const [hours, setHours] = useState<HeroHourOption['value']>(DEFAULT_HOURS);
   const amount = monthlySavings({ hoursPerWeek: hours, teamMultiplier: TEAM_MULTIPLIER, hourlyRate: DEFAULT_HOURLY_RATE });
-  const { aria, hourOptions } = homeCopy.hero;
-
-  const renderSlot = (slot: HeroSentenceSlot, hasSuffix: boolean) => {
-    // A pill with punctuation after it leaves room for it, so a pill as wide as the screen cannot push it off the line.
-    const pillClasses = hasSuffix ? `lowercase ${PILL_ROOM_FOR_SUFFIX}` : 'lowercase';
-    if (slot === 'hours') {
-      return (
-        <ChoicePill
-          value={hours}
-          options={hourOptions}
-          onChange={(next) => setHours(next)}
-          ariaLabel={aria.hoursPill}
-          listLabel={aria.hoursList}
-          className={pillClasses}
-        />
-      );
-    }
-    if (slot === 'task') {
-      return (
-        <ChoicePill
-          value={task}
-          options={heroTasks}
-          onChange={onTaskChange}
-          ariaLabel={aria.taskPill}
-          listLabel={aria.taskList}
-          className={pillClasses}
-        />
-      );
-    }
-    return <ResultPill amount={amount} />;
-  };
-
   const lastIndex = SENTENCE_TOKENS.length - 1;
 
   return (
@@ -192,8 +207,20 @@ export function HeroSentence({ task, onTaskChange }: HeroSentenceProps) {
       {SENTENCE_TOKENS.map((token, index) => (
         <Fragment key={token.key}>
           {token.hasSpaceBefore ? ' ' : null}
-          <RevealItem variant="rise-blur" className="inline-block max-w-full">
-            {token.slot ? renderSlot(token.slot, token.suffix !== '') : token.word}
+          <RevealItem as="span" variant="rise-blur" className="inline-block max-w-full">
+            {token.slot ? (
+              <SentenceSlot
+                slot={token.slot}
+                hours={hours}
+                task={task}
+                amount={amount}
+                hasSuffix={token.suffix !== ''}
+                onHoursChange={setHours}
+                onTaskChange={onTaskChange}
+              />
+            ) : (
+              token.word
+            )}
             {token.suffix ? <span className="align-bottom">{token.suffix}</span> : null}
             {/* The cursor travels with the last word, so it never ends up alone on a line. */}
             {index === lastIndex ? <Cursor tone="ink" className="ml-[0.2em]" /> : null}

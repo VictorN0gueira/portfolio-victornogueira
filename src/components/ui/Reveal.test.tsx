@@ -144,6 +144,63 @@ describe('RevealItem with motion allowed', () => {
     expect(wrapper.style.transform).toMatch(/^(none|translateY\(0(px)?\))?$/);
   });
 
+  it('renders a div item by default and a span item with as="span", so a heading can hold items', () => {
+    renderWithProviders(
+      <RevealGroup as="h1">
+        <RevealItem>
+          <b data-testid="block">um</b>
+        </RevealItem>
+        <RevealItem as="span">
+          <b data-testid="inline">dois</b>
+        </RevealItem>
+      </RevealGroup>,
+    );
+
+    expect(getItem('block').parentElement?.tagName).toBe('DIV');
+    expect(getItem('inline').parentElement?.tagName).toBe('SPAN');
+    expect(getItem('inline').parentElement).toHaveAttribute('data-reveal-item');
+  });
+
+  it('staggers and reveals span items like div items, in document order', async () => {
+    const { container } = renderWithProviders(
+      <RevealGroup as="h1" stagger={1}>
+        <RevealItem as="span" variant="rise-blur">
+          <b data-testid="first">um</b>
+        </RevealItem>{' '}
+        <RevealItem as="span" variant="rise-blur">
+          <b data-testid="second">dois</b>
+        </RevealItem>
+      </RevealGroup>,
+    );
+    const first = getItem('first').parentElement as HTMLElement;
+    const second = getItem('second').parentElement as HTMLElement;
+    expect(first.style.opacity).toBe('0');
+    expect(first.style.filter).toBe('blur(8px)');
+
+    triggerIntersection(getGroup(container));
+
+    // The first item has no delay, the second waits a full second: when the first one is moving the second is not.
+    await waitFor(() => expect(first.style.opacity).not.toBe('0'), { timeout: REVEALED_TIMEOUT_MS });
+    expect(second.style.opacity).toBe('0');
+    await waitFor(() => expect(second.style.opacity).toBe('1'), { timeout: REVEALED_TIMEOUT_MS });
+  });
+
+  it('shows a span item in its final state, without a hidden style, when motion is reduced', () => {
+    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true, [WIDE_QUERY]: true });
+
+    renderWithProviders(
+      <RevealGroup>
+        <RevealItem as="span">
+          <b data-testid="inline">oi</b>
+        </RevealItem>
+      </RevealGroup>,
+    );
+
+    const wrapper = getItem('inline').parentElement as HTMLElement;
+    expect(wrapper.tagName).toBe('SPAN');
+    expect(wrapper).not.toHaveAttribute('style');
+  });
+
   it('defaults to the up variant', () => {
     renderWithProviders(
       <RevealGroup>
