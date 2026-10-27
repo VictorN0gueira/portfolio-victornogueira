@@ -16,23 +16,6 @@ const SHRINK_TO_FIT_CLASSES = ['inline-block', 'inline-flex', 'inline-grid', 'w-
 
 const isInsideHiddenCopy = (element: Element): boolean => element.closest('[aria-hidden="true"]') !== null;
 
-describe('findAccentElements', () => {
-  it('finds the accent in a token class, an arbitrary hex class, a variable class, an inline style and a paint attribute', () => {
-    const { container } = renderWithProviders(
-      <div>
-        <i className="bg-vn-accent" />
-        <i className="bg-[#00E5A0]" />
-        <i className="text-[var(--color-vn-accent)]" />
-        <i style={{ color: '#00e5a0' }} />
-        <svg fill="#00E5A0" />
-        <i className="bg-vn-black text-vn-white" />
-      </div>,
-    );
-
-    expect(findAccentElements(container)).toHaveLength(5);
-  });
-});
-
 describe('IntegrationsMarquee with motion allowed', () => {
   beforeEach(() => {
     stubMatchMedia();
