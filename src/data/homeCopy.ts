@@ -36,6 +36,8 @@ export const homeCopy = {
       taskPill: (label: string) => `Tarefa: ${label}. Alterar`,
       hoursList: 'Horas por semana',
       taskList: 'Tarefa',
+      // Read by the status region when the hours change. The amount arrives already formatted in reais.
+      estimate: (amount: string) => `Estimativa: ${amount} por mês`,
     },
   },
 } as const;

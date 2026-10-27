@@ -29,6 +29,9 @@ const QUIET_WINDOW_MS = 800;
 // A whole count takes 0.55s: waiting this long after it started is waiting past the end of any count.
 const PAST_A_COUNT_MS = 800;
 const FIVE_HOURS_RESULT = `R$${NBSP}867`;
+const TWENTY_HOURS_ESTIMATE = `Estimativa: ${TWENTY_HOURS_RESULT} por mês`;
+const FORTY_HOURS_ESTIMATE = `Estimativa: ${FORTY_HOURS_RESULT} por mês`;
+const FIVE_HOURS_ESTIMATE = `Estimativa: ${FIVE_HOURS_RESULT} por mês`;
 // Lets a mutation observer deliver its last records before a test reads them.
 const SETTLE_MS = 50;
 // The arrow waits for the sentence to finish (1.2s) and then draws for 0.8s.
@@ -52,8 +55,14 @@ function monthlyOf(hoursPerWeek: number): number {
   return monthlySavings({ hoursPerWeek, teamMultiplier: 1, hourlyRate: DEFAULT_HOURLY_RATE });
 }
 
-function getResult(): HTMLOutputElement {
-  return screen.getByRole('status') as HTMLOutputElement;
+/** The result pill inside the heading: a plain span, and the only accent element of the hero. */
+function getResult(): HTMLElement {
+  return screen.getByRole('heading', { level: 1 }).querySelector('.bg-vn-accent') as HTMLElement;
+}
+
+/** The visually hidden status region that announces the estimate, outside the heading. */
+function getLiveRegion(): HTMLElement {
+  return screen.getByRole('status');
 }
 
 function getVisualNumber(): HTMLElement {
@@ -110,7 +119,8 @@ describe('HeroSentence sentence', () => {
     const heading = screen.getByRole('heading', { level: 1 });
     expect(within(heading).getByRole('button', { name: HOURS_TRIGGER })).toHaveAttribute('aria-haspopup', 'listbox');
     expect(within(heading).getByRole('button', { name: TASK_TRIGGER })).toHaveAttribute('aria-haspopup', 'listbox');
-    expect(within(heading).getByRole('status')).toBe(getResult());
+    expect(heading.contains(getResult())).toBe(true);
+    expect(within(heading).queryByRole('status')).toBeNull();
   });
 
   it('has no div inside the h1, because a heading only holds phrasing content', () => {
@@ -121,14 +131,33 @@ describe('HeroSentence sentence', () => {
     heading.querySelectorAll('[data-reveal-item]').forEach((item) => expect(item.tagName).toBe('SPAN'));
   });
 
-  // dom-accessibility-api, the library behind toHaveAccessibleName, reads a pill by its content ("10 horas"),
-  // where Chromium reads its aria-label and leaves the result out of a heading name (see the Task 10 report).
-  it('has the accessible name the library computes from its content: the pill values and the result, in sentence order', () => {
+  // The amount is part of the heading name in jsdom and in Chromium (checked in its accessibility tree), because
+  // the result is a plain span: Chromium skips status and output nodes when it builds a name from content.
+  // The pills differ: dom-accessibility-api, behind toHaveAccessibleName, reads their content ("10 horas"),
+  // where Chromium reads their aria-label ("Horas por semana: 10 horas. Alterar").
+  it('has an accessible name that carries the pill values and the result, in sentence order', () => {
     renderHero();
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveAccessibleName(
       `Sua equipe perde 10 horas por semana com planilha e WhatsApp . Automatizando, a gente devolve ${INITIAL_RESULT} por mês.`,
     );
+  });
+
+  it('keeps the new amount in its accessible name after the hours change', async () => {
+    const { user } = renderHero({ isMotionReduced: true });
+
+    await choose(user, HOURS_TRIGGER, '20 horas');
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveAccessibleName(
+      `Sua equipe perde 20 horas por semana com planilha e WhatsApp . Automatizando, a gente devolve ${TWENTY_HOURS_RESULT} por mês.`,
+    );
+  });
+
+  it('has no output element and no live region inside the sentence', () => {
+    const { container } = renderHero();
+
+    expect(container.querySelector('output')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1 }).querySelector('[aria-live], [role="status"]')).toBeNull();
   });
 
   it('follows the copy file, word by word, with the pills where the slots are', () => {
@@ -205,14 +234,6 @@ describe('HeroSentence result', () => {
     expect(getVisualNumber()).toHaveAttribute('data-value', INITIAL_RESULT);
   });
 
-  it('is a polite and atomic live region, so a change is read as a whole', () => {
-    renderHero();
-
-    expect(getResult().tagName).toBe('OUTPUT');
-    expect(getResult()).toHaveAttribute('aria-live', 'polite');
-    expect(getResult()).toHaveAttribute('aria-atomic', 'true');
-  });
-
   it('hides the counting digits from screen readers and leaves them only the final value', () => {
     renderHero();
 
@@ -221,26 +242,12 @@ describe('HeroSentence result', () => {
     expect(getResult().querySelector('.sr-only')?.textContent).toBe(INITIAL_RESULT);
   });
 
-  it('does not change its text on first render or while it rests, so nothing is announced', async () => {
-    const watcher = watchTextChanges('output');
+  it('is a plain span, not a live region, so the heading name can include it', () => {
     renderHero();
 
-    await new Promise((resolve) => setTimeout(resolve, QUIET_WINDOW_MS));
-    watcher.stop();
-
-    expect(watcher.insideTarget()).toEqual([]);
-  });
-
-  it('updates the final text once when the hours change, which is what gets announced', async () => {
-    const { user } = renderHero({ isMotionReduced: true });
-    const watcher = watchTextChanges('output');
-
-    await choose(user, HOURS_TRIGGER, '20 horas');
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    watcher.stop();
-
-    expect(getResult().textContent).toBe(TWENTY_HOURS_RESULT);
-    expect(watcher.insideTarget().length).toBeGreaterThan(0);
+    expect(getResult().tagName).toBe('SPAN');
+    expect(getResult()).not.toHaveAttribute('role');
+    expect(getResult()).not.toHaveAttribute('aria-live');
   });
 
   it('shows the new value at once when motion is off', async () => {
@@ -275,15 +282,15 @@ describe('HeroSentence result', () => {
 
   it('writes no text while it counts: the frames only touch data-value and the text changes once, to the final value', async () => {
     const { user } = renderHero();
-    const output = getResult();
+    const pill = getResult();
     const number = getVisualNumber();
     const textRecords: MutationRecord[] = [];
     const textSeen: string[] = [];
     const textObserver = new MutationObserver((records) => {
       textRecords.push(...records);
-      textSeen.push(output.textContent ?? '');
+      textSeen.push(pill.textContent ?? '');
     });
-    textObserver.observe(output, { childList: true, characterData: true, subtree: true });
+    textObserver.observe(pill, { childList: true, characterData: true, subtree: true });
     const frames: string[] = [];
     const frameObserver = new MutationObserver(() => frames.push(number.dataset.value ?? ''));
     frameObserver.observe(number, { attributes: true, attributeFilter: ['data-value'] });
@@ -338,6 +345,94 @@ describe('HeroSentence result', () => {
       timeout: TWEEN_WAIT_MS,
     });
     expect(getResult().textContent).toBe(FIVE_HOURS_RESULT);
+  });
+});
+
+describe('HeroSentence live region', () => {
+  it('is a polite, atomic status region outside the heading, hidden from sight', () => {
+    renderHero();
+
+    const region = getLiveRegion();
+    expect(region).toHaveAttribute('aria-live', 'polite');
+    expect(region).toHaveAttribute('aria-atomic', 'true');
+    expect(region).toHaveClass('sr-only');
+    expect(screen.getByRole('heading', { level: 1 }).contains(region)).toBe(false);
+  });
+
+  it('is empty on first render and stays untouched while nothing changes, so nothing is announced on mount', async () => {
+    const watcher = watchTextChanges('[role="status"]');
+    renderHero();
+
+    expect(getLiveRegion()).toBeEmptyDOMElement();
+    await new Promise((resolve) => setTimeout(resolve, QUIET_WINDOW_MS));
+    watcher.stop();
+
+    expect(watcher.insideTarget()).toEqual([]);
+    expect(getLiveRegion()).toBeEmptyDOMElement();
+  });
+
+  it('announces the estimate once, as a whole, when the hours change', async () => {
+    const { user } = renderHero({ isMotionReduced: true });
+    const watcher = watchTextChanges('[role="status"]');
+
+    await choose(user, HOURS_TRIGGER, '20 horas');
+    await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+    watcher.stop();
+
+    expect(getLiveRegion().textContent).toBe(TWENTY_HOURS_ESTIMATE);
+    expect(watcher.insideTarget().length).toBeGreaterThan(0);
+  });
+
+  it('announces only the final number while the visible number counts', async () => {
+    const { user } = renderHero();
+    const region = getLiveRegion();
+    const seen: string[] = [];
+    const observer = new MutationObserver(() => seen.push(region.textContent ?? ''));
+    observer.observe(region, { childList: true, characterData: true, subtree: true });
+
+    await choose(user, HOURS_TRIGGER, '40 horas');
+    await waitFor(() => expect(getVisualNumber()).toHaveAttribute('data-value', FORTY_HOURS_RESULT), {
+      timeout: TWEEN_WAIT_MS,
+    });
+    await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+    observer.disconnect();
+
+    expect(seen.length).toBeGreaterThan(0);
+    expect([...new Set(seen)]).toEqual([FORTY_HOURS_ESTIMATE]);
+  });
+
+  it('keeps the latest estimate after two quick changes', async () => {
+    const { user } = renderHero({ isMotionReduced: true });
+
+    await choose(user, HOURS_TRIGGER, '40 horas');
+    await choose(user, 'Horas por semana: 40 horas. Alterar', '5 horas');
+
+    expect(getLiveRegion().textContent).toBe(FIVE_HOURS_ESTIMATE);
+  });
+
+  it('does not announce when only the task changes, because the estimate did not change', async () => {
+    const { user } = renderHero({ isMotionReduced: true });
+    const watcher = watchTextChanges('[role="status"]');
+
+    await choose(user, TASK_TRIGGER, 'follow-up de vendas');
+    await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+    watcher.stop();
+
+    expect(watcher.insideTarget()).toEqual([]);
+    expect(getLiveRegion()).toBeEmptyDOMElement();
+  });
+
+  it('does not announce again when the hours that are already chosen are chosen once more', async () => {
+    const { user } = renderHero({ isMotionReduced: true });
+    await choose(user, HOURS_TRIGGER, '20 horas');
+    const watcher = watchTextChanges('[role="status"]');
+
+    await choose(user, 'Horas por semana: 20 horas. Alterar', '20 horas');
+    await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+    watcher.stop();
+
+    expect(watcher.insideTarget()).toEqual([]);
+    expect(getLiveRegion().textContent).toBe(TWENTY_HOURS_ESTIMATE);
   });
 });
 

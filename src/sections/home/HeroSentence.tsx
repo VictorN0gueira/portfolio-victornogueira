@@ -88,10 +88,11 @@ interface ResultPillProps {
 }
 
 /**
- * The monthly savings, as the only accent element of the hero. It is a live region (output), so a change is
- * announced once, as a whole. Screen readers get the final value from a text that only React updates; the number
- * people see counts through `data-value`, which the frames write straight to the DOM through a ref (no React
- * render per frame) and a pseudo element draws. That keeps the text of the region still while it counts.
+ * The monthly savings, as the only accent element of the hero. It is a plain span, with no status or output role
+ * (a name built from content skips those, and the heading name has to carry the amount); the announcement of a
+ * change is a separate status region outside the heading (see HeroSentence). Screen readers get the final value
+ * from a visually hidden text that only React updates; the number people see counts through `data-value`, which the
+ * frames write straight to the DOM through a ref (no React render per frame) and a pseudo element draws.
  * Without motion the number jumps to its value.
  */
 function ResultPill({ amount }: ResultPillProps) {
@@ -126,7 +127,7 @@ function ResultPill({ amount }: ResultPillProps) {
   }, [amount, isMotionAllowed]);
 
   return (
-    <output aria-live="polite" aria-atomic="true" className={RESULT_CLASSES}>
+    <span className={RESULT_CLASSES}>
       <span
         ref={numberRef}
         aria-hidden="true"
@@ -134,7 +135,7 @@ function ResultPill({ amount }: ResultPillProps) {
         className="before:content-[attr(data-value)]"
       />
       <span className="sr-only">{finalText}</span>
-    </output>
+    </span>
   );
 }
 
@@ -187,47 +188,67 @@ interface HeroSentenceProps {
   onTaskChange: (task: HeroTaskId) => void;
 }
 
+/** The monthly savings the sentence shows for a number of weekly hours. */
+function savingsFor(hours: HeroHourOption['value']): number {
+  return monthlySavings({ hoursPerWeek: hours, teamMultiplier: TEAM_MULTIPLIER, hourlyRate: DEFAULT_HOURLY_RATE });
+}
+
 /**
  * The headline of the home: one sentence, readable as a whole, with two pills the visitor can change (hours per
  * week and the task) and a result pill that follows the hours. The task is controlled by the parent, because the
  * flow panel next to the headline shows the automation for that task; the hours are local. The pills sit inside
- * the h1 as buttons, each with its own accessible name. Every word enters with a rise and a blur, 0.05s apart,
- * and the heading wraps by itself, so the pills move to the next line when they do not fit (nothing is nowrap).
- * The reveal items are spans, because a heading only holds phrasing content.
+ * the h1 as buttons, each with its own accessible name, and the result is a plain span, so the name of the heading
+ * carries every value. Every word enters with a rise and a blur, 0.05s apart, and the heading wraps by itself, so
+ * the pills move to the next line when they do not fit (nothing is nowrap). The reveal items are spans, because a
+ * heading only holds phrasing content.
+ * The announcement of a change lives next to the heading, not in it: a visually hidden status region (polite,
+ * atomic) that is empty on first render and reads "Estimativa: R$ 3.467 por mês" after the hours change. It speaks
+ * only when the hours change, because the task does not move the estimate, and it speaks the final number at once
+ * while the visible one counts. The wrapper is a single block, so a parent that spaces its children sees one.
  * Needs AccessibilityProvider above it. The annotation and the fine print are separate components
  * (HeroAnnotation, HeroFinePrint) so the hero layout can place them.
  */
 export function HeroSentence({ task, onTaskChange }: HeroSentenceProps) {
   const [hours, setHours] = useState<HeroHourOption['value']>(DEFAULT_HOURS);
-  const amount = monthlySavings({ hoursPerWeek: hours, teamMultiplier: TEAM_MULTIPLIER, hourlyRate: DEFAULT_HOURLY_RATE });
+  const [announcement, setAnnouncement] = useState('');
   const lastIndex = SENTENCE_TOKENS.length - 1;
 
+  const handleHoursChange = (nextHours: HeroHourOption['value']) => {
+    setHours(nextHours);
+    setAnnouncement(homeCopy.hero.aria.estimate(formatBRL(savingsFor(nextHours))));
+  };
+
   return (
-    <RevealGroup as="h1" stagger={WORD_STAGGER_S} className={HEADING_CLASSES}>
-      {SENTENCE_TOKENS.map((token, index) => (
-        <Fragment key={token.key}>
-          {token.hasSpaceBefore ? ' ' : null}
-          <RevealItem as="span" variant="rise-blur" className="inline-block max-w-full">
-            {token.slot ? (
-              <SentenceSlot
-                slot={token.slot}
-                hours={hours}
-                task={task}
-                amount={amount}
-                hasSuffix={token.suffix !== ''}
-                onHoursChange={setHours}
-                onTaskChange={onTaskChange}
-              />
-            ) : (
-              token.word
-            )}
-            {token.suffix ? <span className="align-bottom">{token.suffix}</span> : null}
-            {/* The cursor travels with the last word, so it never ends up alone on a line. */}
-            {index === lastIndex ? <Cursor tone="ink" className="ml-[0.2em]" /> : null}
-          </RevealItem>
-        </Fragment>
-      ))}
-    </RevealGroup>
+    <div className="relative">
+      <RevealGroup as="h1" stagger={WORD_STAGGER_S} className={HEADING_CLASSES}>
+        {SENTENCE_TOKENS.map((token, index) => (
+          <Fragment key={token.key}>
+            {token.hasSpaceBefore ? ' ' : null}
+            <RevealItem as="span" variant="rise-blur" className="inline-block max-w-full">
+              {token.slot ? (
+                <SentenceSlot
+                  slot={token.slot}
+                  hours={hours}
+                  task={task}
+                  amount={savingsFor(hours)}
+                  hasSuffix={token.suffix !== ''}
+                  onHoursChange={handleHoursChange}
+                  onTaskChange={onTaskChange}
+                />
+              ) : (
+                token.word
+              )}
+              {token.suffix ? <span className="align-bottom">{token.suffix}</span> : null}
+              {/* The cursor travels with the last word, so it never ends up alone on a line. */}
+              {index === lastIndex ? <Cursor tone="ink" className="ml-[0.2em]" /> : null}
+            </RevealItem>
+          </Fragment>
+        ))}
+      </RevealGroup>
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {announcement}
+      </p>
+    </div>
   );
 }
 
