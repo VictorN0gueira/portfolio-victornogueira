@@ -3,8 +3,8 @@ import { expect, test, type Page } from '@playwright/test';
 const ROWS_LIST_NAME = 'Passos da automação';
 const HOURS_PILL_NAME = /^Horas por semana/;
 const TASK_PILL_NAME = /^Tarefa/;
+// The toggle keeps one name for good, and aria-pressed carries its state.
 const PAUSE_NAME = 'Pausar animação';
-const RESUME_NAME = 'Retomar animação';
 const ROW_COUNT = 4;
 const TASK_OPTIONS = ['atendimento no WhatsApp', 'emissão de notas', 'follow-up de vendas', 'planilha e WhatsApp'];
 const LONG_OPTION = 'atendimento no WhatsApp';
@@ -38,6 +38,11 @@ function flowRows(page: Page) {
 
 function doneRows(page: Page) {
   return page.locator('[data-flow-window] [data-state="done"]');
+}
+
+/** The status word in the title bar of the window (a whole word, so "rodando" never matches the group name). */
+function windowStatus(page: Page, word: string) {
+  return page.locator('[data-flow-window]').getByText(word, { exact: true });
 }
 
 function pulse(page: Page) {
@@ -317,20 +322,26 @@ test.describe('hero pause control', () => {
     await page.clock.runFor(ONE_BEAT_MS);
     await expect(doneRows(page)).toHaveCount(1);
     await expect.poll(() => pulse(page).evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('running');
+    await expect(windowStatus(page, 'rodando')).toBeVisible();
 
-    await page.getByRole('button', { name: PAUSE_NAME }).click();
+    const toggle = page.getByRole('button', { name: PAUSE_NAME });
+    await toggle.click();
 
-    const resume = page.getByRole('button', { name: RESUME_NAME });
-    await expect(resume).toHaveAttribute('aria-pressed', 'true');
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: PAUSE_NAME })).toHaveCount(1);
+    await expect(windowStatus(page, 'pausado')).toBeVisible();
+    await expect(windowStatus(page, 'rodando')).toHaveCount(0);
     await expect(page.locator('[data-flow-window]')).toHaveAttribute('data-paused', 'true');
     await expect.poll(() => pulse(page).evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('paused');
     // The count stays the same however far the clock goes.
     await page.clock.fastForward(MANY_BEATS_MS);
     await expect(doneRows(page)).toHaveCount(1);
 
-    await resume.click();
+    await toggle.click();
 
-    await expect(page.getByRole('button', { name: PAUSE_NAME })).toHaveAttribute('aria-pressed', 'false');
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await expect(windowStatus(page, 'rodando')).toBeVisible();
+    await expect(windowStatus(page, 'pausado')).toHaveCount(0);
     await expect(page.locator('[data-flow-window]')).not.toHaveAttribute('data-paused', 'true');
     await expect.poll(() => pulse(page).evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('running');
     await page.clock.runFor(ONE_BEAT_MS);
@@ -370,9 +381,9 @@ test.describe('hero pause control', () => {
     await expect(pause).toHaveCSS('outline-width', '2px');
     await expect(pause).toHaveCSS('outline-color', WHITE_RGB);
     await page.keyboard.press('Space');
-    await expect(page.getByRole('button', { name: RESUME_NAME })).toHaveAttribute('aria-pressed', 'true');
+    await expect(pause).toHaveAttribute('aria-pressed', 'true');
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('button', { name: PAUSE_NAME })).toHaveAttribute('aria-pressed', 'false');
+    await expect(pause).toHaveAttribute('aria-pressed', 'false');
   });
 
   test('has a 44px hit area', async ({ page }) => {
@@ -400,7 +411,7 @@ test.describe('hero with reduced motion', () => {
     }
     await expect(page.locator('[data-flow-tilt]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: PAUSE_NAME })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: RESUME_NAME })).toHaveCount(0);
+    await expect(windowStatus(page, 'rodando')).toBeVisible();
   });
 
   test('keeps the rows done after a whole lap of the clock, because nothing runs', async ({ page }) => {

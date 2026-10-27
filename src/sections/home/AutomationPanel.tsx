@@ -70,6 +70,8 @@ interface FlowWindowProps {
  * The hook also holds it while the tab is hidden.
  * The window carries data-paused while any hold is on, and CSS stops the cable with it.
  * Without motion nothing runs: every row is done, there is no pause control and no timer.
+ * The status word in the title bar follows the visitor's own pause only: "pausado" after they press the toggle,
+ * "rodando" otherwise. A hold by the pointer or the focus ends by itself when they leave, so it keeps "rodando".
  * The parent gives it key={task}, so a new task starts a new cycle.
  */
 function FlowWindow({ task, isUserPaused, onTogglePause }: FlowWindowProps) {
@@ -79,6 +81,9 @@ function FlowWindow({ task, isUserPaused, onTogglePause }: FlowWindowProps) {
   const rows = heroFlows[task];
   const isPaused = isMotionAllowed && (isUserPaused || isHovered || isFocused);
   const { index } = useCycle(rows.length + 1, CYCLE_STEP_MS, { enabled: isMotionAllowed && !isPaused });
+
+  const { status } = homeCopy.hero.panel;
+  const hasVisitorPaused = isMotionAllowed && isUserPaused;
 
   let mode: PanelMode = 'running';
   if (!isMotionAllowed) mode = 'static';
@@ -93,7 +98,7 @@ function FlowWindow({ task, isUserPaused, onTogglePause }: FlowWindowProps) {
     >
       <WindowFrame
         title={flowPanel.title}
-        status={flowPanel.status}
+        status={hasVisitorPaused ? status.paused : status.running}
         actions={isMotionAllowed ? <PauseButton isPaused={isUserPaused} onToggle={onTogglePause} /> : null}
         className="shadow-[0_40px_80px_-40px_rgba(10,10,10,0.45)]"
       >

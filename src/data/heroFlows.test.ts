@@ -15,10 +15,12 @@ function allStrings(): string[] {
     ...flowSteps,
     ...flowSources,
     flowPanel.title,
-    flowPanel.status,
     flowPanel.footnote,
     ...Object.values(flowPanel.aria),
-    ...Object.values(homeCopy.hero.panel),
+    homeCopy.hero.panel.label,
+    homeCopy.hero.panel.pause,
+    homeCopy.hero.panel.status.running,
+    homeCopy.hero.panel.status.paused,
   ];
 }
 
@@ -82,7 +84,6 @@ describe('heroFlows', () => {
 
   it('has the approved window copy', () => {
     expect(flowPanel.title).toBe('automação ao vivo');
-    expect(flowPanel.status).toBe('rodando');
     expect(flowPanel.footnote).toBe('Exemplo ilustrativo. O fluxo real sai do diagnóstico.');
   });
 
@@ -90,11 +91,11 @@ describe('heroFlows', () => {
     expect(allStrings().filter((text) => FORBIDDEN.test(text))).toEqual([]);
   });
 
-  it('has the approved names of the panel group and its pause control', () => {
+  it('has the approved name of the panel group, the constant name of its toggle and the two statuses', () => {
     expect(homeCopy.hero.panel).toEqual({
       label: 'Exemplo de automação rodando',
       pause: 'Pausar animação',
-      resume: 'Retomar animação',
+      status: { running: 'rodando', paused: 'pausado' },
     });
   });
 });

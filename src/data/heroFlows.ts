@@ -56,10 +56,9 @@ export const flowSources = ['WhatsApp', 'E-mail', 'Planilhas', 'Seu sistema'] as
 
 export type FlowSource = (typeof flowSources)[number];
 
-/** Os textos fixos do painel: a barra da janela, a nota de rodapé e os nomes que os leitores de tela recebem. */
+/** Os textos fixos do painel: o título da janela, a nota de rodapé e os nomes que os leitores de tela recebem. */
 export const flowPanel = {
   title: 'automação ao vivo',
-  status: 'rodando',
   footnote: 'Exemplo ilustrativo. O fluxo real sai do diagnóstico.',
   aria: {
     steps: 'Etapas do fluxo',

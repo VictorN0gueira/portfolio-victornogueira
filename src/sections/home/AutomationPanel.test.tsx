@@ -284,7 +284,7 @@ describe('AutomationPanel pause control', () => {
 
     const titleBar = screen.getByText(flowPanel.title).parentElement as HTMLElement;
     expect(titleBar.contains(getPauseButton())).toBe(true);
-    expect(titleBar.contains(screen.getByText(flowPanel.status))).toBe(true);
+    expect(titleBar.contains(screen.getByText(panelCopy.status.running))).toBe(true);
     expect(getPauseButton()).toHaveAccessibleName('Pausar animação');
     expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
     expect(getPauseButton()).toHaveAttribute('type', 'button');
@@ -305,7 +305,7 @@ describe('AutomationPanel pause control', () => {
     fireEvent.click(getPauseButton());
 
     expect(getPauseButton()).toHaveAttribute('aria-pressed', 'true');
-    expect(getPauseButton()).toHaveAccessibleName('Retomar animação');
+    expect(getPauseButton()).toHaveAccessibleName('Pausar animação');
     expect(getWindow()).toHaveAttribute('data-paused', 'true');
     advance(4);
     expect(getDoneRows()).toHaveLength(1);
@@ -331,6 +331,38 @@ describe('AutomationPanel pause control', () => {
 
     await user.keyboard('{Enter}');
     expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('keeps one constant name, "Pausar animação", and carries the state in aria-pressed alone', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+
+    expect(getPauseButton()).toHaveAccessibleName('Pausar animação');
+    expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(getPauseButton());
+
+    expect(getPauseButton()).toHaveAccessibleName('Pausar animação');
+    expect(getPauseButton()).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getAllByRole('button', { name: /animação$/ })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Retomar animação' })).not.toBeInTheDocument();
+    expect(getPauseButton().getAttribute('aria-label')).toBe(panelCopy.pause);
+  });
+
+  it('changes the icon, which screen readers skip, from pause to play while it is paused', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+    const icon = () => getPauseButton().querySelector('svg') as SVGElement;
+
+    expect(icon()).toHaveClass('lucide-pause');
+    expect(icon()).toHaveAttribute('aria-hidden', 'true');
+
+    fireEvent.click(getPauseButton());
+
+    expect(icon()).toHaveClass('lucide-play');
+    expect(icon()).not.toHaveClass('lucide-pause');
+    expect(icon()).toHaveAttribute('aria-hidden', 'true');
+
+    fireEvent.click(getPauseButton());
+
+    expect(icon()).toHaveClass('lucide-pause');
   });
 
   it('keeps a pause of the visitor when the pointer leaves and when the focus leaves', () => {
@@ -421,6 +453,76 @@ describe('AutomationPanel pause control', () => {
     getRows().forEach((row) => expect(getDoneText(row)).toHaveAttribute('aria-hidden', 'true'));
     expect(getCurrentStep()).toBeUndefined();
     expect(getRunningStep()).toBe('executar');
+  });
+});
+
+describe('AutomationPanel status', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('says "rodando" while it runs', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+
+    expect(screen.getByText('rodando')).toBeInTheDocument();
+    expect(screen.queryByText('pausado')).not.toBeInTheDocument();
+  });
+
+  it('says "pausado" when the visitor paused it, and "rodando" again when they resume', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+    const titleBar = screen.getByText(flowPanel.title).parentElement as HTMLElement;
+
+    fireEvent.click(getPauseButton());
+
+    expect(within(titleBar).getByText('pausado')).toBeInTheDocument();
+    expect(within(titleBar).queryByText('rodando')).not.toBeInTheDocument();
+
+    fireEvent.click(getPauseButton());
+
+    expect(within(titleBar).getByText('rodando')).toBeInTheDocument();
+    expect(within(titleBar).queryByText('pausado')).not.toBeInTheDocument();
+  });
+
+  // The status is the visitor's explicit choice only: a hold by the pointer or the focus ends by itself the
+  // moment they leave, and flashing "pausado" on every hover would be noise.
+  it('keeps "rodando" while only the pointer or the focus holds the cycle', () => {
+    stubOverflowingSteps();
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+
+    fireEvent.pointerEnter(getBody());
+    expect(getWindow()).toHaveAttribute('data-paused', 'true');
+    expect(screen.getByText('rodando')).toBeInTheDocument();
+    fireEvent.pointerLeave(getBody());
+
+    act(() => getStepsList().focus());
+    expect(getWindow()).toHaveAttribute('data-paused', 'true');
+    expect(screen.getByText('rodando')).toBeInTheDocument();
+    expect(screen.queryByText('pausado')).not.toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+
+  it('keeps "pausado" when the pointer comes and goes, and when the task changes', () => {
+    const { rerender } = renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+    fireEvent.click(getPauseButton());
+
+    fireEvent.pointerEnter(getBody());
+    fireEvent.pointerLeave(getBody());
+    expect(screen.getByText('pausado')).toBeInTheDocument();
+
+    rerender(<AutomationPanel task="notas" />);
+    expect(screen.getByText('pausado')).toBeInTheDocument();
+  });
+
+  it('says "rodando" without motion, where there is no pause control', () => {
+    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+
+    expect(screen.getByText('rodando')).toBeInTheDocument();
+    expect(screen.queryByText('pausado')).not.toBeInTheDocument();
   });
 });
 

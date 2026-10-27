@@ -236,18 +236,18 @@ interface PauseButtonProps {
 
 /**
  * Pauses and resumes everything that moves in the panel (WCAG 2.2.2). It lives in the dark title bar: a small
- * icon button to the eye (28px) inside a 44px hit area, with a white focus ring that shows on that bar. It reads
- * as a toggle (aria-pressed) and its name says what the next press does.
+ * icon button to the eye (28px) inside a 44px hit area, with a white focus ring that shows on that bar.
+ * It is a toggle: its name stays "Pausar animação" and aria-pressed carries the state. Only the icon changes
+ * (pause, then play), and it is hidden from assistive tech.
  */
 export function PauseButton({ isPaused, onToggle }: PauseButtonProps) {
-  const { pause, resume } = homeCopy.hero.panel;
   const Icon = isPaused ? Play : Pause;
 
   return (
     <button
       type="button"
       aria-pressed={isPaused}
-      aria-label={isPaused ? resume : pause}
+      aria-label={homeCopy.hero.panel.pause}
       onClick={onToggle}
       className="group -my-2 -mr-2 grid size-11 shrink-0 cursor-pointer place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-vn-white"
     >

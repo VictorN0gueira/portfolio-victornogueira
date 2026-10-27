@@ -31,11 +31,12 @@ export const homeCopy = {
     ctaPrimary: { label: 'Quero automatizar', to: '/#contato' },
     ctaSecondary: { label: 'Ver como funciona', to: '/#metodo' },
     annotation: '// mexe nos números aí',
-    // Os nomes do painel de automação: o grupo e o botão que pausa o que se move nele.
+    // Os textos do painel de automação: o nome do grupo, o nome fixo do botão que pausa o que se move nele
+    // (o estado vai em aria-pressed, o nome não muda) e a palavra da barra da janela.
     panel: {
       label: 'Exemplo de automação rodando',
       pause: 'Pausar animação',
-      resume: 'Retomar animação',
+      status: { running: 'rodando', paused: 'pausado' },
     },
     aria: {
       hoursPill: (label: string) => `Horas por semana: ${label}. Alterar`,
