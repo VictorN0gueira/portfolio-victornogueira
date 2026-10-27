@@ -44,6 +44,15 @@ describe('SpotlightCard', () => {
       expect(container.firstElementChild?.tagName).toBe('LI');
     });
 
+    it('accepts only intrinsic tags for as, because a component might not forward the ref or the pointer handler', () => {
+      const NotATag = () => null;
+
+      // @ts-expect-error a component is not an intrinsic tag
+      const rejected = <SpotlightCard as={NotATag}>conteudo</SpotlightCard>;
+
+      expect(rejected).toBeDefined();
+    });
+
     it('merges a consumer className', () => {
       stubMatchMedia();
 
@@ -77,6 +86,19 @@ describe('SpotlightCard', () => {
 
       fireEvent.pointerMove(card, { clientX: 60, clientY: 70 });
 
+      expect(card.style.getPropertyValue('--mx')).toBe('50px');
+      expect(card.style.getPropertyValue('--my')).toBe('50px');
+    });
+
+    it.each(['li', 'div', 'section'] as const)('writes --mx and --my on the %s tag too, with a fine pointer', (tag) => {
+      stubMatchMedia({ [FINE_POINTER_QUERY]: true });
+      const { container } = renderWithProviders(<SpotlightCard as={tag}>conteudo</SpotlightCard>);
+      const card = container.firstElementChild as HTMLElement;
+      stubRect(card);
+
+      fireEvent.pointerMove(card, { clientX: 60, clientY: 70 });
+
+      expect(card.tagName).toBe(tag.toUpperCase());
       expect(card.style.getPropertyValue('--mx')).toBe('50px');
       expect(card.style.getPropertyValue('--my')).toBe('50px');
     });

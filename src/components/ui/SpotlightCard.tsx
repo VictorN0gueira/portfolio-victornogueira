@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useFinePointer } from '../../hooks/useFinePointer';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import { usePointerSpotlight } from '../../hooks/usePointerSpotlight';
@@ -7,8 +7,8 @@ import { cn } from '../../lib/utils';
 type SpotlightCardTone = 'light' | 'dark';
 
 interface SpotlightCardProps {
-  /** The element to render. */
-  as?: ElementType;
+  /** The tag to render. Intrinsic tags only, so the ref and the pointer handler that drive the glow reach the element. */
+  as?: keyof JSX.IntrinsicElements;
   /** `dark` for cards on black sections: the glow turns white instead of ink. */
   tone?: SpotlightCardTone;
   className?: string;
@@ -22,8 +22,10 @@ interface SpotlightCardProps {
  * variables (--mx and --my) in those cases, so nothing runs for an effect that cannot show.
  * Radius, padding and surface come from the className. Needs AccessibilityProvider above it.
  */
-export function SpotlightCard({ as: Tag = 'article', tone = 'light', className, children }: SpotlightCardProps) {
-  const { ref, onPointerMove } = usePointerSpotlight<HTMLElement>();
+export function SpotlightCard({ as = 'article', tone = 'light', className, children }: SpotlightCardProps) {
+  // Typed as div only to keep TypeScript from building a union of every tag: all of them accept these props.
+  const Tag = as as 'div';
+  const { ref, onPointerMove } = usePointerSpotlight<HTMLDivElement>();
   const isFinePointer = useFinePointer();
   const isMotionAllowed = useMotionAllowed();
 
