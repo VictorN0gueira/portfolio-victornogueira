@@ -194,6 +194,21 @@ describe('MethodSteps layout', () => {
     }
   });
 
+  it('sizes every step title from the width of its own card, capped at 1.75rem, so a long word fits without breaking in the middle', () => {
+    renderWithProviders(<MethodSteps />);
+
+    for (const step of getSteps()) {
+      const title = within(step).getByRole('heading', { level: 3 });
+
+      // cqi is relative to the nearest container: the wrapper takes the full width of the card content.
+      expect(title).toHaveClass('text-[length:clamp(1.125rem,15cqi,1.75rem)]');
+      // twMerge keeps one font size: the one of the size m heading is replaced, not stacked.
+      expect(title.className).not.toContain('clamp(1.5rem,1.2rem+1vw,1.75rem)');
+      expect(title.parentElement).toHaveClass('@container');
+      expect(title.parentElement?.parentElement).toBe(getCard(step));
+    }
+  });
+
   it('closes every card with a decorative 3px rule in ink, as its last child', () => {
     renderWithProviders(<MethodSteps />);
 

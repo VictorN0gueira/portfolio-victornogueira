@@ -21,6 +21,10 @@ const CARD_CLASSES =
   'flex min-w-0 flex-1 flex-col rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-cream p-5 text-vn-ink md:p-6';
 const NUMBER_CLASSES =
   'font-display font-bold text-[length:clamp(3rem,2rem+3vw,4.5rem)] leading-none tracking-[-0.03em]';
+// The title is sized from the width of its own card (cqi, relative to the @container wrapper around it), at most
+// 1.75rem. "Planejamento" is about 6.24em wide, so 15cqi keeps it inside the card with the four columns of 1024px and
+// with the large font, where a fixed size broke the word in the middle. It replaces the font size of the size m heading.
+const TITLE_CLASSES = 'text-[length:clamp(1.125rem,15cqi,1.75rem)]';
 
 interface StepCardProps {
   step: ProcessStep;
@@ -36,9 +40,11 @@ function StepCard({ step }: StepCardProps) {
       <span aria-hidden="true" className={NUMBER_CLASSES}>
         {step.number}
       </span>
-      <Heading as="h3" size="m" className="mt-5">
-        {step.title}
-      </Heading>
+      <div className="@container mt-5">
+        <Heading as="h3" size="m" className={TITLE_CLASSES}>
+          {step.title}
+        </Heading>
+      </div>
       <p className="mt-2 font-mono text-sm text-vn-gray-dark">{step.duration}</p>
       <p className="mt-4 grow text-pretty text-base text-vn-gray-dark">{step.description}</p>
       <span aria-hidden="true" className="mt-6 block h-[3px] bg-vn-ink" />

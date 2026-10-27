@@ -3,11 +3,13 @@ import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import SEO from '../components/SEO';
+import About from '../components/About';
 import { revealProps, SectionSkeleton } from '../lib/reveal';
 import { useScrollToHash } from '../lib/useScrollToHash';
 import MethodSteps from '../sections/home/MethodSteps';
 
-const About = lazy(() => import('../components/About'));
+// Only what sits below #metodo is lazy: this page is already a lazy route chunk, and a lazy section above the anchor
+// would grow when its chunk arrived and push #metodo away from where the hash scroll put it.
 const Skills = lazy(() => import('../components/Skills'));
 
 export default function AboutPage() {
@@ -22,9 +24,7 @@ export default function AboutPage() {
         path="/sobre"
       />
       <div className="pt-24 md:pt-28">
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><About /></motion.div>
-        </Suspense>
+        <motion.div {...revealProps}><About /></motion.div>
 
         {/* It reveals its own header and cards, so it needs neither the lazy boundary nor the page reveal around it. */}
         <MethodSteps />

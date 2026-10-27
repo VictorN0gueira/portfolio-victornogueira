@@ -54,13 +54,14 @@ describe('pickFeatured', () => {
     expect(picked.map((item) => item.nome)).toEqual(['Auto um', 'IA um', 'Web um']);
   });
 
-  it('throws a clear error that names the category when the data has no service for it', () => {
+  it('skips a category with no service and keeps the order of the rest', () => {
     const withoutAi = catalog.filter((item) => item.categoria !== 'Inteligência Artificial');
 
-    expect(() => pickFeatured(withoutAi, ['Automação', 'Inteligência Artificial'])).toThrowError(
-      /Inteligência Artificial/,
-    );
-    expect(() => pickFeatured(withoutAi, ['Inteligência Artificial'])).toThrowError(Error);
+    expect(pickFeatured(withoutAi, ['Desenvolvimento Web', 'Inteligência Artificial', 'Automação']).map((item) => item.nome)).toEqual([
+      'Web um',
+      'Auto um',
+    ]);
+    expect(pickFeatured(withoutAi, ['Inteligência Artificial'])).toEqual([]);
   });
 
   it('does not change the list it receives', () => {

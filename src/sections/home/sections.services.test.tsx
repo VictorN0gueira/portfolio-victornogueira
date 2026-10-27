@@ -15,7 +15,7 @@ const CARD_NAMES = ['Automação Essencial', 'Agente de IA Sob Medida', 'Landing
 
 const getCards = (): HTMLElement[] => screen.getAllByRole('article');
 
-/** The ways the visitor can reach the section: each one decides if the includes list rests low until hover. */
+/** The ways the visitor can reach the section. None of them may change what the cards show or whether they take focus. */
 const MODES = {
   mouse: () => stubMatchMedia({ [FINE_POINTER_QUERY]: true }),
   touch: () => stubMatchMedia(),
@@ -176,6 +176,9 @@ describe('ServicesCards layout', () => {
   });
 });
 
+// Anything that would dim, hide or push a list off the screen of the visitor.
+const HIDING_CLASSES = /(^|\s)(hidden|invisible|sr-only|opacity-\S+|translate-\S+|scale-\S+|h-0)(\s|$)/;
+
 describe('ServicesCards includes list', () => {
   for (const [mode, setUp] of Object.entries(MODES)) {
     it(`is a real list that is always in the DOM and exposed to assistive tech, with ${mode}`, () => {
@@ -189,24 +192,28 @@ describe('ServicesCards includes list', () => {
         const items = within(list).getAllByRole('listitem');
 
         expect(list.tagName).toBe('UL');
+        // Tailwind preflight removes the markers, and Safari then drops the list semantics unless the role is explicit.
+        expect(list).toHaveAttribute('role', 'list');
         expect(list).toHaveClass('vn-card-includes');
         expect(items.map((item) => item.textContent)).toEqual(service.inclui);
       });
     });
 
-    it(`never hides the list with hidden, aria-hidden, inert or display none, with ${mode}`, () => {
+    it(`never hides, dims or moves the list with hidden, aria-hidden, inert, display, visibility, opacity or a class, with ${mode}`, () => {
       setUp();
       renderWithProviders(<ServicesCards />);
 
       for (const card of getCards()) {
         const list = within(card).getByRole('list');
 
-        for (let box: HTMLElement | null = list; box && box !== card.parentElement; box = box.parentElement) {
+        for (let box: HTMLElement | null = list; box && box !== card; box = box.parentElement) {
           expect(box).not.toHaveAttribute('hidden');
           expect(box).not.toHaveAttribute('aria-hidden');
           expect(box).not.toHaveAttribute('inert');
           expect(box.style.display).not.toBe('none');
           expect(box.style.visibility).not.toBe('hidden');
+          expect(box.style.opacity).toBe('');
+          expect(box.className, box.tagName).not.toMatch(HIDING_CLASSES);
         }
       }
     });
@@ -229,37 +236,45 @@ describe('ServicesCards includes list', () => {
   });
 });
 
-describe('ServicesCards hover reveal', () => {
-  it('marks every card for the slide and gives it a tab stop with a mouse, where motion is allowed', () => {
+describe('ServicesCards hover settle', () => {
+  it('keeps the list inside the SpotlightCard that tokens.css keys the settle on, in the article', () => {
     MODES.mouse();
     renderWithProviders(<ServicesCards />);
 
     for (const card of getCards()) {
-      expect(card).toHaveAttribute('data-hover-reveal');
-      expect(card).toHaveAttribute('tabindex', '0');
-      expect(card).toHaveClass('focus-visible:outline-2');
+      const spotlight = within(card).getByRole('list').closest('.vn-spotlight');
+
+      expect(spotlight).not.toBeNull();
+      expect(card).toContainElement(spotlight as HTMLElement);
     }
   });
 
-  for (const mode of ['touch', 'mouseWithReducedMotion', 'mouseWithAnimationsOff'] as const) {
-    it(`leaves the list simply visible, with no mark and no tab stop, with ${mode}`, () => {
-      MODES[mode]();
-      renderWithProviders(<ServicesCards />);
+  it('leaves 24px (pt-6) above the term, so the 8px the list rests low never reaches it', () => {
+    MODES.mouse();
+    renderWithProviders(<ServicesCards />);
+
+    featuredServices.forEach((service, position) => {
+      const term = within(getCards()[position]).getByText(service.prazo);
+
+      expect(term).toHaveClass('pt-6', 'mt-auto');
+    });
+  });
+});
+
+describe('ServicesCards cards are plain, not interactive', () => {
+  for (const [mode, setUp] of Object.entries(MODES)) {
+    it(`has no tab stop, no hover mark and no focus ring on any article, with ${mode}`, () => {
+      setUp();
+      const { container } = renderWithProviders(<ServicesCards />);
 
       for (const card of getCards()) {
-        expect(card).not.toHaveAttribute('data-hover-reveal');
         expect(card).not.toHaveAttribute('tabindex');
+        expect(card).not.toHaveAttribute('data-hover-reveal');
+        expect(card.className).not.toMatch(/focus/);
       }
+      expect(container.querySelectorAll('[data-hover-reveal]')).toHaveLength(0);
+      // The link is the only thing in the section that takes the focus.
+      expect(container.querySelectorAll('[tabindex], a[href], button')).toHaveLength(1);
     });
   }
-
-  it('puts the mark on the article that holds the list, so hover and focus within on it reveal the list', () => {
-    MODES.mouse();
-    renderWithProviders(<ServicesCards />);
-
-    for (const card of getCards()) {
-      expect(card).toContainElement(within(card).getByRole('list'));
-      expect(card.querySelectorAll('[data-hover-reveal]')).toHaveLength(0);
-    }
-  });
 });

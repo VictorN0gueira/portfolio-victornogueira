@@ -253,26 +253,31 @@
 }
 
 /*
- * The "includes" list of a service card. It is always laid out and always in the accessibility tree, so the card never
- * changes height and nothing is hidden from a screen reader: opacity and transform are the only things that move.
- * The component puts data-hover-reveal on the card only for a fine pointer with hover while motion is allowed (see
- * ServicesCards.tsx). Only then the list rests 12px low and transparent, and rises into place on hover and when the
- * focus is inside the card (the card is then a tab stop). On touch, under reduced motion and under .a11y-no-animations
- * the mark is absent, so this file has nothing to undo: the list is simply there.
+ * The "includes" list of a service card: a decorative settle, nothing more. The list is always visible at full
+ * contrast, on every device and at every width, and it is always laid out, so the card never changes height. Only
+ * where the visitor can hover with a fine pointer and did not ask for less motion does the list rest 8px low and rise
+ * into place while the pointer is over its spotlight card. The offset stays inside the gap above the term of the card
+ * (pt-6, 24px), so nothing overlaps or is clipped. Only transform is declared (never opacity, display or a layout
+ * property), and the card holds nothing that takes the focus, so there is no focus rule. Under .a11y-no-animations the
+ * list is plain: no offset and no transition.
  */
 .vn-card-includes {
-  transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
+  transition: transform 300ms var(--ease-out);
 }
 
-[data-hover-reveal] .vn-card-includes {
-  opacity: 0;
-  transform: translateY(12px);
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .vn-card-includes {
+    transform: translateY(8px);
+  }
+
+  .vn-spotlight:hover .vn-card-includes {
+    transform: none;
+  }
 }
 
-[data-hover-reveal]:hover .vn-card-includes,
-[data-hover-reveal]:focus-within .vn-card-includes {
-  opacity: 1;
+.a11y-no-animations .vn-card-includes {
   transform: none;
+  transition: none;
 }
 
 /*

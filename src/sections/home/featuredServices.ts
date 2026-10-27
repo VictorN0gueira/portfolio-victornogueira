@@ -4,16 +4,15 @@ import { services, type Service } from '../../data/services';
 export const FEATURED_CATEGORIES = ['Automação', 'Inteligência Artificial', 'Desenvolvimento Web'] as const;
 
 /**
- * The first service of each category, in the order of `categories`. A category with no service in the data is a
- * mistake in the data or in the list above, so it throws a clear error instead of leaving a hole in the home.
+ * The first service of each category, in the order of `categories`.
+ * A category with no service is skipped, so the home shows the cards that exist instead of failing to load.
+ * The data test is the loud guard: it fails when a featured category has no service.
  */
 export function pickFeatured(all: readonly Service[], categories: readonly Service['categoria'][]): Service[] {
-  return categories.map((categoria) => {
+  return categories.flatMap((categoria) => {
     const service = all.find((candidate) => candidate.categoria === categoria);
-    if (!service) throw new Error(`featuredServices: no service with the category "${categoria}" in src/data/services.ts`);
-    return service;
+    return service ? [service] : [];
   });
 }
 
-/** Built when the module loads, so a missing category fails loudly in the tests (and in any page test) before it can leave a hole in a visitor's page. */
 export const featuredServices: readonly Service[] = pickFeatured(services, FEATURED_CATEGORIES);

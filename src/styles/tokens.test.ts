@@ -409,7 +409,8 @@ describe('tokens.css spotlight card', () => {
 
   it('draws nothing at all outside the gate (touch devices and reduced motion get a static card)', () => {
     expect(outsideGate).not.toMatch(/(?<!\.a11y-no-animations )\.vn-spotlight::(before|after)/)
-    expect(outsideGate).not.toContain('.vn-spotlight:hover')
+    // The includes list of a service card has its own gated hover settle (tokens.includes.test.ts), which is not a spotlight layer.
+    expect(outsideGate.replace(/\.vn-spotlight:hover \.vn-card-includes/g, '')).not.toContain('.vn-spotlight:hover')
     expect(outsideGate).not.toContain('conic-gradient')
   })
 

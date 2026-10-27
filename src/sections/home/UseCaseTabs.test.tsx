@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCases } from '../../data/useCases';
+import { findAccentElements } from '../../test/accent';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import {
   A11Y_STORAGE_KEY,
@@ -15,9 +16,6 @@ import {
   getTablist,
   renderTabs,
 } from './UseCaseTabs.helpers';
-
-// Any mention of the accent: the token, the hex or the rgb form jsdom writes an inline hex color back as.
-const ACCENT_PATTERN = /vn-accent|00e5a0|rgba?\(\s*0\s*,\s*229\s*,\s*160/i;
 
 // The em dash and the en dash, built from char codes so no file holds them literally.
 const DASH_PATTERN = new RegExp(`[${String.fromCharCode(0x2013)}${String.fromCharCode(0x2014)}]`);
@@ -114,11 +112,7 @@ describe('UseCaseTabs content', () => {
 
   it('uses no accent anywhere, draws icons as svg and keeps dashes and slash separators out of the text', () => {
     const { container } = renderTabs();
-    const everything = Array.from(container.querySelectorAll('*')).filter((element) =>
-      ['class', 'style', 'fill', 'stroke', 'color'].some((name) => ACCENT_PATTERN.test(element.getAttribute(name) ?? '')),
-    );
-
-    expect(everything).toHaveLength(0);
+    expect(findAccentElements(container)).toHaveLength(0);
     expect(container.textContent).not.toMatch(DASH_PATTERN);
     expect(container.textContent).not.toContain(SLASH_SEPARATOR);
     container.querySelectorAll('svg').forEach((icon) => expect(icon).toHaveAttribute('aria-hidden', 'true'));
