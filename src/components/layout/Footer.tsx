@@ -134,10 +134,12 @@ export function Footer() {
 
       {/*
         The observer sits on the wrapper: the wordmark itself starts fully clipped. The wrapper is also an
-        inline-size container, so the wordmark can cap its size by the width it really has (33cqw).
+        inline-size container, so the wordmark caps its size by the width it really has (33cqw of the
+        content box). Below sm the wrapper keeps 2rem free on each side: with the gutter that is at least 3rem,
+        which clears the accessibility tab fixed to the right edge, and the cap shrinks to match.
       */}
       <Container className="mt-12 md:mt-16">
-        <div ref={wordmarkRef} className="[container-type:inline-size]">
+        <div ref={wordmarkRef} className="[container-type:inline-size] max-sm:px-8">
           <motion.p
             data-footer-wordmark=""
             aria-hidden="true"

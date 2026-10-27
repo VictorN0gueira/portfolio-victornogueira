@@ -189,6 +189,12 @@ describe('Footer', () => {
       expect(wordmark(footer).parentElement).toHaveClass('[container-type:inline-size]');
     });
 
+    it('keeps 2rem free on each side below sm, so the fixed accessibility tab never covers the last letter', () => {
+      const footer = renderFooter();
+
+      expect(wordmark(footer).parentElement).toHaveClass('max-sm:px-8');
+    });
+
     it('starts clipped away and unveils once it enters the view', async () => {
       const footer = renderFooter();
       const mark = wordmark(footer);

@@ -122,7 +122,10 @@ describe('Header', () => {
     it('is as wide as the screen minus a symmetric gutter, up to 1100px, and narrows to 860px once scrolled', () => {
       const header = renderHeader();
 
-      expect(header).toHaveClass('max-w-[1100px]', 'data-[scrolled=true]:max-w-[860px]');
+      // In rem, not px: 68.75rem is 1100px and 53.75rem is 860px at the normal font, and both grow with the
+      // font when a11y-font-large is on, so the nav labels still fit in the pill.
+      expect(header).toHaveClass('max-w-[68.75rem]', 'data-[scrolled=true]:max-w-[53.75rem]');
+      expect(header.className).not.toMatch(/max-w-\[\d+px\]/);
       expect(header).toHaveClass('mx-auto', 'inset-x-0');
     });
 

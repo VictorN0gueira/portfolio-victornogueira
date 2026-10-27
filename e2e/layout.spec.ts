@@ -14,9 +14,22 @@ const PHONE_LANDSCAPE = { width: 844, height: 390 };
 const NARROW_PHONE_DRAWER_PX = 390;
 const DRAWER_FROM_420_PX = 384;
 const HEADER_MIN_GUTTER_PX = 12;
+const PHONE_320 = { width: 320, height: 640 };
+const DESKTOP_1440 = { width: 1440, height: 900 };
+const ACCESSIBILITY_TAB_NAME = 'Abrir opções de acessibilidade';
+// Sub pixel rounding of text boxes.
+const LAYOUT_TOLERANCE_PX = 1;
 
 const SCROLL_DISTANCE = 400;
 const TAB_PRESSES_INSIDE_MENU = 10;
+const MAIN_NAV_LINKS = 6;
+
+// The "fonte maior" toggle, set the way the site stores it, before the page loads.
+async function enableLargeFont(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem('a11y-preferences', JSON.stringify({ fontSize: true }));
+  });
+}
 
 function siteHeader(page: Page) {
   return page.getByRole('banner');
@@ -71,6 +84,46 @@ test.describe('header by breakpoint', () => {
       await expect(page.getByRole('button', { name: 'Abrir menu' })).toBeHidden();
     });
   });
+});
+
+test.describe('desktop nav with the large font', () => {
+  for (const viewport of [TABLET_LANDSCAPE, DESKTOP_1440]) {
+    test(`keeps every label on one line in the scrolled pill at ${viewport.width}px`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
+
+      await enableLargeFont(page);
+      await page.setViewportSize(viewport);
+      await page.goto('/');
+      await expect(page.locator('html')).toHaveClass(/a11y-font-large/);
+      const header = siteHeader(page);
+      await page.mouse.wheel(0, SCROLL_DISTANCE);
+      await expect(header).toHaveAttribute('data-scrolled', 'true');
+      // The pill narrows with a max-width transition: measure once it has settled.
+      await header.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
+
+      const { tops, navRight, ctaLeft } = await page.evaluate(() => {
+        const links = Array.from(document.querySelectorAll('header nav a'));
+        const lineTops = links.flatMap((link) => {
+          const range = document.createRange();
+          range.selectNodeContents(link);
+          return Array.from(range.getClientRects()).map((rect) => rect.top);
+        });
+        const nav = document.querySelector('header nav') as HTMLElement;
+        const cta = document.querySelector('header a[href="/contato"]') as HTMLElement;
+        return {
+          tops: lineTops,
+          navRight: nav.getBoundingClientRect().right,
+          ctaLeft: cta.getBoundingClientRect().left,
+        };
+      });
+
+      expect(tops.length).toBeGreaterThanOrEqual(MAIN_NAV_LINKS);
+      for (const top of tops) {
+        expect(Math.abs(top - tops[0])).toBeLessThanOrEqual(LAYOUT_TOLERANCE_PX);
+      }
+      expect(navRight).toBeLessThanOrEqual(ctaLeft + LAYOUT_TOLERANCE_PX);
+    });
+  }
 });
 
 test.describe('mobile menu', () => {
@@ -232,6 +285,47 @@ test.describe('footer', () => {
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
       );
       expect(pageOverflow).toBeLessThanOrEqual(0);
+    });
+  }
+
+  // The accessibility tab is fixed to the right edge, so on a narrow screen it can sit over the last letter.
+  for (const viewport of [SMALLEST_PHONE, PHONE_320]) {
+    test(`keeps the wordmark clear of the accessibility tab at ${viewport.width}px with the large font`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
+
+      await enableLargeFont(page);
+      await page.setViewportSize(viewport);
+      await page.goto('/sobre');
+      await expect(page.locator('html')).toHaveClass(/a11y-font-large/);
+      await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+      const wordmark = page.locator('footer#rodape [data-footer-wordmark]');
+      await expect(wordmark).toBeInViewport();
+
+      const textRight = await wordmark.evaluate((element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return range.getBoundingClientRect().right;
+      });
+      const tab = await page.getByRole('button', { name: ACCESSIBILITY_TAB_NAME }).boundingBox();
+
+      expect(tab).not.toBeNull();
+      expect(textRight).toBeLessThanOrEqual((tab?.x ?? 0) + LAYOUT_TOLERANCE_PX);
+    });
+  }
+
+  for (const { viewport, expectedFontSize } of [
+    { viewport: PHONE_320, expectedFontSize: '72px' },
+    { viewport: PHONE_390, expectedFontSize: '85.8px' },
+    { viewport: DESKTOP_1440, expectedFontSize: '316.8px' },
+  ]) {
+    test(`keeps the design size of the wordmark at ${viewport.width}px with the normal font`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
+
+      await page.setViewportSize(viewport);
+      await page.goto('/sobre');
+      const wordmark = page.locator('footer#rodape [data-footer-wordmark]');
+
+      await expect(wordmark).toHaveCSS('font-size', expectedFontSize);
     });
   }
 });
