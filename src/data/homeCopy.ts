@@ -11,6 +11,9 @@ export interface HeroHourOption {
   label: string;
 }
 
+const ROI_COST_LABEL = 'Custo anual hoje';
+const ROI_SAVINGS_LABEL = 'Economia estimada por ano';
+
 /** Cópia da home. As frases já passaram pelo humanizer: não mexa sem refazer a passada. */
 export const homeCopy = {
   hero: {
@@ -71,5 +74,30 @@ export const homeCopy = {
     kicker: 'como a gente trabalha',
     heading: 'Do primeiro papo ao fluxo rodando',
     sub: 'Você conhece o negócio. A gente entra com o método e a execução.',
+  },
+  // Os textos do simulador de economia. As opções de equipe vêm de TEAM_OPTIONS (lib/roi.ts).
+  roi: {
+    kicker: 'simulador',
+    heading: 'Quanto o trabalho manual custa por ano',
+    sub: 'Mexe nos valores e veja quanto dá pra recuperar automatizando.',
+    labels: {
+      hours: 'Horas por semana em tarefas repetitivas',
+      team: 'Quantas pessoas fazem isso',
+      rate: 'Valor da hora (R$)',
+    },
+    results: {
+      cost: ROI_COST_LABEL,
+      savings: ROI_SAVINGS_LABEL,
+    },
+    note: 'Considera 80% do tempo automatizado. É uma estimativa, o número real sai do diagnóstico.',
+    cta: 'Quero automatizar esse processo',
+    // O valor do controle de horas, ao lado do rótulo.
+    hoursShown: (hours: number) => `${hours} h`,
+    aria: {
+      // Lido pelo controle de horas no lugar do número solto.
+      hoursValue: (hours: number) => `${hours} ${hours === 1 ? 'hora' : 'horas'} por semana`,
+      // Lido pela região de status quando os valores se firmam. Os valores chegam já formatados em reais.
+      status: (cost: string, savings: string) => `${ROI_COST_LABEL} ${cost}. ${ROI_SAVINGS_LABEL} ${savings}.`,
+    },
   },
 } as const;

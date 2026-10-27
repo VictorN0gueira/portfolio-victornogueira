@@ -541,3 +541,100 @@ describe('tokens.css tab progress', () => {
     expect(blockBody(css, '.a11y-no-animations .vn-tab-progress')).toContain('display: none')
   })
 })
+
+describe('tokens.css range slider', () => {
+  const TRACK_SELECTORS = ['.vn-range::-webkit-slider-runnable-track', '.vn-range::-moz-range-track']
+  const THUMB_SELECTORS = ['.vn-range::-webkit-slider-thumb', '.vn-range::-moz-range-thumb']
+  const rangeCss = [
+    blockBody(css, '.vn-range'),
+    ...TRACK_SELECTORS.map((selector) => blockBody(css, selector)),
+    ...THUMB_SELECTORS.map((selector) => blockBody(css, selector)),
+    blockBody(css, '.vn-range:focus-visible'),
+    blockBody(css, '.vn-range:focus-visible::-webkit-slider-thumb'),
+    blockBody(css, '.vn-range:focus-visible::-moz-range-thumb'),
+  ].join('\n')
+
+  it('styles the WebKit and the Firefox parts in separate rules, since one unknown pseudo element voids a whole selector list', () => {
+    for (const selector of [...TRACK_SELECTORS, ...THUMB_SELECTORS]) {
+      expect(blockBody(css, selector), selector).not.toBe('')
+    }
+    expect(css).not.toMatch(/::-webkit-slider-thumb,\s*\.vn-range::-moz-range-thumb/)
+  })
+
+  it('removes the native look and starts the fill at 0 until the input sets --vn-range-fill', () => {
+    const slider = blockBody(css, '.vn-range')
+
+    expect(slider).toMatch(/appearance:\s*none/)
+    expect(slider).toContain('--vn-range-fill: 0%')
+    expect(blockBody(css, '.vn-range::-webkit-slider-thumb')).toMatch(/appearance:\s*none/)
+  })
+
+  it('draws a 28px round thumb for a finger in both engines', () => {
+    for (const selector of THUMB_SELECTORS) {
+      const thumb = blockBody(css, selector)
+
+      expect(thumb, selector).toMatch(/width:\s*28px/)
+      expect(thumb, selector).toMatch(/height:\s*28px/)
+      expect(thumb, selector).toMatch(/border-radius:\s*50%/)
+    }
+  })
+
+  it('centers the WebKit thumb on the track: Firefox does it by itself', () => {
+    expect(blockBody(css, '.vn-range::-webkit-slider-thumb')).toContain('margin-top: calc((var(--vn-range-track) - 28px) * 0.5)')
+  })
+
+  it('fills the track from --vn-range-fill in white over a gray mid rest, in both engines', () => {
+    for (const selector of TRACK_SELECTORS) {
+      const track = blockBody(css, selector)
+
+      expect(track, selector).toContain(
+        'linear-gradient(to right, var(--color-vn-white) var(--vn-range-fill), var(--color-vn-gray-mid) var(--vn-range-fill))',
+      )
+    }
+  })
+
+  it('documents the track fill as a paint, an exception to compositor only animation, in one line at the rule', () => {
+    const comment = /\/\*(?:(?!\*\/)[\s\S])*\*\/\s*\.vn-range \{/.exec(css)?.[0] ?? ''
+
+    expect(comment).toContain('--vn-range-fill')
+    expect(comment).toMatch(/exception to compositor only animation/)
+  })
+
+  it('uses palette tokens only and never the accent', () => {
+    expect(rangeCss).toContain('var(--color-vn-white)')
+    expect(offPaletteHex(rangeCss)).toEqual([])
+    expect(offPaletteRgb(rangeCss)).toEqual([])
+    expect(rangeCss.toLowerCase()).not.toContain('accent')
+    expect(rangeCss.toLowerCase()).not.toContain('00e5a0')
+  })
+
+  it('shows the focus on the thumb as a white ring, and keeps a transparent outline that forced colors turns visible', () => {
+    const focus = blockBody(css, '.vn-range:focus-visible')
+
+    expect(focus).toMatch(/outline:\s*2px solid transparent/)
+    for (const selector of ['.vn-range:focus-visible::-webkit-slider-thumb', '.vn-range:focus-visible::-moz-range-thumb']) {
+      expect(blockBody(css, selector), selector).toMatch(/box-shadow:\s*0 0 0 3px var\(--color-vn-white\)/)
+    }
+  })
+
+  it('leaves width and height to utilities (w-full h-11), because this file is unlayered and would beat a consumer className', () => {
+    expect(blockBody(css, '.vn-range')).not.toMatch(/(^|[\s;])(min-width|max-width|width|height|min-height):/)
+  })
+
+  it('lets a vertical drag scroll the page while a horizontal one moves the slider', () => {
+    expect(blockBody(css, '.vn-range')).toMatch(/touch-action:\s*pan-y/)
+  })
+
+  it('has no transition or animation, so there is nothing to switch off for reduced motion', () => {
+    expect(rangeCss).not.toMatch(/transition|animation/)
+  })
+
+  it('keeps the thumb and the track visible in forced colors', () => {
+    const forced = blockBody(css, '@media (forced-colors: active)')
+
+    for (const selector of [...THUMB_SELECTORS, ...TRACK_SELECTORS]) {
+      expect(blockBody(forced, selector), selector).not.toBe('')
+    }
+    expect(blockBody(forced, '.vn-range::-webkit-slider-thumb')).toContain('ButtonText')
+  })
+})

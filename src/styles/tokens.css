@@ -434,6 +434,99 @@
   animation: vn-choice-in 160ms var(--ease-out);
 }
 
+/*
+ * Range slider for dark surfaces (the hours slider of the ROI simulator). The input sets --vn-range-fill (a
+ * percentage) and the track paints its filled part from it. The fill ends at that share of the track, not at the
+ * center of the 28px thumb (which travels 14px less at each end): the opaque thumb always covers the difference.
+ * Width and height come from utilities on the element (w-full h-11: the 44px box is the touch target and the track
+ * is drawn in its middle), because this file is unlayered and would beat a consumer className.
+ * WebKit and Firefox parts are separate rules: a selector list with one unknown pseudo element is dropped whole.
+ * Everything is a palette token and the accent never appears: white fill, gray mid rest, white thumb.
+ */
+/* The fill is a paint on an input driven by --vn-range-fill, a documented exception to compositor only animation (nothing here animates). */
+.vn-range {
+  --vn-range-fill: 0%;
+  --vn-range-track: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+.vn-range::-webkit-slider-runnable-track {
+  height: var(--vn-range-track);
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-vn-white) var(--vn-range-fill), var(--color-vn-gray-mid) var(--vn-range-fill));
+}
+
+.vn-range::-moz-range-track {
+  height: var(--vn-range-track);
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-vn-white) var(--vn-range-fill), var(--color-vn-gray-mid) var(--vn-range-fill));
+}
+
+/* The 2px black border keeps the white thumb apart from the white fill it sits on. */
+.vn-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  margin-top: calc((var(--vn-range-track) - 28px) * 0.5);
+  border: 2px solid var(--color-vn-black);
+  border-radius: 50%;
+  background: var(--color-vn-white);
+}
+
+.vn-range::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--color-vn-black);
+  border-radius: 50%;
+  background: var(--color-vn-white);
+}
+
+/*
+ * The focus ring is on the thumb: a white ring of 3px (about 20:1 on the black surface). The input keeps a
+ * transparent outline, which forced colors mode turns into a visible one.
+ */
+.vn-range:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 4px;
+}
+
+.vn-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--color-vn-white);
+}
+
+.vn-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--color-vn-white);
+}
+
+/* Forced colors drop backgrounds and shadows: the thumb and the track take the system text color and a border. */
+@media (forced-colors: active) {
+  .vn-range::-webkit-slider-thumb {
+    background: ButtonText;
+  }
+
+  .vn-range::-moz-range-thumb {
+    background: ButtonText;
+  }
+
+  .vn-range::-webkit-slider-runnable-track {
+    border: 1px solid ButtonText;
+  }
+
+  .vn-range::-moz-range-track {
+    border: 1px solid ButtonText;
+  }
+}
+
 /* Reduced motion: the cursor stays visible and still, the scan line is not drawn, the marquee and the accordion do not move. */
 @media (prefers-reduced-motion: reduce) {
   .vn-cursor {
