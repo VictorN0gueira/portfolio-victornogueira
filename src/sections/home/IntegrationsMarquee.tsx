@@ -13,6 +13,10 @@ const MARQUEE_LABEL = 'Integrações';
 // (no transition: color is not one of the properties the site animates) and nothing about the box changes.
 const ITEM_CLASSES = 'inline-flex items-center gap-3 whitespace-nowrap text-vn-gray-dark hover:text-vn-ink';
 
+// The space between items is the Marquee's --vn-marquee-gap knob: 1.5rem on small screens, so the wrapping rows of the
+// no motion layout stay short (15 items), and 2.5rem from sm up.
+const MARQUEE_CLASSES = 'mt-8 md:mt-10 [--vn-marquee-gap:1.5rem] sm:[--vn-marquee-gap:2.5rem]';
+
 /**
  * The strip of tools the work connects to. White band with a hairline above and below. The Marquee sits in
  * the Container, a block that gives it a definite width (its frame has no width of its own). Without
@@ -28,7 +32,7 @@ export function IntegrationsMarquee() {
             {LINE}
           </p>
         </div>
-        <Marquee ariaLabel={MARQUEE_LABEL} className="mt-8 md:mt-10">
+        <Marquee ariaLabel={MARQUEE_LABEL} className={MARQUEE_CLASSES}>
           {integrations.map(({ id, label }) => (
             <span key={id} className={ITEM_CLASSES}>
               <BrandIcon id={id} className="size-6 shrink-0" />

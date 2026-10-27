@@ -77,6 +77,14 @@ describe('CountUp without motion', () => {
     expect(getWrapper(container).children).toHaveLength(0);
   });
 
+  it('uses tabular figures on the plain text too, so it is as wide as the text the count settles on', () => {
+    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
+
+    const { container } = renderWithProviders(<CountUp value="100+" />);
+
+    expect(getWrapper(container)).toHaveClass('tabular-nums');
+  });
+
   it('merges a consumer className on the raw text', () => {
     stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
 
@@ -208,10 +216,28 @@ describe('CountUp with motion allowed', () => {
     expect([...seen].some((text) => /^\d\.\d{3}$/.test(text))).toBe(true);
   });
 
-  it('keeps the number box as wide as its widest text, so the box does not jump when the count ends', () => {
-    const { container } = renderWithProviders(<CountUp value="1200+" />);
+  it.each([
+    ['1200+', '1.200'],
+    ['500h+', '500'],
+    ['1,5x', '1,5'],
+  ])('sizes the number box from an invisible copy of its widest text, so %s does not jump when the count ends', (value, widest) => {
+    const { container } = renderWithProviders(<CountUp value={value} />);
+    const number = getNumber(getWrapper(container));
 
-    expect(getNumber(getWrapper(container)).style.minWidth).toBe('5ch');
+    expect(number).toHaveAttribute('data-width-text', widest);
+    expect(number).toHaveClass('after:invisible', 'after:block', 'after:h-0', 'after:content-[attr(data-width-text)]');
+    expect(number.style.minWidth).toBe('');
+  });
+
+  it('keeps the sizer text attribute after the count, and the frames add no element to the box', async () => {
+    const { container } = renderWithProviders(<CountUp value="500h+" durationMs={SHORT_DURATION_MS} />);
+    const wrapper = getWrapper(container);
+
+    triggerIntersection(wrapper);
+    await waitFor(() => expect(getNumber(wrapper).textContent).toBe('500'), { timeout: SETTLE_TIMEOUT_MS });
+
+    expect(getNumber(wrapper)).toHaveAttribute('data-width-text', '500');
+    expect(getNumber(wrapper).children).toHaveLength(0);
   });
 
   it('can unmount while counting without errors', () => {

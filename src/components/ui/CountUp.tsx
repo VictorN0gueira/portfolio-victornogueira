@@ -40,7 +40,8 @@ export function CountUp({ value, durationMs = 1400, className }: CountUpProps) {
   const isMotionAllowed = useMotionAllowed();
 
   if (!stat || !isMotionAllowed) {
-    return <span className={className}>{value}</span>;
+    // Tabular figures here too, so the plain text is exactly as wide as the text the count settles on.
+    return <span className={cn('tabular-nums', className)}>{value}</span>;
   }
 
   return <AnimatedCount value={value} num={stat.num} suffix={stat.suffix} durationMs={durationMs} className={className} />;
@@ -60,9 +61,10 @@ function AnimatedCount({ value, num, suffix, durationMs, className }: AnimatedCo
   const isInView = useInView(rootRef, { once: true });
   const decimals = countDecimals(value);
   const writtenNumber = value.slice(0, value.length - suffix.length);
-  // The box fits the widest text it shows (the pt-BR grouped one may be longer than the written one),
-  // so it does not jump when the count ends. A digit is 1ch with tabular figures.
-  const boxWidthCh = Math.max(writtenNumber.length, formatNumber(num, decimals).length);
+  const groupedNumber = formatNumber(num, decimals);
+  // The widest text the box shows (the grouped pt-BR one can be longer than the written one), measured by an
+  // invisible copy in the same font, so the box does not jump when the count ends and settles flush left.
+  const widestText = groupedNumber.length > writtenNumber.length ? groupedNumber : writtenNumber;
 
   useEffect(() => {
     const node = numberRef.current;
@@ -85,7 +87,12 @@ function AnimatedCount({ value, num, suffix, durationMs, className }: AnimatedCo
   return (
     <span ref={rootRef} className={cn('relative inline-flex items-baseline tabular-nums', className)}>
       <span className="sr-only">{value}</span>
-      <span ref={numberRef} aria-hidden="true" className="inline-block text-right" style={{ minWidth: `${boxWidthCh}ch` }}>
+      <span
+        ref={numberRef}
+        aria-hidden="true"
+        data-width-text={widestText}
+        className="inline-block text-right after:invisible after:block after:h-0 after:overflow-hidden after:content-[attr(data-width-text)]"
+      >
         {formatNumber(0, decimals)}
       </span>
       {suffix ? <span aria-hidden="true">{suffix}</span> : null}

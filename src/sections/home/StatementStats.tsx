@@ -12,17 +12,20 @@ const KICKER = 'resultado';
 const STATEMENT = 'O trabalho repetitivo vai para os fluxos. A equipe fica com o resto.';
 const SUB = 'Números dos projetos que a gente já entregou.';
 
+const GRID_CLASSES = 'mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 md:mt-14 md:gap-5 lg:grid-cols-4';
 const CARD_CLASSES =
   'flex-1 min-w-0 rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6';
 // The number is sized from the width of its own box (cqi), so "500h+" fits the narrowest card, a 4 column card at
 // 1024px with the large font on, and the 1 column card of a 280px screen alike, without a breakpoint per case.
+// leading-none comes after the font size on purpose: CountUp merges this with twMerge, which drops a leading
+// class that sits before a font size class, and the number would get the 1.5 line height of the body.
 const NUMBER_CLASSES =
-  'font-display font-bold leading-none tracking-[-0.03em] text-[length:clamp(2rem,24cqi,3.75rem)]';
+  'font-display font-bold tracking-[-0.03em] text-[length:clamp(2rem,24cqi,3.75rem)] leading-none';
 
 /**
  * The statement of the home: a big sentence on cream and the four numbers of the work under it, each in a
- * SpotlightCard. One RevealGroup observes the whole section. The empty slot is where the illustration phase
- * puts its drawing, so it takes no space until then.
+ * SpotlightCard. One RevealGroup observes the header and a nested one observes the grid (still one observer per
+ * container). The empty slot is where the illustration phase puts its drawing, so it takes no space until then.
  */
 export function StatementStats() {
   const headingId = useId();
@@ -42,8 +45,9 @@ export function StatementStats() {
           <RevealItem className="mt-6 max-w-2xl">
             <p className="text-pretty text-base text-vn-gray-dark md:text-lg">{SUB}</p>
           </RevealItem>
-          <div data-slot="illustration" aria-hidden="true" />
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 md:mt-14 md:gap-5 lg:grid-cols-4">
+          <div data-slot="illustration" />
+          {/* Its own group: on one column the cards sit far below the heading, so they reveal when the grid is in view. */}
+          <RevealGroup className={GRID_CLASSES}>
             {stats.map(({ value, label, description }) => (
               <RevealItem key={value} className="flex">
                 <SpotlightCard as="div" className={CARD_CLASSES}>
@@ -57,7 +61,7 @@ export function StatementStats() {
                 </SpotlightCard>
               </RevealItem>
             ))}
-          </div>
+          </RevealGroup>
         </RevealGroup>
       </Container>
     </Section>

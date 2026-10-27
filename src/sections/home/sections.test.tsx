@@ -10,16 +10,37 @@ import { StatementStats } from './StatementStats';
 const A11Y_STORAGE_KEY = 'a11y-preferences';
 const MARQUEE_NAME = 'Integrações';
 
-/** Every element of the subtree that names the accent in a utility class or an inline style. */
+// Any mention of the accent: the token (bg-vn-accent, text-[var(--color-vn-accent)]), the hex (bg-[#00E5A0]) or
+// the rgb form jsdom writes an inline hex color back as.
+const ACCENT_PATTERN = /vn-accent|00e5a0|rgba?\(\s*0\s*,\s*229\s*,\s*160/i;
+// A box that takes its width from its content cannot hold the Marquee frame, which has no width of its own.
+const SHRINK_TO_FIT_CLASSES = ['inline-block', 'inline-flex', 'inline-grid', 'w-fit', 'w-min', 'w-max', 'absolute', 'fixed', 'flex', 'grid'];
+
+/** Every element of the subtree that names the accent in its class, its inline style or an svg paint attribute. */
 function findAccentElements(root: HTMLElement): Element[] {
-  return Array.from(root.querySelectorAll('*')).filter((element) => {
-    const className = element.getAttribute('class') ?? '';
-    const style = (element.getAttribute('style') ?? '').toLowerCase();
-    return /(^|[\s:])(bg|text|border|ring|fill|stroke|outline|from|via|to|shadow|decoration|accent)-vn-accent/.test(className) || style.includes('00e5a0') || style.includes('vn-accent');
-  });
+  return Array.from(root.querySelectorAll('*')).filter((element) =>
+    ['class', 'style', 'fill', 'stroke', 'color'].some((name) => ACCENT_PATTERN.test(element.getAttribute(name) ?? '')),
+  );
 }
 
 const isInsideHiddenCopy = (element: Element): boolean => element.closest('[aria-hidden="true"]') !== null;
+
+describe('findAccentElements', () => {
+  it('finds the accent in a token class, an arbitrary hex class, a variable class, an inline style and a paint attribute', () => {
+    const { container } = renderWithProviders(
+      <div>
+        <i className="bg-vn-accent" />
+        <i className="bg-[#00E5A0]" />
+        <i className="text-[var(--color-vn-accent)]" />
+        <i style={{ color: '#00e5a0' }} />
+        <svg fill="#00E5A0" />
+        <i className="bg-vn-black text-vn-white" />
+      </div>,
+    );
+
+    expect(findAccentElements(container)).toHaveLength(5);
+  });
+});
 
 describe('IntegrationsMarquee with motion allowed', () => {
   beforeEach(() => {
@@ -88,13 +109,32 @@ describe('IntegrationsMarquee with motion allowed', () => {
     expect(section).toHaveClass('border-y', 'border-vn-gray-light');
   });
 
-  it('gives the marquee a block parent, so the frame can fill a definite width', () => {
-    renderWithProviders(<IntegrationsMarquee />);
-    const parent = screen.getByRole('region', { name: MARQUEE_NAME }).parentElement as HTMLElement;
+  it('keeps every ancestor of the marquee, up to the section, free of shrink to fit boxes, so the frame fills a definite width', () => {
+    const { container } = renderWithProviders(<IntegrationsMarquee />);
+    const section = container.querySelector('section') as HTMLElement;
+    const ancestors: HTMLElement[] = [];
 
-    for (const shrinkToFit of ['inline-block', 'inline-flex', 'inline-grid', 'w-fit', 'flex', 'grid', 'absolute']) {
-      expect(parent).not.toHaveClass(shrinkToFit);
+    for (let box = screen.getByRole('region', { name: MARQUEE_NAME }).parentElement; box; box = box.parentElement) {
+      ancestors.push(box);
+      if (box === section) break;
     }
+
+    expect(ancestors.at(-1)).toBe(section);
+    expect(ancestors.length).toBeGreaterThan(1);
+    for (const ancestor of ancestors) {
+      for (const shrinkToFit of SHRINK_TO_FIT_CLASSES) {
+        expect(ancestor, `${ancestor.tagName} with ${shrinkToFit}`).not.toHaveClass(shrinkToFit);
+      }
+    }
+  });
+
+  it('tightens the space between items to 1.5rem on small screens and 2.5rem from sm up, through the Marquee gap variable', () => {
+    renderWithProviders(<IntegrationsMarquee />);
+
+    expect(screen.getByRole('region', { name: MARQUEE_NAME })).toHaveClass(
+      '[--vn-marquee-gap:1.5rem]',
+      'sm:[--vn-marquee-gap:2.5rem]',
+    );
   });
 });
 
@@ -108,7 +148,12 @@ describe('IntegrationsMarquee without motion', () => {
 
     renderWithProviders(<IntegrationsMarquee />);
 
-    expect(screen.getByRole('region', { name: MARQUEE_NAME })).toHaveClass('flex-wrap');
+    // The wrapping row takes the same gap variable, so its rows stay short (15 items) on a small screen.
+    expect(screen.getByRole('region', { name: MARQUEE_NAME })).toHaveClass(
+      'flex-wrap',
+      '[--vn-marquee-gap:1.5rem]',
+      'sm:[--vn-marquee-gap:2.5rem]',
+    );
     expect(screen.getByText('Notion')).toBeInTheDocument();
     for (const { label } of integrations) {
       const copies = screen.getAllByText(label);
@@ -183,12 +228,29 @@ describe('StatementStats with motion off', () => {
     expect(grid?.children).toHaveLength(stats.length);
   });
 
-  it('leaves an empty illustration slot for the illustration phase', () => {
+  it('reveals the cards through a group of their own, nested in the one of the header, so they reveal when the grid is in view', () => {
+    const { container } = renderWithProviders(<StatementStats />);
+    const grid = screen.getByText('500h+').closest('[class*="grid-cols-1"]') as HTMLElement;
+    const headingGroup = screen.getByRole('heading', { level: 2 }).closest('[data-reveal-group]') as HTMLElement;
+
+    expect(container.querySelectorAll('[data-reveal-group]')).toHaveLength(2);
+    expect(grid).toHaveAttribute('data-reveal-group');
+    expect(headingGroup).not.toBe(grid);
+    expect(headingGroup).toContainElement(grid);
+    for (const card of Array.from(grid.children)) {
+      expect(card).toHaveAttribute('data-reveal-item');
+      expect(card.parentElement?.closest('[data-reveal-group]')).toBe(grid);
+    }
+  });
+
+  it('leaves an empty illustration slot, exactly <div data-slot="illustration" />, for the illustration phase', () => {
     const { container } = renderWithProviders(<StatementStats />);
     const slots = container.querySelectorAll('[data-slot="illustration"]');
 
     expect(slots).toHaveLength(1);
     expect(slots[0]).toBeEmptyDOMElement();
+    expect(slots[0].tagName).toBe('DIV');
+    expect(slots[0].getAttributeNames()).toEqual(['data-slot']);
   });
 
   it('keeps the accent out of a section on a light background', () => {
@@ -203,11 +265,29 @@ describe('StatementStats with motion allowed', () => {
     stubMatchMedia();
   });
 
-  it('keeps the final value in the DOM for screen readers while the digits count', () => {
+  it('keeps the final value of every stat in the DOM for screen readers while the digits count', () => {
     renderWithProviders(<StatementStats />);
 
-    expect(screen.getByText('500h+')).toHaveClass('sr-only');
-    expect(screen.getByText('85%')).toHaveClass('sr-only');
+    expect(stats).toHaveLength(4);
+    for (const { value } of stats) {
+      expect(screen.getByText(value)).toHaveClass('sr-only');
+    }
+  });
+
+  it('keeps the tight line height on the counting number, which twMerge drops if it comes before the font size', () => {
+    renderWithProviders(<StatementStats />);
+
+    for (const { value } of stats) {
+      const root = screen.getByText(value).parentElement as HTMLElement;
+
+      expect(root).toHaveClass('leading-none', 'tabular-nums');
+    }
+  });
+
+  it('keeps the accent out of the section while it counts too', () => {
+    const { container } = renderWithProviders(<StatementStats />);
+
+    expect(findAccentElements(container)).toHaveLength(0);
   });
 
   it('still has exactly one h2', () => {
