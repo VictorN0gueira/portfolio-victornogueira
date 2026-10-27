@@ -1,9 +1,5 @@
-import { Suspense, lazy } from 'react';
 import { motion } from 'motion/react';
-import Header from '../components/Header';
 import SEO from '../components/SEO';
-
-const Footer = lazy(() => import('../components/Footer'));
 
 const EFFECTIVE_DATE = '8 de julho de 2026';
 
@@ -26,8 +22,7 @@ export default function PrivacyPage() {
         description="Como os dados enviados pelo formulário de contato de vnone.com.br são coletados, usados e protegidos, conforme a LGPD."
         path="/privacidade"
       />
-      <Header />
-      <main id="main-content" className="pt-32 md:pt-40 pb-24 px-6 md:px-12 bg-brand-white min-h-screen">
+      <div className="pt-32 md:pt-40 pb-24 px-6 md:px-12 bg-brand-white min-h-screen">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -123,11 +118,7 @@ export default function PrivacyPage() {
             </p>
           </Section>
         </motion.div>
-      </main>
-
-      <Suspense fallback={null}>
-        <Footer />
-      </Suspense>
+      </div>
     </>
   );
 }

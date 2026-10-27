@@ -1,6 +1,5 @@
 import { Suspense, lazy, useState, useCallback } from 'react';
 import { motion } from 'motion/react';
-import Header from '../components/Header';
 import SEO from '../components/SEO';
 import { revealProps, SectionSkeleton } from '../lib/reveal';
 import { useScrollToHash } from '../lib/useScrollToHash';
@@ -9,8 +8,6 @@ import { faqs } from '../data/faqs';
 const ROICalculator = lazy(() => import('../components/ROICalculator'));
 const Contact = lazy(() => import('../components/Contact'));
 const FAQ = lazy(() => import('../components/FAQ'));
-const Footer = lazy(() => import('../components/Footer'));
-const Chatbot = lazy(() => import('../components/Chatbot'));
 
 // FAQPage JSON-LD gerado da mesma fonte que o accordion — só nesta página
 const faqJsonLd = {
@@ -40,8 +37,7 @@ export default function ContactPage() {
         path="/contato"
         jsonLd={[faqJsonLd]}
       />
-      <Header />
-      <main id="main-content" className="pt-16 md:pt-20">
+      <div className="pt-16 md:pt-20">
         <Suspense fallback={<SectionSkeleton />}>
           <motion.div {...revealProps}>
             <ROICalculator onQuoteRequest={handleQuoteRequest} />
@@ -57,12 +53,7 @@ export default function ContactPage() {
         <Suspense fallback={null}>
           <motion.div {...revealProps}><FAQ /></motion.div>
         </Suspense>
-      </main>
-
-      <Suspense fallback={null}>
-        <Footer />
-        <Chatbot />
-      </Suspense>
+      </div>
     </>
   );
 }

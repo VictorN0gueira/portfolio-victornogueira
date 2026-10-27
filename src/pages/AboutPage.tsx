@@ -2,15 +2,12 @@ import { Suspense, lazy } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
-import Header from '../components/Header';
 import SEO from '../components/SEO';
 import { revealProps, SectionSkeleton } from '../lib/reveal';
 
 const About = lazy(() => import('../components/About'));
 const Process = lazy(() => import('../components/Process'));
 const Skills = lazy(() => import('../components/Skills'));
-const Footer = lazy(() => import('../components/Footer'));
-const Chatbot = lazy(() => import('../components/Chatbot'));
 
 export default function AboutPage() {
   return (
@@ -20,8 +17,7 @@ export default function AboutPage() {
         description="Quem é Victor Nogueira, como trabalho e a stack que uso para transformar processos manuais em fluxos automatizados e inteligentes."
         path="/sobre"
       />
-      <Header />
-      <main id="main-content" className="pt-24 md:pt-28">
+      <div className="pt-24 md:pt-28">
         <Suspense fallback={<SectionSkeleton />}>
           <motion.div {...revealProps}><About /></motion.div>
         </Suspense>
@@ -52,12 +48,7 @@ export default function AboutPage() {
             </Link>
           </div>
         </motion.section>
-      </main>
-
-      <Suspense fallback={null}>
-        <Footer />
-        <Chatbot />
-      </Suspense>
+      </div>
     </>
   );
 }

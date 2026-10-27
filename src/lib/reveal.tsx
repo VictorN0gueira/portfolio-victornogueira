@@ -20,12 +20,12 @@ export function SectionSkeleton() {
   );
 }
 
-/* Fallback de página inteira: min-h-screen evita flash branco e CLS
-   durante a troca de rota com AnimatePresence mode="wait" */
+/* Fallback de página inteira: min-h-dvh evita flash e CLS durante a troca de rota
+   com AnimatePresence mode="wait". Usa só os tokens VN One. */
 export function PageFallback() {
   return (
-    <div className="min-h-screen bg-brand-white flex items-center justify-center">
-      <div className="w-10 h-10 border-2 border-zinc-200 dark:border-zinc-700 border-t-zinc-500 dark:border-t-zinc-400 rounded-full animate-spin" />
+    <div role="status" aria-label="Carregando página" className="flex min-h-dvh items-center justify-center bg-vn-cream">
+      <div className="size-10 animate-spin rounded-full border-2 border-vn-gray-light border-t-vn-gray-mid" />
     </div>
   );
 }

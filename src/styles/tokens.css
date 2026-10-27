@@ -297,6 +297,58 @@
   }
 }
 
+/*
+ * WhatsApp button pulse: one ring that grows and fades once after the button mounts (no infinite ping).
+ * The ring is its own layer, so only transform and opacity animate. It is invisible before and after the
+ * pulse, and it is not drawn at all under reduced motion.
+ */
+@keyframes vn-pulse-once {
+  from { transform: scale(1); opacity: .9; }
+  to { transform: scale(1.9); opacity: 0; }
+}
+
+.vn-pulse-once {
+  opacity: 0;
+  animation: vn-pulse-once 1.4s var(--ease-out) 1.2s 1 forwards;
+}
+
+/*
+ * Mobile menu dialog. The panel slides in from the right and the overlay fades, driven by the data-state
+ * Radix puts on both. Radix waits for the exit animation to end before it unmounts them, and unmounts at
+ * once when the animation is off (reduced motion), so nothing here needs JavaScript.
+ */
+@keyframes vn-menu-slide-in {
+  from { transform: translateX(100%); }
+}
+
+@keyframes vn-menu-slide-out {
+  to { transform: translateX(100%); }
+}
+
+@keyframes vn-menu-fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes vn-menu-fade-out {
+  to { opacity: 0; }
+}
+
+.vn-menu-panel[data-state="open"] {
+  animation: vn-menu-slide-in 320ms var(--ease-out);
+}
+
+.vn-menu-panel[data-state="closed"] {
+  animation: vn-menu-slide-out 240ms var(--ease-out) forwards;
+}
+
+.vn-menu-overlay[data-state="open"] {
+  animation: vn-menu-fade-in 240ms var(--ease-out);
+}
+
+.vn-menu-overlay[data-state="closed"] {
+  animation: vn-menu-fade-out 200ms var(--ease-out) forwards;
+}
+
 /* Reduced motion: the cursor stays visible and still, the scan line is not drawn, the marquee and the accordion do not move. */
 @media (prefers-reduced-motion: reduce) {
   .vn-cursor {
@@ -324,6 +376,15 @@
       transition: none;
     }
   }
+
+  .vn-pulse-once {
+    display: none;
+  }
+
+  .vn-menu-panel,
+  .vn-menu-overlay {
+    animation: none !important;
+  }
 }
 
 .a11y-no-animations .vn-cursor {
@@ -344,4 +405,13 @@
 
 .a11y-no-animations .vn-accordion-icon {
   transition: none;
+}
+
+.a11y-no-animations .vn-pulse-once {
+  display: none;
+}
+
+.a11y-no-animations .vn-menu-panel,
+.a11y-no-animations .vn-menu-overlay {
+  animation: none !important;
 }

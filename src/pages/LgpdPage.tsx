@@ -1,14 +1,11 @@
-import { Suspense, lazy, useRef } from 'react';
+import { useRef } from 'react';
 import { motion, useInView } from 'motion/react';
 import { Link } from 'react-router-dom';
 import {
   ShieldCheck, Eye, PencilLine, Trash2, Ban, Download, ScrollText,
   Scale, Lock, Clock, Mail, ArrowUpRight,
 } from 'lucide-react';
-import Header from '../components/Header';
 import SEO from '../components/SEO';
-
-const Footer = lazy(() => import('../components/Footer'));
 
 const EFFECTIVE_DATE = '8 de julho de 2026';
 const DPO_EMAIL = 'contato@vnone.com.br';
@@ -57,8 +54,7 @@ export default function LgpdPage() {
         description="Como o site vnone.com.br trata seus dados pessoais em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018)."
         path="/lgpd"
       />
-      <Header />
-      <main id="main-content" className="bg-brand-white min-h-screen">
+      <div className="bg-brand-white min-h-screen">
         {/* Hero */}
         <section className="pt-32 md:pt-44 pb-16 px-6 md:px-12 relative overflow-hidden">
           <div className="absolute top-20 -right-32 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
@@ -239,11 +235,7 @@ export default function LgpdPage() {
             </p>
           </div>
         </section>
-      </main>
-
-      <Suspense fallback={null}>
-        <Footer />
-      </Suspense>
+      </div>
     </>
   );
 }

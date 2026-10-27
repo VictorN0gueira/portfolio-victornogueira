@@ -1,13 +1,9 @@
-import { Suspense, lazy, useRef } from 'react';
+import { useRef } from 'react';
 import { motion, useInView } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Check } from 'lucide-react';
-import Header from '../components/Header';
 import SEO from '../components/SEO';
 import { services, combos } from '../data/services';
-
-const Footer = lazy(() => import('../components/Footer'));
-const Chatbot = lazy(() => import('../components/Chatbot'));
 
 const gridContainer = {
   hidden: {},
@@ -31,8 +27,7 @@ export default function ServicesPage() {
         description="Automação de processos, agentes de IA e desenvolvimento web. Escopo claro, prazo definido e preço transparente."
         path="/servicos"
       />
-      <Header />
-      <main id="main-content" className="pt-32 md:pt-40 bg-brand-white">
+      <div className="pt-32 md:pt-40 bg-brand-white">
         {/* Cabeçalho da página */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -155,12 +150,7 @@ export default function ServicesPage() {
             </Link>
           </div>
         </motion.section>
-      </main>
-
-      <Suspense fallback={null}>
-        <Footer />
-        <Chatbot />
-      </Suspense>
+      </div>
     </>
   );
 }

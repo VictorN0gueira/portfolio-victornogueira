@@ -9,6 +9,9 @@ export function whatsappUrl(text: string): string {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
 }
 
+/** First message of a chat opened from the floating button and the footer. */
+export const WHATSAPP_GREETING = 'Olá! Vim pelo site da VN One e quero conversar sobre um projeto.';
+
 export const WHATSAPP_FALLBACK_URL = whatsappUrl('Olá! Tentei usar o formulário do site da VN One.');
 
 export interface SocialLink {

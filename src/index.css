@@ -24,6 +24,13 @@
     scroll-padding-top: 96px;
   }
 
+  /* The floating header sits 8px higher and is thinner on a phone held sideways. */
+  @media (max-height: 480px) {
+    html {
+      scroll-padding-top: 72px;
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     html {
       scroll-behavior: smooth;

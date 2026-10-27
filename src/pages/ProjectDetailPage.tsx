@@ -1,15 +1,10 @@
-import { Suspense, lazy } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowUpRight } from 'lucide-react';
-import Header from '../components/Header';
 import SEO from '../components/SEO';
 import NotFound from '../components/NotFound';
 import ProjectDetail from '../components/ProjectDetail';
 import { getProjectBySlug } from '../data/projects';
-
-const Footer = lazy(() => import('../components/Footer'));
-const Chatbot = lazy(() => import('../components/Chatbot'));
 
 export default function ProjectDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -32,8 +27,7 @@ export default function ProjectDetailPage() {
         path={`/projetos/${project.slug}`}
         image={project.image}
       />
-      <Header />
-      <main id="main-content" className="pt-28 md:pt-36 pb-24 px-4 md:px-12 bg-brand-white min-h-screen">
+      <div className="pt-28 md:pt-36 pb-24 px-4 md:px-12 bg-brand-white min-h-screen">
         <div className="max-w-6xl mx-auto">
           {/* Breadcrumb */}
           <motion.div
@@ -73,12 +67,7 @@ export default function ProjectDetailPage() {
             </Link>
           </motion.div>
         </div>
-      </main>
-
-      <Suspense fallback={null}>
-        <Footer />
-        <Chatbot />
-      </Suspense>
+      </div>
     </>
   );
 }
