@@ -24,6 +24,12 @@ const DASH_PATTERN = new RegExp(`[${String.fromCharCode(0x2013)}${String.fromCha
 // Space, slash, space: the separator the copy rules forbid, built from char codes so no file holds it literally.
 const SLASH_SEPARATOR = String.fromCharCode(0x20, 0x2f, 0x20);
 
+/** The aria-hidden copies that sit next to the live tabpanel in its grid cell, found by structure and not by their class. */
+function getSizers(): HTMLElement[] {
+  const cell = screen.getByRole('tabpanel').parentElement as HTMLElement;
+  return (Array.from(cell.children) as HTMLElement[]).filter((child) => child.getAttribute('aria-hidden') === 'true');
+}
+
 // The setup file does not restore spies, so a spy left by a failing test would leak into the next ones.
 afterEach(() => {
   vi.restoreAllMocks();
@@ -203,9 +209,9 @@ describe('UseCaseTabs semantics', () => {
   });
 
   it('keeps an invisible copy of each of the four contents in the cell of the panel, hidden from assistive tech and the pointer', () => {
-    const { container } = renderTabs();
+    renderTabs();
 
-    const sizers = Array.from(container.querySelectorAll('.invisible'));
+    const sizers = getSizers();
 
     expect(sizers).toHaveLength(useCases.length);
     sizers.forEach((sizer, index) => {
@@ -216,9 +222,9 @@ describe('UseCaseTabs semantics', () => {
   });
 
   it('draws the sizers with plain divs, with no reveal group or item of their own, and the same layout classes as the live content', () => {
-    const { container } = renderTabs();
+    renderTabs();
 
-    container.querySelectorAll('.invisible').forEach((sizer) => {
+    getSizers().forEach((sizer) => {
       expect(sizer.querySelector('[data-reveal-group], [data-reveal-item]')).toBeNull();
       expect((sizer.firstElementChild as HTMLElement).className).toBe(getPanelGroup().className);
     });

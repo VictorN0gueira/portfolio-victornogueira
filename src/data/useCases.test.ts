@@ -5,11 +5,11 @@ import { useCases } from './useCases';
 const EXPECTED_IDS = ['atendimento', 'comercial', 'financeiro', 'operacoes'];
 const ARROW = String.fromCharCode(0x2192);
 
-/** A tab label as an id: lowercase, with the accents taken off. */
+/** A tab label as an id: lowercase, with the accents (the combining marks of its decomposed form) taken off. */
 function toId(label: string): string {
   return label
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/\p{M}/gu, '')
     .toLowerCase();
 }
 
