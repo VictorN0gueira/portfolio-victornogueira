@@ -1,4 +1,5 @@
-import { useId, useState } from 'react';
+import { useInView } from 'motion/react';
+import { useId, useRef, useState } from 'react';
 import { Container } from '../../components/ui/Container';
 import { Heading } from '../../components/ui/Heading';
 import { Kicker } from '../../components/ui/Kicker';
@@ -8,11 +9,13 @@ import { homeCopy } from '../../data/homeCopy';
 import { useCases } from '../../data/useCases';
 import { useCycle } from '../../hooks/useCycle';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
-import { PauseToggle, tabIdFor, UseCasePanel, UseCaseTabList } from './UseCaseParts';
+import { tabIdFor, UseCasePanel, UseCasePauseToggle, UseCaseTabList } from './UseCaseParts';
 import { useCycleHold, useTabListControls } from './useTabsBehavior';
 
 /** How long each tab stays selected while the rotation runs. */
 const ROTATE_MS = 4200;
+/** The share of the tabs and the panel that must be on the screen for the rotation to run. */
+const IN_VIEW_AMOUNT = 0.3;
 
 interface UseCaseHeaderProps {
   headingId: string;
@@ -43,16 +46,20 @@ function UseCaseHeader({ headingId }: UseCaseHeaderProps) {
  * The tabs and the panel. The selection rotates every 4200ms until the visitor picks a tab, with a progress bar
  * inside the selected tab. The rotation never moves the focus and is never announced (there is no live region):
  * only the selection and the panel change.
- * It holds while the pointer is over this area or the focus is inside it, except on the pause toggle. The toggle is
- * the visitor's own pause, kept apart from that hold: it only exists while motion is allowed and the rotation is
- * still automatic. Without motion nothing rotates and there is no toggle.
+ * It runs only while this area is on the screen (30% of it, not just once): out of view the timer and the bar stop, and
+ * they start again from zero when it comes back. It holds while the pointer is over this area or the focus is inside
+ * it, except on the pause toggle. The toggle is the visitor's own pause, kept apart from both: it only exists while
+ * motion is allowed and the rotation is still automatic (also while the area is out of view), and the pause survives
+ * leaving and coming back. Without motion nothing rotates and there is no toggle.
  */
 function UseCaseWidget() {
   const idBase = useId();
   const isMotionAllowed = useMotionAllowed();
+  const widgetRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(widgetRef, { amount: IN_VIEW_AMOUNT });
   const [isUserPaused, setIsUserPaused] = useState(false);
   const { index, select, pause, resume, isAuto, isRunning } = useCycle(useCases.length, ROTATE_MS, {
-    enabled: isMotionAllowed && !isUserPaused,
+    enabled: isMotionAllowed && !isUserPaused && isInView,
   });
   const holdHandlers = useCycleHold(pause, resume);
   const controls = useTabListControls(index, useCases.length, select);
@@ -60,7 +67,7 @@ function UseCaseWidget() {
   const panelId = `${idBase}-panel`;
 
   return (
-    <div className="mt-10 md:mt-14" {...holdHandlers}>
+    <div ref={widgetRef} data-use-case-widget="" className="mt-10 md:mt-14" {...holdHandlers}>
       <div className="flex items-center gap-3">
         <UseCaseTabList
           idBase={idBase}
@@ -73,7 +80,7 @@ function UseCaseWidget() {
           controls={controls}
         />
         {isMotionAllowed && isAuto ? (
-          <PauseToggle isPaused={isUserPaused} onToggle={() => setIsUserPaused((current) => !current)} />
+          <UseCasePauseToggle isPaused={isUserPaused} onToggle={() => setIsUserPaused((current) => !current)} />
         ) : null}
       </div>
       <UseCasePanel useCase={useCase} panelId={panelId} tabId={tabIdFor(idBase, useCase.id)} />

@@ -1,6 +1,7 @@
-import { Check, Pause, Play, Server } from 'lucide-react';
+import { Check, Server } from 'lucide-react';
 import { useRef, type CSSProperties } from 'react';
 import { BrandIcon } from '../../components/ui/BrandIcon';
+import { PauseToggle } from '../../components/ui/PauseToggle';
 import type { BrandIconId } from '../../data/brandIcons';
 import { flowPanel, flowSources, flowSteps, type FlowRow, type FlowSource } from '../../data/heroFlows';
 import { homeCopy } from '../../data/homeCopy';
@@ -235,26 +236,19 @@ interface PauseButtonProps {
 }
 
 /**
- * Pauses and resumes everything that moves in the panel (WCAG 2.2.2). It lives in the dark title bar: a small
- * icon button to the eye (28px) inside a 44px hit area, with a white focus ring that shows on that bar.
- * It is a toggle: its name stays "Pausar animação" and aria-pressed carries the state. Only the icon changes
- * (pause, then play), and it is hidden from assistive tech.
+ * Pauses and resumes everything that moves in the panel (WCAG 2.2.2). It lives in the dark title bar: the shared
+ * PauseToggle in its dark tone (a small icon button to the eye inside a 44px hit area, with a white focus ring that
+ * shows on that bar), pulled into the bar's padding. Its name stays "Pausar animação" and aria-pressed carries the state.
  */
 export function PauseButton({ isPaused, onToggle }: PauseButtonProps) {
-  const Icon = isPaused ? Play : Pause;
-
   return (
-    <button
-      type="button"
-      aria-pressed={isPaused}
-      aria-label={homeCopy.hero.panel.pause}
-      onClick={onToggle}
-      className="group -my-2 -mr-2 grid size-11 shrink-0 cursor-pointer place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-vn-white"
-    >
-      <span className="grid size-7 place-items-center rounded-full border border-vn-gray-mid text-vn-gray-light group-hover:bg-vn-gray-dark">
-        <Icon aria-hidden="true" className="size-3.5" />
-      </span>
-    </button>
+    <PauseToggle
+      isPaused={isPaused}
+      label={homeCopy.hero.panel.pause}
+      onToggle={onToggle}
+      tone="dark"
+      className="-my-2 -mr-2"
+    />
   );
 }
 

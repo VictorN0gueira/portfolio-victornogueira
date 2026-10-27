@@ -9,6 +9,7 @@ import {
   getTab,
   getTablist,
   renderTabs,
+  stubFocusVisible,
 } from './UseCaseTabs.helpers';
 
 // The setup file does not restore spies, so a spy left by a failing test would leak into the next ones.
@@ -47,15 +48,14 @@ describe('UseCaseTabs progress bar', () => {
     expect(getBars()).toHaveLength(1);
   });
 
-  it('is hidden from assistive tech and animates only the transform, over the same 4200ms as the rotation', () => {
+  it('is hidden from assistive tech, keeps the name of the tab and takes the rotation interval as its duration', () => {
     renderTabs();
     const bar = getBar(getTab('Atendimento')) as HTMLElement;
     const fill = bar.querySelector('.vn-tab-progress') as HTMLElement;
 
     expect(bar).toHaveAttribute('aria-hidden', 'true');
     expect(fill).not.toBeNull();
-    expect(fill.style.getPropertyValue('--vn-tab-ms')).toBe('4200ms');
-    expect(fill.getAttribute('style') ?? '').not.toMatch(/width|height|left|top/);
+    expect(fill.style.getPropertyValue('--vn-tab-duration')).toBe(`${ROTATE_MS}ms`);
     expect(getTab('Atendimento')).toHaveAccessibleName('Atendimento');
   });
 
@@ -81,6 +81,7 @@ describe('UseCaseTabs progress bar', () => {
   });
 
   it('is gone while the pointer or the focus holds the rotation, and starts over when it lets go', () => {
+    stubFocusVisible(true);
     renderTabs();
 
     fireEvent.pointerEnter(getTablist());

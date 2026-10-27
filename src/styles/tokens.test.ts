@@ -543,3 +543,40 @@ describe('tokens.css cable pulse', () => {
     expect(pulse).not.toMatch(/stroke:/)
   })
 })
+
+describe('tokens.css tab progress', () => {
+  it('grows the fill with transform alone, from scaleX(0) to scaleX(1), and animates nothing else', () => {
+    const keyframes = blockBody(css, '@keyframes vn-tab-progress')
+
+    expect(keyframes.replace(/\s+/g, ' ').trim()).toBe('from { transform: scaleX(0); } to { transform: scaleX(1); }')
+    expect(keyframes).not.toMatch(/(width|height|top|left|margin|opacity|filter):/)
+  })
+
+  it('grows from the left edge, over the duration the component passes, linear, and stays full at the end', () => {
+    const fill = blockBody(css, '.vn-tab-progress')
+
+    expect(fill).toContain('transform-origin: left center')
+    expect(fill).toContain('animation: vn-tab-progress var(--vn-tab-duration) linear forwards')
+  })
+
+  it('has no literal duration of its own: the variable has no fallback, so the number lives in the component alone', () => {
+    const fill = blockBody(css, '.vn-tab-progress')
+
+    expect(fill).not.toMatch(/var\(--vn-tab-duration\s*,/)
+    expect(fill).not.toMatch(/\d+m?s\b/)
+  })
+
+  it('never sets the play state on the fill itself: the component unmounts the bar instead of pausing it', () => {
+    expect(blockBody(css, '.vn-tab-progress')).not.toContain('animation-play-state')
+  })
+
+  it('is not drawn under prefers-reduced-motion', () => {
+    const reduced = blockBody(css, REDUCED_MOTION_GATE)
+
+    expect(blockBody(reduced, '.vn-tab-progress')).toContain('display: none')
+  })
+
+  it('is not drawn under .a11y-no-animations', () => {
+    expect(blockBody(css, '.a11y-no-animations .vn-tab-progress')).toContain('display: none')
+  })
+})

@@ -1,6 +1,7 @@
 import { act, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import { homeCopy } from '../../data/homeCopy';
+import { triggerIntersection } from '../../test/intersection';
 import { renderWithProviders } from '../../test/render';
 import { UseCaseTabs } from './UseCaseTabs';
 
@@ -35,6 +36,35 @@ export function advance(ms: number): void {
   });
 }
 
-export function renderTabs() {
-  return renderWithProviders(<UseCaseTabs />);
+export function getWidget(): HTMLElement {
+  return document.querySelector('[data-use-case-widget]') as HTMLElement;
+}
+
+/** Reports the tabs and the panel as entering the viewport, or (with false) leaving it, like the browser does. */
+export function setInView(isInView: boolean): void {
+  triggerIntersection(getWidget(), isInView);
+}
+
+interface RenderTabsOptions {
+  /** The rotation only runs while the area is on screen, so by default it is reported as in view at once. */
+  isInView?: boolean;
+}
+
+export function renderTabs({ isInView = true }: RenderTabsOptions = {}) {
+  const result = renderWithProviders(<UseCaseTabs />);
+  if (isInView) setInView(true);
+  return result;
+}
+
+const originalMatches = Element.prototype.matches;
+
+/**
+ * Settles :focus-visible for the test. jsdom guesses it from the last input events (keyboard or pointer), which makes a
+ * test depend on the events before it. True is a keyboard focus, false is a click or a tap that focused the element.
+ * The spy is undone by vi.restoreAllMocks.
+ */
+export function stubFocusVisible(isFocusVisible: boolean): void {
+  vi.spyOn(Element.prototype, 'matches').mockImplementation(function (this: Element, selector: string) {
+    return selector === ':focus-visible' ? isFocusVisible : originalMatches.call(this, selector);
+  });
 }

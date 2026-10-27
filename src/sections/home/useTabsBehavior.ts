@@ -18,6 +18,20 @@ function isExempt(target: EventTarget): boolean {
   return target instanceof Element && target.closest(HOLD_EXEMPT_SELECTOR) !== null;
 }
 
+/**
+ * True when the focus on the target is the kind that shows a focus ring: the keyboard. A click or a tap that focuses the
+ * tabindex 0 panel is not, so it must not hold the cycle (nothing would end that hold but a blur). Where the selector
+ * is not supported (or throws), the focus counts, which is the safe side: the cycle holds.
+ */
+export function matchesFocusVisible(target: EventTarget): boolean {
+  if (!(target instanceof Element)) return true;
+  try {
+    return target.matches(':focus-visible');
+  } catch {
+    return true;
+  }
+}
+
 interface HoldHandlers {
   onPointerOver: (event: PointerEvent<HTMLElement>) => void;
   onPointerLeave: () => void;
@@ -30,7 +44,8 @@ interface HoldHandlers {
  * The two holds are kept apart and the cycle resumes only when both are off, so leaving with the pointer
  * while the focus is still inside keeps it held.
  * The pause toggle sits inside the area but is exempt: the pointer or the focus on it never holds, and moving
- * from the content onto it lets go at once. The pointer is read from pointerover (it bubbles, so every move
+ * from the content onto it lets go at once. Only a focus that shows a ring (the keyboard) holds; a click that
+ * focuses the panel does not. The pointer is read from pointerover (it bubbles, so every move
  * between two children re-reads it) and the focus from focus, which also bubbles. A blur that moves the focus
  * to another element inside the area does not let go, so there is no resume followed by a pause.
  */
@@ -50,7 +65,7 @@ export function useCycleHold(pause: () => void, resume: () => void): HoldHandler
   return {
     onPointerOver: (event) => setHold('pointer', !isExempt(event.target)),
     onPointerLeave: () => setHold('pointer', false),
-    onFocus: (event) => setHold('focus', !isExempt(event.target)),
+    onFocus: (event) => setHold('focus', !isExempt(event.target) && matchesFocusVisible(event.target)),
     onBlur: (event) => {
       if (!event.currentTarget.contains(event.relatedTarget)) setHold('focus', false);
     },

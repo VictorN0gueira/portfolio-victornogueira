@@ -1,5 +1,4 @@
 import { act, fireEvent, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import {
@@ -12,6 +11,7 @@ import {
   getTab,
   getTablist,
   renderTabs,
+  stubFocusVisible,
 } from './UseCaseTabs.helpers';
 
 // The setup file does not restore spies, so a spy left by a failing test would leak into the next ones.
@@ -130,13 +130,13 @@ describe('UseCaseTabs pause toggle', () => {
     vi.useRealTimers();
   });
 
-  it('is a button named "Pausar troca automática", not pressed, with a 44px hit area and a visible focus ring', () => {
+  it('is the shared toggle in its light tone, named "Pausar troca automática", not pressed and exempt from the hold', () => {
     renderTabs();
 
     expect(getPauseToggle()).toHaveAccessibleName('Pausar troca automática');
     expect(getPauseToggle()).toHaveAttribute('aria-pressed', 'false');
-    expect(getPauseToggle()).toHaveAttribute('type', 'button');
-    expect(getPauseToggle()).toHaveClass('size-11', 'focus-visible:outline-2', 'focus-visible:outline-vn-ink');
+    expect(getPauseToggle()).toHaveAttribute('data-hold-exempt');
+    expect(getPauseToggle()).toHaveClass('focus-visible:outline-vn-ink');
   });
 
   it('keeps one constant name and carries the state in aria-pressed alone', () => {
@@ -153,21 +153,6 @@ describe('UseCaseTabs pause toggle', () => {
 
     expect(getPauseToggle()).toHaveAccessibleName('Pausar troca automática');
     expect(getPauseToggle()).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('swaps the icon between pause and play, and the icon is hidden from assistive tech with no text next to it', () => {
-    renderTabs();
-    const icon = () => getPauseToggle().querySelector('svg') as SVGElement;
-
-    expect(icon()).toHaveClass('lucide-pause');
-    expect(icon()).toHaveAttribute('aria-hidden', 'true');
-    expect(getPauseToggle().textContent).toBe('');
-
-    fireEvent.click(getPauseToggle());
-
-    expect(icon()).toHaveClass('lucide-play');
-    expect(icon()).not.toHaveClass('lucide-pause');
-    expect(icon()).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('stops the rotation when it is pressed and goes on from there when it is pressed again', () => {
@@ -198,20 +183,6 @@ describe('UseCaseTabs pause toggle', () => {
     expect(getPauseToggle()).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('is operated with the Space and Enter keys', async () => {
-    // user-event under Testing Library waits on a real timeout, which fake timers would never fire.
-    vi.useRealTimers();
-    const user = userEvent.setup();
-    renderTabs();
-    act(() => getPauseToggle().focus());
-
-    await user.keyboard(' ');
-    expect(getPauseToggle()).toHaveAttribute('aria-pressed', 'true');
-
-    await user.keyboard('{Enter}');
-    expect(getPauseToggle()).toHaveAttribute('aria-pressed', 'false');
-  });
-
   it('is not rendered once the visitor picked a tab, because there is nothing left to pause', () => {
     renderTabs();
 
@@ -239,6 +210,7 @@ describe('UseCaseTabs pause toggle', () => {
 describe('UseCaseTabs hold by pointer and focus', () => {
   beforeEach(() => {
     stubMatchMedia();
+    stubFocusVisible(true);
     vi.useFakeTimers();
   });
 
@@ -359,5 +331,41 @@ describe('UseCaseTabs hold by pointer and focus', () => {
     advance(ROTATE_MS * 3);
 
     expect(getSelectedName()).toBe('Atendimento');
+  });
+
+  it('holds for a keyboard focus on the panel, which shows a focus ring', () => {
+    renderTabs();
+
+    act(() => screen.getByRole('tabpanel').focus());
+    advance(ROTATE_MS * 3);
+
+    expect(getSelectedName()).toBe('Atendimento');
+  });
+
+  it('does not hold for a focus that a click or a tap gave to the panel, so nothing stays held after the pointer leaves', () => {
+    renderTabs();
+    const panel = screen.getByRole('tabpanel');
+
+    fireEvent.pointerEnter(panel);
+    stubFocusVisible(false);
+    act(() => panel.focus());
+    fireEvent.pointerLeave(panel);
+    advance(ROTATE_MS);
+
+    expect(panel).toHaveFocus();
+    expect(getSelectedName()).toBe('Comercial');
+  });
+
+  it('lets go of a keyboard hold when a click moves the focus to the panel', () => {
+    renderTabs();
+    act(() => getTab('Atendimento').focus());
+    advance(ROTATE_MS * 2);
+    expect(getSelectedName()).toBe('Atendimento');
+
+    stubFocusVisible(false);
+    act(() => screen.getByRole('tabpanel').focus());
+    advance(ROTATE_MS);
+
+    expect(getSelectedName()).toBe('Comercial');
   });
 });

@@ -229,34 +229,86 @@ describe('useCycle', () => {
     }
   });
 
-  it('reports isRunning only while the interval really ticks', () => {
-    const { result, rerender } = renderHook(({ enabled }) => useCycle(4, INTERVAL_MS, { enabled }), {
-      initialProps: { enabled: true },
+  describe('isRunning', () => {
+    it('is true from the start, and the index moves with every interval while it is', () => {
+      const { result } = renderHook(() => useCycle(4, INTERVAL_MS));
+      expect(result.current.isRunning).toBe(true);
+
+      act(() => vi.advanceTimersByTime(INTERVAL_MS));
+
+      expect(result.current.index).toBe(1);
+      expect(result.current.isRunning).toBe(true);
     });
-    expect(result.current.isRunning).toBe(true);
 
-    act(() => result.current.pause());
-    expect(result.current.isRunning).toBe(false);
-    act(() => result.current.resume());
-    expect(result.current.isRunning).toBe(true);
+    it('is false while it is disabled, and the index stays put', () => {
+      const { result } = renderHook(() => useCycle(4, INTERVAL_MS, { enabled: false }));
 
-    rerender({ enabled: false });
-    expect(result.current.isRunning).toBe(false);
-    rerender({ enabled: true });
+      expect(result.current.isRunning).toBe(false);
+      act(() => vi.advanceTimersByTime(3 * INTERVAL_MS));
 
-    act(() => setVisibility('hidden'));
-    expect(result.current.isRunning).toBe(false);
-    act(() => setVisibility('visible'));
-    expect(result.current.isRunning).toBe(true);
+      expect(result.current.index).toBe(0);
+    });
 
-    act(() => result.current.select(1));
-    expect(result.current.isRunning).toBe(false);
-  });
+    it('is true again when it is enabled, and the index moves', () => {
+      const { result, rerender } = renderHook(({ enabled }) => useCycle(4, INTERVAL_MS, { enabled }), {
+        initialProps: { enabled: false },
+      });
 
-  it('is never running with a single item', () => {
-    const { result } = renderHook(() => useCycle(1, INTERVAL_MS));
+      rerender({ enabled: true });
 
-    expect(result.current.isRunning).toBe(false);
+      expect(result.current.isRunning).toBe(true);
+      act(() => vi.advanceTimersByTime(INTERVAL_MS));
+      expect(result.current.index).toBe(1);
+    });
+
+    it('is false while it is paused, and true again after resume, with the index moving only then', () => {
+      const { result } = renderHook(() => useCycle(4, INTERVAL_MS));
+
+      act(() => result.current.pause());
+      expect(result.current.isRunning).toBe(false);
+      act(() => vi.advanceTimersByTime(3 * INTERVAL_MS));
+      expect(result.current.index).toBe(0);
+
+      act(() => result.current.resume());
+      expect(result.current.isRunning).toBe(true);
+      act(() => vi.advanceTimersByTime(INTERVAL_MS));
+      expect(result.current.index).toBe(1);
+    });
+
+    it('is false for good once an index was selected, and the index stays on it', () => {
+      const { result } = renderHook(() => useCycle(4, INTERVAL_MS));
+
+      act(() => result.current.select(2));
+
+      expect(result.current.isRunning).toBe(false);
+      act(() => vi.advanceTimersByTime(3 * INTERVAL_MS));
+      expect(result.current.index).toBe(2);
+      act(() => {
+        result.current.pause();
+        result.current.resume();
+      });
+      expect(result.current.isRunning).toBe(false);
+    });
+
+    it('is false while the document is hidden, and true again when it is visible, with the index moving only then', () => {
+      const { result } = renderHook(() => useCycle(4, INTERVAL_MS));
+
+      act(() => setVisibility('hidden'));
+      expect(result.current.isRunning).toBe(false);
+      act(() => vi.advanceTimersByTime(3 * INTERVAL_MS));
+      expect(result.current.index).toBe(0);
+
+      act(() => setVisibility('visible'));
+      expect(result.current.isRunning).toBe(true);
+      act(() => vi.advanceTimersByTime(INTERVAL_MS));
+      expect(result.current.index).toBe(1);
+    });
+
+    it.each([1, 0])('is false when there are %i items, since there is nothing to step through', (length) => {
+      const { result } = renderHook(() => useCycle(length, INTERVAL_MS));
+
+      expect(result.current.isRunning).toBe(false);
+    });
   });
 
   it('restarts the interval when the interval length changes', () => {

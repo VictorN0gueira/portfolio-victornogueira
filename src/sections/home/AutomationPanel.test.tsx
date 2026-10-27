@@ -1,5 +1,4 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flowPanel, flowSources, flowSteps, heroFlows } from '../../data/heroFlows';
 import { homeCopy } from '../../data/homeCopy';
@@ -303,6 +302,41 @@ describe('AutomationPanel pause control', () => {
     expect(getPauseButton().firstElementChild).toHaveClass('size-7', 'rounded-full');
   });
 
+  // The button was moved onto the shared PauseToggle (dark tone) with no change of look: these are the exact classes it had.
+  it('keeps exactly the classes it had before it became the dark tone of the shared toggle', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+    const classesOf = (element: Element | null) => Array.from(element?.classList ?? []).sort();
+
+    expect(classesOf(getPauseButton())).toEqual(
+      [
+        'group',
+        '-my-2',
+        '-mr-2',
+        'grid',
+        'size-11',
+        'shrink-0',
+        'cursor-pointer',
+        'place-items-center',
+        'rounded-full',
+        'focus-visible:outline-2',
+        'focus-visible:outline-vn-white',
+      ].sort(),
+    );
+    expect(classesOf(getPauseButton().firstElementChild)).toEqual(
+      [
+        'grid',
+        'size-7',
+        'place-items-center',
+        'rounded-full',
+        'border',
+        'border-vn-gray-mid',
+        'text-vn-gray-light',
+        'group-hover:bg-vn-gray-dark',
+      ].sort(),
+    );
+    expect(getPauseButton().querySelector('svg')).toHaveClass('size-3.5');
+  });
+
   it('stops the rows and marks the window as paused when it is pressed, and goes on when it is pressed again', () => {
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
     advance(1);
@@ -325,20 +359,6 @@ describe('AutomationPanel pause control', () => {
     expect(getDoneRows()).toHaveLength(2);
   });
 
-  it('is operated with the Space and Enter keys', async () => {
-    // user-event under Testing Library waits on a real timeout, which fake timers would never fire.
-    vi.useRealTimers();
-    const user = userEvent.setup();
-    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
-    act(() => getPauseButton().focus());
-
-    await user.keyboard(' ');
-    expect(getPauseButton()).toHaveAttribute('aria-pressed', 'true');
-
-    await user.keyboard('{Enter}');
-    expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
-  });
-
   it('keeps one constant name, "Pausar animação", and carries the state in aria-pressed alone', () => {
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
@@ -351,24 +371,6 @@ describe('AutomationPanel pause control', () => {
     expect(screen.getAllByRole('button', { name: /animação$/ })).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Retomar animação' })).not.toBeInTheDocument();
     expect(getPauseButton().getAttribute('aria-label')).toBe(panelCopy.pause);
-  });
-
-  it('changes the icon, which screen readers skip, from pause to play while it is paused', () => {
-    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
-    const icon = () => getPauseButton().querySelector('svg') as SVGElement;
-
-    expect(icon()).toHaveClass('lucide-pause');
-    expect(icon()).toHaveAttribute('aria-hidden', 'true');
-
-    fireEvent.click(getPauseButton());
-
-    expect(icon()).toHaveClass('lucide-play');
-    expect(icon()).not.toHaveClass('lucide-pause');
-    expect(icon()).toHaveAttribute('aria-hidden', 'true');
-
-    fireEvent.click(getPauseButton());
-
-    expect(icon()).toHaveClass('lucide-pause');
   });
 
   it('keeps a pause of the visitor when the pointer leaves and when the focus leaves', () => {

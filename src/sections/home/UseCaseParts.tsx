@@ -1,6 +1,6 @@
-import { Pause, Play } from 'lucide-react';
-import { useId, type CSSProperties } from 'react';
+import { memo, useId, type ComponentProps, type CSSProperties } from 'react';
 import { Heading } from '../../components/ui/Heading';
+import { PauseToggle } from '../../components/ui/PauseToggle';
 import { RevealGroup, RevealItem } from '../../components/ui/Reveal';
 import { homeCopy } from '../../data/homeCopy';
 import { useCases, type UseCase } from '../../data/useCases';
@@ -28,7 +28,7 @@ function TabProgress({ durationMs }: TabProgressProps) {
     >
       <span
         className="vn-tab-progress block size-full bg-vn-white"
-        style={{ '--vn-tab-ms': `${durationMs}ms` } as CSSProperties}
+        style={{ '--vn-tab-duration': `${durationMs}ms` } as CSSProperties}
       />
     </span>
   );
@@ -50,7 +50,7 @@ interface UseCaseTabProps {
  * One tab of the ARIA tabs pattern: the selected one is an ink pill and the only tab stop (roving tabindex),
  * the others have a light border. At least 44px tall. The colors switch at once, with no transition.
  */
-export function UseCaseTab({ label, id, panelId, isSelected, isRunning, durationMs, onSelect, tabRef }: UseCaseTabProps) {
+function UseCaseTab({ label, id, panelId, isSelected, isRunning, durationMs, onSelect, tabRef }: UseCaseTabProps) {
   return (
     <button
       ref={tabRef}
@@ -83,8 +83,9 @@ export function tabIdFor(idBase: string, useCaseId: string): string {
 // Below sm the tabs scroll sideways inside the tablist with scroll snap, never the page; from sm they wrap and the
 // tablist takes only the width of its tabs, so the pause toggle sits right after them.
 // The padding leaves room for the focus ring (the scroll box would clip it) and the negative margin gives it back.
+// overscroll-x-contain keeps a swipe at the end of the row from chaining to the page or the back swipe of the browser.
 const TABLIST_CLASSES =
-  'relative -m-1.5 flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto scroll-px-1.5 p-1.5 scrollbar-hide sm:flex-initial sm:snap-none sm:flex-wrap sm:overflow-visible';
+  'relative -m-1.5 flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain scroll-px-1.5 p-1.5 scrollbar-hide sm:flex-initial sm:snap-none sm:flex-wrap sm:overflow-visible';
 
 interface UseCaseTabListProps {
   idBase: string;
@@ -137,34 +138,67 @@ export function UseCaseTabList({
   );
 }
 
-interface PauseToggleProps {
+interface UseCasePauseToggleProps {
   /** The visitor's own pause. A hold by the pointer or the focus is not shown here. */
   isPaused: boolean;
   onToggle: () => void;
 }
 
 /**
- * Pauses and resumes the automatic change of tab (WCAG 2.2.2). A toggle: its name stays "Pausar troca automática"
- * and aria-pressed carries the state; only the icon changes (pause, then play), and assistive tech skips it.
- * The icon button is 36px inside a 44px hit area. It is exempt from the hold of the pointer and the focus.
+ * Pauses and resumes the automatic change of tab: the shared PauseToggle in its light tone, named "Pausar troca
+ * automática" (the name is constant, aria-pressed carries the state). It is exempt from the hold of the pointer and
+ * the focus, so pressing it is never swallowed by the hold.
  */
-export function PauseToggle({ isPaused, onToggle }: PauseToggleProps) {
-  const Icon = isPaused ? Play : Pause;
+export function UseCasePauseToggle({ isPaused, onToggle }: UseCasePauseToggleProps) {
   const exempt = { [HOLD_EXEMPT_ATTRIBUTE]: '' };
 
+  return <PauseToggle isPaused={isPaused} label={homeCopy.useCases.pause} onToggle={onToggle} tone="light" {...exempt} />;
+}
+
+type RevealItemProps = ComponentProps<typeof RevealItem>;
+
+/** The item of a ghost: the same div and classes as a RevealItem, with no motion, no observer and no media query. */
+function PlainItem({ className, children }: RevealItemProps) {
+  return <div className={className}>{children}</div>;
+}
+
+function formatStepNumber(position: number): string {
+  return String(position + 1).padStart(2, '0');
+}
+
+interface StepsCardProps {
+  steps: UseCase['steps'];
+  Item: typeof RevealItem;
+}
+
+/** The "Como funciona" card: its label and the three steps in an ordered list named by that label. */
+function StepsCard({ steps, Item }: StepsCardProps) {
+  const labelId = useId();
+
   return (
-    <button
-      type="button"
-      aria-pressed={isPaused}
-      aria-label={homeCopy.useCases.pause}
-      onClick={onToggle}
-      {...exempt}
-      className={cn('group grid size-11 shrink-0 cursor-pointer place-items-center rounded-full', FOCUS_RING)}
-    >
-      <span className="grid size-9 place-items-center rounded-full border border-vn-gray-light text-vn-ink group-hover:border-vn-ink group-hover:bg-vn-cream">
-        <Icon aria-hidden="true" className="size-4" />
-      </span>
-    </button>
+    <div className="min-w-0 rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-cream p-5 md:p-6">
+      <Item variant="fade">
+        <p id={labelId} className="font-mono text-xs uppercase tracking-[.18em]">
+          {homeCopy.useCases.stepsTitle}
+        </p>
+      </Item>
+      <ol aria-labelledby={labelId} className="mt-5 flex flex-col gap-4">
+        {steps.map((step, position) => (
+          <li key={step}>
+            <Item className="flex items-start gap-4">
+              <span
+                aria-hidden="true"
+                data-step-number=""
+                className="grid size-8 shrink-0 place-items-center rounded-full bg-vn-ink font-mono text-xs font-medium text-vn-white"
+              >
+                {formatStepNumber(position)}
+              </span>
+              <span className="min-w-0 pt-1 text-base leading-snug text-vn-ink">{step}</span>
+            </Item>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 
@@ -172,12 +206,8 @@ const COLUMNS_CLASSES = 'grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.1fr)_mi
 
 interface UseCaseContentProps {
   useCase: UseCase;
-  /** A ghost is only there to take the room of this content: it reveals nothing and has no group. */
+  /** A ghost is only there to take the room of this content: plain divs, no group, no reveal. */
   isGhost?: boolean;
-}
-
-function formatStepNumber(position: number): string {
-  return String(position + 1).padStart(2, '0');
 }
 
 /**
@@ -185,49 +215,45 @@ function formatStepNumber(position: number): string {
  * "como funciona" card on the right with the three steps in an ordered list. Below lg they stack.
  * The whole content is one RevealGroup (one observer), so the parent gives it a key per use case and the
  * reveal plays again on every change. The items fade or rise with opacity and transform only.
+ * A ghost has the same markup and classes, so it measures the same, but its items are plain divs.
  */
-export function UseCaseContent({ useCase, isGhost = false }: UseCaseContentProps) {
-  const stepsLabelId = useId();
+function UseCaseContent({ useCase, isGhost = false }: UseCaseContentProps) {
   const Group = isGhost ? 'div' : RevealGroup;
+  const Item = isGhost ? PlainItem : RevealItem;
 
   return (
     <Group className={COLUMNS_CLASSES}>
       <div className="min-w-0">
-        <RevealItem variant="fade">
+        <Item variant="fade">
           <Heading as="h3" size="m" className="text-[length:clamp(1.75rem,1.2rem+2vw,2.5rem)] leading-[.98]">
             {useCase.title}
           </Heading>
-        </RevealItem>
-        <RevealItem variant="fade" className="mt-4 max-w-xl">
+        </Item>
+        <Item variant="fade" className="mt-4 max-w-xl">
           <p className="text-pretty text-base text-vn-gray-dark md:text-lg">{useCase.body}</p>
-        </RevealItem>
+        </Item>
       </div>
-      <div className="min-w-0 rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-cream p-5 md:p-6">
-        <RevealItem variant="fade">
-          <p id={stepsLabelId} className="font-mono text-xs uppercase tracking-[.18em]">
-            {homeCopy.useCases.stepsTitle}
-          </p>
-        </RevealItem>
-        <ol aria-labelledby={stepsLabelId} className="mt-5 flex flex-col gap-4">
-          {useCase.steps.map((step, position) => (
-            <li key={step}>
-              <RevealItem className="flex items-start gap-4">
-                <span
-                  aria-hidden="true"
-                  data-step-number=""
-                  className="grid size-8 shrink-0 place-items-center rounded-full bg-vn-ink font-mono text-xs font-medium text-vn-white"
-                >
-                  {formatStepNumber(position)}
-                </span>
-                <span className="min-w-0 pt-1 text-base leading-snug text-vn-ink">{step}</span>
-              </RevealItem>
-            </li>
-          ))}
-        </ol>
-      </div>
+      <StepsCard steps={useCase.steps} Item={Item} />
     </Group>
   );
 }
+
+/**
+ * Invisible copies of the four contents, in the grid cell of the panel, so the cell is as tall as the tallest one and
+ * the page below does not jump when the tab changes. Hidden from assistive tech and the pointer (visibility hidden).
+ * It takes no props and is memoised, so it renders once and never again while the tabs rotate.
+ */
+const UseCaseSizers = memo(function UseCaseSizers() {
+  return (
+    <>
+      {useCases.map((useCase) => (
+        <div key={useCase.id} aria-hidden="true" className="invisible col-start-1 row-start-1 min-w-0">
+          <UseCaseContent useCase={useCase} isGhost />
+        </div>
+      ))}
+    </>
+  );
+});
 
 interface UseCasePanelProps {
   useCase: UseCase;
@@ -238,9 +264,7 @@ interface UseCasePanelProps {
 
 /**
  * The one tabpanel, kept mounted so every tab can point at it with aria-controls. It has a tab stop because
- * nothing inside it takes the focus. Behind it sit invisible copies of the four contents in the same grid
- * cell, so the cell is as tall as the tallest one and the page below does not jump when the tab changes.
- * The copies are hidden from assistive tech and from the pointer (visibility hidden).
+ * nothing inside it takes the focus. The sizers sit behind it in the same grid cell.
  */
 export function UseCasePanel({ useCase, panelId, tabId }: UseCasePanelProps) {
   return (
@@ -254,11 +278,7 @@ export function UseCasePanel({ useCase, panelId, tabId }: UseCasePanelProps) {
       >
         <UseCaseContent key={useCase.id} useCase={useCase} />
       </div>
-      {useCases.map((ghost) => (
-        <div key={ghost.id} aria-hidden="true" className="invisible col-start-1 row-start-1 min-w-0">
-          <UseCaseContent useCase={ghost} isGhost />
-        </div>
-      ))}
+      <UseCaseSizers />
     </div>
   );
 }

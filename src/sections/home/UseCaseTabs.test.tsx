@@ -19,6 +19,11 @@ import {
 // Any mention of the accent: the token, the hex or the rgb form jsdom writes an inline hex color back as.
 const ACCENT_PATTERN = /vn-accent|00e5a0|rgba?\(\s*0\s*,\s*229\s*,\s*160/i;
 
+// The em dash and the en dash, built from char codes so no file holds them literally.
+const DASH_PATTERN = new RegExp(`[${String.fromCharCode(0x2013)}${String.fromCharCode(0x2014)}]`);
+// Space, slash, space: the separator the copy rules forbid, built from char codes so no file holds it literally.
+const SLASH_SEPARATOR = String.fromCharCode(0x20, 0x2f, 0x20);
+
 // The setup file does not restore spies, so a spy left by a failing test would leak into the next ones.
 afterEach(() => {
   vi.restoreAllMocks();
@@ -101,14 +106,15 @@ describe('UseCaseTabs content', () => {
     });
   });
 
-  it('uses no accent anywhere, draws icons as svg and has no dash or " / " separator in the text', () => {
+  it('uses no accent anywhere, draws icons as svg and keeps dashes and slash separators out of the text', () => {
     const { container } = renderTabs();
     const everything = Array.from(container.querySelectorAll('*')).filter((element) =>
       ['class', 'style', 'fill', 'stroke', 'color'].some((name) => ACCENT_PATTERN.test(element.getAttribute(name) ?? '')),
     );
 
     expect(everything).toHaveLength(0);
-    expect(container.textContent).not.toMatch(new RegExp(`[${String.fromCharCode(0x2014)}${String.fromCharCode(0x2013)}]| / `));
+    expect(container.textContent).not.toMatch(DASH_PATTERN);
+    expect(container.textContent).not.toContain(SLASH_SEPARATOR);
     container.querySelectorAll('svg').forEach((icon) => expect(icon).toHaveAttribute('aria-hidden', 'true'));
   });
 });
@@ -185,6 +191,7 @@ describe('UseCaseTabs semantics', () => {
 
     expect(getTablist()).toHaveClass(
       'overflow-x-auto',
+      'overscroll-x-contain',
       'snap-x',
       'snap-mandatory',
       'scrollbar-hide',
@@ -193,6 +200,37 @@ describe('UseCaseTabs semantics', () => {
       'sm:overflow-visible',
       'sm:snap-none',
     );
+  });
+
+  it('keeps an invisible copy of each of the four contents in the cell of the panel, hidden from assistive tech and the pointer', () => {
+    const { container } = renderTabs();
+
+    const sizers = Array.from(container.querySelectorAll('.invisible'));
+
+    expect(sizers).toHaveLength(useCases.length);
+    sizers.forEach((sizer, index) => {
+      expect(sizer).toHaveAttribute('aria-hidden', 'true');
+      expect(sizer).toHaveClass('invisible');
+      expect(sizer).toHaveTextContent(useCases[index].title);
+    });
+  });
+
+  it('draws the sizers with plain divs, with no reveal group or item of their own, and the same layout classes as the live content', () => {
+    const { container } = renderTabs();
+
+    container.querySelectorAll('.invisible').forEach((sizer) => {
+      expect(sizer.querySelector('[data-reveal-group], [data-reveal-item]')).toBeNull();
+      expect((sizer.firstElementChild as HTMLElement).className).toBe(getPanelGroup().className);
+    });
+  });
+
+  it('has no repeated id on the page, the sizers included', () => {
+    renderTabs();
+
+    const ids = Array.from(document.querySelectorAll('[id]')).map((element) => element.id);
+
+    expect(ids.length).toBeGreaterThan(useCases.length * 2);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('stacks the text and the "como funciona" card below lg and puts them side by side from lg', () => {
