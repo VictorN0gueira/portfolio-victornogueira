@@ -19,6 +19,7 @@ const DESKTOP_1440 = { width: 1440, height: 900 };
 const ACCESSIBILITY_TAB_NAME = 'Abrir opções de acessibilidade';
 // Sub pixel rounding of text boxes.
 const LAYOUT_TOLERANCE_PX = 1;
+const FONT_SIZE_TOLERANCE_PX = 0.5;
 
 const SCROLL_DISTANCE = 400;
 const TAB_PRESSES_INSIDE_MENU = 10;
@@ -263,11 +264,7 @@ test.describe('footer', () => {
     test(`keeps the wordmark inside its box at ${viewport.width}px ${label}`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
 
-      if (isLargeFont) {
-        await page.addInitScript(() => {
-          localStorage.setItem('a11y-preferences', JSON.stringify({ fontSize: true }));
-        });
-      }
+      if (isLargeFont) await enableLargeFont(page);
       await page.setViewportSize(viewport);
       await page.goto('/sobre');
       if (isLargeFont) await expect(page.locator('html')).toHaveClass(/a11y-font-large/);
@@ -313,10 +310,11 @@ test.describe('footer', () => {
     });
   }
 
-  for (const { viewport, expectedFontSize } of [
-    { viewport: PHONE_320, expectedFontSize: '72px' },
-    { viewport: PHONE_390, expectedFontSize: '85.8px' },
-    { viewport: DESKTOP_1440, expectedFontSize: '316.8px' },
+  // The design size is clamp(4.5rem, 22vw, 20rem): the 72px floor at 320px (22vw would be 70.4px), then 22vw at 390px and 1440px.
+  for (const { viewport, expectedFontSizePx } of [
+    { viewport: PHONE_320, expectedFontSizePx: 72 },
+    { viewport: PHONE_390, expectedFontSizePx: 85.8 },
+    { viewport: DESKTOP_1440, expectedFontSizePx: 316.8 },
   ]) {
     test(`keeps the design size of the wordmark at ${viewport.width}px with the normal font`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
@@ -325,7 +323,9 @@ test.describe('footer', () => {
       await page.goto('/sobre');
       const wordmark = page.locator('footer#rodape [data-footer-wordmark]');
 
-      await expect(wordmark).toHaveCSS('font-size', expectedFontSize);
+      // Computed lengths are serialized differently per engine, so the number is compared with a tolerance.
+      const fontSizePx = await wordmark.evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
+      expect(Math.abs(fontSizePx - expectedFontSizePx)).toBeLessThanOrEqual(FONT_SIZE_TOLERANCE_PX);
     });
   }
 });
