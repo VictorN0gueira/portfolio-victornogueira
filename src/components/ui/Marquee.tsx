@@ -15,7 +15,10 @@ interface MarqueeProps {
   /** Seconds one loop takes. */
   durationS?: number;
   className?: string;
-  /** The items. Give it enough of them to be wider than the container, or a gap shows at the end of the loop. */
+  /**
+   * The items. Give it enough of them to be wider than the container, or a gap shows at the end of the
+   * loop. They render twice, so they must not carry ids or local state that has to stay unique.
+   */
   children: ReactNode;
 }
 
@@ -24,6 +27,16 @@ interface MarqueeProps {
  * the second copy (hidden from assistive tech, and out of the tab order) lands exactly where the first one
  * started. It pauses on hover and while focus is inside. The frame clips on x, so it never scrolls the page.
  * Without motion (system preference or the accessibility toggle) it renders a single copy in a wrapping row.
+ *
+ * Width contract: the frame has inline size containment (it reports a width of zero to its ancestors, so the
+ * wide track cannot stretch them) and fills its parent with `w-full min-w-0 max-w-full`. Its parent must
+ * therefore give it a definite width: a block parent, a `flex-1` or `w-full` wrapper, or a `1fr` grid track.
+ * A shrink to fit parent collapses it to zero: an `inline-block` or `w-fit` box, an absolutely positioned box
+ * without a width, a wrapper that is a `flex` item without `flex-1` or a width, an `auto` grid track that does
+ * not stretch (`justify-content` other than normal). Placed directly in a flex row or in a stretching grid
+ * track it keeps the full width. A consumer `className` such as `mx-auto max-w-4xl` wins over the three
+ * width utilities.
+ *
  * Needs AccessibilityProvider above it.
  */
 export function Marquee({ ariaLabel, durationS = DEFAULT_DURATION_S, className, children }: MarqueeProps) {
@@ -52,7 +65,7 @@ export function Marquee({ ariaLabel, durationS = DEFAULT_DURATION_S, className, 
   const trackStyle = { '--vn-marquee-duration': `${durationS}s` } as CSSProperties;
 
   return (
-    <div role="region" aria-label={ariaLabel} className={cn('vn-marquee-frame', className)}>
+    <div role="region" aria-label={ariaLabel} className={cn('vn-marquee-frame w-full min-w-0 max-w-full', className)}>
       <div className="vn-marquee flex w-max" style={trackStyle}>
         <div className={GROUP_CLASS}>{children}</div>
         <div ref={duplicateRef} aria-hidden="true" className={GROUP_CLASS}>
@@ -62,3 +75,5 @@ export function Marquee({ ariaLabel, durationS = DEFAULT_DURATION_S, className, 
     </div>
   );
 }
+
+export default Marquee;

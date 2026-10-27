@@ -1,8 +1,10 @@
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { IntersectionObserverMock, triggerIntersection } from '../../test/intersection';
 import { renderWithProviders } from '../../test/render';
+import { useAccessibility } from '../../contexts/AccessibilityContext';
 import { RevealGroup, RevealItem, type RevealVariant } from './Reveal';
 
 const A11Y_STORAGE_KEY = 'a11y-preferences';
@@ -303,5 +305,108 @@ describe('RevealItem with reduced motion', () => {
 
     expect(wrapper).not.toHaveAttribute('style');
     expect(wrapper).toHaveClass('card');
+  });
+});
+
+describe('RevealItem when motion is switched on or off while the page is open', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  function PauseAnimationsButton() {
+    const { toggle } = useAccessibility();
+    return (
+      <button type="button" onClick={() => toggle('noAnimations')}>
+        pausar animações
+      </button>
+    );
+  }
+
+  function renderFormItem() {
+    return renderWithProviders(
+      <>
+        <PauseAnimationsButton />
+        <RevealGroup>
+          <RevealItem>
+            <input aria-label="nome" data-testid="field" />
+          </RevealItem>
+        </RevealGroup>
+      </>,
+    );
+  }
+
+  function getFormGroup(container: HTMLElement): HTMLElement {
+    return container.querySelector('[data-reveal-group]') as HTMLElement;
+  }
+
+  it('keeps the same element and the typed text of its children when reduced motion turns on', async () => {
+    const user = userEvent.setup();
+    const media = stubMatchMedia({ [WIDE_QUERY]: true });
+    const { container } = renderFormItem();
+    triggerIntersection(getFormGroup(container));
+    const wrapper = getItem('field').parentElement as HTMLElement;
+    await waitFor(() => expect(wrapper.style.opacity).toBe('1'), { timeout: REVEALED_TIMEOUT_MS });
+    const field = getItem('field') as HTMLInputElement;
+    await user.type(field, 'Ana');
+
+    act(() => media.set(REDUCED_MOTION_QUERY, true));
+
+    expect(getItem('field')).toBe(field);
+    expect(getItem('field').parentElement).toBe(wrapper);
+    expect(field).toHaveValue('Ana');
+  });
+
+  it('keeps the same element and the typed text when the accessibility toggle pauses animations', async () => {
+    const user = userEvent.setup();
+    stubMatchMedia({ [WIDE_QUERY]: true });
+    const { container } = renderFormItem();
+    triggerIntersection(getFormGroup(container));
+    const wrapper = getItem('field').parentElement as HTMLElement;
+    await waitFor(() => expect(wrapper.style.opacity).toBe('1'), { timeout: REVEALED_TIMEOUT_MS });
+    const field = getItem('field') as HTMLInputElement;
+    await user.type(field, 'Ana');
+
+    await user.click(screen.getByRole('button', { name: 'pausar animações' }));
+
+    expect(getItem('field')).toBe(field);
+    expect(field).toHaveValue('Ana');
+  });
+
+  it('reveals an item that was still hidden when reduced motion turns on, instead of leaving it invisible', async () => {
+    const media = stubMatchMedia({ [WIDE_QUERY]: true });
+    renderFormItem();
+    const wrapper = getItem('field').parentElement as HTMLElement;
+    expect(wrapper.style.opacity).toBe('0');
+
+    act(() => media.set(REDUCED_MOTION_QUERY, true));
+
+    await waitFor(() => expect(wrapper.style.opacity).toBe('1'));
+    expect(wrapper.style.transform).toMatch(/^(none|translateY\(0(px)?\))?$/);
+  });
+
+  it('does not hide an item again when motion turns back on after its group was revealed', async () => {
+    const media = stubMatchMedia({ [WIDE_QUERY]: true, [REDUCED_MOTION_QUERY]: true });
+    const { container } = renderFormItem();
+    triggerIntersection(getFormGroup(container));
+    const wrapper = getItem('field').parentElement as HTMLElement;
+    expect(wrapper).not.toHaveAttribute('style');
+
+    act(() => media.set(REDUCED_MOTION_QUERY, false));
+
+    expect(getItem('field').parentElement).toBe(wrapper);
+    expect(wrapper.style.opacity).not.toBe('0');
+  });
+
+  it('accepts only intrinsic tags for as, because a component might not forward the ref', () => {
+    const NotATag = () => null;
+
+    // @ts-expect-error a component is not an intrinsic tag
+    const rejected = <RevealGroup as={NotATag} />;
+
+    expect(rejected).toBeDefined();
   });
 });

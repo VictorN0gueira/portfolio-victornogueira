@@ -270,13 +270,18 @@ describe('tokens.css marquee', () => {
     expect(frame).toMatch(/touch-action:\s*pan-y/)
   })
 
-  it('keeps the track width away from ancestors, so a flex or grid wrapper cannot stretch the page', () => {
+  it('falls back to overflow-x hidden right before overflow-x clip, for browsers before Safari 16', () => {
+    expect(blockBody(css, '.vn-marquee-frame')).toMatch(/overflow-x:\s*hidden;\s*overflow-x:\s*clip;/)
+  })
+
+  it('keeps the track width away from ancestors with inline size containment', () => {
+    expect(blockBody(css, '.vn-marquee-frame')).toMatch(/contain:\s*inline-size/)
+  })
+
+  it('leaves width, min-width and max-width of the frame to utilities, because this file is unlayered and would beat a consumer className', () => {
     const frame = blockBody(css, '.vn-marquee-frame')
 
-    expect(frame).toMatch(/width:\s*100%/)
-    expect(frame).toMatch(/min-width:\s*0/)
-    expect(frame).toMatch(/max-width:\s*100%/)
-    expect(frame).toMatch(/contain:\s*inline-size/)
+    expect(frame).not.toMatch(/(^|[\s;])(min-width|max-width|width):/)
   })
 
   it('fades both edges with a mask', () => {
@@ -339,6 +344,25 @@ describe('tokens.css spotlight card', () => {
     expect(gated.match(/vn-spin/g)).toHaveLength(1)
   })
 
+  it('documents the ring spin as the second exception to compositor only animation, right at the rule', () => {
+    const beforeSpinRule = gated.slice(0, gated.indexOf('.vn-spotlight:hover::before'))
+    const comment = /\/\*(?:(?!\*\/)[\s\S])*\*\/\s*$/.exec(beforeSpinRule)?.[0] ?? ''
+
+    expect(comment).toContain('--vn-angle')
+    expect(comment).toMatch(/second documented exception to compositor only animation/)
+    expect(comment).toMatch(/hover and focus within/)
+    expect(comment).toMatch(/fine pointer, motion allowed/)
+  })
+
+  it('can run the spin only under the gate: nothing outside it applies vn-spin, and inside it only hover and focus within do', () => {
+    const spinningRules = [...gated.matchAll(/([^{}]+)\{[^}]*animation:\s*vn-spin[^}]*\}/g)].map((match) =>
+      match[1].replace(/\/\*[\s\S]*?\*\//g, '').trim(),
+    )
+
+    expect(outsideGate).not.toMatch(/animation[^;]*vn-spin/)
+    expect(spinningRules).toEqual(['.vn-spotlight:hover::before,\n  .vn-spotlight:focus-within::before'])
+  })
+
   it('shows the spotlight glow on hover', () => {
     expect(blockBody(gated, '.vn-spotlight:hover::after')).toMatch(/opacity:\s*1/)
   })
@@ -372,8 +396,11 @@ describe('tokens.css spotlight card', () => {
 })
 
 describe('tokens.css accordion', () => {
-  it('documents grid-template-rows as the single exception to compositor only animation', () => {
-    expect(css).toMatch(/single documented exception to compositor only animation/)
+  it('documents grid-template-rows as an exception to compositor only animation', () => {
+    const comment = /\/\*(?:(?!\*\/)[\s\S])*Accordion\.(?:(?!\*\/)[\s\S])*\*\//.exec(css)?.[0] ?? ''
+
+    expect(comment).toContain('grid-template-rows')
+    expect(comment).toMatch(/documented exception to compositor only animation/)
   })
 
   it('animates the panel from 0fr to 1fr with an opacity fade, on the shared easing', () => {

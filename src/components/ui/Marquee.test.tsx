@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
-import { Marquee } from './Marquee';
+import DefaultMarquee, { Marquee } from './Marquee';
 
 const A11Y_STORAGE_KEY = 'a11y-preferences';
 const LABEL = 'tecnologias que a gente usa';
@@ -101,6 +101,28 @@ describe('Marquee with motion allowed', () => {
     const { container } = renderThreeItems(20);
 
     expect((container.querySelector('.vn-marquee') as HTMLElement).style.getPropertyValue('--vn-marquee-duration')).toBe('20s');
+  });
+
+  it('gives the frame its width from utilities (fill the parent, shrinkable), not from tokens.css', () => {
+    renderThreeItems();
+
+    expect(screen.getByRole('region', { name: LABEL })).toHaveClass('vn-marquee-frame', 'w-full', 'min-w-0', 'max-w-full');
+  });
+
+  it('lets a consumer className override the default width limit (mx-auto max-w-4xl)', () => {
+    renderWithProviders(
+      <Marquee ariaLabel={LABEL} className="mx-auto max-w-4xl">
+        <span>n8n</span>
+      </Marquee>,
+    );
+    const frame = screen.getByRole('region', { name: LABEL });
+
+    expect(frame).toHaveClass('mx-auto', 'max-w-4xl', 'w-full', 'min-w-0');
+    expect(frame).not.toHaveClass('max-w-full');
+  });
+
+  it('is also the default export', () => {
+    expect(DefaultMarquee).toBe(Marquee);
   });
 
   it('merges a consumer className on the frame', () => {

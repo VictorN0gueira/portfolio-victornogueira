@@ -1,5 +1,15 @@
 import { motion, useInView, type Variants } from 'motion/react';
-import { createContext, useCallback, useContext, useMemo, useRef, type ElementType, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type JSX,
+  type ReactNode,
+} from 'react';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 
@@ -8,6 +18,7 @@ export type RevealVariant = 'up' | 'left' | 'right' | 'zoom' | 'fade';
 const REVEAL_DURATION_S = 0.7;
 // The design system easing, as the cubic bezier points motion expects.
 const REVEAL_EASE = [0.22, 1, 0.36, 1] as const;
+const INSTANT = { duration: 0 } as const;
 const IN_VIEW_OPTIONS = { once: true, margin: '0px 0px -8% 0px' } as const;
 // Below md a sideways offset could widen the page and scroll it horizontally, so left and right become up.
 const WIDE_QUERY = '(min-width: 768px)';
@@ -66,8 +77,8 @@ function itemsOf(group: Element): Element[] {
 }
 
 interface RevealGroupProps {
-  /** The element to render. */
-  as?: ElementType;
+  /** The tag to render. Intrinsic tags only: a component might not forward the ref or the data attribute the group needs. */
+  as?: keyof JSX.IntrinsicElements;
   /** Seconds between one item and the next. */
   stagger?: number;
   /** Seconds before the first item. */
@@ -81,8 +92,10 @@ interface RevealGroupProps {
  * and tells its RevealItems when to animate in. Items may sit at any depth inside it.
  * Needs AccessibilityProvider above it.
  */
-export function RevealGroup({ as: Tag = 'div', stagger = 0.08, delay = 0, className, children }: RevealGroupProps) {
-  const ref = useRef<HTMLElement>(null);
+export function RevealGroup({ as = 'div', stagger = 0.08, delay = 0, className, children }: RevealGroupProps) {
+  // Typed as div only to keep TypeScript from building a union of every tag: all of them accept these props.
+  const Tag = as as 'div';
+  const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, IN_VIEW_OPTIONS);
 
   const getDelay = useCallback(
@@ -111,35 +124,42 @@ interface RevealItemProps {
 /**
  * Fades and slides its children in when the surrounding RevealGroup enters the view.
  * Without motion (system preference or the accessibility toggle), or outside a group, it renders its
- * children in their final state at once, with no hidden style at all. An item that mounts after its group
- * was already revealed (or after motion was switched back on) also appears in its final state, so content is
- * never hidden again. Needs AccessibilityProvider above it.
+ * children in their final state at once, with no hidden style at all. It always renders the same element
+ * (a motion.div), so switching motion on or off while the page is open keeps its children mounted: their
+ * state and focus survive. If motion goes off while the item is still hidden, it jumps to its final state.
+ * An item that mounts after its group was already revealed (or after motion was switched back on) also
+ * appears in its final state, so content is never hidden again. Needs AccessibilityProvider above it.
  */
 export function RevealItem({ variant = 'up', className, children }: RevealItemProps) {
   const group = useContext(RevealGroupContext);
   const isMotionAllowed = useMotionAllowed();
   const isWide = useMediaQuery(WIDE_QUERY);
   const ref = useRef<HTMLDivElement>(null);
+  const isActive = group !== null && isMotionAllowed;
+
+  // True once motion has driven this item. Only then does turning motion off need to push it to its final state.
+  const [wasActive, setWasActive] = useState(isActive);
+  if (isActive && !wasActive) setWasActive(true);
 
   const getDelay = useCallback(() => (group && ref.current ? group.getDelay(ref.current) : 0), [group]);
-
-  if (!group || !isMotionAllowed) {
-    return <div className={className}>{children}</div>;
-  }
 
   const isSideways = variant === 'left' || variant === 'right';
   const effectiveVariant = isSideways && !isWide ? 'up' : variant;
 
+  let motionProps: ComponentProps<typeof motion.div> = {};
+  if (group && isActive) {
+    motionProps = {
+      variants: VARIANTS[effectiveVariant],
+      initial: group.isInView ? false : 'hidden',
+      animate: group.isInView ? 'show' : 'hidden',
+      custom: getDelay,
+    };
+  } else if (wasActive) {
+    motionProps = { animate: SHOWN[effectiveVariant], transition: INSTANT };
+  }
+
   return (
-    <motion.div
-      ref={ref}
-      data-reveal-item=""
-      className={className}
-      variants={VARIANTS[effectiveVariant]}
-      initial={group.isInView ? false : 'hidden'}
-      animate={group.isInView ? 'show' : 'hidden'}
-      custom={getDelay}
-    >
+    <motion.div ref={ref} data-reveal-item="" className={className} {...motionProps}>
       {children}
     </motion.div>
   );

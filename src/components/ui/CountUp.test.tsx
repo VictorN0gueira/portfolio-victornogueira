@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { triggerIntersection } from '../../test/intersection';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
-import { CountUp } from './CountUp';
+import DefaultCountUp, { CountUp } from './CountUp';
 
 const A11Y_STORAGE_KEY = 'a11y-preferences';
 const SHORT_DURATION_MS = 60;
@@ -12,6 +12,15 @@ const SETTLE_TIMEOUT_MS = 2000;
 
 function getWrapper(container: HTMLElement): HTMLElement {
   return container.firstElementChild as HTMLElement;
+}
+
+// The wrapper holds the screen reader only text, then the counting number, then the suffix.
+function getNumber(wrapper: HTMLElement): HTMLElement {
+  return wrapper.children[1] as HTMLElement;
+}
+
+function getSuffix(wrapper: HTMLElement): HTMLElement | undefined {
+  return wrapper.children[2] as HTMLElement | undefined;
 }
 
 describe('CountUp without motion', () => {
@@ -57,6 +66,17 @@ describe('CountUp without motion', () => {
     expect(getWrapper(container)).not.toHaveAttribute('aria-label');
   });
 
+  it('renders the plain text only, with no screen reader only copy of it', () => {
+    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
+
+    const { container } = renderWithProviders(<CountUp value="85%" />);
+
+    expect(screen.getAllByText('85%')).toHaveLength(1);
+    expect(container.querySelector('.sr-only')).toBeNull();
+    expect(container.querySelector('[aria-hidden]')).toBeNull();
+    expect(getWrapper(container).children).toHaveLength(0);
+  });
+
   it('merges a consumer className on the raw text', () => {
     stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
 
@@ -71,21 +91,39 @@ describe('CountUp with motion allowed', () => {
     stubMatchMedia();
   });
 
-  it('starts at zero, keeps the suffix, and labels the final value for assistive tech', () => {
+  it('starts at zero and keeps the suffix', () => {
     const { container } = renderWithProviders(<CountUp value="85%" />);
     const wrapper = getWrapper(container);
 
-    expect(wrapper).toHaveAttribute('aria-label', '85%');
-    expect(wrapper.firstElementChild).toHaveTextContent('0');
-    expect(wrapper).toHaveTextContent('0%');
+    expect(getNumber(wrapper)).toHaveTextContent(/^0$/);
+    expect(getSuffix(wrapper)).toHaveTextContent(/^%$/);
   });
 
-  it('exposes the final value once by name and hides every visual piece from assistive tech', () => {
-    renderWithProviders(<CountUp value="85%" />);
+  it('gives assistive tech the final value once, as screen reader only text', () => {
+    const { container } = renderWithProviders(<CountUp value="85%" />);
+    const wrapper = getWrapper(container);
 
-    expect(screen.getByLabelText('85%')).toBeInTheDocument();
-    const visualPieces = screen.getByLabelText('85%').children;
-    expect([...visualPieces].every((piece) => piece.getAttribute('aria-hidden') === 'true')).toBe(true);
+    const readable = screen.getAllByText('85%');
+    expect(readable).toHaveLength(1);
+    expect(readable[0]).toHaveClass('sr-only');
+    expect(readable[0]).not.toHaveAttribute('aria-hidden');
+    expect(wrapper.firstElementChild).toBe(readable[0]);
+  });
+
+  it('hides the counting number and the suffix from assistive tech, and puts no role or label on the wrapper', () => {
+    const { container } = renderWithProviders(<CountUp value="85%" />);
+    const wrapper = getWrapper(container);
+
+    expect(getNumber(wrapper)).toHaveAttribute('aria-hidden', 'true');
+    expect(getSuffix(wrapper)).toHaveAttribute('aria-hidden', 'true');
+    expect(wrapper).not.toHaveAttribute('role');
+    expect(wrapper).not.toHaveAttribute('aria-label');
+  });
+
+  it('is positioned, so the screen reader only text can never widen the page', () => {
+    const { container } = renderWithProviders(<CountUp value="85%" />);
+
+    expect(getWrapper(container)).toHaveClass('relative');
   });
 
   it('does not count before the element enters the view', async () => {
@@ -93,7 +131,7 @@ describe('CountUp with motion allowed', () => {
 
     await new Promise((resolve) => setTimeout(resolve, SHORT_DURATION_MS * 3));
 
-    expect(getWrapper(container)).toHaveTextContent('0%');
+    expect(getNumber(getWrapper(container))).toHaveTextContent(/^0$/);
   });
 
   it('counts up to the number once the element enters the view', async () => {
@@ -102,23 +140,22 @@ describe('CountUp with motion allowed', () => {
 
     triggerIntersection(wrapper);
 
-    await waitFor(() => expect(wrapper).toHaveTextContent('85%'), { timeout: SETTLE_TIMEOUT_MS });
-    expect(wrapper).toHaveAttribute('aria-label', '85%');
+    await waitFor(() => expect(getNumber(wrapper)).toHaveTextContent(/^85$/), { timeout: SETTLE_TIMEOUT_MS });
+    expect(getSuffix(wrapper)).toHaveTextContent(/^%$/);
   });
 
   it('passes through intermediate numbers on the way up', async () => {
     const { container } = renderWithProviders(<CountUp value="500h+" durationMs={300} />);
     const wrapper = getWrapper(container);
-    const numberNode = wrapper.firstElementChild as HTMLElement;
+    const numberNode = getNumber(wrapper);
     const seen = new Set<string>();
     const observer = new MutationObserver(() => seen.add(numberNode.textContent ?? ''));
     observer.observe(numberNode, { childList: true, characterData: true, subtree: true });
 
     triggerIntersection(wrapper);
-    await waitFor(() => expect(wrapper).toHaveTextContent('500h+'), { timeout: SETTLE_TIMEOUT_MS });
+    await waitFor(() => expect(numberNode).toHaveTextContent(/^500$/), { timeout: SETTLE_TIMEOUT_MS });
     observer.disconnect();
 
-    expect(seen.has('500')).toBe(true);
     expect([...seen].filter((text) => text !== '0' && text !== '500').length).toBeGreaterThan(0);
   });
 
@@ -132,27 +169,49 @@ describe('CountUp with motion allowed', () => {
     const wrapper = getWrapper(container);
 
     triggerIntersection(wrapper);
-    await waitFor(() => expect(wrapper).toHaveTextContent('500h+'), { timeout: SETTLE_TIMEOUT_MS });
+    await waitFor(() => expect(getNumber(wrapper)).toHaveTextContent(/^500$/), { timeout: SETTLE_TIMEOUT_MS });
 
     expect(commits).toBeLessThanOrEqual(3);
   });
 
-  it('keeps decimals with the pt-BR comma', async () => {
-    const { container } = renderWithProviders(<CountUp value="1,5x" durationMs={SHORT_DURATION_MS} />);
+  it.each([
+    ['85%', '85'],
+    ['1,5x', '1,5'],
+    ['1.5x', '1.5'],
+    ['1200+', '1200'],
+    ['99,9%', '99,9'],
+    ['500h+', '500'],
+  ])('ends on the number exactly as written, so %s settles on the same text it has without motion', async (value, written) => {
+    const { container } = renderWithProviders(<CountUp value={value} durationMs={SHORT_DURATION_MS} />);
     const wrapper = getWrapper(container);
 
     triggerIntersection(wrapper);
 
-    await waitFor(() => expect(wrapper).toHaveTextContent('1,5x'), { timeout: SETTLE_TIMEOUT_MS });
+    await waitFor(() => expect(getNumber(wrapper).textContent).toBe(written), { timeout: SETTLE_TIMEOUT_MS });
+    await new Promise((resolve) => setTimeout(resolve, SHORT_DURATION_MS));
+    expect(getNumber(wrapper).textContent).toBe(written);
+    expect(`${getNumber(wrapper).textContent}${getSuffix(wrapper)?.textContent ?? ''}`).toBe(value);
   });
 
-  it('groups thousands with the pt-BR dot', async () => {
-    const { container } = renderWithProviders(<CountUp value="1200+" durationMs={SHORT_DURATION_MS} />);
+  it('formats the numbers with the pt-BR separators while it counts', async () => {
+    const { container } = renderWithProviders(<CountUp value="1200+" durationMs={300} />);
     const wrapper = getWrapper(container);
+    const numberNode = getNumber(wrapper);
+    const seen = new Set<string>();
+    const observer = new MutationObserver(() => seen.add(numberNode.textContent ?? ''));
+    observer.observe(numberNode, { childList: true, characterData: true, subtree: true });
 
     triggerIntersection(wrapper);
+    await waitFor(() => expect(numberNode.textContent).toBe('1200'), { timeout: SETTLE_TIMEOUT_MS });
+    observer.disconnect();
 
-    await waitFor(() => expect(wrapper).toHaveTextContent('1.200+'), { timeout: SETTLE_TIMEOUT_MS });
+    expect([...seen].some((text) => /^\d\.\d{3}$/.test(text))).toBe(true);
+  });
+
+  it('keeps the number box as wide as its widest text, so the box does not jump when the count ends', () => {
+    const { container } = renderWithProviders(<CountUp value="1200+" />);
+
+    expect(getNumber(getWrapper(container)).style.minWidth).toBe('5ch');
   });
 
   it('can unmount while counting without errors', () => {
@@ -161,5 +220,9 @@ describe('CountUp with motion allowed', () => {
     triggerIntersection(getWrapper(container));
 
     expect(() => unmount()).not.toThrow();
+  });
+
+  it('is also the default export', () => {
+    expect(DefaultCountUp).toBe(CountUp);
   });
 });

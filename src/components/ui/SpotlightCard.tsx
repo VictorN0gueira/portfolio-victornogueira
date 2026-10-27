@@ -4,7 +4,7 @@ import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import { usePointerSpotlight } from '../../hooks/usePointerSpotlight';
 import { cn } from '../../lib/utils';
 
-export type SpotlightCardTone = 'light' | 'dark';
+type SpotlightCardTone = 'light' | 'dark';
 
 interface SpotlightCardProps {
   /** The element to render. */

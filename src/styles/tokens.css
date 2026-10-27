@@ -151,15 +151,15 @@
  * moves by half its own width, so the second group lands where the first one started and the loop has
  * no seam. The frame must not report the track's width to its ancestors: overflow clip alone does not
  * give a flex or grid item an automatic minimum of zero, and a plain wrapper around the frame would then
- * stretch to the track width and scroll the page sideways. So the frame has min-width 0, max-width 100%
- * and inline size containment (its own intrinsic width is zero), and it takes the width of its parent
- * with width 100%. Layout (display, gap) comes from utilities in Marquee.tsx.
+ * stretch to the track width and scroll the page sideways. So the frame has inline size containment (its
+ * own intrinsic width is zero). Its width, min-width and max-width (w-full min-w-0 max-w-full) and all
+ * layout (display, gap) are utilities in Marquee.tsx, not set here: this file is unlayered, so a rule
+ * here would beat a consumer className such as max-w-4xl.
  */
 .vn-marquee-frame {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
   contain: inline-size;
+  /* hidden is the fallback for browsers without overflow clip (before Safari 16) */
+  overflow-x: hidden;
   overflow-x: clip;
   touch-action: pan-y;
   -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
@@ -222,6 +222,11 @@
     background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), var(--vn-spot-color), transparent 70%);
   }
 
+  /*
+   * The spin animates --vn-angle, which repaints every frame, so it is
+   * the second documented exception to compositor only animation, next to the accordion.
+   * It runs only on hover and focus within, and only inside this gate (fine pointer, motion allowed).
+   */
   .vn-spotlight:hover::before,
   .vn-spotlight:focus-within::before {
     opacity: 1;
@@ -240,7 +245,8 @@
 
 /*
  * Accordion. The panel animates grid-template-rows from 0fr to 1fr with an opacity fade, because the
- * height of the answer is unknown. This is the single documented exception to compositor only animation.
+ * height of the answer is unknown. This is a documented exception to compositor only animation (the
+ * conic ring spin of the spotlight card is the other one).
  * Opening starts from @starting-style (the closed content is not rendered, so there is no previous
  * style to transition from). Closing animates only where ::details-content exists, which keeps the
  * content visible until the transition ends; elsewhere it collapses at once.
