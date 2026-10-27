@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -78,10 +78,18 @@ describe('MobileMenu', () => {
     const user = renderMenu();
     const dialog = await openMenu(user);
 
-    expect(dialog).toHaveClass('right-0', 'w-[min(100%,24rem)]', 'h-dvh', 'overflow-y-auto', 'bg-vn-black', 'text-vn-white');
+    expect(dialog).toHaveClass('right-0', 'h-dvh', 'overflow-y-auto', 'bg-vn-black', 'text-vn-white');
     expect(dialog.style.paddingTop).toBe('max(16px, env(safe-area-inset-top))');
     expect(dialog.style.paddingRight).toBe('max(20px, env(safe-area-inset-right))');
     expect(dialog.style.paddingBottom).toBe('max(24px, env(safe-area-inset-bottom))');
+  });
+
+  it('fills the screen on a phone and is 24rem wide from 420px, so no strip of page shows beside it', async () => {
+    const user = renderMenu();
+    const dialog = await openMenu(user);
+
+    expect(dialog).toHaveClass('w-full', 'min-[420px]:w-[24rem]');
+    expect(dialog.className).not.toContain('w-[min(100%,24rem)]');
   });
 
   it('marks the current page, also on a sub page, and never a hash item', async () => {
@@ -157,6 +165,36 @@ describe('MobileMenu', () => {
       await user.tab({ shift: true });
       expect(dialog).toContainElement(document.activeElement as HTMLElement);
     }
+  });
+
+  it('stays open when the parent re-renders and hands it a new onOpenChange function', async () => {
+    let rerenderParent: () => void = () => undefined;
+    function InlineHandlerHarness() {
+      const [open, setOpen] = useState(false);
+      const [, setTick] = useState(0);
+      rerenderParent = () => setTick((tick) => tick + 1);
+
+      return (
+        <MobileMenu
+          open={open}
+          onOpenChange={(next) => setOpen(next)}
+          trigger={
+            <button type="button" aria-label="Abrir menu">
+              menu
+            </button>
+          }
+        />
+      );
+    }
+    const user = userEvent.setup();
+    renderWithProviders(<InlineHandlerHarness />);
+    await user.click(screen.getByRole('button', { name: 'Abrir menu' }));
+    await screen.findByRole('dialog', { name: 'Menu de navegação' });
+
+    act(() => rerenderParent());
+    act(() => rerenderParent());
+
+    expect(screen.getByRole('dialog', { name: 'Menu de navegação' })).toBeInTheDocument();
   });
 
   it('hides the rest of the page from assistive tech while it is open', async () => {

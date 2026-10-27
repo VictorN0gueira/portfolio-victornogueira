@@ -195,6 +195,17 @@ describe('src/index.css palette', () => {
   it('uses no color keywords', () => {
     expect(indexCss).not.toMatch(/:\s*(white|black)\b|\bsolid\s+(white|black)\b/)
   })
+
+  // The floating header sits at max(12px, inset) from the top, so an anchor needs the same inset to stay below it.
+  it('keeps anchors below the floating header, including the notch inset', () => {
+    expect(indexCss).toContain('scroll-padding-top: max(96px, calc(env(safe-area-inset-top) + 84px))')
+  })
+
+  it('keeps the same safe-area logic for the shorter header of a phone held sideways', () => {
+    const landscape = blockBody(indexCss, '@media (max-height: 480px)')
+
+    expect(landscape).toContain('scroll-padding-top: max(72px, calc(env(safe-area-inset-top) + 60px))')
+  })
 })
 
 describe('index.html', () => {

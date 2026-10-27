@@ -2,11 +2,13 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MAIN_NAV, PRIMARY_CTA } from '../../data/navigation';
+import { stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import Header from './Header';
 
 const SCROLLED_Y = 100;
 const AT_THRESHOLD_Y = 60;
+const DESKTOP_NAV_QUERY = '(min-width: 1024px)';
 
 function scrollTo(y: number) {
   Object.defineProperty(window, 'scrollY', { value: y, configurable: true });
@@ -26,6 +28,7 @@ function desktopNav() {
 
 describe('Header', () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
   });
 
@@ -116,10 +119,19 @@ describe('Header', () => {
       expect(header).toHaveClass('fixed', 'rounded-full', 'border-vn-gray-light', 'bg-vn-white/90');
     });
 
-    it('is 100% minus 24px wide up to 1100px, and narrows to 860px once scrolled', () => {
+    it('is as wide as the screen minus a symmetric gutter, up to 1100px, and narrows to 860px once scrolled', () => {
       const header = renderHeader();
 
-      expect(header).toHaveClass('w-[calc(100%-24px)]', 'max-w-[1100px]', 'data-[scrolled=true]:max-w-[860px]');
+      expect(header).toHaveClass('max-w-[1100px]', 'data-[scrolled=true]:max-w-[860px]');
+      expect(header).toHaveClass('mx-auto', 'inset-x-0');
+    });
+
+    it('keeps 12px from both side edges, or the notch inset when it is larger, so a landscape notch never clips it', () => {
+      const header = renderHeader();
+
+      expect(header).toHaveClass(
+        'w-[calc(100%-2*max(12px,env(safe-area-inset-left),env(safe-area-inset-right)))]',
+      );
     });
 
     it('transitions only max-width, translate and opacity', () => {
@@ -205,6 +217,32 @@ describe('Header', () => {
       renderHeader('/servicos-extra');
 
       expect(within(desktopNav()).getByRole('link', { name: 'Serviços' })).not.toHaveAttribute('aria-current');
+    });
+  });
+
+  describe('when the viewport grows to the desktop nav', () => {
+    it('closes an open menu, because its button disappears at lg', async () => {
+      const media = stubMatchMedia();
+      const user = userEvent.setup();
+      renderHeader();
+      await user.click(screen.getByRole('button', { name: 'Abrir menu' }));
+      expect(await screen.findByRole('dialog', { name: 'Menu de navegação' })).toBeInTheDocument();
+
+      act(() => media.set(DESKTOP_NAV_QUERY, true));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+
+    it('leaves an open menu alone while the viewport stays below lg', async () => {
+      const media = stubMatchMedia();
+      const user = userEvent.setup();
+      renderHeader();
+      await user.click(screen.getByRole('button', { name: 'Abrir menu' }));
+      await screen.findByRole('dialog', { name: 'Menu de navegação' });
+
+      act(() => media.set('(min-width: 768px)', true));
+
+      expect(screen.getByRole('dialog', { name: 'Menu de navegação' })).toBeInTheDocument();
     });
   });
 

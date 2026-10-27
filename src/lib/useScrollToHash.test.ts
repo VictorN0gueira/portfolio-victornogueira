@@ -1,6 +1,6 @@
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useScrollToHash } from './useScrollToHash';
 
@@ -96,6 +96,35 @@ describe('useScrollToHash', () => {
     expect(vi.getTimerCount()).toBe(0);
     vi.advanceTimersByTime(RETRY_WINDOW_MS);
     expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('scrolls again when the same hash is followed a second time (a new navigation, same hash)', () => {
+    const scrollIntoView = mountTarget('x');
+    const { result } = renderHook(
+      () => {
+        useScrollToHash();
+        return useNavigate();
+      },
+      { wrapper: routerAt('/#x') },
+    );
+    vi.advanceTimersByTime(FRAME_MS);
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+
+    act(() => result.current('/#x'));
+    vi.advanceTimersByTime(FRAME_MS);
+
+    expect(scrollIntoView).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not scroll again on a re-render that is not a navigation', () => {
+    const scrollIntoView = mountTarget('x');
+    const { rerender } = renderHook(() => useScrollToHash(), { wrapper: routerAt('/#x') });
+    vi.advanceTimersByTime(FRAME_MS);
+
+    rerender();
+    vi.advanceTimersByTime(RETRY_WINDOW_MS);
+
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
   });
 
   it('cancels the pending retry on unmount', () => {

@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import NotFound from './components/NotFound';
 import SEO from './components/SEO';
 import AccessibilityWidget from './components/AccessibilityWidget';
+import ScrollProgress from './components/layout/ScrollProgress';
 import SiteLayout from './components/layout/SiteLayout';
 import { pageTransition } from './components/layout/pageTransition';
 import HomePage from './pages/HomePage';
@@ -67,22 +68,26 @@ export default function App() {
         <Route
           path={BLOG_PATH}
           element={
-            <motion.div initial={pageTransition.initial} animate={pageTransition.animate} transition={pageTransition.transition}>
-              <Suspense
-                fallback={
-                  <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-                    <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  </div>
-                }
-              >
-                <SEO
-                  title="Blog e insights"
-                  description="Notícias curadas sobre Inteligência Artificial, Automação e os benefícios que essas tecnologias trazem para o mundo."
-                  path="/blog"
-                />
-                <BlogPage />
-              </Suspense>
-            </motion.div>
+            <>
+              {/* The blog background is dark, so its progress bar is white. */}
+              <ScrollProgress tone="dark" />
+              <motion.div initial={pageTransition.initial} animate={pageTransition.animate} transition={pageTransition.transition}>
+                <Suspense
+                  fallback={
+                    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    </div>
+                  }
+                >
+                  <SEO
+                    title="Blog e insights"
+                    description="Notícias curadas sobre Inteligência Artificial, Automação e os benefícios que essas tecnologias trazem para o mundo."
+                    path="/blog"
+                  />
+                  <BlogPage />
+                </Suspense>
+              </motion.div>
+            </>
           }
         />
       </Routes>

@@ -79,7 +79,7 @@ export function Header() {
       // max-width is the one layout property animated on the site. It is allowed here because the header is
       // a single fixed element and its inner flex row only re-centers, so no other box depends on its size.
       // Everything else moves with transform, translate and opacity only.
-      className="fixed inset-x-0 z-50 mx-auto flex w-[calc(100%-24px)] max-w-[1100px] items-center justify-between gap-2 rounded-full border border-vn-gray-light bg-vn-white/90 py-1.5 pr-1.5 pl-4 backdrop-blur-md transition-[max-width,translate,opacity] duration-500 ease-out data-[scrolled=true]:max-w-[860px] min-[360px]:pl-5 [@media(max-height:480px)]:-translate-y-2 [@media(max-height:480px)]:py-0.5"
+      className="fixed inset-x-0 z-50 mx-auto flex w-[calc(100%-2*max(12px,env(safe-area-inset-left),env(safe-area-inset-right)))] max-w-[1100px] items-center justify-between gap-2 rounded-full border border-vn-gray-light bg-vn-white/90 py-1.5 pr-1.5 pl-4 backdrop-blur-md transition-[max-width,translate,opacity] duration-500 ease-out data-[scrolled=true]:max-w-[860px] min-[360px]:pl-5 [@media(max-height:480px)]:-translate-y-2 [@media(max-height:480px)]:py-0.5"
     >
       <Link
         to="/"

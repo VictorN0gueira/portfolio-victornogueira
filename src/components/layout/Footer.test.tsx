@@ -80,6 +80,21 @@ describe('Footer', () => {
       }
     });
 
+    it('exposes the sitemap and the legal links as two named navigation landmarks', () => {
+      const footer = renderFooter();
+
+      const sitemap = within(footer).getByRole('navigation', { name: 'Rodapé' });
+      expect(within(sitemap).getByRole('heading', { name: 'Navegação' })).toBeInTheDocument();
+      expect(within(sitemap).getByRole('link', { name: 'Serviços' })).toHaveAttribute('href', '/servicos');
+      expect(within(sitemap).getByRole('link', { name: 'Contato' })).toHaveAttribute('href', '/contato');
+
+      const legal = within(footer).getByRole('navigation', { name: 'Legal' });
+      expect(within(legal).getByRole('heading', { name: 'Legal' })).toBeInTheDocument();
+      expect(within(legal).getByRole('link', { name: 'Política de Privacidade' })).toHaveAttribute('href', '/privacidade');
+      expect(within(legal).getByRole('link', { name: 'LGPD' })).toHaveAttribute('href', '/lgpd');
+      expect(within(footer).getAllByRole('navigation')).toHaveLength(2);
+    });
+
     it('lists the main nav and a Contato link in Navegação', () => {
       const footer = renderFooter();
 
@@ -164,8 +179,14 @@ describe('Footer', () => {
       expect(mark).toHaveTextContent('vn one');
       expect(mark).toHaveAttribute('aria-hidden', 'true');
       expect(mark).toHaveClass('font-display', 'font-bold', 'vn-chrome-text', 'whitespace-nowrap', 'overflow-clip');
-      expect(mark.style.fontSize).toBe('clamp(4.5rem, 22vw, 20rem)');
+      expect(mark.getAttribute('style')).toContain('min(clamp(4.5rem, 22vw, 20rem), 33cqw)');
       expect(within(footer).getAllByText('VN One').some((node) => node.className.includes('sr-only'))).toBe(true);
+    });
+
+    it('never outgrows its box: the size is also capped at 33cqw of a container-sized wrapper', () => {
+      const footer = renderFooter();
+
+      expect(wordmark(footer).parentElement).toHaveClass('[container-type:inline-size]');
     });
 
     it('starts clipped away and unveils once it enters the view', async () => {

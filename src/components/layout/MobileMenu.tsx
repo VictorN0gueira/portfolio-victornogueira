@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { MAIN_NAV, PRIMARY_CTA } from '../../data/navigation';
 import { CONTACT_EMAIL } from '../../lib/constants';
@@ -33,8 +33,14 @@ const FOCUS_RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus
  */
 export function MobileMenu({ open, onOpenChange, trigger }: MobileMenuProps) {
   const { pathname, key } = useLocation();
+  const previousKey = useRef(key);
 
+  // Only a real navigation closes the menu. Comparing the key (not just listing it as a dependency)
+  // keeps a parent that passes a new onOpenChange function on every render from closing it by accident.
   useEffect(() => {
+    if (previousKey.current === key) return;
+
+    previousKey.current = key;
     onOpenChange(false);
   }, [key, onOpenChange]);
 
@@ -45,7 +51,7 @@ export function MobileMenu({ open, onOpenChange, trigger }: MobileMenuProps) {
         <Dialog.Overlay className="vn-menu-overlay fixed inset-0 z-[160] bg-vn-black/70" />
         <Dialog.Content
           style={PANEL_PADDING}
-          className="vn-menu-panel fixed right-0 top-0 z-[170] flex h-dvh w-[min(100%,24rem)] flex-col overflow-y-auto overscroll-contain bg-vn-black text-vn-white outline-none"
+          className="vn-menu-panel fixed right-0 top-0 z-[170] flex h-dvh w-full min-[420px]:w-[24rem] flex-col overflow-y-auto overscroll-contain bg-vn-black text-vn-white outline-none"
         >
           <Dialog.Title className="sr-only">Menu de navegação</Dialog.Title>
           <Dialog.Description className="sr-only">

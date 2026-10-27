@@ -7,7 +7,13 @@ const MENU_DIALOG_NAME = 'Menu de navegação';
 const TABLET_PORTRAIT = { width: 768, height: 1024 };
 const TABLET_LANDSCAPE = { width: 1024, height: 768 };
 const SMALLEST_PHONE = { width: 280, height: 653 };
+const FULL_HD = { width: 1920, height: 1080 };
 const ULTRA_WIDE = { width: 2560, height: 1080 };
+const PHONE_390 = { width: 390, height: 844 };
+const PHONE_LANDSCAPE = { width: 844, height: 390 };
+const NARROW_PHONE_DRAWER_PX = 390;
+const DRAWER_FROM_420_PX = 384;
+const HEADER_MIN_GUTTER_PX = 12;
 
 const SCROLL_DISTANCE = 400;
 const TAB_PRESSES_INSIDE_MENU = 10;
@@ -104,6 +110,55 @@ test.describe('mobile menu', () => {
   });
 });
 
+test.describe('mobile menu drawer width', () => {
+  test.describe('phone 390x844', () => {
+    test.use({ viewport: PHONE_390 });
+
+    test('fills the whole screen, with no strip of page beside it', async ({ page }) => {
+      await page.goto('/');
+      await page.getByRole('button', { name: 'Abrir menu' }).click();
+
+      const dialog = page.getByRole('dialog', { name: MENU_DIALOG_NAME });
+      await expect(dialog).toBeVisible();
+      await expect.poll(async () => (await dialog.boundingBox())?.x).toBe(0);
+      expect((await dialog.boundingBox())?.width).toBe(NARROW_PHONE_DRAWER_PX);
+    });
+  });
+
+  test.describe('tablet 768x1024', () => {
+    test.use({ viewport: TABLET_PORTRAIT });
+
+    test('is 24rem wide and docked to the right edge', async ({ page }) => {
+      await page.goto('/');
+      await page.getByRole('button', { name: 'Abrir menu' }).click();
+
+      const dialog = page.getByRole('dialog', { name: MENU_DIALOG_NAME });
+      await expect(dialog).toBeVisible();
+      // The panel slides in, so the right edge is polled until it settles on the screen edge.
+      await expect
+        .poll(async () => {
+          const box = await dialog.boundingBox();
+          return (box?.x ?? 0) + (box?.width ?? 0);
+        })
+        .toBe(TABLET_PORTRAIT.width);
+      expect((await dialog.boundingBox())?.width).toBe(DRAWER_FROM_420_PX);
+    });
+  });
+});
+
+test.describe('header on a phone held sideways', () => {
+  test.use({ viewport: PHONE_LANDSCAPE });
+
+  test('sits 8px higher, stays centered and keeps its side gutters', async ({ page }) => {
+    await page.goto('/');
+
+    const box = await page.getByRole('banner').boundingBox();
+    expect(box?.y).toBe(HEADER_MIN_GUTTER_PX - 8);
+    expect(box?.x).toBe(HEADER_MIN_GUTTER_PX);
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBe(PHONE_LANDSCAPE.width - HEADER_MIN_GUTTER_PX);
+  });
+});
+
 test.describe('keyboard and assistive tech', () => {
   test('the first Tab from the top of the page focuses the skip link', async ({ page }) => {
     await page.goto('/');
@@ -140,12 +195,29 @@ test.describe('footer', () => {
     await expect(footer.getByRole('link', { name: 'LGPD' })).toHaveAttribute('href', '/lgpd');
   });
 
-  for (const viewport of [SMALLEST_PHONE, ULTRA_WIDE]) {
-    test(`keeps the wordmark inside its box at ${viewport.width}px`, async ({ page }, testInfo) => {
+  // fontSize is the site's "fonte maior" toggle: the root font grows to 120%, and the wordmark has to
+  // keep fitting the box, which does not grow with it.
+  const WORDMARK_CASES = [
+    { viewport: SMALLEST_PHONE, isLargeFont: false },
+    { viewport: ULTRA_WIDE, isLargeFont: false },
+    { viewport: SMALLEST_PHONE, isLargeFont: true },
+    { viewport: FULL_HD, isLargeFont: true },
+    { viewport: ULTRA_WIDE, isLargeFont: true },
+  ];
+
+  for (const { viewport, isLargeFont } of WORDMARK_CASES) {
+    const label = isLargeFont ? 'with the large font' : 'at the normal font';
+    test(`keeps the wordmark inside its box at ${viewport.width}px ${label}`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
 
+      if (isLargeFont) {
+        await page.addInitScript(() => {
+          localStorage.setItem('a11y-preferences', JSON.stringify({ fontSize: true }));
+        });
+      }
       await page.setViewportSize(viewport);
       await page.goto('/sobre');
+      if (isLargeFont) await expect(page.locator('html')).toHaveClass(/a11y-font-large/);
       const wordmark = page.locator('footer#rodape [data-footer-wordmark]');
       await wordmark.scrollIntoViewIfNeeded();
 

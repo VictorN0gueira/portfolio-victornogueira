@@ -21,13 +21,14 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
-    scroll-padding-top: 96px;
+    /* Anchors stop below the floating header, which sits at max(12px, notch inset) from the top. */
+    scroll-padding-top: max(96px, calc(env(safe-area-inset-top) + 84px));
   }
 
   /* The floating header sits 8px higher and is thinner on a phone held sideways. */
   @media (max-height: 480px) {
     html {
-      scroll-padding-top: 72px;
+      scroll-padding-top: max(72px, calc(env(safe-area-inset-top) + 60px));
     }
   }
 

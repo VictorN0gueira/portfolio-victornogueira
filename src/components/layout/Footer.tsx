@@ -31,6 +31,10 @@ const WORDMARK_REVEAL = { duration: 0.9, ease: [0.22, 1, 0.36, 1] } as const;
 const WORDMARK_INSTANT = { duration: 0 } as const;
 const WORDMARK_IN_VIEW = { once: true, amount: 0.4 } as const;
 
+// The text is about 2.99em wide, so 33cqw always fits the box. The clamp is the design size (22vw, 72px to 320px);
+// the cap only bites when the root font is enlarged (a11y-font-large) or the gutters do not scale with the screen.
+const WORDMARK_FONT_SIZE = 'min(clamp(4.5rem, 22vw, 20rem), 33cqw)';
+
 const COLUMN_TITLE = 'font-mono text-xs lowercase tracking-[0.18em] text-vn-gray-mid';
 const LINK =
   'inline-flex min-h-11 items-center text-sm text-vn-gray-light hover:text-vn-white [overflow-wrap:anywhere] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-white';
@@ -57,7 +61,7 @@ export function Footer() {
         </Link>
 
         <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-10 min-[360px]:grid-cols-2 lg:grid-cols-4 lg:gap-x-8">
-          <div>
+          <nav aria-label="Rodapé">
             <h2 className={COLUMN_TITLE}>Navegação</h2>
             <ul className="mt-3">
               {MAIN_NAV.map((item) => (
@@ -73,7 +77,7 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
+          </nav>
 
           <div>
             <h2 className={COLUMN_TITLE}>Serviços</h2>
@@ -110,7 +114,7 @@ export function Footer() {
             </ul>
           </div>
 
-          <div>
+          <nav aria-label="Legal">
             <h2 className={COLUMN_TITLE}>Legal</h2>
             <ul className="mt-3">
               <li>
@@ -124,18 +128,21 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
+          </nav>
         </div>
       </Container>
 
-      {/* The observer sits on the wrapper: the wordmark itself starts fully clipped. */}
+      {/*
+        The observer sits on the wrapper: the wordmark itself starts fully clipped. The wrapper is also an
+        inline-size container, so the wordmark can cap its size by the width it really has (33cqw).
+      */}
       <Container className="mt-12 md:mt-16">
-        <div ref={wordmarkRef}>
+        <div ref={wordmarkRef} className="[container-type:inline-size]">
           <motion.p
             data-footer-wordmark=""
             aria-hidden="true"
             className="vn-chrome-text overflow-clip whitespace-nowrap pb-[0.04em] text-center font-display font-bold leading-[0.85] tracking-[-0.04em]"
-            style={{ fontSize: 'clamp(4.5rem, 22vw, 20rem)' }}
+            style={{ fontSize: WORDMARK_FONT_SIZE }}
             initial={isMotionAllowed ? { clipPath: WORDMARK_HIDDEN } : false}
             animate={{ clipPath: isWordmarkShown ? WORDMARK_SHOWN : WORDMARK_HIDDEN }}
             transition={isMotionAllowed ? WORDMARK_REVEAL : WORDMARK_INSTANT}

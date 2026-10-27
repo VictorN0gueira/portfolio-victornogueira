@@ -9,7 +9,8 @@ const RETRY_WINDOW_MS = 1000;
  * são lazy e podem ainda não estar montadas quando a rota troca.
  */
 export function useScrollToHash() {
-  const { hash } = useLocation();
+  // `key` changes on every navigation, so following the same hash link a second time scrolls again.
+  const { hash, key } = useLocation();
 
   useEffect(() => {
     if (!hash) return;
@@ -28,5 +29,5 @@ export function useScrollToHash() {
 
     raf = requestAnimationFrame(tryScroll);
     return () => cancelAnimationFrame(raf);
-  }, [hash]);
+  }, [hash, key]);
 }
