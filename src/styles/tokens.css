@@ -376,6 +376,23 @@
 }
 
 /*
+ * Progress of the active use case tab: a fill that grows from the left edge to the full width of its track while
+ * the rotation waits for the next tab. Only transform animates (scaleX, never width). The duration is the
+ * rotation interval, passed as --vn-tab-ms by the component, so the bar and the timer share one number. The
+ * component draws the bar only while the rotation really runs and mounts it fresh each time, so it always
+ * starts at zero together with the timer.
+ */
+@keyframes vn-tab-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.vn-tab-progress {
+  transform-origin: left center;
+  animation: vn-tab-progress var(--vn-tab-ms, 4200ms) linear forwards;
+}
+
+/*
  * Choice pill panel (the listbox of ChoicePill). It fades and scales in from the point Radix anchors it to.
  * Only the opening is animated: with no exit animation Radix unmounts it at once on close, so the focus
  * goes back to the trigger without waiting. Only transform and opacity move.
@@ -425,6 +442,10 @@
     display: none;
   }
 
+  .vn-tab-progress {
+    display: none;
+  }
+
   .vn-menu-panel,
   .vn-menu-overlay,
   .vn-choice-panel {
@@ -457,6 +478,10 @@
 }
 
 .a11y-no-animations .vn-cable-pulse {
+  display: none;
+}
+
+.a11y-no-animations .vn-tab-progress {
   display: none;
 }
 

@@ -229,6 +229,36 @@ describe('useCycle', () => {
     }
   });
 
+  it('reports isRunning only while the interval really ticks', () => {
+    const { result, rerender } = renderHook(({ enabled }) => useCycle(4, INTERVAL_MS, { enabled }), {
+      initialProps: { enabled: true },
+    });
+    expect(result.current.isRunning).toBe(true);
+
+    act(() => result.current.pause());
+    expect(result.current.isRunning).toBe(false);
+    act(() => result.current.resume());
+    expect(result.current.isRunning).toBe(true);
+
+    rerender({ enabled: false });
+    expect(result.current.isRunning).toBe(false);
+    rerender({ enabled: true });
+
+    act(() => setVisibility('hidden'));
+    expect(result.current.isRunning).toBe(false);
+    act(() => setVisibility('visible'));
+    expect(result.current.isRunning).toBe(true);
+
+    act(() => result.current.select(1));
+    expect(result.current.isRunning).toBe(false);
+  });
+
+  it('is never running with a single item', () => {
+    const { result } = renderHook(() => useCycle(1, INTERVAL_MS));
+
+    expect(result.current.isRunning).toBe(false);
+  });
+
   it('restarts the interval when the interval length changes', () => {
     const { result, rerender } = renderHook(({ ms }) => useCycle(4, ms), {
       initialProps: { ms: INTERVAL_MS },

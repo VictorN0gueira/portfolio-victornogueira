@@ -47,4 +47,15 @@ export const homeCopy = {
       estimate: (amount: string) => `Estimativa: ${amount} por mês`,
     },
   },
+  // Os textos das abas de casos de uso (o conteúdo de cada aba está em data/useCases.ts). `pause` é o nome fixo do
+  // botão que para a troca automática: o estado vai em aria-pressed, o nome não muda.
+  useCases: {
+    kicker: 'onde a automação entra',
+    heading: 'Comece pelo processo que mais pesa na rotina',
+    sub: 'Toda empresa tem aquele trabalho que ninguém aguenta mais fazer. É por ele que a gente começa.',
+    note: 'Exemplo de aplicação. O fluxo de verdade sai do diagnóstico.',
+    tablistLabel: 'Casos de uso',
+    stepsTitle: 'Como funciona',
+    pause: 'Pausar troca automática',
+  },
 } as const;

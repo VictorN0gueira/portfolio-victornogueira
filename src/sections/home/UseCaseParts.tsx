@@ -1,0 +1,264 @@
+import { Pause, Play } from 'lucide-react';
+import { useId, type CSSProperties } from 'react';
+import { Heading } from '../../components/ui/Heading';
+import { RevealGroup, RevealItem } from '../../components/ui/Reveal';
+import { homeCopy } from '../../data/homeCopy';
+import { useCases, type UseCase } from '../../data/useCases';
+import { cn } from '../../lib/utils';
+import { HOLD_EXEMPT_ATTRIBUTE, type TabListControls } from './useTabsBehavior';
+
+const FOCUS_RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-ink';
+
+interface TabProgressProps {
+  /** How long the fill takes to grow, as the rotation interval: one number for the bar and the timer. */
+  durationMs: number;
+}
+
+/**
+ * The progress inside the selected tab: a gray track with a white fill that grows from the left with scaleX.
+ * Only the transform animates, never the width. It is decoration, so assistive tech skips it, and the tab keeps
+ * the plain name of its label.
+ */
+function TabProgress({ durationMs }: TabProgressProps) {
+  return (
+    <span
+      aria-hidden="true"
+      data-tab-progress=""
+      className="pointer-events-none absolute inset-x-5 bottom-1.5 h-0.5 overflow-hidden rounded-full bg-vn-gray-dark"
+    >
+      <span
+        className="vn-tab-progress block size-full bg-vn-white"
+        style={{ '--vn-tab-ms': `${durationMs}ms` } as CSSProperties}
+      />
+    </span>
+  );
+}
+
+interface UseCaseTabProps {
+  label: string;
+  id: string;
+  panelId: string;
+  isSelected: boolean;
+  /** True while the rotation runs: only then the selected tab draws its progress. */
+  isRunning: boolean;
+  durationMs: number;
+  onSelect: () => void;
+  tabRef: (element: HTMLButtonElement | null) => void;
+}
+
+/**
+ * One tab of the ARIA tabs pattern: the selected one is an ink pill and the only tab stop (roving tabindex),
+ * the others have a light border. At least 44px tall. The colors switch at once, with no transition.
+ */
+export function UseCaseTab({ label, id, panelId, isSelected, isRunning, durationMs, onSelect, tabRef }: UseCaseTabProps) {
+  return (
+    <button
+      ref={tabRef}
+      id={id}
+      type="button"
+      role="tab"
+      aria-selected={isSelected}
+      aria-controls={panelId}
+      tabIndex={isSelected ? 0 : -1}
+      onClick={onSelect}
+      className={cn(
+        'relative inline-flex min-h-11 shrink-0 snap-start cursor-pointer items-center justify-center rounded-full border px-5 text-sm font-medium sm:text-base',
+        FOCUS_RING,
+        isSelected
+          ? 'border-vn-ink bg-vn-ink text-vn-white'
+          : 'border-vn-gray-light bg-vn-white text-vn-ink hover:border-vn-ink hover:bg-vn-cream',
+      )}
+    >
+      {label}
+      {isSelected && isRunning ? <TabProgress durationMs={durationMs} /> : null}
+    </button>
+  );
+}
+
+/** The id of the tab of a use case, which the panel points at with aria-labelledby. */
+export function tabIdFor(idBase: string, useCaseId: string): string {
+  return `${idBase}-tab-${useCaseId}`;
+}
+
+// Below sm the tabs scroll sideways inside the tablist with scroll snap, never the page; from sm they wrap and the
+// tablist takes only the width of its tabs, so the pause toggle sits right after them.
+// The padding leaves room for the focus ring (the scroll box would clip it) and the negative margin gives it back.
+const TABLIST_CLASSES =
+  'relative -m-1.5 flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto scroll-px-1.5 p-1.5 scrollbar-hide sm:flex-initial sm:snap-none sm:flex-wrap sm:overflow-visible';
+
+interface UseCaseTabListProps {
+  idBase: string;
+  panelId: string;
+  selectedIndex: number;
+  isRunning: boolean;
+  isMotionAllowed: boolean;
+  durationMs: number;
+  onSelect: (index: number) => void;
+  /** The refs and the key handler from useTabListControls. */
+  controls: TabListControls;
+}
+
+/**
+ * The tablist with its tabs. Its name comes from the copy. The scroll is smooth only while motion is allowed
+ * (the scroll box is the tablist, so this is what makes the move to the selected tab gentle or instant).
+ */
+export function UseCaseTabList({
+  idBase,
+  panelId,
+  selectedIndex,
+  isRunning,
+  isMotionAllowed,
+  durationMs,
+  onSelect,
+  controls,
+}: UseCaseTabListProps) {
+  return (
+    <div
+      ref={controls.listRef}
+      role="tablist"
+      aria-label={homeCopy.useCases.tablistLabel}
+      onKeyDown={controls.onKeyDown}
+      className={cn(TABLIST_CLASSES, isMotionAllowed && 'scroll-smooth')}
+    >
+      {useCases.map(({ id, tab }, position) => (
+        <UseCaseTab
+          key={id}
+          id={tabIdFor(idBase, id)}
+          panelId={panelId}
+          label={tab}
+          isSelected={position === selectedIndex}
+          isRunning={isRunning}
+          durationMs={durationMs}
+          onSelect={() => onSelect(position)}
+          tabRef={(element) => controls.registerTab(position, element)}
+        />
+      ))}
+    </div>
+  );
+}
+
+interface PauseToggleProps {
+  /** The visitor's own pause. A hold by the pointer or the focus is not shown here. */
+  isPaused: boolean;
+  onToggle: () => void;
+}
+
+/**
+ * Pauses and resumes the automatic change of tab (WCAG 2.2.2). A toggle: its name stays "Pausar troca automática"
+ * and aria-pressed carries the state; only the icon changes (pause, then play), and assistive tech skips it.
+ * The icon button is 36px inside a 44px hit area. It is exempt from the hold of the pointer and the focus.
+ */
+export function PauseToggle({ isPaused, onToggle }: PauseToggleProps) {
+  const Icon = isPaused ? Play : Pause;
+  const exempt = { [HOLD_EXEMPT_ATTRIBUTE]: '' };
+
+  return (
+    <button
+      type="button"
+      aria-pressed={isPaused}
+      aria-label={homeCopy.useCases.pause}
+      onClick={onToggle}
+      {...exempt}
+      className={cn('group grid size-11 shrink-0 cursor-pointer place-items-center rounded-full', FOCUS_RING)}
+    >
+      <span className="grid size-9 place-items-center rounded-full border border-vn-gray-light text-vn-ink group-hover:border-vn-ink group-hover:bg-vn-cream">
+        <Icon aria-hidden="true" className="size-4" />
+      </span>
+    </button>
+  );
+}
+
+const COLUMNS_CLASSES = 'grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start lg:gap-14';
+
+interface UseCaseContentProps {
+  useCase: UseCase;
+  /** A ghost is only there to take the room of this content: it reveals nothing and has no group. */
+  isGhost?: boolean;
+}
+
+function formatStepNumber(position: number): string {
+  return String(position + 1).padStart(2, '0');
+}
+
+/**
+ * What one use case says: its title (an h3, under the h2 of the section) and body on the left, and the
+ * "como funciona" card on the right with the three steps in an ordered list. Below lg they stack.
+ * The whole content is one RevealGroup (one observer), so the parent gives it a key per use case and the
+ * reveal plays again on every change. The items fade or rise with opacity and transform only.
+ */
+export function UseCaseContent({ useCase, isGhost = false }: UseCaseContentProps) {
+  const stepsLabelId = useId();
+  const Group = isGhost ? 'div' : RevealGroup;
+
+  return (
+    <Group className={COLUMNS_CLASSES}>
+      <div className="min-w-0">
+        <RevealItem variant="fade">
+          <Heading as="h3" size="m" className="text-[length:clamp(1.75rem,1.2rem+2vw,2.5rem)] leading-[.98]">
+            {useCase.title}
+          </Heading>
+        </RevealItem>
+        <RevealItem variant="fade" className="mt-4 max-w-xl">
+          <p className="text-pretty text-base text-vn-gray-dark md:text-lg">{useCase.body}</p>
+        </RevealItem>
+      </div>
+      <div className="min-w-0 rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-cream p-5 md:p-6">
+        <RevealItem variant="fade">
+          <p id={stepsLabelId} className="font-mono text-xs uppercase tracking-[.18em]">
+            {homeCopy.useCases.stepsTitle}
+          </p>
+        </RevealItem>
+        <ol aria-labelledby={stepsLabelId} className="mt-5 flex flex-col gap-4">
+          {useCase.steps.map((step, position) => (
+            <li key={step}>
+              <RevealItem className="flex items-start gap-4">
+                <span
+                  aria-hidden="true"
+                  data-step-number=""
+                  className="grid size-8 shrink-0 place-items-center rounded-full bg-vn-ink font-mono text-xs font-medium text-vn-white"
+                >
+                  {formatStepNumber(position)}
+                </span>
+                <span className="min-w-0 pt-1 text-base leading-snug text-vn-ink">{step}</span>
+              </RevealItem>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </Group>
+  );
+}
+
+interface UseCasePanelProps {
+  useCase: UseCase;
+  panelId: string;
+  /** Id of the selected tab, which names the panel. */
+  tabId: string;
+}
+
+/**
+ * The one tabpanel, kept mounted so every tab can point at it with aria-controls. It has a tab stop because
+ * nothing inside it takes the focus. Behind it sit invisible copies of the four contents in the same grid
+ * cell, so the cell is as tall as the tallest one and the page below does not jump when the tab changes.
+ * The copies are hidden from assistive tech and from the pointer (visibility hidden).
+ */
+export function UseCasePanel({ useCase, panelId, tabId }: UseCasePanelProps) {
+  return (
+    <div className="mt-8 grid md:mt-10">
+      <div
+        role="tabpanel"
+        id={panelId}
+        aria-labelledby={tabId}
+        tabIndex={0}
+        className={cn('col-start-1 row-start-1 min-w-0 rounded-2xl', FOCUS_RING)}
+      >
+        <UseCaseContent key={useCase.id} useCase={useCase} />
+      </div>
+      {useCases.map((ghost) => (
+        <div key={ghost.id} aria-hidden="true" className="invisible col-start-1 row-start-1 min-w-0">
+          <UseCaseContent useCase={ghost} isGhost />
+        </div>
+      ))}
+    </div>
+  );
+}

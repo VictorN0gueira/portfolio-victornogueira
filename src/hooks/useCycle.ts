@@ -10,6 +10,8 @@ interface UseCycleResult {
   pause: () => void;
   resume: () => void;
   isAuto: boolean;
+  /** True exactly while the interval ticks: enabled, in auto mode, not paused, the tab visible and more than one item. */
+  isRunning: boolean;
 }
 
 function isDocumentVisible(): boolean {
@@ -64,5 +66,5 @@ export function useCycle(
   const pause = useCallback(() => setIsPaused(true), []);
   const resume = useCallback(() => setIsPaused(false), []);
 
-  return { index: wrapIndex(requested, length), select, pause, resume, isAuto };
+  return { index: wrapIndex(requested, length), select, pause, resume, isAuto, isRunning };
 }
