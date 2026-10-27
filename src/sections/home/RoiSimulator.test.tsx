@@ -3,8 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildQuoteMessage } from '../../lib/roi';
 import {
   CTA_NAME,
+  DEFAULT_COST,
   DEFAULT_INPUT,
+  DEFAULT_SAVINGS,
   NBSP,
+  RATE_CAP_NOTE,
   figuresOf,
   getAmounts,
   getCta,
@@ -15,8 +18,7 @@ import {
 } from './RoiSimulator.helpers';
 import { MAX_HOURLY_RATE } from './roiInput';
 
-const DEFAULT_COST = `R$${NBSP}78.000`;
-const DEFAULT_SAVINGS = `R$${NBSP}62.400`;
+const INFINITY_SIGN = String.fromCharCode(0x221e);
 const ONE_PERSON_COST = `R$${NBSP}31.200`;
 const ZERO = `R$${NBSP}0`;
 
@@ -81,7 +83,7 @@ describe('RoiSimulator results', () => {
     fireEvent.change(getRate(), { target: { value: '1e999' } });
 
     expect(getAmounts(ZERO)).toHaveLength(2);
-    expect(document.body.textContent).not.toMatch(/NaN|Infinity|∞/);
+    expect(document.body.textContent).not.toMatch(new RegExp(`NaN|Infinity|${INFINITY_SIGN}`));
   });
 
   it('computes an absurd rate at the cap, so the biggest number stays one the panel can draw', () => {
@@ -108,6 +110,107 @@ describe('RoiSimulator results', () => {
     expect(
       screen.getByText('Considera 80% do tempo automatizado. É uma estimativa, o número real sai do diagnóstico.'),
     ).toBeInTheDocument();
+  });
+});
+
+/** Stubs what the browser reports for a number field: jsdom never flags incomplete text such as "12." as bad input. */
+function reportBadInput(input: HTMLInputElement, isBadInput: boolean): void {
+  Object.defineProperty(input, 'validity', { value: { badInput: isBadInput }, configurable: true });
+}
+
+describe('RoiSimulator incomplete rate text', () => {
+  it('keeps the last complete rate while the browser reports text it cannot read yet, so the results do not fall to R$ 0', () => {
+    renderSimulator();
+    const rate = getRate();
+
+    reportBadInput(rate, true);
+    fireEvent.change(rate, { target: { value: '' } });
+
+    expect(getAmounts(DEFAULT_COST)).toHaveLength(1);
+    expect(getAmounts(DEFAULT_SAVINGS)).toHaveLength(1);
+  });
+
+  it('keeps what the visitor typed in the field: the shown text is never dropped with the incomplete value', () => {
+    renderSimulator();
+    const rate = getRate();
+
+    reportBadInput(rate, true);
+    fireEvent.change(rate, { target: { value: '' } });
+    reportBadInput(rate, false);
+    fireEvent.change(rate, { target: { value: '12.5' } });
+
+    expect(getRate()).toHaveValue(12.5);
+  });
+
+  it('counts the number again as soon as the text is complete', () => {
+    renderSimulator();
+    const rate = getRate();
+
+    reportBadInput(rate, true);
+    fireEvent.change(rate, { target: { value: '' } });
+    reportBadInput(rate, false);
+    fireEvent.change(rate, { target: { value: '12.5' } });
+
+    const { cost, savings } = figuresOf({ ...DEFAULT_INPUT, hourlyRate: 12.5 });
+    expect(getAmounts(cost)).toHaveLength(1);
+    expect(getAmounts(savings)).toHaveLength(1);
+  });
+
+  it('still counts a field that the browser reports as complete and empty as 0', () => {
+    renderSimulator();
+    const rate = getRate();
+
+    reportBadInput(rate, false);
+    fireEvent.change(rate, { target: { value: '' } });
+
+    expect(getAmounts(`R$${NBSP}0`)).toHaveLength(2);
+  });
+});
+
+describe('RoiSimulator rate cap note', () => {
+  it('says under the field that a rate above R$ 5.000 is counted at R$ 5.000, and links the note to the field', () => {
+    renderSimulator();
+
+    fireEvent.change(getRate(), { target: { value: '6000' } });
+
+    const [note] = getAmounts(RATE_CAP_NOTE);
+    expect(note).toBeInTheDocument();
+    expect(note.id).not.toBe('');
+    expect(getRate()).toHaveAttribute('aria-describedby', note.id);
+  });
+
+  it('computes and sends the capped rate, not the typed one', () => {
+    const onQuoteRequest = vi.fn();
+    renderSimulator({ onQuoteRequest });
+
+    fireEvent.change(getRate(), { target: { value: '6000' } });
+    fireEvent.click(getCta());
+
+    const { cost, savings } = figuresOf({ ...DEFAULT_INPUT, hourlyRate: MAX_HOURLY_RATE });
+    expect(getAmounts(cost)).toHaveLength(1);
+    expect(getAmounts(savings)).toHaveLength(1);
+    expect(onQuoteRequest).toHaveBeenCalledWith(buildQuoteMessage({ ...DEFAULT_INPUT, hourlyRate: MAX_HOURLY_RATE }));
+  });
+
+  it('has no note at the default rate, at the cap itself or for text that counts as 0', () => {
+    renderSimulator();
+
+    expect(getAmounts(RATE_CAP_NOTE)).toHaveLength(0);
+    for (const text of ['5000', '1e999', '-1', '']) {
+      fireEvent.change(getRate(), { target: { value: text } });
+
+      expect(getAmounts(RATE_CAP_NOTE), text).toHaveLength(0);
+      expect(getRate()).not.toHaveAttribute('aria-describedby');
+    }
+  });
+
+  it('takes the note away when the rate comes back under the cap', () => {
+    renderSimulator();
+
+    fireEvent.change(getRate(), { target: { value: '6000' } });
+    fireEvent.change(getRate(), { target: { value: '4000' } });
+
+    expect(getAmounts(RATE_CAP_NOTE)).toHaveLength(0);
   });
 });
 

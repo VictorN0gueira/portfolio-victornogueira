@@ -7,6 +7,7 @@ import {
   HOURS_MIN,
   MAX_HOURLY_RATE,
   hoursPercent,
+  isHourlyRateCapped,
   parseHourlyRate,
 } from './roiInput';
 
@@ -30,6 +31,12 @@ describe('parseHourlyRate', () => {
     expect(parseHourlyRate('0')).toBe(0);
   });
 
+  it('reads leading zeros, an exponent and a plus sign as the number they write', () => {
+    expect(parseHourlyRate('0050')).toBe(50);
+    expect(parseHourlyRate('5e2')).toBe(500);
+    expect(parseHourlyRate('+5')).toBe(5);
+  });
+
   it('counts an empty or blank field as 0', () => {
     expect(parseHourlyRate('')).toBe(0);
     expect(parseHourlyRate('   ')).toBe(0);
@@ -50,6 +57,31 @@ describe('parseHourlyRate', () => {
     expect(parseHourlyRate(String(MAX_HOURLY_RATE))).toBe(MAX_HOURLY_RATE);
     expect(parseHourlyRate(String(MAX_HOURLY_RATE + 1))).toBe(MAX_HOURLY_RATE);
     expect(parseHourlyRate('1e300')).toBe(MAX_HOURLY_RATE);
+  });
+});
+
+describe('isHourlyRateCapped', () => {
+  it('is true for a finite rate above the ceiling', () => {
+    for (const text of ['5000.01', '6000', '1e300', '99999999999']) {
+      expect(isHourlyRateCapped(text), text).toBe(true);
+    }
+  });
+
+  it('is false at the ceiling and below it', () => {
+    for (const text of ['5000', '4999.99', '50', '0']) {
+      expect(isHourlyRateCapped(text), text).toBe(false);
+    }
+  });
+
+  it('is false for text that counts as a plain 0: infinity, negative, empty and not a number', () => {
+    for (const text of ['1e999', '-1', '-1e999', '', '   ', 'abc', 'NaN']) {
+      expect(isHourlyRateCapped(text), text).toBe(false);
+    }
+  });
+
+  it('agrees with parseHourlyRate: capped text parses to the ceiling', () => {
+    expect(parseHourlyRate('6000')).toBe(MAX_HOURLY_RATE);
+    expect(isHourlyRateCapped('6000')).toBe(true);
   });
 });
 

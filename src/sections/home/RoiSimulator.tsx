@@ -5,6 +5,7 @@ import { Kicker } from '../../components/ui/Kicker';
 import { RevealGroup, RevealItem } from '../../components/ui/Reveal';
 import { Section } from '../../components/ui/Section';
 import { homeCopy } from '../../data/homeCopy';
+import { formatBRL } from '../../lib/format';
 import {
   DEFAULT_HOURLY_RATE,
   TEAM_OPTIONS,
@@ -15,7 +16,13 @@ import {
 } from '../../lib/roi';
 import { RoiControls } from './RoiControls';
 import { RoiResults } from './RoiResults';
-import { DEFAULT_HOURS, DEFAULT_TEAM_INDEX, parseHourlyRate } from './roiInput';
+import {
+  DEFAULT_HOURS,
+  DEFAULT_TEAM_INDEX,
+  MAX_HOURLY_RATE,
+  isHourlyRateCapped,
+  parseHourlyRate,
+} from './roiInput';
 
 interface RoiSimulatorProps {
   /** Called with the pre-filled quote message of the current values when the visitor asks for the automation. */
@@ -48,6 +55,25 @@ function RoiHeader({ headingId }: RoiHeaderProps) {
 }
 
 /**
+ * The hourly rate field. `text` is what the field shows, exactly as typed. `countedText` is the last text the browser
+ * could read: a number field reports no value at all while the visitor types something unfinished such as "12.", and
+ * that must not count as an empty field (R$ 0) for a moment. Only complete or really empty text moves it. The rate
+ * and the note about the ceiling come from the counted text.
+ */
+function useRateField() {
+  const [text, setText] = useState(String(DEFAULT_HOURLY_RATE));
+  const [countedText, setCountedText] = useState(text);
+
+  const onChange = (nextText: string, isIncomplete: boolean) => {
+    setText(nextText);
+    if (!isIncomplete) setCountedText(nextText);
+  };
+  const capNote = isHourlyRateCapped(countedText) ? homeCopy.roi.rateCap(formatBRL(MAX_HOURLY_RATE)) : null;
+
+  return { text, rate: parseHourlyRate(countedText), capNote, onChange };
+}
+
+/**
  * The simulator of the home: a black section, inside a rounded wrapper that clips it, where the visitor sets the
  * hours of repetitive work, the people who do it and the hourly rate, and sees the yearly cost and the savings of
  * the shared formula (lib/roi.ts). Controls on the left and results on the right from lg, stacked below it.
@@ -60,12 +86,12 @@ export function RoiSimulator({ onQuoteRequest }: RoiSimulatorProps) {
   const headingId = useId();
   const [hours, setHours] = useState(DEFAULT_HOURS);
   const [teamIndex, setTeamIndex] = useState(DEFAULT_TEAM_INDEX);
-  const [rateText, setRateText] = useState(String(DEFAULT_HOURLY_RATE));
+  const rateField = useRateField();
 
   const input: RoiInput = {
     hoursPerWeek: hours,
     teamMultiplier: TEAM_OPTIONS[teamIndex].value,
-    hourlyRate: parseHourlyRate(rateText),
+    hourlyRate: rateField.rate,
   };
 
   return (
@@ -80,14 +106,16 @@ export function RoiSimulator({ onQuoteRequest }: RoiSimulatorProps) {
                 onHoursChange={setHours}
                 teamIndex={teamIndex}
                 onTeamChange={setTeamIndex}
-                rateText={rateText}
-                onRateTextChange={setRateText}
+                rateText={rateField.text}
+                rateCapNote={rateField.capNote}
+                onRateChange={rateField.onChange}
               />
             </RevealItem>
             <RevealItem className="min-w-0">
               <RoiResults
                 cost={annualManualCost(input)}
                 savings={annualSavings(input)}
+                rateCapNote={rateField.capNote}
                 onQuoteRequest={() => onQuoteRequest(buildQuoteMessage(input))}
               />
             </RevealItem>

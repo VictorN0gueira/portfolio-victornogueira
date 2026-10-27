@@ -91,6 +91,8 @@ export const homeCopy = {
     },
     note: 'Considera 80% do tempo automatizado. É uma estimativa, o número real sai do diagnóstico.',
     cta: 'Quero automatizar esse processo',
+    // Aviso quando o valor da hora passa do teto: o valor já chega formatado em reais.
+    rateCap: (max: string) => `Calculamos com no máximo ${max} por hora.`,
     // O valor do controle de horas, ao lado do rótulo.
     hoursShown: (hours: number) => `${hours} h`,
     aria: {

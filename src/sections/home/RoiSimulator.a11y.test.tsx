@@ -4,8 +4,11 @@ import { TEAM_OPTIONS } from '../../lib/roi';
 import { findAccentElements } from '../../test/accent';
 import {
   A11Y_STORAGE_KEY,
+  DEFAULT_COST,
   DEFAULT_INPUT,
+  DEFAULT_SAVINGS,
   NBSP,
+  RATE_CAP_NOTE,
   SLIDER_NAME,
   STATUS_DEBOUNCE_MS,
   figuresOf,
@@ -19,8 +22,6 @@ import {
 } from './RoiSimulator.helpers';
 
 const HEADING = 'Quanto o trabalho manual custa por ano';
-const DEFAULT_COST = `R$${NBSP}78.000`;
-const DEFAULT_SAVINGS = `R$${NBSP}62.400`;
 const DEFAULT_STATUS = `Custo anual hoje ${DEFAULT_COST}. Economia estimada por ano ${DEFAULT_SAVINGS}.`;
 const ONE_PERSON_STATUS = `Custo anual hoje R$${NBSP}31.200. Economia estimada por ano R$${NBSP}24.960.`;
 const EM_DASH = String.fromCharCode(0x2014);
@@ -51,7 +52,7 @@ describe('RoiSimulator structure', () => {
 
     expect(text).not.toContain(EM_DASH);
     expect(text).not.toContain(EN_DASH);
-    expect(text).not.toContain(' / ');
+    expect(text).not.toMatch(/\s\/\s/);
   });
 });
 
@@ -126,7 +127,7 @@ describe('RoiSimulator controls', () => {
   it('draws the filled part of the track from a percentage on the input', () => {
     renderSimulator();
 
-    expect(getSlider().style.getPropertyValue('--vn-range-fill')).toBe(`${((12 - 1)/79) * 100}%`);
+    expect(getSlider().style.getPropertyValue('--vn-range-fill')).toBe(`${((12 - 1) / 79) * 100}%`);
     fireEvent.change(getSlider(), { target: { value: '1' } });
     expect(getSlider().style.getPropertyValue('--vn-range-fill')).toBe('0%');
     fireEvent.change(getSlider(), { target: { value: '80' } });
@@ -326,6 +327,31 @@ describe('RoiSimulator status debounce', () => {
     advance(STATUS_DEBOUNCE_MS);
     expect(getStatus().textContent).toBe(ONE_PERSON_STATUS);
     localStorage.clear();
+  });
+
+  it('adds the note about the rate cap to the same status region, once the values settle', () => {
+    renderSimulator();
+
+    fireEvent.change(getRate(), { target: { value: '6000' } });
+    expect(getStatus().textContent).toBe(DEFAULT_STATUS);
+    advance(STATUS_DEBOUNCE_MS);
+
+    const { cost, savings } = figuresOf({ ...DEFAULT_INPUT, hourlyRate: 5000 });
+    expect(getStatus().textContent).toBe(
+      `Custo anual hoje ${cost}. Economia estimada por ano ${savings}. ${RATE_CAP_NOTE}`,
+    );
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+  });
+
+  it('drops the note from the status again when the rate is back under the cap', () => {
+    renderSimulator();
+
+    fireEvent.change(getRate(), { target: { value: '6000' } });
+    advance(STATUS_DEBOUNCE_MS);
+    fireEvent.change(getRate(), { target: { value: '50' } });
+    advance(STATUS_DEBOUNCE_MS);
+
+    expect(getStatus().textContent).toBe(DEFAULT_STATUS);
   });
 
   it('reads R$ 0 and never NaN once an emptied rate settles', () => {

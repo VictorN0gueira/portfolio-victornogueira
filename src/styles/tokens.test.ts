@@ -545,49 +545,51 @@ describe('tokens.css tab progress', () => {
 describe('tokens.css range slider', () => {
   const TRACK_SELECTORS = ['.vn-range::-webkit-slider-runnable-track', '.vn-range::-moz-range-track']
   const THUMB_SELECTORS = ['.vn-range::-webkit-slider-thumb', '.vn-range::-moz-range-thumb']
+  // The forced colors block repeats the part selectors, so each lookup names a declaration that only the main rule holds.
+  const slider = (): string => blockBody(css, '.vn-range', 'appearance')
+  const track = (selector: string): string => blockBody(css, selector, 'linear-gradient')
+  const thumb = (selector: string): string => blockBody(css, selector, 'width: 28px')
+  const focusRing = (selector: string): string => blockBody(css, selector, 'box-shadow')
   const rangeCss = [
-    blockBody(css, '.vn-range'),
-    ...TRACK_SELECTORS.map((selector) => blockBody(css, selector)),
-    ...THUMB_SELECTORS.map((selector) => blockBody(css, selector)),
-    blockBody(css, '.vn-range:focus-visible'),
-    blockBody(css, '.vn-range:focus-visible::-webkit-slider-thumb'),
-    blockBody(css, '.vn-range:focus-visible::-moz-range-thumb'),
+    slider(),
+    ...TRACK_SELECTORS.map(track),
+    ...THUMB_SELECTORS.map(thumb),
+    blockBody(css, '.vn-range:focus-visible', 'outline'),
+    focusRing('.vn-range:focus-visible::-webkit-slider-thumb'),
+    focusRing('.vn-range:focus-visible::-moz-range-thumb'),
   ].join('\n')
 
   it('styles the WebKit and the Firefox parts in separate rules, since one unknown pseudo element voids a whole selector list', () => {
-    for (const selector of [...TRACK_SELECTORS, ...THUMB_SELECTORS]) {
-      expect(blockBody(css, selector), selector).not.toBe('')
-    }
+    for (const selector of TRACK_SELECTORS) expect(track(selector), selector).not.toBe('')
+    for (const selector of THUMB_SELECTORS) expect(thumb(selector), selector).not.toBe('')
     expect(css).not.toMatch(/::-webkit-slider-thumb,\s*\.vn-range::-moz-range-thumb/)
   })
 
   it('removes the native look and starts the fill at 0 until the input sets --vn-range-fill', () => {
-    const slider = blockBody(css, '.vn-range')
-
-    expect(slider).toMatch(/appearance:\s*none/)
-    expect(slider).toContain('--vn-range-fill: 0%')
-    expect(blockBody(css, '.vn-range::-webkit-slider-thumb')).toMatch(/appearance:\s*none/)
+    expect(slider()).toMatch(/appearance:\s*none/)
+    expect(slider()).toContain('--vn-range-fill: 0%')
+    expect(thumb('.vn-range::-webkit-slider-thumb')).toMatch(/appearance:\s*none/)
   })
 
   it('draws a 28px round thumb for a finger in both engines', () => {
     for (const selector of THUMB_SELECTORS) {
-      const thumb = blockBody(css, selector)
+      const rule = thumb(selector)
 
-      expect(thumb, selector).toMatch(/width:\s*28px/)
-      expect(thumb, selector).toMatch(/height:\s*28px/)
-      expect(thumb, selector).toMatch(/border-radius:\s*50%/)
+      expect(rule, selector).toMatch(/width:\s*28px/)
+      expect(rule, selector).toMatch(/height:\s*28px/)
+      expect(rule, selector).toMatch(/border-radius:\s*50%/)
     }
   })
 
   it('centers the WebKit thumb on the track: Firefox does it by itself', () => {
-    expect(blockBody(css, '.vn-range::-webkit-slider-thumb')).toContain('margin-top: calc((var(--vn-range-track) - 28px) * 0.5)')
+    expect(thumb('.vn-range::-webkit-slider-thumb')).toContain('margin-top: calc((var(--vn-range-track) - 28px) * 0.5)')
   })
 
   it('fills the track from --vn-range-fill in white over a gray mid rest, in both engines', () => {
     for (const selector of TRACK_SELECTORS) {
-      const track = blockBody(css, selector)
+      const rule = track(selector)
 
-      expect(track, selector).toContain(
+      expect(rule, selector).toContain(
         'linear-gradient(to right, var(--color-vn-white) var(--vn-range-fill), var(--color-vn-gray-mid) var(--vn-range-fill))',
       )
     }
@@ -609,20 +611,20 @@ describe('tokens.css range slider', () => {
   })
 
   it('shows the focus on the thumb as a white ring, and keeps a transparent outline that forced colors turns visible', () => {
-    const focus = blockBody(css, '.vn-range:focus-visible')
+    const focus = blockBody(css, '.vn-range:focus-visible', 'outline')
 
     expect(focus).toMatch(/outline:\s*2px solid transparent/)
     for (const selector of ['.vn-range:focus-visible::-webkit-slider-thumb', '.vn-range:focus-visible::-moz-range-thumb']) {
-      expect(blockBody(css, selector), selector).toMatch(/box-shadow:\s*0 0 0 3px var\(--color-vn-white\)/)
+      expect(focusRing(selector), selector).toMatch(/box-shadow:\s*0 0 0 3px var\(--color-vn-white\)/)
     }
   })
 
   it('leaves width and height to utilities (w-full h-11), because this file is unlayered and would beat a consumer className', () => {
-    expect(blockBody(css, '.vn-range')).not.toMatch(/(^|[\s;])(min-width|max-width|width|height|min-height):/)
+    expect(slider()).not.toMatch(/(^|[\s;])(min-width|max-width|width|height|min-height):/)
   })
 
   it('lets a vertical drag scroll the page while a horizontal one moves the slider', () => {
-    expect(blockBody(css, '.vn-range')).toMatch(/touch-action:\s*pan-y/)
+    expect(slider()).toMatch(/touch-action:\s*pan-y/)
   })
 
   it('has no transition or animation, so there is nothing to switch off for reduced motion', () => {
@@ -630,7 +632,7 @@ describe('tokens.css range slider', () => {
   })
 
   it('keeps the thumb and the track visible in forced colors', () => {
-    const forced = blockBody(css, '@media (forced-colors: active)')
+    const forced = blockBody(css, '@media (forced-colors: active)', '.vn-range::-webkit-slider-thumb')
 
     for (const selector of [...THUMB_SELECTORS, ...TRACK_SELECTORS]) {
       expect(blockBody(forced, selector), selector).not.toBe('')

@@ -68,7 +68,7 @@ describe('AnimatedCurrency with motion', () => {
     await waitFor(() => expect(amount.text()).toBe(`R$${NBSP}31.200`), { timeout: PAST_A_COUNT_MS });
   });
 
-  it('starts the next count from the number on screen, and still ends on the last value', async () => {
+  it('still ends on the last value after a change interrupts a count', async () => {
     stubMatchMedia();
     const amount = renderAmount(0);
 
@@ -76,6 +76,41 @@ describe('AnimatedCurrency with motion', () => {
     amount.change(50000);
 
     await waitFor(() => expect(amount.text()).toBe(`R$${NBSP}50.000`), { timeout: PAST_A_COUNT_MS });
+  });
+
+  it('keeps the old text at first when the number of digits grows, then counts up to the new value', async () => {
+    stubMatchMedia();
+    const amount = renderAmount(62_400);
+
+    amount.change(7_800_000);
+
+    expect(amount.text()).toBe(`R$${NBSP}62.400`);
+    await waitFor(() => expect(amount.text()).toBe(`R$${NBSP}7.800.000`), { timeout: PAST_A_COUNT_MS });
+  });
+
+  it('cuts the old text to the digits of the new value at once when the number of digits shrinks, so it never outgrows its size', async () => {
+    stubMatchMedia();
+    const amount = renderAmount(7_800_000);
+
+    amount.change(62_400);
+
+    expect(amount.text()).toBe(`R$${NBSP}99.999`);
+    await waitFor(() => expect(amount.text()).toBe(`R$${NBSP}62.400`), { timeout: PAST_A_COUNT_MS });
+  });
+
+  it('never shows more digits than the final value while it counts down from a longer number', async () => {
+    stubMatchMedia();
+    const amount = renderAmount(7_800_000);
+    const seen: string[] = [];
+    const observer = new MutationObserver(() => seen.push(amount.text()));
+    observer.observe(amount.element(), { childList: true, characterData: true, subtree: true });
+
+    amount.change(62_400);
+    await waitFor(() => expect(amount.text()).toBe(`R$${NBSP}62.400`), { timeout: PAST_A_COUNT_MS });
+    observer.disconnect();
+
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.every((text) => text.replace(/\D/g, '').length <= 5)).toBe(true);
   });
 });
 
@@ -86,12 +121,12 @@ describe('AnimatedCurrency markup', () => {
     expect(renderAmount(78000).element()).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('uses tabular figures and never wraps, with or without motion', () => {
+  it('uses tabular figures, never wraps and never transitions its size, with or without motion', () => {
     for (const isReduced of [true, false]) {
       stubMatchMedia({ [REDUCED_MOTION_QUERY]: isReduced });
       const amount = renderAmount(78000);
 
-      expect(amount.element()).toHaveClass('tabular-nums', 'whitespace-nowrap');
+      expect(amount.element()).toHaveClass('tabular-nums', 'whitespace-nowrap', 'transition-none');
       amount.unmount();
     }
   });

@@ -59,7 +59,7 @@ function HoursSlider({ hours, onChange }: HoursSliderProps) {
         aria-valuetext={aria.hoursValue(hours)}
         onChange={(event) => onChange(Number(event.target.value))}
         style={{ '--vn-range-fill': `${hoursPercent(hours)}%` } as CSSProperties}
-        className="vn-range mt-2 h-11 w-full"
+        className="vn-range h-11 w-full"
       />
     </div>
   );
@@ -122,12 +122,16 @@ function TeamRadios({ selectedIndex, onChange }: TeamRadiosProps) {
 
 interface RateFieldProps {
   text: string;
-  onChange: (text: string) => void;
+  /** Said under the field when the rate is counted at its ceiling, and linked to the field with aria-describedby. */
+  capNote: string | null;
+  /** The text as typed, and whether the browser calls it incomplete (a number field has no value for "12." yet). */
+  onChange: (text: string, isIncomplete: boolean) => void;
 }
 
 /** The hourly rate: a number field that holds the text as typed. Turning it into a number is parseHourlyRate's job. */
-function RateField({ text, onChange }: RateFieldProps) {
+function RateField({ text, capNote, onChange }: RateFieldProps) {
   const id = useId();
+  const noteId = useId();
 
   return (
     <div>
@@ -142,9 +146,15 @@ function RateField({ text, onChange }: RateFieldProps) {
         max={MAX_HOURLY_RATE}
         step="any"
         value={text}
-        onChange={(event) => onChange(event.target.value)}
+        aria-describedby={capNote ? noteId : undefined}
+        onChange={(event) => onChange(event.target.value, event.target.validity.badInput)}
         className={RATE_FIELD_CLASSES}
       />
+      {capNote ? (
+        <p id={noteId} className="mt-2 text-sm text-vn-gray-light">
+          {capNote}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -155,7 +165,8 @@ interface RoiControlsProps {
   teamIndex: number;
   onTeamChange: (index: number) => void;
   rateText: string;
-  onRateTextChange: (text: string) => void;
+  rateCapNote: string | null;
+  onRateChange: (text: string, isIncomplete: boolean) => void;
 }
 
 /** The three controls of the simulator, in the order of the formula: hours, people and the hourly rate. */
@@ -165,13 +176,14 @@ export function RoiControls({
   teamIndex,
   onTeamChange,
   rateText,
-  onRateTextChange,
+  rateCapNote,
+  onRateChange,
 }: RoiControlsProps) {
   return (
     <div className="flex flex-col gap-8">
       <HoursSlider hours={hours} onChange={onHoursChange} />
       <TeamRadios selectedIndex={teamIndex} onChange={onTeamChange} />
-      <RateField text={rateText} onChange={onRateTextChange} />
+      <RateField text={rateText} capNote={rateCapNote} onChange={onRateChange} />
     </div>
   );
 }

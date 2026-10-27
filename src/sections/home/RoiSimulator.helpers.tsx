@@ -14,6 +14,10 @@ export const TEAM_NAME = 'Quantas pessoas fazem isso';
 export const RATE_NAME = 'Valor da hora (R$)';
 export const CTA_NAME = 'Quero automatizar esse processo';
 export const STATUS_DEBOUNCE_MS = 600;
+export const DEFAULT_COST = `R$${NBSP}78.000`;
+export const DEFAULT_SAVINGS = `R$${NBSP}62.400`;
+/** The note that says the rate was capped, as the simulator writes it for the ceiling of R$ 5.000. */
+export const RATE_CAP_NOTE = `Calculamos com no máximo R$${NBSP}5.000 por hora.`;
 
 /** The input the simulator starts with: 12 hours, 2 to 3 people (2.5) and R$ 50 per hour. */
 export const DEFAULT_INPUT: RoiInput = { hoursPerWeek: 12, teamMultiplier: 2.5, hourlyRate: 50 };
@@ -34,7 +38,7 @@ export function renderSimulator({ isMotionReduced = true, onQuoteRequest = vi.fn
   return { user, onQuoteRequest, ...view };
 }
 
-/** Every element whose own text is exactly this amount (a figure, never the sentence of the status region). */
+/** Every element whose own text is exactly this one, spaces kept: a figure or a note, never the status sentence. */
 export function getAmounts(text: string): HTMLElement[] {
   return screen.queryAllByText(text, { normalizer: KEEP_SPACES });
 }

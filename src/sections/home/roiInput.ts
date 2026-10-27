@@ -4,11 +4,18 @@ export const DEFAULT_HOURS = 12;
 /** The "2 a 3 pessoas" option of TEAM_OPTIONS. */
 export const DEFAULT_TEAM_INDEX = 1;
 /**
- * The largest hourly rate the simulator computes with, the same ceiling the earlier calculator had. It keeps the
+ * The largest hourly rate the simulator computes with, the max the earlier calculator's field advertised. It keeps the
  * biggest number (80 hours, more than 10 people, this rate) at 14 characters, so the result panel can always fit it.
+ * A rate above it is counted at it, and the simulator says so (see isHourlyRateCapped).
  */
 export const MAX_HOURLY_RATE = 5000;
 const HOURS_SPAN = HOURS_MAX - HOURS_MIN;
+
+/** The number the text of the field writes: blank is 0 and anything unreadable is NaN, with no limit applied yet. */
+function readRate(text: string): number {
+  const trimmed = text.trim();
+  return trimmed === '' ? 0 : Number(trimmed);
+}
 
 /**
  * The hourly rate the field holds, as the number the formula uses. An empty or blank field counts as 0, and so does
@@ -16,16 +23,22 @@ const HOURS_SPAN = HOURS_MAX - HOURS_MIN;
  * ceiling is computed at the ceiling. The text in the field is never rewritten: only this computed value is.
  */
 export function parseHourlyRate(text: string): number {
-  const trimmed = text.trim();
-  if (trimmed === '') return 0;
-
-  const rate = Number(trimmed);
+  const rate = readRate(text);
   if (!Number.isFinite(rate) || rate < 0) return 0;
   return Math.min(rate, MAX_HOURLY_RATE);
 }
 
+/**
+ * True when the text is a finite rate above the ceiling, so it is counted at the ceiling and the visitor must be told.
+ * Text that is not finite (for example an exponent that overflows) is a plain 0 and gets no note.
+ */
+export function isHourlyRateCapped(text: string): boolean {
+  const rate = readRate(text);
+  return Number.isFinite(rate) && rate > MAX_HOURLY_RATE;
+}
+
 /** Where the thumb of the hours slider sits, 0 to 100, which is how much of the track is filled. */
 export function hoursPercent(hours: number): number {
-  const percent = ((hours - HOURS_MIN)/HOURS_SPAN) * 100;
+  const percent = ((hours - HOURS_MIN) / HOURS_SPAN) * 100;
   return Math.min(100, Math.max(0, percent));
 }

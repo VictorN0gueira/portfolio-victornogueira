@@ -1,10 +1,20 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { TEAM_OPTIONS } from '../../lib/roi';
-import { NBSP, getAmounts, getCta, getRadio, getRate, getSlider, getTeamGroup, renderSimulator } from './RoiSimulator.helpers';
+import { amountWidthEm } from './amountFit';
+import {
+  DEFAULT_COST,
+  DEFAULT_SAVINGS,
+  getAmounts,
+  getCta,
+  getRadio,
+  getRate,
+  getSlider,
+  getTeamGroup,
+  renderSimulator,
+} from './RoiSimulator.helpers';
 
-const DEFAULT_COST = `R$${NBSP}78.000`;
-const DEFAULT_SAVINGS = `R$${NBSP}62.400`;
+const FIT_EM = '--vn-fit-em';
 
 describe('RoiSimulator wrapper', () => {
   it('puts the black section inside a rounded wrapper with side margins that grow with the screen', () => {
@@ -54,23 +64,52 @@ describe('RoiSimulator layout', () => {
     expect(panel).toContainElement(getCta());
   });
 
-  it('sizes the savings number from clamp(2.5rem,1.5rem+5vw,5rem), capped by the width of its own box', () => {
+  it('sizes the savings number from the brief clamp, capped by the width of its box divided by the width of its final text', () => {
     renderSimulator();
     const savings = getAmounts(DEFAULT_SAVINGS)[0];
+    const box = savings.closest('.\\@container') as HTMLElement;
 
+    expect(box.style.getPropertyValue(FIT_EM)).toBe(String(amountWidthEm(62400)));
     expect(savings.className).toContain('clamp(2.5rem,1.5rem+5vw,5rem)');
-    expect(savings.className).toMatch(/cqi/);
+    expect(savings.className).toContain('cqi');
+    expect(savings.className).toContain(`var(${FIT_EM})`);
     expect(savings).toHaveClass('tabular-nums');
-    expect(savings.closest('.\\@container')).not.toBeNull();
   });
 
-  it('sizes the cost number from the width of its box too, so the biggest value never overflows the panel', () => {
+  it('keeps the tight line height on both numbers next to the font size, which twMerge drops if it comes before it', () => {
+    renderSimulator();
+
+    for (const text of [DEFAULT_COST, DEFAULT_SAVINGS]) {
+      expect(getAmounts(text)[0]).toHaveClass('leading-none');
+    }
+  });
+
+  it('sizes the cost number the same way, from its own final text and the smaller clamp', () => {
     renderSimulator();
     const cost = getAmounts(DEFAULT_COST)[0];
+    const box = cost.closest('.\\@container') as HTMLElement;
 
-    expect(cost.className).toMatch(/cqi/);
-    expect(cost).toHaveClass('tabular-nums');
-    expect(cost.closest('.\\@container')).not.toBeNull();
+    expect(box.style.getPropertyValue(FIT_EM)).toBe(String(amountWidthEm(78000)));
+    expect(cost.className).toContain('clamp(1.75rem,1.2rem+2.4vw,2.75rem)');
+    expect(cost.className).toContain(`var(${FIT_EM})`);
+  });
+
+  it('reserves the line box of the brief clamp for each number, so the panel keeps its height when the digits change', () => {
+    renderSimulator();
+
+    expect(getAmounts(DEFAULT_SAVINGS)[0].parentElement).toHaveClass('min-h-[clamp(2.5rem,1.5rem+5vw,5rem)]');
+    expect(getAmounts(DEFAULT_COST)[0].parentElement).toHaveClass('min-h-[clamp(1.75rem,1.2rem+2.4vw,2.75rem)]');
+  });
+
+  it('measures the fit again from the new final text when the number of digits changes', () => {
+    renderSimulator();
+    const savings = getAmounts(DEFAULT_SAVINGS)[0];
+    const box = savings.closest('.\\@container') as HTMLElement;
+
+    fireEvent.change(getRate(), { target: { value: '5000' } });
+
+    // 12 hours, 2 to 3 people, R$ 5.000 per hour: R$ 7.800.000 a year and R$ 6.240.000 saved.
+    expect(box.style.getPropertyValue(FIT_EM)).toBe(String(amountWidthEm(6240000)));
   });
 
   it('sets the team options as a 2 by 2 grid below sm and a row from sm', () => {

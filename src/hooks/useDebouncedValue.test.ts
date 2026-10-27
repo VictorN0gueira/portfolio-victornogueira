@@ -60,6 +60,25 @@ describe('useDebouncedValue', () => {
     expect(new Set(seen)).toEqual(new Set(['a', 'd']));
   });
 
+  it('stays on the first value, with no timer left, when the value goes away and comes back within the delay', () => {
+    const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, DELAY_MS), {
+      initialProps: { value: 'A' },
+    });
+
+    rerender({ value: 'B' });
+    act(() => {
+      vi.advanceTimersByTime(DELAY_MS - 100);
+    });
+    rerender({ value: 'A' });
+
+    expect(result.current).toBe('A');
+    expect(vi.getTimerCount()).toBe(0);
+    act(() => {
+      vi.advanceTimersByTime(DELAY_MS * 2);
+    });
+    expect(result.current).toBe('A');
+  });
+
   it('drops the pending update when it unmounts', () => {
     const { rerender, unmount } = renderHook(({ value }) => useDebouncedValue(value, DELAY_MS), {
       initialProps: { value: 'first' },
