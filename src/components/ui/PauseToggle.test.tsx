@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { findAccentElements } from '../../test/accent';
 import { PauseToggle } from './PauseToggle';
 
 const LABEL = 'Pausar o que se move';
@@ -121,6 +122,6 @@ describe('PauseToggle tones', () => {
       </>,
     );
 
-    expect(container.innerHTML.toLowerCase()).not.toMatch(/vn-accent|00e5a0/);
+    expect(findAccentElements(container)).toHaveLength(0);
   });
 });

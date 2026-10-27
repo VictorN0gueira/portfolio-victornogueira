@@ -18,11 +18,12 @@ const SERVICES_PATH = '/servicos';
 // 1 column, 2 from md and 3 from lg. With an odd number of cards the last one spans both columns of md.
 const GRID_CLASSES = 'grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3';
 const LAST_CARD_CLASSES = 'md:col-span-2 lg:col-span-1';
-const RADIUS = 'rounded-[clamp(20px,3vw,28px)]';
-// The article is a plain flex column that names itself from its h3, the SpotlightCard inside it draws the surface.
-// min-w-0 lets the card shrink below its longest word, so nothing widens a 280px page.
-const ARTICLE_CLASSES = cn('flex min-w-0 flex-1', RADIUS);
-const SURFACE_CLASSES = cn('flex w-full min-w-0 flex-col border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6', RADIUS);
+// The article is a plain flex column that names itself from its h3 and has no look of its own: the SpotlightCard inside
+// it draws the surface (radius, border, background). min-w-0 lets the card shrink below its longest word, so nothing
+// widens a 280px page.
+const ARTICLE_CLASSES = 'flex min-w-0 flex-1';
+const SURFACE_CLASSES =
+  'flex w-full min-w-0 flex-col rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6';
 
 interface ServiceCardProps {
   service: Service;

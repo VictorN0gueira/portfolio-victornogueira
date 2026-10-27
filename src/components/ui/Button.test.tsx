@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { findAccentElements } from '../../test/accent';
 import { FINE_POINTER_QUERY, REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import Button from './Button';
@@ -82,7 +83,7 @@ describe('Button', () => {
     });
 
     it('is never painted with the accent color', () => {
-      renderWithProviders(
+      const { container } = renderWithProviders(
         <>
           <Button>a</Button>
           <Button tone="dark">b</Button>
@@ -96,6 +97,7 @@ describe('Button', () => {
       for (const button of screen.getAllByRole('button')) {
         expect(button.className).not.toContain('accent');
       }
+      expect(findAccentElements(container)).toHaveLength(0);
     });
 
     it('merges a consumer className', () => {

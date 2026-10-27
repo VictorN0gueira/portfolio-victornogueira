@@ -153,6 +153,18 @@ describe('ServicesCards layout', () => {
     expect(grid.children[0]).not.toHaveClass('md:col-span-2');
   });
 
+  it('has no look on the article: the radius, border and background belong to the SpotlightCard inside it', () => {
+    MODES.touch();
+    renderWithProviders(<ServicesCards />);
+
+    for (const card of getCards()) {
+      const surface = card.querySelector('.vn-spotlight') as HTMLElement;
+
+      expect(card.className).not.toMatch(/rounded|border|bg-|outline|ring|shadow/);
+      expect(surface).toHaveClass('rounded-[clamp(20px,3vw,28px)]', 'border', 'bg-vn-white');
+    }
+  });
+
   it('lets a card shrink below the width of its longest word instead of widening the page', () => {
     MODES.touch();
     renderWithProviders(<ServicesCards />);
@@ -206,7 +218,8 @@ describe('ServicesCards includes list', () => {
       for (const card of getCards()) {
         const list = within(card).getByRole('list');
 
-        for (let box: HTMLElement | null = list; box && box !== card; box = box.parentElement) {
+        // Up to and including the article, and no further: its parent is the RevealItem, which carries motion's inline opacity.
+        for (let box: HTMLElement | null = list; box && box !== card.parentElement; box = box.parentElement) {
           expect(box).not.toHaveAttribute('hidden');
           expect(box).not.toHaveAttribute('aria-hidden');
           expect(box).not.toHaveAttribute('inert');

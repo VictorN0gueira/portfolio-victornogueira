@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flowPanel, flowSources, flowSteps, heroFlows } from '../../data/heroFlows';
 import { homeCopy } from '../../data/homeCopy';
 import { MD_QUERY } from '../../lib/breakpoints';
+import { findAccentElements } from '../../test/accent';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import { AutomationPanel } from './AutomationPanel';
@@ -113,8 +114,7 @@ describe('AutomationPanel content', () => {
   it('uses no accent color anywhere inside it', () => {
     const { container } = renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
-    expect(container.querySelectorAll('[class*="vn-accent"]')).toHaveLength(0);
-    expect(container.innerHTML.toLowerCase()).not.toContain('00e5a0');
+    expect(findAccentElements(container)).toHaveLength(0);
   });
 
   it('draws icons as svg only, with no glyph characters for the checks, the sources or the pause control', () => {

@@ -4,10 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { flowPanel } from '../../data/heroFlows';
 import { HEADER_HEIGHT, HEADER_HEIGHT_LANDSCAPE, HEADER_LANDSCAPE_LIFT } from '../../components/layout/Header';
 import { homeCopy } from '../../data/homeCopy';
+import { findAccentElements } from '../../test/accent';
 import { renderWithProviders } from '../../test/render';
 import { HeroSection } from './HeroSection';
 
-const ACCENT_HEX = '#00e5a0';
 const TASK_TRIGGER = 'Tarefa: planilha e WhatsApp. Alterar';
 
 function renderHero() {
@@ -15,27 +15,6 @@ function renderHero() {
   const view = renderWithProviders(<HeroSection />);
   const section = view.container.querySelector('section') as HTMLElement;
   return { user, section, ...view };
-}
-
-/**
- * Every element of the subtree that draws with the accent: a utility class that names it, an inline style that
- * holds the hex or the variable, or an svg paint attribute with the hex. jsdom cannot compute a utility class,
- * so the class names and the inline values are what can be checked here (the e2e spec checks computed colors).
- */
-function findAccentElements(root: HTMLElement): Element[] {
-  return Array.from(root.querySelectorAll('*')).filter((element) => {
-    const className = element.getAttribute('class') ?? '';
-    const style = (element.getAttribute('style') ?? '').toLowerCase();
-    const paint = [element.getAttribute('fill'), element.getAttribute('stroke'), element.getAttribute('color')]
-      .join(' ')
-      .toLowerCase();
-    return (
-      /(^|[\s:])(bg|text|border|ring|fill|stroke|outline|from|via|to|shadow|decoration|accent|caret)-vn-accent/.test(className) ||
-      style.includes(ACCENT_HEX) ||
-      style.includes('vn-accent') ||
-      paint.includes(ACCENT_HEX)
-    );
-  });
 }
 
 async function chooseTask(user: ReturnType<typeof userEvent.setup>, optionName: string) {

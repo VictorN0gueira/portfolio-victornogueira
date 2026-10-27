@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { findAccentElements } from '../../test/accent';
 import { renderWithProviders } from '../../test/render';
 import { WindowFrame } from './WindowFrame';
 
@@ -65,7 +66,7 @@ describe('WindowFrame', () => {
   it('uses palette colors only and never the accent', () => {
     const { container } = renderFrame({ status: 'ativo' });
 
-    expect(container.innerHTML).not.toContain('vn-accent');
+    expect(findAccentElements(container)).toHaveLength(0);
     expect(container.innerHTML).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 

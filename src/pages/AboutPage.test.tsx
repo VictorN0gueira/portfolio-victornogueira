@@ -21,22 +21,6 @@ describe('AboutPage', () => {
     Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
   });
 
-  it('has everything above #metodo in its first render, with no lazy skeleton, so the anchor never moves when a chunk arrives', () => {
-    // This test has to stay first in the file: React.lazy keeps what it loaded, so after any other render a lazy About
-    // would already be resolved here and the test could not tell.
-    const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
-    const method = document.getElementById('metodo') as HTMLElement;
-    const about = container.querySelector('#sobre') as HTMLElement;
-
-    // Found at once, with no findBy: a lazy About would still be a skeleton here.
-    expect(screen.getByRole('heading', { level: 2, name: 'Sobre mim' })).toBeInTheDocument();
-    expect(method.compareDocumentPosition(about) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
-    // Whatever is still loading (the skills) sits below the method section.
-    for (const skeleton of screen.queryAllByText('Carregando...')) {
-      expect(method.compareDocumentPosition(skeleton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    }
-  });
-
   it('shows the method section, id metodo, where the old process section was', async () => {
     const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
 

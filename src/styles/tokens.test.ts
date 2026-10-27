@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { optimize } from '@tailwindcss/node'
 import { describe, it, expect } from 'vitest'
+import { blockBody } from '../test/css'
 
 const css = readFileSync(resolve(__dirname, 'tokens.css'), 'utf8')
 const indexHtml = readFileSync(resolve(__dirname, '../../index.html'), 'utf8')
@@ -215,51 +216,9 @@ describe('index.html', () => {
   })
 })
 
-/**
- * Body of the first block whose header is exactly `header` (a selector list or an at-rule prelude), found by
- * brace matching. A selector that only appears as a later item of a comma separated list does not count.
- */
-function blockBody(source: string, header: string): string {
-  const escaped = header.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const pattern = new RegExp(`(^|\\n)[ \\t]*${escaped} \\{`, 'g')
-  const match = [...source.matchAll(pattern)].find((candidate) => !source.slice(0, candidate.index).trimEnd().endsWith(','))
-  if (!match) return ''
-  const open = match.index + match[0].length - 1
-  let depth = 0
-  for (let index = open; index < source.length; index += 1) {
-    if (source[index] === '{') depth += 1
-    if (source[index] === '}') depth -= 1
-    if (depth === 0) return source.slice(open + 1, index)
-  }
-  return ''
-}
-
 const FINE_POINTER_MOTION_GATE = '@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
 const REDUCED_MOTION_GATE = '@media (prefers-reduced-motion: reduce)'
 const MARQUEE_MASK = 'linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)'
-
-describe('blockBody helper', () => {
-  it('returns the body of a flat rule and of an at-rule with nested rules', () => {
-    const sample = '.a { color: red; }\n@media (x) {\n  .b {\n    color: blue;\n  }\n}\n.c { color: green; }'
-
-    expect(blockBody(sample, '.a')).toContain('color: red')
-    expect(blockBody(sample, '@media (x)')).toContain('.b {')
-    expect(blockBody(blockBody(sample, '@media (x)'), '.b')).toContain('color: blue')
-    expect(blockBody(sample, '.c')).toContain('color: green')
-  })
-
-  it('does not mistake a longer selector for the one asked for', () => {
-    expect(blockBody('.a-b { color: red; }', '.a')).toBe('')
-  })
-
-  it('skips a selector that is only a later item of a selector list', () => {
-    expect(blockBody('.a,\n.b { color: red; }\n.b { color: blue; }', '.b')).toContain('color: blue')
-  })
-
-  it('returns an empty string for a missing block', () => {
-    expect(blockBody('.a { color: red; }', '.z')).toBe('')
-  })
-})
 
 describe('tokens.css marquee', () => {
   it('loops the track with vn-marquee on the compositor, the duration coming from --vn-marquee-duration', () => {
@@ -354,7 +313,8 @@ describe('tokens.css marquee', () => {
 })
 
 describe('tokens.css spotlight card', () => {
-  const gated = blockBody(css, FINE_POINTER_MOTION_GATE)
+  // The stylesheet has more than one gate with this header: this one is the gate that draws the spotlight layers.
+  const gated = blockBody(css, FINE_POINTER_MOTION_GATE, '.vn-spotlight::before')
   const outsideGate = css.replace(gated, '')
 
   it('has a gate that needs hover, a fine pointer and no reduced motion preference', () => {
