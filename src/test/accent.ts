@@ -15,7 +15,8 @@ function hasAccentStyleText(element: Element): boolean {
 /**
  * Every element of the subtree (the root included) that names the accent: in any attribute, whichever it is (class,
  * style, fill, stroke, stop-color, flood-color, lighting-color, a data attribute, ...) or in the text of a style element.
- * It is at least as strict as scanning the innerHTML of the root, without the false positives of the text of the page.
+ * As strict as an innerHTML scan on everything an element carries (every attribute name and value, and style element
+ * text), and blind to page text on purpose: text nodes, comments, tag names and script text are not scanned.
  */
 export function findAccentElements(root: HTMLElement): Element[] {
   return [root, ...Array.from(root.querySelectorAll('*'))].filter(
