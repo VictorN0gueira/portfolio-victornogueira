@@ -349,6 +349,20 @@
   animation: vn-menu-fade-out 200ms var(--ease-out) forwards;
 }
 
+/*
+ * Choice pill panel (the listbox of ChoicePill). It fades and scales in from the point Radix anchors it to.
+ * Only the opening is animated: with no exit animation Radix unmounts it at once on close, so the focus
+ * goes back to the trigger without waiting. Only transform and opacity move.
+ */
+@keyframes vn-choice-in {
+  from { opacity: 0; transform: scale(.96); }
+}
+
+.vn-choice-panel[data-state="open"] {
+  transform-origin: var(--radix-popover-content-transform-origin);
+  animation: vn-choice-in 160ms var(--ease-out);
+}
+
 /* Reduced motion: the cursor stays visible and still, the scan line is not drawn, the marquee and the accordion do not move. */
 @media (prefers-reduced-motion: reduce) {
   .vn-cursor {
@@ -382,7 +396,8 @@
   }
 
   .vn-menu-panel,
-  .vn-menu-overlay {
+  .vn-menu-overlay,
+  .vn-choice-panel {
     animation: none !important;
   }
 }
@@ -412,6 +427,7 @@
 }
 
 .a11y-no-animations .vn-menu-panel,
-.a11y-no-animations .vn-menu-overlay {
+.a11y-no-animations .vn-menu-overlay,
+.a11y-no-animations .vn-choice-panel {
   animation: none !important;
 }

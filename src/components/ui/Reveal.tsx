@@ -13,7 +13,8 @@ import {
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 
-export type RevealVariant = 'up' | 'left' | 'right' | 'zoom' | 'fade';
+/** `rise-blur` is a shorter rise that also sharpens from a blur, meant for the words of a headline. */
+export type RevealVariant = 'up' | 'left' | 'right' | 'zoom' | 'fade' | 'rise-blur';
 
 const REVEAL_DURATION_S = 0.7;
 // The design system easing, as the cubic bezier points motion expects.
@@ -33,6 +34,7 @@ const HIDDEN = {
   right: { opacity: 0, x: 40 },
   zoom: { opacity: 0, y: 16, scale: 0.94 },
   fade: { opacity: 0 },
+  'rise-blur': { opacity: 0, y: 24, filter: 'blur(8px)' },
 } as const;
 
 const SHOWN = {
@@ -41,6 +43,7 @@ const SHOWN = {
   right: { opacity: 1, x: 0 },
   zoom: { opacity: 1, y: 0, scale: 1 },
   fade: { opacity: 1 },
+  'rise-blur': { opacity: 1, y: 0, filter: 'blur(0px)' },
 } as const;
 
 // `custom` is a function that returns the item's delay. It runs when the item starts to animate (the group
@@ -61,6 +64,7 @@ const VARIANTS: Record<RevealVariant, Variants> = {
   right: createVariants('right'),
   zoom: createVariants('zoom'),
   fade: createVariants('fade'),
+  'rise-blur': createVariants('rise-blur'),
 };
 
 interface RevealGroupContextValue {

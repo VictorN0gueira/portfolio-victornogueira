@@ -107,6 +107,7 @@ describe('RevealItem with motion allowed', () => {
     ['right', 'translateX(40px)'],
     ['zoom', 'translateY(16px) scale(0.94)'],
     ['fade', null],
+    ['rise-blur', 'translateY(24px)'],
   ])('starts the %s variant hidden at its offset', (variant, transform) => {
     renderWithProviders(
       <RevealGroup>
@@ -123,6 +124,24 @@ describe('RevealItem with motion allowed', () => {
     } else {
       expect(wrapper.style.transform).toBe(transform);
     }
+  });
+
+  it('starts the rise-blur variant blurred, and clears the blur once its group is in view', async () => {
+    const { container } = renderWithProviders(
+      <RevealGroup>
+        <RevealItem variant="rise-blur">
+          <p data-testid="item">oi</p>
+        </RevealItem>
+      </RevealGroup>,
+    );
+    const wrapper = getItem('item').parentElement as HTMLElement;
+    expect(wrapper.style.filter).toBe('blur(8px)');
+
+    triggerIntersection(getGroup(container));
+
+    await waitFor(() => expect(wrapper.style.opacity).toBe('1'), { timeout: REVEALED_TIMEOUT_MS });
+    await waitFor(() => expect(wrapper.style.filter).toMatch(/^(none|blur\(0(px)?\))$/), { timeout: REVEALED_TIMEOUT_MS });
+    expect(wrapper.style.transform).toMatch(/^(none|translateY\(0(px)?\))?$/);
   });
 
   it('defaults to the up variant', () => {
