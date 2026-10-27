@@ -163,26 +163,42 @@ describe('RevealItem with motion allowed', () => {
 
   it('staggers and reveals span items like div items, in document order', async () => {
     const { container } = renderWithProviders(
-      <RevealGroup as="h1" stagger={1}>
+      <RevealGroup as="h1" stagger={0.1}>
         <RevealItem as="span" variant="rise-blur">
           <b data-testid="first">um</b>
         </RevealItem>{' '}
         <RevealItem as="span" variant="rise-blur">
           <b data-testid="second">dois</b>
+        </RevealItem>{' '}
+        <RevealItem as="span" variant="rise-blur">
+          <b data-testid="third">tres</b>
         </RevealItem>
       </RevealGroup>,
     );
-    const first = getItem('first').parentElement as HTMLElement;
-    const second = getItem('second').parentElement as HTMLElement;
-    expect(first.style.opacity).toBe('0');
-    expect(first.style.filter).toBe('blur(8px)');
+    const items = ['first', 'second', 'third'].map((id) => getItem(id).parentElement as HTMLElement);
+    items.forEach((item) => {
+      expect(item.style.opacity).toBe('0');
+      expect(item.style.filter).toBe('blur(8px)');
+    });
+    // The batch (one frame of mutations) in which each item first left opacity 0. Time never enters the check:
+    // a loaded machine may put several items in one batch, but an item can never start before the one before it.
+    const startedIn = new Map<HTMLElement, number>();
+    let batch = 0;
+    const observer = new MutationObserver(() => {
+      batch += 1;
+      items.forEach((item) => {
+        if (!startedIn.has(item) && item.style.opacity !== '0') startedIn.set(item, batch);
+      });
+    });
+    items.forEach((item) => observer.observe(item, { attributes: true, attributeFilter: ['style'] }));
 
     triggerIntersection(getGroup(container));
+    await waitFor(() => items.forEach((item) => expect(item.style.opacity).toBe('1')), { timeout: REVEALED_TIMEOUT_MS });
+    observer.disconnect();
 
-    // The first item has no delay, the second waits a full second: when the first one is moving the second is not.
-    await waitFor(() => expect(first.style.opacity).not.toBe('0'), { timeout: REVEALED_TIMEOUT_MS });
-    expect(second.style.opacity).toBe('0');
-    await waitFor(() => expect(second.style.opacity).toBe('1'), { timeout: REVEALED_TIMEOUT_MS });
+    const order = items.map((item) => startedIn.get(item) as number);
+    expect(order.every((value) => value !== undefined)).toBe(true);
+    expect(order).toEqual([...order].sort((first, second) => first - second));
   });
 
   it('shows a span item in its final state, without a hidden style, when motion is reduced', () => {

@@ -2,6 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { animate } from 'motion/react';
 import { describe, expect, it, vi } from 'vitest';
+import { RevealGroup } from '../../components/ui/Reveal';
 import { homeCopy } from '../../data/homeCopy';
 import type { HeroTaskId } from '../../data/heroFlows';
 import { DEFAULT_HOURLY_RATE, SAVINGS_RATE, monthlySavings } from '../../lib/roi';
@@ -14,6 +15,12 @@ import { HeroAnnotation, HeroFinePrint, HeroSentence } from './HeroSentence';
 vi.mock('motion/react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('motion/react')>();
   return { ...actual, animate: vi.fn(actual.animate) };
+});
+
+// The real RevealGroup, wrapped so a test can read the props the sentence gives it.
+vi.mock('../../components/ui/Reveal', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../components/ui/Reveal')>();
+  return { ...actual, RevealGroup: vi.fn(actual.RevealGroup) };
 });
 
 const NBSP = String.fromCharCode(0x00a0);
@@ -434,6 +441,23 @@ describe('HeroSentence live region', () => {
     expect(watcher.insideTarget()).toEqual([]);
     expect(getLiveRegion().textContent).toBe(TWENTY_HOURS_ESTIMATE);
   });
+
+  it('does not announce when the hours that are already chosen are chosen on a fresh mount', async () => {
+    const { user } = renderHero({ isMotionReduced: true });
+    const watcher = watchTextChanges('[role="status"]');
+
+    await user.click(screen.getByRole('button', { name: HOURS_TRIGGER }));
+    await waitFor(() => expect(screen.getByRole('option', { name: '10 horas' })).toHaveFocus());
+    // Enter on the focused option, which is the one already chosen: ChoicePill still reports the choice.
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+    watcher.stop();
+
+    expect(watcher.insideTarget()).toEqual([]);
+    expect(getLiveRegion()).toBeEmptyDOMElement();
+    expect(getResult().textContent).toBe(INITIAL_RESULT);
+  });
 });
 
 describe('HeroSentence pills', () => {
@@ -515,6 +539,14 @@ describe('HeroSentence entrance', () => {
       expect(item.style.transform).toBe('translateY(24px)');
       expect(item.style.filter).toBe('blur(8px)');
     });
+  });
+
+  it('gives the words a 0.05s stagger, which no timing check can pin deterministically', () => {
+    renderHero();
+
+    const groupProps = vi.mocked(RevealGroup).mock.calls.at(-1)?.[0];
+    expect(groupProps?.as).toBe('h1');
+    expect(groupProps?.stagger).toBe(0.05);
   });
 
   it('reveals the words one after another, in reading order, and ends with all of them shown', async () => {

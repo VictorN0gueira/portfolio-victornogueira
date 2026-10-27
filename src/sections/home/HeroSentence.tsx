@@ -214,6 +214,8 @@ export function HeroSentence({ task, onTaskChange }: HeroSentenceProps) {
   const lastIndex = SENTENCE_TOKENS.length - 1;
 
   const handleHoursChange = (nextHours: HeroHourOption['value']) => {
+    // ChoicePill reports a choice even when it is the option already chosen: nothing changed, so nothing is announced.
+    if (nextHours === hours) return;
     setHours(nextHours);
     setAnnouncement(homeCopy.hero.aria.estimate(formatBRL(savingsFor(nextHours))));
   };
