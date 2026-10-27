@@ -35,16 +35,15 @@ const PILL_SIZE_CLASSES = 'px-[0.6em] py-[0.04em]';
 // (min-w-0), takes the rest of the width, so the period always keeps its room and a pill that fits on the line is
 // never narrowed. (A percentage max-width on the pill resolved against the item, which is only as wide as the pill
 // and the period together, and cut the pill a few pixels short: its text wrapped on a line wide enough for it.)
-// The period has the box of a pill without the ring (same minimum height, padding and a transparent border) and
-// both sit at the bottom of the row, so their texts share a baseline on one line and the period stays by the last
-// line of a pill whose text wrapped. (align-items: last baseline would read the chevron of the pill, not its text.)
+// The row aligns the last baseline of its items. The text is the only item of a ChoicePill (its chevron is out of
+// the flow), so the pill's last baseline is the baseline of its last text line: the period lands on it, on one line
+// and on a pill whose text wrapped alike (measured in Chromium, 0px apart from 280px up to 1440px).
 // The corner of a choice pill is 0.8em, not fully round: on one line the radius is capped at half the height, so
 // the pill is still a capsule, and when a long option wraps it stays a soft rectangle where rounded-full would
 // become an oval that clips the text at its corners.
 const PILL_CORNER_CLASSES = 'lowercase rounded-[0.8em]';
 const ITEM_CLASSES = 'inline-block max-w-full';
-const ITEM_WITH_SUFFIX_CLASSES = 'inline-flex max-w-full items-end';
-const SUFFIX_CLASSES = 'inline-flex min-h-11 shrink-0 items-center border border-transparent py-[0.04em]';
+const ITEM_WITH_SUFFIX_CLASSES = 'inline-flex max-w-full items-baseline-last';
 const RESULT_CLASSES = [
   'relative inline-flex min-h-11 max-w-full items-center rounded-full bg-vn-accent text-vn-black',
   'font-bold normal-case tabular-nums align-baseline',
@@ -256,7 +255,7 @@ export function HeroSentence({ task, onTaskChange }: HeroSentenceProps) {
               ) : (
                 token.word
               )}
-              {token.suffix ? <span className={SUFFIX_CLASSES}>{token.suffix}</span> : null}
+              {token.suffix ? <span className="shrink-0">{token.suffix}</span> : null}
               {/* The cursor travels with the last word, so it never ends up alone on a line. */}
               {index === lastIndex ? <Cursor tone="ink" className="ml-[0.2em]" /> : null}
             </RevealItem>
@@ -275,13 +274,17 @@ export function HeroFinePrint() {
   return <p className="text-sm text-vn-gray-dark">{homeCopy.hero.finePrint}</p>;
 }
 
-// A loose curve that rises from the text toward the headline, ending in an open arrowhead.
+// A loose curve that starts beside the note and rises up and to the left, toward the numbers of the sentence
+// above it, ending in an open arrowhead.
 const ARROW_PATH = 'M64 50 C46 50 20 44 12 12 M4 22 L12 10 L22 18';
 
 /**
- * The note that tells people the numbers are theirs to change. Only from the lg breakpoint, where the panel sits
- * beside the headline and the arrow can point at it; below that the note is hidden. The arrow draws itself once,
- * when the note comes into view, with a growing dash (pathLength), and is complete at once without motion.
+ * The note that tells people the numbers are theirs to change.
+ * HeroSection places it directly under the sentence, at its right side, so the arrow rises to the numbers in the
+ * sentence (the hours pill and the result).
+ * It is shown from the lg breakpoint and hidden below it, where the sentence takes the whole width.
+ * The arrow draws itself once, when the note comes into view, with a growing dash (pathLength), and is complete
+ * at once without motion.
  */
 export function HeroAnnotation() {
   const isMotionAllowed = useMotionAllowed();

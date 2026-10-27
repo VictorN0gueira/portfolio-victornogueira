@@ -1,5 +1,11 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  HEADER_HEIGHT,
+  HEADER_HEIGHT_LANDSCAPE,
+  HEADER_LANDSCAPE_LIFT,
+  HEADER_TOP_OFFSET,
+} from '../../components/layout/Header';
 import { Button } from '../../components/ui/Button';
 import { Container } from '../../components/ui/Container';
 import { Kicker } from '../../components/ui/Kicker';
@@ -12,19 +18,25 @@ import { HeroAnnotation, HeroFinePrint, HeroSentence } from './HeroSentence';
 
 const DEFAULT_TASK: HeroTaskId = 'planilha-whatsapp';
 
-// The header is fixed at max(12px, notch inset) from the top and is about 58px tall (44px controls, 6px padding
-// and a 1px border on each side). The content starts below it with room to breathe, a little more on wide screens.
-const CONTENT_TOP_PADDING = 'calc(max(12px, env(safe-area-inset-top)) + 58px + clamp(2rem, 1rem + 4vw, 5rem))';
+// The content starts below the fixed header, with room to breathe (a little more on wide screens).
+// The header's own numbers come from Header.tsx, in rem, so this follows a larger font and the notch like it does.
+// A phone held sideways has a shorter header that sits 0.5rem higher, so it gets its own offset.
+const BREATHING_ROOM = 'clamp(2rem, 1rem + 4vw, 5rem)';
+const CONTENT_TOP_VARS = {
+  '--hero-top': `calc(${HEADER_TOP_OFFSET} + ${HEADER_HEIGHT} + ${BREATHING_ROOM})`,
+  '--hero-top-landscape': `calc(${HEADER_TOP_OFFSET} - ${HEADER_LANDSCAPE_LIFT} + ${HEADER_HEIGHT_LANDSCAPE} + ${BREATHING_ROOM})`,
+} as CSSProperties;
+const CONTENT_TOP_CLASSES = 'pt-[var(--hero-top)] [@media(max-height:480px)]:pt-[var(--hero-top-landscape)]';
 
-// The panel lies flat in the reading position, so this is the column everything under the kicker lives in.
+// The panel lies flat in the reading position, so this is the column the sentence and the panel live in.
 const COLUMN_CLASSES = 'w-full max-w-5xl';
 
 /**
  * The first screen of the home: an inset cream card with the scan grid behind it, the interactive sentence, the
- * promise under it, the two calls to action, and the live automation panel. The task chosen in the sentence is
- * the task the panel shows, so the state lives here. The card clips its own overflow (rounded corners, the
- * grid, and the few pixels the tilted panel may lean out by) and has no minimum height, so on a phone held
- * sideways the panel sits right under the sentence.
+ * note about its numbers, the promise, the two calls to action, and the live automation panel.
+ * The task chosen in the sentence is the task the panel shows, so the state lives here.
+ * The card clips its own overflow (rounded corners, the grid, and the few pixels the tilted panel may lean out by)
+ * and has no minimum height, so on a phone held sideways the panel sits right under the sentence.
  */
 export function HeroSection() {
   const [task, setTask] = useState<HeroTaskId>(DEFAULT_TASK);
@@ -36,11 +48,15 @@ export function HeroSection() {
       className="mx-2 mt-2 overflow-hidden rounded-[clamp(24px,4vw,40px)] border border-vn-gray-light py-0 min-[360px]:mx-3 min-[360px]:mt-3 md:mx-6 md:mt-6"
     >
       <ScanGrid />
-      <div style={{ paddingTop: CONTENT_TOP_PADDING }} className="pb-[clamp(2rem,1rem+4vw,5rem)]">
+      <div style={CONTENT_TOP_VARS} className={`${CONTENT_TOP_CLASSES} pb-[clamp(2rem,1rem+4vw,5rem)]`}>
         <Container className="flex flex-col items-center text-center">
           <Kicker className="items-center">{kicker}</Kicker>
           <div className={`${COLUMN_CLASSES} mt-6`}>
             <HeroSentence task={task} onTaskChange={setTask} />
+          </div>
+          {/* Under the sentence, at its right side, so the arrow of the note rises to the numbers in it. */}
+          <div className={`${COLUMN_CLASSES} lg:flex lg:justify-end`}>
+            <HeroAnnotation />
           </div>
           <p className="mt-6 max-w-2xl text-pretty text-base text-vn-gray-dark md:text-lg">{sub}</p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -54,11 +70,7 @@ export function HeroSection() {
           <div className="mt-5">
             <HeroFinePrint />
           </div>
-          <div className={`${COLUMN_CLASSES} relative mt-10 md:mt-14 lg:mt-16`}>
-            {/* The note stands above the panel at the right and its arrow, flipped to point down, lands on it. */}
-            <div className="absolute right-[8%] bottom-full z-10 mb-1 [&_svg]:scale-y-[-1]">
-              <HeroAnnotation />
-            </div>
+          <div className={`${COLUMN_CLASSES} mt-10 md:mt-14`}>
             <AutomationPanel task={task} />
           </div>
         </Container>

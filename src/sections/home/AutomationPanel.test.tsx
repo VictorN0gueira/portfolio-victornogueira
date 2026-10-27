@@ -1,13 +1,16 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flowPanel, flowSources, flowSteps, heroFlows } from '../../data/heroFlows';
+import { homeCopy } from '../../data/homeCopy';
+import { MD_QUERY } from '../../lib/breakpoints';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import { AutomationPanel } from './AutomationPanel';
 
 const STEP_MS = 1400;
 const ROW_COUNT = 4;
-const WIDE_QUERY = '(min-width: 768px)';
+const { panel: panelCopy } = homeCopy.hero;
 
 function getRows(): HTMLElement[] {
   return within(screen.getByRole('list', { name: flowPanel.aria.rows })).getAllByRole('listitem');
@@ -21,13 +24,42 @@ function getSteps(): HTMLElement[] {
   return within(screen.getByRole('list', { name: flowPanel.aria.steps })).getAllByRole('listitem');
 }
 
+/** The step that runs: only marked, with data-active, while the cycle is running. */
+function getRunningStep(): string | undefined {
+  return getSteps().find((step) => step.dataset.active === 'true')?.textContent ?? undefined;
+}
+
+/** The step the cycle stopped on: only marked, with aria-current, while it does not run. */
 function getCurrentStep(): string | undefined {
   return getSteps().find((step) => step.getAttribute('aria-current') === 'step')?.textContent ?? undefined;
 }
 
-/** The element that listens for the pointer and the focus, which is the parent of the window. */
-function getPanelRoot(): HTMLElement {
-  return screen.getByText(flowPanel.title).closest('[data-flow-window]') as HTMLElement;
+function getDoneText(row: HTMLElement): HTMLElement {
+  return row.querySelector('[data-flow-done]') as HTMLElement;
+}
+
+/** The group that carries data-paused. */
+function getWindow(): HTMLElement {
+  return screen.getByRole('group', { name: panelCopy.label });
+}
+
+/** The body of the window: the part that listens for the pointer and the focus. The title bar is not in it. */
+function getBody(): HTMLElement {
+  return getWindow().querySelector('[data-flow-body]') as HTMLElement;
+}
+
+function getStepsList(): HTMLElement {
+  return screen.getByRole('list', { name: flowPanel.aria.steps });
+}
+
+/** Makes the steps row wider than its box, so it is a tab stop that can take the focus. */
+function stubOverflowingSteps(): void {
+  vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(() => 420);
+  vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(() => 300);
+}
+
+function getPauseButton(): HTMLElement {
+  return screen.getByRole('button', { name: /animação$/ });
 }
 
 function advance(steps: number): void {
@@ -78,11 +110,39 @@ describe('AutomationPanel content', () => {
     expect(container.innerHTML.toLowerCase()).not.toContain('00e5a0');
   });
 
-  it('draws icons as svg only, with no glyph characters for the checks or the sources', () => {
+  it('draws icons as svg only, with no glyph characters for the checks, the sources or the pause control', () => {
     const { container } = renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
-    expect(container.textContent).not.toMatch(/[✓✔→←▶▸]/);
+    expect(container.textContent).not.toMatch(/[✓✔→←▶▸⏸⏯]/);
     getRows().forEach((row) => expect(row.querySelector('svg')).not.toBeNull());
+    expect(getPauseButton().querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(getPauseButton().textContent).toBe('');
+  });
+});
+
+describe('AutomationPanel semantics', () => {
+  it('is a named group, with the title and the detail of every row always exposed', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+
+    expect(getWindow()).toHaveAccessibleName('Exemplo de automação rodando');
+    getRows().forEach((row) => {
+      const exposed = Array.from(row.querySelectorAll('p'));
+      expect(exposed).toHaveLength(2);
+      exposed.forEach((text) => expect(text.closest('[aria-hidden="true"]')).toBeNull());
+    });
+  });
+
+  it('keeps the done text hidden from assistive tech on every row while the cycle runs, done rows included', () => {
+    vi.useFakeTimers();
+    try {
+      renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+      advance(2);
+
+      expect(getDoneRows()).toHaveLength(2);
+      getRows().forEach((row) => expect(getDoneText(row)).toHaveAttribute('aria-hidden', 'true'));
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -125,49 +185,39 @@ describe('AutomationPanel cycle', () => {
     expect(getRows()[0]).toHaveAttribute('data-state', 'active');
   });
 
-  it('shows the done text of a row only once the row is done', () => {
+  it('moves the running step with the beat, step k modulo 4, marked with data-active and never with aria-current', () => {
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
-    const doneText = getRows()[0].querySelector('[data-flow-done]') as HTMLElement;
 
-    expect(doneText).toHaveTextContent('recebido');
-    expect(doneText).toHaveAttribute('aria-hidden', 'true');
-
+    expect(getRunningStep()).toBe('receber');
     advance(1);
-
-    expect(doneText).not.toHaveAttribute('aria-hidden');
+    expect(getRunningStep()).toBe('entender');
+    advance(1);
+    expect(getRunningStep()).toBe('executar');
+    advance(1);
+    expect(getRunningStep()).toBe('avisar');
+    advance(1);
+    expect(getRunningStep()).toBe('receber');
+    expect(getCurrentStep()).toBeUndefined();
   });
 
-  it('moves the highlighted step with the beat: step k modulo 4', () => {
-    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
-
-    expect(getCurrentStep()).toBe('receber');
-    advance(1);
-    expect(getCurrentStep()).toBe('entender');
-    advance(1);
-    expect(getCurrentStep()).toBe('executar');
-    advance(1);
-    expect(getCurrentStep()).toBe('avisar');
-    advance(1);
-    expect(getCurrentStep()).toBe('receber');
-  });
-
-  it('pauses while the pointer is over the panel and goes on when it leaves', () => {
+  it('pauses while the pointer is over the body and goes on when it leaves', () => {
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
     advance(1);
 
-    fireEvent.pointerEnter(getPanelRoot());
+    fireEvent.pointerEnter(getBody());
     advance(3);
     expect(getDoneRows()).toHaveLength(1);
 
-    fireEvent.pointerLeave(getPanelRoot());
+    fireEvent.pointerLeave(getBody());
     advance(1);
     expect(getDoneRows()).toHaveLength(2);
   });
 
-  it('pauses while the focus is inside the panel and goes on when it leaves', () => {
+  it('pauses while the focus is inside the body and goes on when it leaves', () => {
+    stubOverflowingSteps();
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
     advance(1);
-    const steps = screen.getByRole('list', { name: flowPanel.aria.steps });
+    const steps = getStepsList();
 
     act(() => steps.focus());
     advance(3);
@@ -176,21 +226,24 @@ describe('AutomationPanel cycle', () => {
     act(() => steps.blur());
     advance(1);
     expect(getDoneRows()).toHaveLength(2);
+    vi.restoreAllMocks();
   });
 
   it('stays paused while one of the two holds is still on', () => {
+    stubOverflowingSteps();
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
-    const steps = screen.getByRole('list', { name: flowPanel.aria.steps });
+    const steps = getStepsList();
 
     act(() => steps.focus());
-    fireEvent.pointerEnter(getPanelRoot());
-    fireEvent.pointerLeave(getPanelRoot());
+    fireEvent.pointerEnter(getBody());
+    fireEvent.pointerLeave(getBody());
     advance(3);
     expect(getDoneRows()).toHaveLength(0);
 
     act(() => steps.blur());
     advance(1);
     expect(getDoneRows()).toHaveLength(1);
+    vi.restoreAllMocks();
   });
 
   it('restarts the cycle when the task changes', () => {
@@ -217,6 +270,160 @@ describe('AutomationPanel cycle', () => {
   });
 });
 
+describe('AutomationPanel pause control', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('sits in the title bar next to the status, named "Pausar animação" and not pressed', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+
+    const titleBar = screen.getByText(flowPanel.title).parentElement as HTMLElement;
+    expect(titleBar.contains(getPauseButton())).toBe(true);
+    expect(titleBar.contains(screen.getByText(flowPanel.status))).toBe(true);
+    expect(getPauseButton()).toHaveAccessibleName('Pausar animação');
+    expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
+    expect(getPauseButton()).toHaveAttribute('type', 'button');
+  });
+
+  it('has a 44px hit area, a visible focus ring that works on the dark bar, and is a small icon button to the eye', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+
+    expect(getPauseButton()).toHaveClass('size-11', 'focus-visible:outline-2', 'focus-visible:outline-vn-white');
+    expect(getPauseButton().firstElementChild).toHaveClass('size-7', 'rounded-full');
+  });
+
+  it('stops the rows and marks the window as paused when it is pressed, and goes on when it is pressed again', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+    advance(1);
+    expect(getWindow()).not.toHaveAttribute('data-paused');
+
+    fireEvent.click(getPauseButton());
+
+    expect(getPauseButton()).toHaveAttribute('aria-pressed', 'true');
+    expect(getPauseButton()).toHaveAccessibleName('Retomar animação');
+    expect(getWindow()).toHaveAttribute('data-paused', 'true');
+    advance(4);
+    expect(getDoneRows()).toHaveLength(1);
+
+    fireEvent.click(getPauseButton());
+
+    expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
+    expect(getPauseButton()).toHaveAccessibleName('Pausar animação');
+    expect(getWindow()).not.toHaveAttribute('data-paused');
+    advance(1);
+    expect(getDoneRows()).toHaveLength(2);
+  });
+
+  it('is operated with the Space and Enter keys', async () => {
+    // user-event under Testing Library waits on a real timeout, which fake timers would never fire.
+    vi.useRealTimers();
+    const user = userEvent.setup();
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+    act(() => getPauseButton().focus());
+
+    await user.keyboard(' ');
+    expect(getPauseButton()).toHaveAttribute('aria-pressed', 'true');
+
+    await user.keyboard('{Enter}');
+    expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('keeps a pause of the visitor when the pointer leaves and when the focus leaves', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+    advance(1);
+    fireEvent.click(getPauseButton());
+
+    fireEvent.pointerEnter(getBody());
+    fireEvent.pointerLeave(getBody());
+    act(() => getPauseButton().focus());
+    act(() => getPauseButton().blur());
+    advance(4);
+
+    expect(getWindow()).toHaveAttribute('data-paused', 'true');
+    expect(getDoneRows()).toHaveLength(1);
+    expect(getPauseButton()).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('also marks the window as paused while the pointer or the focus holds the body, and clears it when they let go', () => {
+    stubOverflowingSteps();
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+
+    fireEvent.pointerEnter(getBody());
+    expect(getWindow()).toHaveAttribute('data-paused', 'true');
+    fireEvent.pointerLeave(getBody());
+    expect(getWindow()).not.toHaveAttribute('data-paused');
+
+    act(() => getStepsList().focus());
+    expect(getWindow()).toHaveAttribute('data-paused', 'true');
+    act(() => getStepsList().blur());
+    expect(getWindow()).not.toHaveAttribute('data-paused');
+    // A hold of the pointer or the focus is not the choice of the visitor: the button does not show it as pressed.
+    expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
+    vi.restoreAllMocks();
+  });
+
+  it('does not hold the cycle when the pointer or the focus is on the pause control itself, so Resume works at once', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+    const titleBar = screen.getByText(flowPanel.title).parentElement as HTMLElement;
+
+    fireEvent.pointerEnter(titleBar);
+    act(() => getPauseButton().focus());
+
+    expect(getWindow()).not.toHaveAttribute('data-paused');
+    advance(1);
+    expect(getDoneRows()).toHaveLength(1);
+
+    fireEvent.click(getPauseButton());
+    fireEvent.click(getPauseButton());
+    advance(1);
+    expect(getDoneRows()).toHaveLength(2);
+  });
+
+  it('keeps the pause of the visitor when the task changes, and starts the new task from its first row', () => {
+    const { rerender } = renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+    advance(2);
+    fireEvent.click(getPauseButton());
+
+    rerender(<AutomationPanel task="notas" />);
+
+    expect(getPauseButton()).toHaveAttribute('aria-pressed', 'true');
+    expect(getWindow()).toHaveAttribute('data-paused', 'true');
+    expect(getDoneRows()).toHaveLength(0);
+    advance(4);
+    expect(getDoneRows()).toHaveLength(0);
+  });
+
+  it('exposes the done text of the done rows and marks the step it stopped on while paused', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+    advance(2);
+
+    fireEvent.click(getPauseButton());
+
+    getRows().forEach((row, index) => {
+      if (index < 2) expect(getDoneText(row)).not.toHaveAttribute('aria-hidden');
+      else expect(getDoneText(row)).toHaveAttribute('aria-hidden', 'true');
+    });
+    expect(getCurrentStep()).toBe('executar');
+    expect(getRunningStep()).toBeUndefined();
+  });
+
+  it('hides the done text again and goes back to data-active when it resumes', () => {
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+    advance(2);
+    fireEvent.click(getPauseButton());
+    fireEvent.click(getPauseButton());
+
+    getRows().forEach((row) => expect(getDoneText(row)).toHaveAttribute('aria-hidden', 'true'));
+    expect(getCurrentStep()).toBeUndefined();
+    expect(getRunningStep()).toBe('executar');
+  });
+});
+
 describe('AutomationPanel with reduced motion', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -236,15 +443,24 @@ describe('AutomationPanel with reduced motion', () => {
     expect(getDoneRows()).toHaveLength(ROW_COUNT);
   });
 
-  it('shows every done text, highlights no step and draws no tilt', () => {
-    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true, [WIDE_QUERY]: true });
+  it('shows every done text, marks no step and draws no tilt', () => {
+    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true, [MD_QUERY]: true });
     const { container } = renderWithProviders(<AutomationPanel task="atendimento" />);
 
-    getRows().forEach((row) => {
-      expect(row.querySelector('[data-flow-done]')).not.toHaveAttribute('aria-hidden');
-    });
+    getRows().forEach((row) => expect(getDoneText(row)).not.toHaveAttribute('aria-hidden'));
+    expect(getRunningStep()).toBeUndefined();
     expect(getCurrentStep()).toBeUndefined();
     expect(container.querySelector('[style*="rotateX"]')).toBeNull();
+  });
+
+  it('does not render the pause control, because nothing moves, and never marks the window as paused', () => {
+    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(getWindow()).not.toHaveAttribute('data-paused');
+    fireEvent.pointerEnter(getBody());
+    expect(getWindow()).not.toHaveAttribute('data-paused');
   });
 });
 
@@ -254,7 +470,7 @@ describe('AutomationPanel tilt', () => {
   }
 
   it('starts leaning back 14 degrees and a little smaller from md up, with its own perspective', () => {
-    stubMatchMedia({ [WIDE_QUERY]: true });
+    stubMatchMedia({ [MD_QUERY]: true });
     const { container } = renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
     const { transform, transformOrigin } = getTilted(container).style;
@@ -270,33 +486,15 @@ describe('AutomationPanel tilt', () => {
     expect(getTilted(container).style.transform).toContain('rotateX(8deg)');
   });
 
-  it('animates transform properties only', () => {
+  it('writes nothing but the perspective, the rotation and the scale into the transform', () => {
     const { container } = renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
-    const style = getTilted(container).style;
-    expect(style.width).toBe('');
-    expect(style.height).toBe('');
-    expect(style.top).toBe('');
-    expect(style.margin).toBe('');
+    const functions = getTilted(container).style.transform.match(/\w+(?=\()/g) ?? [];
+    expect([...functions].sort()).toEqual(['perspective', 'rotateX', 'scale']);
   });
 });
 
 describe('AutomationPanel steps and cable', () => {
-  it('scrolls the steps sideways inside the panel below md, reachable by keyboard and named', () => {
-    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
-
-    const steps = screen.getByRole('list', { name: flowPanel.aria.steps });
-    expect(steps).toHaveClass('overflow-x-auto', 'scrollbar-hide');
-    expect(steps).toHaveAttribute('tabindex', '0');
-  });
-
-  it('is not a tab stop from md up, where the steps fit', () => {
-    stubMatchMedia({ [WIDE_QUERY]: true });
-    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
-
-    expect(screen.getByRole('list', { name: flowPanel.aria.steps })).not.toHaveAttribute('tabindex');
-  });
-
   it('draws the cable as svg that screen readers skip, with a pulse that CSS animates', () => {
     const { container } = renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
@@ -316,5 +514,48 @@ describe('AutomationPanel steps and cable', () => {
       expect(pulse).toHaveAttribute('pathLength', '100');
       expect(pulse.getAttribute('style') ?? '').not.toMatch(/width|height|top|left/);
     });
+  });
+
+  it('draws the cable column and the grid column from the same width', () => {
+    const { container } = renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+
+    const grid = container.querySelector('[data-flow-grid]') as HTMLElement;
+    const desktopCable = container.querySelector('svg[data-flow-cable].md\\:block') as SVGElement;
+    expect(grid.style.getPropertyValue('--cable-w')).toBe(`${desktopCable.getAttribute('width')}px`);
+    expect(grid.className).toContain('md:grid-cols-[10rem_var(--cable-w)_minmax(0,1fr)]');
+    expect(grid.className).not.toContain('72px');
+  });
+});
+
+describe('AutomationPanel steps row', () => {
+  let scrollWidth = 0;
+  let clientWidth = 0;
+
+  beforeEach(() => {
+    vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(() => scrollWidth);
+    vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(() => clientWidth);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('scrolls sideways inside the panel, hides its scrollbar, and is a named tab stop when the steps do overflow', () => {
+    scrollWidth = 420;
+    clientWidth = 300;
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+
+    const steps = screen.getByRole('list', { name: flowPanel.aria.steps });
+    expect(steps).toHaveClass('overflow-x-auto', 'scrollbar-hide');
+    expect(steps).toHaveAttribute('tabindex', '0');
+  });
+
+  it('is not a tab stop when the steps fit, at any screen width', () => {
+    scrollWidth = 300;
+    clientWidth = 300;
+    stubMatchMedia({ [MD_QUERY]: false });
+    renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
+
+    expect(screen.getByRole('list', { name: flowPanel.aria.steps })).not.toHaveAttribute('tabindex');
   });
 });

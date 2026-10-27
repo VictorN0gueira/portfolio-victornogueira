@@ -15,7 +15,14 @@ const DESKTOP_NAV_QUERY = '(min-width: 1024px)';
 const FOCUS_RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-ink';
 
 // Inline because it compares the notch inset with 12px: pt-safe would replace the offset instead.
-const HEADER_OFFSET = { top: 'max(12px, env(safe-area-inset-top))' } as const;
+export const HEADER_TOP_OFFSET = 'max(12px, env(safe-area-inset-top))';
+const HEADER_OFFSET = { top: HEADER_TOP_OFFSET } as const;
+// What a page needs to start its content below the header, in rem so it follows a larger font like the header does.
+// The header is 44px controls (2.75rem), 0.375rem of padding above and below (py-1.5) and a 1px border on each side.
+export const HEADER_HEIGHT = 'calc(3.5rem + 2px)';
+// A phone held sideways: 0.125rem of padding (py-0.5) instead of 0.375rem, and the pill lifted by 0.5rem (-translate-y-2).
+export const HEADER_HEIGHT_LANDSCAPE = 'calc(3rem + 2px)';
+export const HEADER_LANDSCAPE_LIFT = '0.5rem';
 
 function readScrolled(): boolean {
   return typeof window !== 'undefined' && window.scrollY > SCROLLED_AFTER_PX;

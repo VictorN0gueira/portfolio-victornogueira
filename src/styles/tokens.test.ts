@@ -525,6 +525,17 @@ describe('tokens.css cable pulse', () => {
     expect(blockBody(css, '.a11y-no-animations .vn-cable-pulse')).toContain('display: none')
   })
 
+  it('holds the dash where it is while the window is paused, keyed on data-paused', () => {
+    const paused = blockBody(css, '[data-flow-window][data-paused="true"] .vn-cable-pulse')
+
+    expect(paused).toContain('animation-play-state: paused')
+    expect(paused).not.toMatch(/animation:/)
+  })
+
+  it('pauses nothing without data-paused: the play state is never set on the pulse itself', () => {
+    expect(blockBody(css, '.vn-cable-pulse')).not.toContain('animation-play-state')
+  })
+
   it('uses no color of its own: the stroke comes from the element, so the palette guard has nothing to check here', () => {
     const pulse = blockBody(css, '.vn-cable-pulse')
 

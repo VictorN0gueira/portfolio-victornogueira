@@ -3,15 +3,30 @@ import { expect, test, type Page } from '@playwright/test';
 const ROWS_LIST_NAME = 'Passos da automação';
 const HOURS_PILL_NAME = /^Horas por semana/;
 const TASK_PILL_NAME = /^Tarefa/;
+const PAUSE_NAME = 'Pausar animação';
+const RESUME_NAME = 'Retomar animação';
 const ROW_COUNT = 4;
 const TASK_OPTIONS = ['atendimento no WhatsApp', 'emissão de notas', 'follow-up de vendas', 'planilha e WhatsApp'];
+const LONG_OPTION = 'atendimento no WhatsApp';
+const KICKER_TEXT = 'automação e IA para empresas';
 // The accent of the palette, as the browser serializes a computed color.
 const ACCENT_RGB = 'rgb(0, 229, 160)';
+const WHITE_RGB = 'rgb(255, 255, 255)';
 // Sub pixel rounding of boxes.
 const OVERFLOW_TOLERANCE_PX = 0;
+const BASELINE_TOLERANCE_PX = 1;
+const LAYOUT_TOLERANCE_PX = 1;
 const TILT_FLAT_DEG = 0.5;
 const TILT_LEANING_DEG = 1;
 const READING_POSITION = 0.3;
+const BEAT_MS = 1400;
+// A beat of the cycle and a little more, so the interval of the page has fired once.
+const ONE_BEAT_MS = BEAT_MS + 100;
+const MANY_BEATS_MS = 10_000;
+const FULL_LAP_MS = 8000;
+const MAX_TABS_TO_PAUSE_BUTTON = 60;
+const PHONE_WIDTHS = [280, 360, 412];
+const PHONE_LANDSCAPE = { width: 844, height: 390 };
 
 function heading(page: Page) {
   return page.getByRole('heading', { level: 1 });
@@ -19,6 +34,14 @@ function heading(page: Page) {
 
 function flowRows(page: Page) {
   return page.getByRole('list', { name: ROWS_LIST_NAME }).getByRole('listitem');
+}
+
+function doneRows(page: Page) {
+  return page.locator('[data-flow-window] [data-state="done"]');
+}
+
+function pulse(page: Page) {
+  return page.locator('[data-flow-window] .vn-cable-pulse').first();
 }
 
 async function choose(page: Page, pillName: RegExp, optionName: string) {
@@ -47,6 +70,47 @@ async function readTiltDegrees(page: Page): Promise<number> {
     const values = transform.replace(/^matrix3d\(|\)$/g, '').split(',').map(Number);
     return (Math.atan2(values[6], values[5]) * 180) / Math.PI;
   });
+}
+
+interface PillMeasure {
+  /** How many lines the text of the task pill takes. */
+  lines: number;
+  /** The text line of the period against the last text line of the pill, top and bottom, in px (0 when aligned). */
+  offsetTop: number;
+  offsetBottom: number;
+}
+
+/** Where the period after the task pill sits against the last line of the text of the pill. */
+async function measureTaskPill(page: Page): Promise<PillMeasure> {
+  return page.getByRole('button', { name: TASK_PILL_NAME }).evaluate((pill) => {
+    const textRects = (element: Element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return Array.from(range.getClientRects()).filter((rect) => rect.width > 0);
+    };
+    const pillLines = textRects(pill.querySelector('span') as HTMLElement);
+    const lastLine = pillLines[pillLines.length - 1];
+    const period = textRects(pill.closest('[data-reveal-item]')?.lastElementChild as Element)[0];
+    return {
+      lines: new Set(pillLines.map((rect) => Math.round(rect.top))).size,
+      offsetTop: period.top - lastLine.top,
+      offsetBottom: period.bottom - lastLine.bottom,
+    };
+  });
+}
+
+async function enableLargeFont(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem('a11y-preferences', JSON.stringify({ fontSize: true }));
+  });
+}
+
+/** The gap between the bottom of the fixed header and the top of the kicker: negative when the header covers it. */
+async function gapBelowHeader(page: Page): Promise<number> {
+  const header = await page.getByRole('banner').boundingBox();
+  const kicker = await page.getByText(KICKER_TEXT).boundingBox();
+  if (!header || !kicker) throw new Error('the header or the kicker has no box');
+  return kicker.y - (header.y + header.height);
 }
 
 test.describe('hero sentence and panel', () => {
@@ -90,22 +154,38 @@ test.describe('hero sentence and panel', () => {
 
   // Regression: the pill used to be capped at a percentage of its own item (pill plus period), a few pixels
   // under the width its text needs, so even the default option wrapped on a line wide enough for it.
-  test('keeps every option of the task pill on one line in the wide column, and never overflows with it', async ({ page }, testInfo) => {
+  test('keeps every option of the task pill on one line in the wide column, the period on its baseline, and never overflows', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'a phone wraps the long options by design');
 
     await page.goto('/');
     for (const option of TASK_OPTIONS) {
       await choose(page, TASK_PILL_NAME, option);
 
-      const lines = await page.getByRole('button', { name: TASK_PILL_NAME }).evaluate((pill) => {
-        const range = document.createRange();
-        range.selectNodeContents(pill.querySelector('span') as HTMLElement);
-        return new Set(Array.from(range.getClientRects()).map((rect) => Math.round(rect.top))).size;
-      });
+      const { lines, offsetTop, offsetBottom } = await measureTaskPill(page);
       expect(lines, option).toBe(1);
+      expect(Math.abs(offsetTop), option).toBeLessThanOrEqual(BASELINE_TOLERANCE_PX);
+      expect(Math.abs(offsetBottom), option).toBeLessThanOrEqual(BASELINE_TOLERANCE_PX);
       expect(await pageOverflow(page)).toBeLessThanOrEqual(OVERFLOW_TOLERANCE_PX);
     }
   });
+
+  // On a phone the long option wraps inside the pill: the period has to stay on the last line of its text, and
+  // the page must not grow sideways. Measured at the narrowest and at two usual widths.
+  for (const width of PHONE_WIDTHS) {
+    test(`keeps the period on the last text line of a wrapped task pill, with no overflow, at ${width}px`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== 'mobile', 'this is the phone check');
+
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/');
+      await choose(page, TASK_PILL_NAME, LONG_OPTION);
+
+      const { lines, offsetTop, offsetBottom } = await measureTaskPill(page);
+      expect(lines).toBeGreaterThan(1);
+      expect(Math.abs(offsetTop)).toBeLessThanOrEqual(BASELINE_TOLERANCE_PX);
+      expect(Math.abs(offsetBottom)).toBeLessThanOrEqual(BASELINE_TOLERANCE_PX);
+      expect(await pageOverflow(page)).toBeLessThanOrEqual(OVERFLOW_TOLERANCE_PX);
+    });
+  }
 
   test('marks the rows done one after another while motion is on', async ({ page }) => {
     await page.goto('/');
@@ -168,11 +248,150 @@ test.describe('hero sentence and panel', () => {
   });
 });
 
+test.describe('hero layout', () => {
+  test('starts the content below the fixed header', async ({ page }) => {
+    await page.goto('/');
+    await expect(heading(page)).toBeVisible();
+
+    expect(await gapBelowHeader(page)).toBeGreaterThanOrEqual(LAYOUT_TOLERANCE_PX);
+  });
+
+  test('starts the content below the fixed header with the large font', async ({ page }) => {
+    await enableLargeFont(page);
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveClass(/a11y-font-large/);
+    await expect(heading(page)).toBeVisible();
+
+    expect(await gapBelowHeader(page)).toBeGreaterThanOrEqual(LAYOUT_TOLERANCE_PX);
+  });
+
+  test('starts the content below the shorter, lifted header of a phone held sideways', async ({ page }) => {
+    await page.setViewportSize(PHONE_LANDSCAPE);
+    await page.goto('/');
+    await expect(heading(page)).toBeVisible();
+
+    expect(await gapBelowHeader(page)).toBeGreaterThanOrEqual(LAYOUT_TOLERANCE_PX);
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(OVERFLOW_TOLERANCE_PX);
+  });
+
+  test('puts the annotation under the sentence at its right side, arrow rising and unflipped, from lg up', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'the annotation is shown from the lg breakpoint');
+
+    await page.goto('/');
+    const note = page.locator('[data-hero-annotation]');
+    await expect(note).toBeVisible();
+
+    const noteBox = await note.boundingBox();
+    const headingBox = await heading(page).boundingBox();
+    const subBox = await page.getByText(/^A gente mapeia/).boundingBox();
+    if (!noteBox || !headingBox || !subBox) throw new Error('missing box');
+    expect(noteBox.y).toBeGreaterThanOrEqual(headingBox.y + headingBox.height - LAYOUT_TOLERANCE_PX);
+    expect(noteBox.y + noteBox.height).toBeLessThanOrEqual(subBox.y + LAYOUT_TOLERANCE_PX);
+    expect(noteBox.x + noteBox.width).toBeGreaterThan(headingBox.x + headingBox.width - 40);
+    const transform = await note.locator('svg').evaluate((svg) => {
+      let node: Element | null = svg;
+      const seen: string[] = [];
+      while (node && node.tagName !== 'SECTION') {
+        seen.push(getComputedStyle(node).transform, getComputedStyle(node).scale);
+        node = node.parentElement;
+      }
+      return seen;
+    });
+    expect(transform.every((value) => value === 'none')).toBe(true);
+  });
+
+  test('hides the annotation below lg', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'a phone is below lg');
+
+    await page.goto('/');
+
+    await expect(page.locator('[data-hero-annotation]')).toBeHidden();
+  });
+});
+
+test.describe('hero pause control', () => {
+  test('pauses the rows and the cable with the button in the title bar, and resumes them', async ({ page }) => {
+    await page.clock.install();
+    await page.goto('/');
+    await expect(flowRows(page)).toHaveCount(ROW_COUNT);
+    await page.clock.runFor(ONE_BEAT_MS);
+    await expect(doneRows(page)).toHaveCount(1);
+    await expect.poll(() => pulse(page).evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('running');
+
+    await page.getByRole('button', { name: PAUSE_NAME }).click();
+
+    const resume = page.getByRole('button', { name: RESUME_NAME });
+    await expect(resume).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('[data-flow-window]')).toHaveAttribute('data-paused', 'true');
+    await expect.poll(() => pulse(page).evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('paused');
+    // The count stays the same however far the clock goes.
+    await page.clock.fastForward(MANY_BEATS_MS);
+    await expect(doneRows(page)).toHaveCount(1);
+
+    await resume.click();
+
+    await expect(page.getByRole('button', { name: PAUSE_NAME })).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('[data-flow-window]')).not.toHaveAttribute('data-paused', 'true');
+    await expect.poll(() => pulse(page).evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('running');
+    await page.clock.runFor(ONE_BEAT_MS);
+    await expect(doneRows(page)).toHaveCount(2);
+  });
+
+  test('keeps the pause when the pointer comes and goes', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'this needs a pointer that hovers');
+
+    await page.clock.install();
+    await page.goto('/');
+    await expect(flowRows(page)).toHaveCount(ROW_COUNT);
+    await page.getByRole('button', { name: PAUSE_NAME }).click();
+    const rows = page.getByRole('list', { name: ROWS_LIST_NAME });
+
+    await rows.hover();
+    await page.mouse.move(0, 0);
+    await page.clock.fastForward(MANY_BEATS_MS);
+
+    await expect(page.locator('[data-flow-window]')).toHaveAttribute('data-paused', 'true');
+    await expect(doneRows(page)).toHaveCount(0);
+  });
+
+  test('is reached and operated with the keyboard, with a white focus ring on the dark title bar', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'the tab order is checked on the desktop project');
+
+    await page.goto('/');
+    await expect(flowRows(page)).toHaveCount(ROW_COUNT);
+    const pause = page.getByRole('button', { name: PAUSE_NAME });
+    for (let press = 0; press < MAX_TABS_TO_PAUSE_BUTTON; press += 1) {
+      if (await pause.evaluate((node) => node === document.activeElement)) break;
+      await page.keyboard.press('Tab');
+    }
+
+    await expect(pause).toBeFocused();
+    await expect(pause).toHaveCSS('outline-style', 'solid');
+    await expect(pause).toHaveCSS('outline-width', '2px');
+    await expect(pause).toHaveCSS('outline-color', WHITE_RGB);
+    await page.keyboard.press('Space');
+    await expect(page.getByRole('button', { name: RESUME_NAME })).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: PAUSE_NAME })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('has a 44px hit area', async ({ page }) => {
+    await page.goto('/');
+
+    // The layout size, not the bounding box: the panel leans and shrinks a little at the top of the page.
+    const [width, height] = await page
+      .getByRole('button', { name: PAUSE_NAME })
+      .evaluate((node) => [(node as HTMLElement).offsetWidth, (node as HTMLElement).offsetHeight]);
+    expect(width).toBeGreaterThanOrEqual(44);
+    expect(height).toBeGreaterThanOrEqual(44);
+  });
+});
+
 test.describe('hero with reduced motion', () => {
   // Not a top level option: Playwright Test ignores `reducedMotion` there without a word, so it goes in contextOptions.
   test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-  test('shows the four rows already done, with no tilt', async ({ page }) => {
+  test('shows the four rows already done, with no tilt and no pause control', async ({ page }) => {
     await page.goto('/');
 
     await expect(flowRows(page)).toHaveCount(ROW_COUNT);
@@ -180,13 +399,17 @@ test.describe('hero with reduced motion', () => {
       await expect(flowRows(page).nth(index)).toHaveAttribute('data-state', 'done');
     }
     await expect(page.locator('[data-flow-tilt]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: PAUSE_NAME })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: RESUME_NAME })).toHaveCount(0);
   });
 
-  test('keeps the rows done after the cycle would have restarted', async ({ page }) => {
+  test('keeps the rows done after a whole lap of the clock, because nothing runs', async ({ page }) => {
+    await page.clock.install();
     await page.goto('/');
-    // The cycle takes 5 beats of 1.4s: wait past one whole lap.
-    await page.waitForTimeout(7500);
+    await expect(flowRows(page)).toHaveCount(ROW_COUNT);
 
-    await expect(page.locator('[data-flow-window] [data-state="done"]')).toHaveCount(ROW_COUNT);
+    await page.clock.fastForward(FULL_LAP_MS);
+
+    await expect(doneRows(page)).toHaveCount(ROW_COUNT);
   });
 });

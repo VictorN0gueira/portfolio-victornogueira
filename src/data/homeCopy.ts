@@ -31,6 +31,12 @@ export const homeCopy = {
     ctaPrimary: { label: 'Quero automatizar', to: '/#contato' },
     ctaSecondary: { label: 'Ver como funciona', to: '/#metodo' },
     annotation: '// mexe nos números aí',
+    // Os nomes do painel de automação: o grupo e o botão que pausa o que se move nele.
+    panel: {
+      label: 'Exemplo de automação rodando',
+      pause: 'Pausar animação',
+      resume: 'Retomar animação',
+    },
     aria: {
       hoursPill: (label: string) => `Horas por semana: ${label}. Alterar`,
       taskPill: (label: string) => `Tarefa: ${label}. Alterar`,

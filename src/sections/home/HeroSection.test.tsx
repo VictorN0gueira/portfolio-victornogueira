@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { flowPanel } from '../../data/heroFlows';
+import { HEADER_HEIGHT, HEADER_HEIGHT_LANDSCAPE, HEADER_LANDSCAPE_LIFT } from '../../components/layout/Header';
 import { homeCopy } from '../../data/homeCopy';
 import { renderWithProviders } from '../../test/render';
 import { HeroSection } from './HeroSection';
@@ -81,22 +82,45 @@ describe('HeroSection structure', () => {
     expect(screen.getByText('Pedido chega no WhatsApp')).toBeInTheDocument();
   });
 
-  it('keeps the annotation, hidden below lg, between the text and the panel', () => {
+  it('puts the annotation directly under the sentence, between it and the paragraph, hidden below lg', () => {
     const { section } = renderHero();
 
     const note = screen.getByText(homeCopy.hero.annotation).closest('[data-hero-annotation]') as HTMLElement;
     expect(note).toHaveClass('hidden', 'lg:flex');
-    const panel = screen.getByText(flowPanel.title);
+    const sentenceColumn = screen.getByRole('heading', { level: 1 }).closest('.max-w-5xl') as HTMLElement;
+    const sub = screen.getByText(homeCopy.hero.sub);
+    const slot = note.parentElement as HTMLElement;
     expect(section.contains(note)).toBe(true);
-    expect(note.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(sentenceColumn.nextElementSibling).toBe(slot);
+    expect(slot.nextElementSibling).toBe(sub);
   });
 
-  it('orders the content as kicker, sentence, paragraph, CTAs, fine print, panel', () => {
+  it('right aligns the annotation under the sentence, so its arrow rises to the numbers', () => {
+    renderHero();
+
+    const slot = screen.getByText(homeCopy.hero.annotation).closest('[data-hero-annotation]')?.parentElement as HTMLElement;
+    expect(slot).toHaveClass('max-w-5xl', 'lg:flex', 'lg:justify-end');
+  });
+
+  it('draws the arrow as it is, rising toward the sentence: nothing flips or rotates it', () => {
+    const { section } = renderHero();
+
+    expect(section.outerHTML).not.toMatch(/scale-y|-scale-|\[&_svg\]/);
+    const note = screen.getByText(homeCopy.hero.annotation).closest('[data-hero-annotation]') as HTMLElement;
+    for (let node: HTMLElement | null = note; node && node !== section; node = node.parentElement) {
+      expect(node.className).not.toMatch(/scale|rotate/);
+      expect(node.getAttribute('style') ?? '').not.toMatch(/scale|rotate/);
+    }
+    expect(note.querySelector('svg')?.getAttribute('style')).toBeNull();
+  });
+
+  it('orders the content as kicker, sentence, annotation, paragraph, CTAs, fine print, panel', () => {
     renderHero();
 
     const ordered = [
       screen.getByText(homeCopy.hero.kicker),
       screen.getByRole('heading', { level: 1 }),
+      screen.getByText(homeCopy.hero.annotation),
       screen.getByText(homeCopy.hero.sub),
       screen.getByRole('link', { name: 'Quero automatizar' }),
       screen.getByText(homeCopy.hero.finePrint),
@@ -128,13 +152,30 @@ describe('HeroSection card', () => {
     expect(section.querySelector('.vn-scan-grid')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('clears the fixed header and the notch at the top, with a calc that uses the safe area inset', () => {
+  it('clears the fixed header and the notch at the top, in rem, with the notch inset and the breathing room', () => {
     const { section } = renderHero();
 
     const content = Array.from(section.querySelectorAll<HTMLElement>('div')).find((node) =>
-      node.style.paddingTop.includes('safe-area-inset-top'),
-    );
-    expect(content?.style.paddingTop).toContain('max(12px, env(safe-area-inset-top))');
+      node.style.getPropertyValue('--hero-top'),
+    ) as HTMLElement;
+    const top = content.style.getPropertyValue('--hero-top');
+    expect(top).toContain('max(12px, env(safe-area-inset-top))');
+    expect(top).toContain(HEADER_HEIGHT);
+    expect(top).toContain('clamp(2rem, 1rem + 4vw, 5rem)');
+    expect(top).not.toContain('58px');
+    expect(content).toHaveClass('pt-[var(--hero-top)]');
+  });
+
+  it('clears the shorter, lifted header of a phone held sideways with its own offset', () => {
+    const { section } = renderHero();
+
+    const content = Array.from(section.querySelectorAll<HTMLElement>('div')).find((node) =>
+      node.style.getPropertyValue('--hero-top-landscape'),
+    ) as HTMLElement;
+    const top = content.style.getPropertyValue('--hero-top-landscape');
+    expect(top).toContain(HEADER_HEIGHT_LANDSCAPE);
+    expect(top).toContain(`- ${HEADER_LANDSCAPE_LIFT}`);
+    expect(content).toHaveClass('[@media(max-height:480px)]:pt-[var(--hero-top-landscape)]');
   });
 
   it('has no minimum height of a whole screen, so a phone held sideways sees the panel right under the sentence', () => {

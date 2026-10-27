@@ -367,6 +367,15 @@
 }
 
 /*
+ * Paused automation panel: the window carries data-paused="true" while the visitor paused it, or the pointer or
+ * the focus holds it, and the dash of the cable stops where it is. The animation itself stays on the pulse, so
+ * leaving the pause continues from the same point.
+ */
+[data-flow-window][data-paused="true"] .vn-cable-pulse {
+  animation-play-state: paused;
+}
+
+/*
  * Choice pill panel (the listbox of ChoicePill). It fades and scales in from the point Radix anchors it to.
  * Only the opening is animated: with no exit animation Radix unmounts it at once on close, so the focus
  * goes back to the trigger without waiting. Only transform and opacity move.

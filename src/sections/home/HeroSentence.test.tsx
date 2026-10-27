@@ -528,24 +528,26 @@ describe('HeroSentence pills', () => {
 
 describe('HeroSentence line layout', () => {
   // jsdom has no layout, so the classes are pinned here and the e2e spec (hero.spec.ts) measures the real lines.
-  it('makes the item with the period a flex row, where the pill shrinks and the period keeps its room', () => {
+  it('makes the item with the period a flex row that lines up the last baseline, where the pill shrinks and the period keeps its room', () => {
     renderHero();
 
     const taskPill = screen.getByRole('button', { name: TASK_TRIGGER });
     const item = taskPill.closest('[data-reveal-item]') as HTMLElement;
-    expect(item).toHaveClass('inline-flex', 'items-end', 'max-w-full');
+    expect(item).toHaveClass('inline-flex', 'items-baseline-last', 'max-w-full');
     expect(taskPill).toHaveClass('min-w-0');
     // A percentage cap resolved against the item, which is only as wide as the pill and the period, cut the pill short.
     expect(taskPill.className).not.toMatch(/max-w-\[calc/);
   });
 
-  it('gives the period the box of a pill without the ring, so the two share a baseline', () => {
+  it('puts the period in the item as a plain box that never shrinks, with no height or padding of its own', () => {
     renderHero();
 
     const item = screen.getByRole('button', { name: TASK_TRIGGER }).closest('[data-reveal-item]') as HTMLElement;
     const period = item.lastElementChild as HTMLElement;
     expect(period).toHaveTextContent('.');
-    expect(period).toHaveClass('min-h-11', 'shrink-0', 'items-center', 'border-transparent');
+    expect(period).toHaveClass('shrink-0');
+    // The period lined up by a fixed minimum height sat 2.8px off the last line of a wrapped pill.
+    expect(period.className).not.toMatch(/min-h|items-center|py-|border/);
   });
 
   it('keeps plain words as inline blocks', () => {

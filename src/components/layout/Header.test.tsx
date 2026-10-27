@@ -2,9 +2,10 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MAIN_NAV, PRIMARY_CTA } from '../../data/navigation';
+import { MD_QUERY } from '../../lib/breakpoints';
 import { stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
-import Header from './Header';
+import Header, { HEADER_HEIGHT, HEADER_HEIGHT_LANDSCAPE, HEADER_LANDSCAPE_LIFT, HEADER_TOP_OFFSET } from './Header';
 
 const SCROLLED_Y = 100;
 const AT_THRESHOLD_Y = 60;
@@ -243,7 +244,7 @@ describe('Header', () => {
       await user.click(screen.getByRole('button', { name: 'Abrir menu' }));
       await screen.findByRole('dialog', { name: 'Menu de navegação' });
 
-      act(() => media.set('(min-width: 768px)', true));
+      act(() => media.set(MD_QUERY, true));
 
       expect(screen.getByRole('dialog', { name: 'Menu de navegação' })).toBeInTheDocument();
     });
@@ -271,5 +272,23 @@ describe('Header', () => {
       expect(button).toHaveAttribute('aria-expanded', 'true');
       expect(button).toHaveAttribute('aria-label', 'Fechar menu');
     });
+  });
+});
+
+// The hero reads these to start its content below the header, so they have to follow the classes of the header.
+describe('Header geometry', () => {
+  it('exports the offset, the height and the landscape variants in rem, next to the classes they describe', () => {
+    const header = renderHeader();
+
+    expect(HEADER_TOP_OFFSET).toBe('max(12px, env(safe-area-inset-top))');
+    expect(header.style.top).toBe(HEADER_TOP_OFFSET);
+    // 44px controls (2.75rem) + 0.375rem of padding above and below + the 1px border on each side.
+    expect(HEADER_HEIGHT).toBe('calc(3.5rem + 2px)');
+    expect(header).toHaveClass('py-1.5', 'border');
+    expect(screen.getByRole('link', { name: 'VN One, página inicial' })).toHaveClass('min-h-11');
+    // A phone held sideways: 0.125rem of padding instead of 0.375rem, and the pill lifted by 0.5rem.
+    expect(HEADER_HEIGHT_LANDSCAPE).toBe('calc(3rem + 2px)');
+    expect(HEADER_LANDSCAPE_LIFT).toBe('0.5rem');
+    expect(header).toHaveClass('[@media(max-height:480px)]:py-0.5', '[@media(max-height:480px)]:-translate-y-2');
   });
 });

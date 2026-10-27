@@ -6,6 +6,8 @@ interface WindowFrameProps {
   title: string;
   /** Optional pill at the right of the title bar. */
   status?: string;
+  /** Optional controls at the right end of the title bar, after the status (a pause button, for example). */
+  actions?: ReactNode;
   className?: string;
   children?: ReactNode;
 }
@@ -14,9 +16,9 @@ interface WindowFrameProps {
  * Static app window chrome: a dark frame with three gray dots, a mono title and an optional status pill.
  * Palette colors only, and the status is not the accent (the accent is spent once per section elsewhere).
  * The title and the status wrap onto their own lines on narrow screens instead of being cut. The body has
- * no padding: the content decides its own.
+ * no padding: the content decides its own. Controls go in `actions`, at the right end of the title bar.
  */
-export function WindowFrame({ title, status, className, children }: WindowFrameProps) {
+export function WindowFrame({ title, status, actions, className, children }: WindowFrameProps) {
   return (
     <div className={cn('overflow-hidden rounded-2xl border border-vn-gray-dark bg-vn-ink text-vn-white', className)}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-vn-gray-dark px-4 py-3">
@@ -31,6 +33,7 @@ export function WindowFrame({ title, status, className, children }: WindowFrameP
             {status}
           </span>
         ) : null}
+        {actions ? <div className={cn('flex shrink-0 items-center', !status && 'ml-auto')}>{actions}</div> : null}
       </div>
       <div className="min-w-0">{children}</div>
     </div>

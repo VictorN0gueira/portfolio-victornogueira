@@ -5,10 +5,11 @@ import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { IntersectionObserverMock, triggerIntersection } from '../../test/intersection';
 import { renderWithProviders } from '../../test/render';
 import { useAccessibility } from '../../contexts/AccessibilityContext';
+import { MD_QUERY } from '../../lib/breakpoints';
 import { RevealGroup, RevealItem, type RevealVariant } from './Reveal';
 
 const A11Y_STORAGE_KEY = 'a11y-preferences';
-const WIDE_QUERY = '(min-width: 768px)';
+const WIDE_QUERY = MD_QUERY;
 const REVEALED_TIMEOUT_MS = 3000;
 const NO_DELAY_TIMEOUT_MS = 500;
 const MOTION_BACK_ON_WINDOW_MS = 1000;

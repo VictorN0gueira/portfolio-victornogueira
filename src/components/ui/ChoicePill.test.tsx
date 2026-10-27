@@ -88,6 +88,17 @@ describe('ChoicePill trigger', () => {
     expect(trigger.textContent).toBe('10 horas');
   });
 
+  it('keeps the chevron out of the flow, so the text is the only item and the baseline of the pill is its text baseline', () => {
+    setup();
+
+    const trigger = getTrigger();
+    expect(trigger).toHaveClass('relative');
+    expect(trigger.querySelector('svg')).toHaveClass('absolute', 'right-[0.6em]', 'top-1/2');
+    expect(trigger.children).toHaveLength(2);
+    // The chevron is drawn in the right padding: 0.55em icon + 0.6em margin + 0.3em gap.
+    expect(trigger).toHaveClass('pr-[1.45em]');
+  });
+
   it('is a pill on a white surface with a light gray border and an ink focus ring', () => {
     setup();
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { flowPanel, flowSources, flowSteps, heroFlows, heroTasks } from './heroFlows';
+import { homeCopy } from './homeCopy';
 
 const EM_DASH = String.fromCharCode(0x2014);
 const EN_DASH = String.fromCharCode(0x2013);
@@ -17,6 +18,7 @@ function allStrings(): string[] {
     flowPanel.status,
     flowPanel.footnote,
     ...Object.values(flowPanel.aria),
+    ...Object.values(homeCopy.hero.panel),
   ];
 }
 
@@ -86,5 +88,13 @@ describe('heroFlows', () => {
 
   it('has no dash, arrow, check glyph or " / " separator in any string', () => {
     expect(allStrings().filter((text) => FORBIDDEN.test(text))).toEqual([]);
+  });
+
+  it('has the approved names of the panel group and its pause control', () => {
+    expect(homeCopy.hero.panel).toEqual({
+      label: 'Exemplo de automação rodando',
+      pause: 'Pausar animação',
+      resume: 'Retomar animação',
+    });
   });
 });

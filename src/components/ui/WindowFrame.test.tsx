@@ -77,4 +77,29 @@ describe('WindowFrame', () => {
     expect(screen.getByText('um-titulo-muito-longo-de-fluxo.n8n')).toHaveClass('min-w-0', 'break-words');
     expect(container.innerHTML).not.toContain('truncate');
   });
+
+  it('shows actions in the title bar, after the status, and keeps one auto margin for the pair', () => {
+    const { container } = renderWithProviders(
+      <WindowFrame title="fluxo.n8n" status="ativo" actions={<button type="button">pausar</button>}>
+        <p>conteudo</p>
+      </WindowFrame>,
+    );
+
+    const bar = screen.getByText('fluxo.n8n').parentElement as HTMLElement;
+    const status = screen.getByText('ativo');
+    const action = screen.getByRole('button', { name: 'pausar' });
+    expect(bar.contains(action)).toBe(true);
+    expect(status.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelectorAll('.ml-auto')).toHaveLength(1);
+  });
+
+  it('pushes the actions to the right edge on their own when there is no status', () => {
+    renderWithProviders(
+      <WindowFrame title="fluxo.n8n" actions={<button type="button">pausar</button>}>
+        <p>conteudo</p>
+      </WindowFrame>,
+    );
+
+    expect(screen.getByRole('button', { name: 'pausar' }).parentElement).toHaveClass('ml-auto');
+  });
 });

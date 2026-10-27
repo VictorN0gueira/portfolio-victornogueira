@@ -1,51 +1,68 @@
-import { Check, Server } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { Check, Pause, Play, Server } from 'lucide-react';
+import { useRef, type CSSProperties } from 'react';
 import { BrandIcon } from '../../components/ui/BrandIcon';
 import type { BrandIconId } from '../../data/brandIcons';
 import { flowPanel, flowSources, flowSteps, type FlowRow, type FlowSource } from '../../data/heroFlows';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { homeCopy } from '../../data/homeCopy';
+import { useHorizontalOverflow } from '../../hooks/useHorizontalOverflow';
 
-export type RowState = 'done' | 'active' | 'pending';
+/**
+ * What the panel is doing. `running`: the cycle advances, so nothing in it is announced and the running step is
+ * only drawn. `paused`: the visitor, the pointer or the focus holds it, so it is still and reads like a static
+ * state. `static`: no motion at all, every row is done.
+ */
+export type PanelMode = 'running' | 'paused' | 'static';
+
+type RowState = 'done' | 'active' | 'pending';
 
 function rowState(index: number, doneCount: number): RowState {
   if (index < doneCount) return 'done';
   return index === doneCount ? 'active' : 'pending';
 }
 
-// From md up the steps fit in one line and the sources become a column beside the rows.
-export const WIDE_QUERY = '(min-width: 768px)';
-
 const FOCUS_RING = 'focus-visible:outline-2 focus-visible:outline-vn-ink';
+// One look for the running step (data-active) and for the step a pause stopped on (aria-current).
+const STEP_ON_CLASSES = [
+  'data-[active=true]:border-vn-ink data-[active=true]:bg-vn-ink data-[active=true]:text-vn-white',
+  'aria-[current=step]:border-vn-ink aria-[current=step]:bg-vn-ink aria-[current=step]:text-vn-white',
+].join(' ');
 
 interface StepPillsProps {
-  /** Index of the step that is running, or -1 when none is (nothing runs without motion). */
+  /** Index of the step the cycle is on, or -1 when none is (nothing runs without motion). */
   activeIndex: number;
+  mode: PanelMode;
 }
 
 /**
- * The four steps as pills. Below md they may not fit, so the row scrolls sideways inside the panel (never the
- * page), with the scrollbar hidden; it is a tab stop there so a keyboard can scroll it. The running step is the
- * ink pill.
+ * The four steps as pills. The row may not fit on a narrow screen, so it scrolls sideways inside the panel (never
+ * the page), with the scrollbar hidden, and it is a tab stop only while it really overflows, so a keyboard can
+ * scroll it. While the cycle runs the step is marked with data-active (a drawing, not an announcement); only a
+ * pause marks it for assistive tech, with aria-current.
  */
-export function StepPills({ activeIndex }: StepPillsProps) {
-  const isWide = useMediaQuery(WIDE_QUERY);
+function StepPills({ activeIndex, mode }: StepPillsProps) {
+  const ref = useRef<HTMLOListElement>(null);
+  const isOverflowing = useHorizontalOverflow(ref);
 
   return (
     <ol
+      ref={ref}
       aria-label={flowPanel.aria.steps}
-      tabIndex={isWide ? undefined : 0}
+      tabIndex={isOverflowing ? 0 : undefined}
       className={`scrollbar-hide flex gap-2 overflow-x-auto rounded-lg py-1 -outline-offset-2 ${FOCUS_RING}`}
     >
-      {flowSteps.map((step, index) => (
-        <li
-          key={step}
-          aria-current={index === activeIndex ? 'step' : undefined}
-          data-active={index === activeIndex ? 'true' : undefined}
-          className="shrink-0 rounded-full border border-vn-gray-light px-3 py-1 font-mono text-xs text-vn-gray-dark data-[active=true]:border-vn-ink data-[active=true]:bg-vn-ink data-[active=true]:text-vn-white"
-        >
-          {step}
-        </li>
-      ))}
+      {flowSteps.map((step, index) => {
+        const isOn = index === activeIndex;
+        return (
+          <li
+            key={step}
+            aria-current={isOn && mode === 'paused' ? 'step' : undefined}
+            data-active={isOn && mode === 'running' ? 'true' : undefined}
+            className={`shrink-0 rounded-full border border-vn-gray-light px-3 py-1 font-mono text-xs text-vn-gray-dark ${STEP_ON_CLASSES}`}
+          >
+            {step}
+          </li>
+        );
+      })}
     </ol>
   );
 }
@@ -62,7 +79,7 @@ const CHIP_HEIGHT_PX = 44;
 const CHIP_GAP_PX = 8;
 
 /** The sources the work comes from: a row of chips above the rows below md, a column beside them from md. */
-export function FlowSources() {
+function FlowSources() {
   return (
     <ul
       aria-label={flowPanel.aria.sources}
@@ -89,6 +106,7 @@ export function FlowSources() {
 }
 
 const COLUMN_HEIGHT = flowSources.length * CHIP_HEIGHT_PX + (flowSources.length - 1) * CHIP_GAP_PX;
+// The width of the cable column: the svg is drawn with it and the grid reserves it (as --cable-w), from this one number.
 const CABLE_WIDTH = 72;
 const CABLE_MERGE_X = CABLE_WIDTH - 6;
 const CABLE_STAGGER_S = 0.5;
@@ -118,7 +136,7 @@ function CablePath({ d, delay }: CablePathProps) {
  * column, that merge into the middle of the rows. Below md the chips are a row above the rows, so the cable is a
  * short vertical line. Both are decoration: aria-hidden, no title.
  */
-export function FlowCable() {
+function FlowCable() {
   const mergeY = COLUMN_HEIGHT / 2;
 
   return (
@@ -164,6 +182,8 @@ export function FlowCable() {
 interface FlowRowItemProps {
   row: FlowRow;
   state: RowState;
+  /** True once the done text may be read: only while the panel is not running, and only on a done row. */
+  isDoneTextExposed: boolean;
 }
 
 /** The disc at the start of a row: an empty ring, a ring with a dot while it runs, an ink disc with a check when done. */
@@ -183,12 +203,10 @@ function RowMarker() {
 /**
  * One row of the flow. The detail and the done text sit under the title in a narrow column and the done text
  * moves to the right edge once the column is wide enough (container query, so it follows the column and not the
- * screen). The done text is always in the layout, so the row does not jump when it appears; it is hidden from
- * assistive tech until the row is done.
+ * screen). The done text is always in the layout, so the row does not jump when it appears. It is hidden from
+ * assistive tech while the cycle runs, because it changes every beat, and read once the panel stands still.
  */
-export function FlowRowItem({ row, state }: FlowRowItemProps) {
-  const isDone = state === 'done';
-
+function FlowRowItem({ row, state, isDoneTextExposed }: FlowRowItemProps) {
   return (
     <li
       data-state={state}
@@ -201,7 +219,7 @@ export function FlowRowItem({ row, state }: FlowRowItemProps) {
       </div>
       <span
         data-flow-done=""
-        aria-hidden={isDone ? undefined : true}
+        aria-hidden={isDoneTextExposed ? undefined : true}
         className="col-start-2 font-mono text-xs text-vn-ink opacity-0 transition-opacity duration-300 ease-out group-data-[state=done]:opacity-100 @md:col-start-3 @md:row-start-1"
       >
         {row.done}
@@ -210,26 +228,66 @@ export function FlowRowItem({ row, state }: FlowRowItemProps) {
   );
 }
 
+interface PauseButtonProps {
+  /** The visitor's own pause. A hold by the pointer or the focus is not shown here. */
+  isPaused: boolean;
+  onToggle: () => void;
+}
+
+/**
+ * Pauses and resumes everything that moves in the panel (WCAG 2.2.2). It lives in the dark title bar: a small
+ * icon button to the eye (28px) inside a 44px hit area, with a white focus ring that shows on that bar. It reads
+ * as a toggle (aria-pressed) and its name says what the next press does.
+ */
+export function PauseButton({ isPaused, onToggle }: PauseButtonProps) {
+  const { pause, resume } = homeCopy.hero.panel;
+  const Icon = isPaused ? Play : Pause;
+
+  return (
+    <button
+      type="button"
+      aria-pressed={isPaused}
+      aria-label={isPaused ? resume : pause}
+      onClick={onToggle}
+      className="group -my-2 -mr-2 grid size-11 shrink-0 cursor-pointer place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-vn-white"
+    >
+      <span className="grid size-7 place-items-center rounded-full border border-vn-gray-mid text-vn-gray-light group-hover:bg-vn-gray-dark">
+        <Icon aria-hidden="true" className="size-3.5" />
+      </span>
+    </button>
+  );
+}
+
 interface FlowBodyProps {
   rows: readonly FlowRow[];
   /** How many rows are done: the row at this index is the one that runs. */
   doneCount: number;
-  /** Index of the running step, or -1 when none runs. */
+  /** Index of the step the cycle is on, or -1 when none is. */
   activeStep: number;
+  mode: PanelMode;
 }
 
 /** The white body of the window: the steps, the sources with the cable, the rows and the footnote. Left aligned. */
-export function FlowBody({ rows, doneCount, activeStep }: FlowBodyProps) {
+export function FlowBody({ rows, doneCount, activeStep, mode }: FlowBodyProps) {
   return (
     <div className="bg-vn-white p-3 text-left text-vn-ink min-[360px]:p-4 md:p-6">
-      <StepPills activeIndex={activeStep} />
-      <div className="mt-3 flex flex-col gap-1 md:mt-5 md:grid md:grid-cols-[10rem_72px_minmax(0,1fr)] md:items-center md:gap-0">
+      <StepPills activeIndex={activeStep} mode={mode} />
+      <div
+        data-flow-grid=""
+        style={{ '--cable-w': `${CABLE_WIDTH}px` } as CSSProperties}
+        className="mt-3 flex flex-col gap-1 md:mt-5 md:grid md:grid-cols-[10rem_var(--cable-w)_minmax(0,1fr)] md:items-center md:gap-0"
+      >
         <FlowSources />
         <FlowCable />
         <div className="@container min-w-0">
           <ol aria-label={flowPanel.aria.rows} className="flex flex-col gap-2">
             {rows.map((row, rowIndex) => (
-              <FlowRowItem key={row.title} row={row} state={rowState(rowIndex, doneCount)} />
+              <FlowRowItem
+                key={row.title}
+                row={row}
+                state={rowState(rowIndex, doneCount)}
+                isDoneTextExposed={mode !== 'running' && rowIndex < doneCount}
+              />
             ))}
           </ol>
         </div>

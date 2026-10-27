@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
+import { MD_QUERY } from '../../lib/breakpoints';
 
 /** `rise-blur` is a shorter rise that also sharpens from a blur, meant for the words of a headline. */
 export type RevealVariant = 'up' | 'left' | 'right' | 'zoom' | 'fade' | 'rise-blur';
@@ -21,8 +22,6 @@ const REVEAL_DURATION_S = 0.7;
 const REVEAL_EASE = [0.22, 1, 0.36, 1] as const;
 const INSTANT = { duration: 0 } as const;
 const IN_VIEW_OPTIONS = { once: true, margin: '0px 0px -8% 0px' } as const;
-// Below md a sideways offset could widen the page and scroll it horizontally, so left and right become up.
-const WIDE_QUERY = '(min-width: 768px)';
 
 // The group and its items mark themselves in the DOM, so an item can find its position among its siblings.
 const GROUP_SELECTOR = '[data-reveal-group]';
@@ -139,7 +138,8 @@ interface RevealItemProps {
 export function RevealItem({ variant = 'up', as = 'div', className, children }: RevealItemProps) {
   const group = useContext(RevealGroupContext);
   const isMotionAllowed = useMotionAllowed();
-  const isWide = useMediaQuery(WIDE_QUERY);
+  // Below md a sideways offset could widen the page and scroll it horizontally, so left and right become up.
+  const isWide = useMediaQuery(MD_QUERY);
   // Typed as the div variant only to keep TypeScript from building a union of both tags: they take the same props here.
   const Tag = (as === 'span' ? motion.span : motion.div) as typeof motion.div;
   const ref = useRef<HTMLDivElement>(null);
