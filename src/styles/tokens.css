@@ -253,6 +253,29 @@
 }
 
 /*
+ * The "includes" list of a service card. It is always laid out and always in the accessibility tree, so the card never
+ * changes height and nothing is hidden from a screen reader: opacity and transform are the only things that move.
+ * The component puts data-hover-reveal on the card only for a fine pointer with hover while motion is allowed (see
+ * ServicesCards.tsx). Only then the list rests 12px low and transparent, and rises into place on hover and when the
+ * focus is inside the card (the card is then a tab stop). On touch, under reduced motion and under .a11y-no-animations
+ * the mark is absent, so this file has nothing to undo: the list is simply there.
+ */
+.vn-card-includes {
+  transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
+}
+
+[data-hover-reveal] .vn-card-includes {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+[data-hover-reveal]:hover .vn-card-includes,
+[data-hover-reveal]:focus-within .vn-card-includes {
+  opacity: 1;
+  transform: none;
+}
+
+/*
  * Accordion. The panel animates grid-template-rows from 0fr to 1fr with an opacity fade, because the
  * height of the answer is unknown. This is a documented exception to compositor only animation (the
  * conic ring spin of the spotlight card is the other one).

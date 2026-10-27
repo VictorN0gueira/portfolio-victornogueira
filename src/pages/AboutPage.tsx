@@ -4,12 +4,16 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import SEO from '../components/SEO';
 import { revealProps, SectionSkeleton } from '../lib/reveal';
+import { useScrollToHash } from '../lib/useScrollToHash';
+import MethodSteps from '../sections/home/MethodSteps';
 
 const About = lazy(() => import('../components/About'));
-const Process = lazy(() => import('../components/Process'));
 const Skills = lazy(() => import('../components/Skills'));
 
 export default function AboutPage() {
+  // A page that is opened with /sobre#metodo is not in the DOM yet when the browser looks for the anchor.
+  useScrollToHash();
+
   return (
     <>
       <SEO
@@ -22,9 +26,8 @@ export default function AboutPage() {
           <motion.div {...revealProps}><About /></motion.div>
         </Suspense>
 
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><Process /></motion.div>
-        </Suspense>
+        {/* It reveals its own header and cards, so it needs neither the lazy boundary nor the page reveal around it. */}
+        <MethodSteps />
 
         <Suspense fallback={<SectionSkeleton />}>
           <motion.div {...revealProps}><Skills /></motion.div>

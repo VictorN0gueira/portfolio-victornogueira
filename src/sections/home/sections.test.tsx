@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { integrations } from '../../data/integrations';
 import { stats } from '../../data/stats';
+import { findAccentElements } from '../../test/accent';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import { IntegrationsMarquee } from './IntegrationsMarquee';
@@ -10,18 +11,8 @@ import { StatementStats } from './StatementStats';
 const A11Y_STORAGE_KEY = 'a11y-preferences';
 const MARQUEE_NAME = 'Integrações';
 
-// Any mention of the accent: the token (bg-vn-accent, text-[var(--color-vn-accent)]), the hex (bg-[#00E5A0]) or
-// the rgb form jsdom writes an inline hex color back as.
-const ACCENT_PATTERN = /vn-accent|00e5a0|rgba?\(\s*0\s*,\s*229\s*,\s*160/i;
 // A box that takes its width from its content cannot hold the Marquee frame, which has no width of its own.
 const SHRINK_TO_FIT_CLASSES = ['inline-block', 'inline-flex', 'inline-grid', 'w-fit', 'w-min', 'w-max', 'absolute', 'fixed', 'flex', 'grid'];
-
-/** Every element of the subtree that names the accent in its class, its inline style or an svg paint attribute. */
-function findAccentElements(root: HTMLElement): Element[] {
-  return Array.from(root.querySelectorAll('*')).filter((element) =>
-    ['class', 'style', 'fill', 'stroke', 'color'].some((name) => ACCENT_PATTERN.test(element.getAttribute(name) ?? '')),
-  );
-}
 
 const isInsideHiddenCopy = (element: Element): boolean => element.closest('[aria-hidden="true"]') !== null;
 

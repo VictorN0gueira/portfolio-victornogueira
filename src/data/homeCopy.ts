@@ -58,4 +58,18 @@ export const homeCopy = {
     stepsTitle: 'Como funciona',
     pause: 'Pausar troca automática',
   },
+  // Os textos dos três cartões de serviço. `term` é a palavra lida antes do prazo de cada cartão (o prazo em si vem de
+  // data/services.ts), e `link` leva à página de serviços.
+  services: {
+    kicker: 'o que a gente faz',
+    heading: 'Três jeitos de tirar trabalho manual da sua frente',
+    term: 'Prazo',
+    link: 'Ver todos os serviços',
+  },
+  // Os textos da seção do método (o conteúdo de cada passo está em data/process.ts).
+  method: {
+    kicker: 'como a gente trabalha',
+    heading: 'Do primeiro papo ao fluxo rodando',
+    sub: 'Você conhece o negócio. A gente entra com o método e a execução.',
+  },
 } as const;
