@@ -12,6 +12,11 @@ const STEP_MS = 1400;
 const ROW_COUNT = 4;
 const { panel: panelCopy } = homeCopy.hero;
 
+// The setup file does not restore spies, so a stub left by a failing test would leak into the next ones.
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 function getRows(): HTMLElement[] {
   return within(screen.getByRole('list', { name: flowPanel.aria.rows })).getAllByRole('listitem');
 }
@@ -52,7 +57,10 @@ function getStepsList(): HTMLElement {
   return screen.getByRole('list', { name: flowPanel.aria.steps });
 }
 
-/** Makes the steps row wider than its box, so it is a tab stop that can take the focus. */
+/**
+ * Makes the steps row wider than its box, so it is a tab stop that can take the focus.
+ * The spies are undone by the afterEach at the top of this file, also when a test fails before its last line.
+ */
 function stubOverflowingSteps(): void {
   vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(() => 420);
   vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(() => 300);
@@ -226,7 +234,6 @@ describe('AutomationPanel cycle', () => {
     act(() => steps.blur());
     advance(1);
     expect(getDoneRows()).toHaveLength(2);
-    vi.restoreAllMocks();
   });
 
   it('stays paused while one of the two holds is still on', () => {
@@ -243,7 +250,6 @@ describe('AutomationPanel cycle', () => {
     act(() => steps.blur());
     advance(1);
     expect(getDoneRows()).toHaveLength(1);
-    vi.restoreAllMocks();
   });
 
   it('restarts the cycle when the task changes', () => {
@@ -396,7 +402,6 @@ describe('AutomationPanel pause control', () => {
     expect(getWindow()).not.toHaveAttribute('data-paused');
     // A hold of the pointer or the focus is not the choice of the visitor: the button does not show it as pressed.
     expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
-    vi.restoreAllMocks();
   });
 
   it('does not hold the cycle when the pointer or the focus is on the pause control itself, so Resume works at once', () => {
@@ -502,7 +507,6 @@ describe('AutomationPanel status', () => {
     expect(getWindow()).toHaveAttribute('data-paused', 'true');
     expect(screen.getByText('rodando')).toBeInTheDocument();
     expect(screen.queryByText('pausado')).not.toBeInTheDocument();
-    vi.restoreAllMocks();
   });
 
   it('keeps "pausado" when the pointer comes and goes, and when the task changes', () => {
@@ -636,10 +640,6 @@ describe('AutomationPanel steps row', () => {
   beforeEach(() => {
     vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(() => scrollWidth);
     vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(() => clientWidth);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('scrolls sideways inside the panel, hides its scrollbar, and is a named tab stop when the steps do overflow', () => {

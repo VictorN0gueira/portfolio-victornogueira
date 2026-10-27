@@ -23,7 +23,11 @@ const BEAT_MS = 1400;
 // A beat of the cycle and a little more, so the interval of the page has fired once.
 const ONE_BEAT_MS = BEAT_MS + 100;
 const MANY_BEATS_MS = 10_000;
-const FULL_LAP_MS = 8000;
+// The cycle has 5 beats (0 to 4 rows done) and the fifth starts over: a whole lap, with a beat to spare.
+const FULL_LAP_MS = 6 * BEAT_MS;
+const CYCLE_LENGTH = ROW_COUNT + 1;
+// How far ahead of the page clock the clock is frozen: far enough that real time cannot overtake it first.
+const FREEZE_LEAD_MS = 5000;
 const MAX_TABS_TO_PAUSE_BUTTON = 60;
 const PHONE_WIDTHS = [280, 360, 412];
 const PHONE_LANDSCAPE = { width: 844, height: 390 };
@@ -43,6 +47,36 @@ function doneRows(page: Page) {
 /** The status word in the title bar of the window (a whole word, so "rodando" never matches the group name). */
 function windowStatus(page: Page, word: string) {
   return page.locator('[data-flow-window]').getByText(word, { exact: true });
+}
+
+async function doneCount(page: Page): Promise<number> {
+  return doneRows(page).count();
+}
+
+/**
+ * Opens the home with a fake clock that stops once the panel is on screen. The page loads with the clock flowing, as
+ * Playwright advises, so the timers of the page run normally while it loads. Then the clock is frozen: from there on
+ * only runFor and fastForward move it, and the cycle cannot advance because of a slow runner. How many rows are done
+ * at that moment depends on the load, so a test reads it as its starting point and never assumes a number.
+ */
+async function openWithFrozenClock(page: Page) {
+  await page.clock.install();
+  await page.goto('/');
+  await expect(flowRows(page)).toHaveCount(ROW_COUNT);
+  const now = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(now + FREEZE_LEAD_MS);
+}
+
+/** Waits one macrotask in the page, which comes after any render React had queued (its scheduler uses a message channel). */
+async function flushRender(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const channel = new MessageChannel();
+        channel.port1.onmessage = () => resolve();
+        channel.port2.postMessage(null);
+      }),
+  );
 }
 
 function pulse(page: Page) {
@@ -316,11 +350,10 @@ test.describe('hero layout', () => {
 
 test.describe('hero pause control', () => {
   test('pauses the rows and the cable with the button in the title bar, and resumes them', async ({ page }) => {
-    await page.clock.install();
-    await page.goto('/');
-    await expect(flowRows(page)).toHaveCount(ROW_COUNT);
+    await openWithFrozenClock(page);
+    const start = await doneCount(page);
     await page.clock.runFor(ONE_BEAT_MS);
-    await expect(doneRows(page)).toHaveCount(1);
+    await expect.poll(() => doneCount(page)).not.toBe(start);
     await expect.poll(() => pulse(page).evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('running');
     await expect(windowStatus(page, 'rodando')).toBeVisible();
 
@@ -334,8 +367,10 @@ test.describe('hero pause control', () => {
     await expect(page.locator('[data-flow-window]')).toHaveAttribute('data-paused', 'true');
     await expect.poll(() => pulse(page).evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('paused');
     // The count stays the same however far the clock goes.
-    await page.clock.fastForward(MANY_BEATS_MS);
-    await expect(doneRows(page)).toHaveCount(1);
+    const paused = await doneCount(page);
+    await page.clock.runFor(MANY_BEATS_MS);
+    await flushRender(page);
+    expect(await doneCount(page)).toBe(paused);
 
     await toggle.click();
 
@@ -344,25 +379,26 @@ test.describe('hero pause control', () => {
     await expect(windowStatus(page, 'pausado')).toHaveCount(0);
     await expect(page.locator('[data-flow-window]')).not.toHaveAttribute('data-paused', 'true');
     await expect.poll(() => pulse(page).evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('running');
+    // Resuming starts a new interval, so exactly one beat is due within a beat and a little more.
     await page.clock.runFor(ONE_BEAT_MS);
-    await expect(doneRows(page)).toHaveCount(2);
+    await expect.poll(() => doneCount(page)).toBe((paused + 1) % CYCLE_LENGTH);
   });
 
   test('keeps the pause when the pointer comes and goes', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'this needs a pointer that hovers');
 
-    await page.clock.install();
-    await page.goto('/');
-    await expect(flowRows(page)).toHaveCount(ROW_COUNT);
+    await openWithFrozenClock(page);
+    const before = await doneCount(page);
     await page.getByRole('button', { name: PAUSE_NAME }).click();
     const rows = page.getByRole('list', { name: ROWS_LIST_NAME });
 
     await rows.hover();
     await page.mouse.move(0, 0);
-    await page.clock.fastForward(MANY_BEATS_MS);
+    await page.clock.runFor(MANY_BEATS_MS);
+    await flushRender(page);
 
     await expect(page.locator('[data-flow-window]')).toHaveAttribute('data-paused', 'true');
-    await expect(doneRows(page)).toHaveCount(0);
+    expect(await doneCount(page)).toBe(before);
   });
 
   test('is reached and operated with the keyboard, with a white focus ring on the dark title bar', async ({ page }, testInfo) => {
@@ -414,13 +450,19 @@ test.describe('hero with reduced motion', () => {
     await expect(windowStatus(page, 'rodando')).toBeVisible();
   });
 
-  test('keeps the rows done after a whole lap of the clock, because nothing runs', async ({ page }) => {
+  // The real guard that no timer exists in this mode is the unit test (vi.getTimerCount() is 0). Here the clock
+  // runs a whole lap of the cycle, with every due timer fired, and the page must show the same static state.
+  test('keeps the four rows done, with no running step and no pause control, through a whole lap of the clock', async ({ page }) => {
     await page.clock.install();
     await page.goto('/');
     await expect(flowRows(page)).toHaveCount(ROW_COUNT);
 
-    await page.clock.fastForward(FULL_LAP_MS);
+    await page.clock.runFor(FULL_LAP_MS);
+    await flushRender(page);
 
     await expect(doneRows(page)).toHaveCount(ROW_COUNT);
+    await expect(page.locator('[data-flow-window] [data-active="true"]')).toHaveCount(0);
+    await expect(page.locator('[data-flow-window]')).not.toHaveAttribute('data-paused', 'true');
+    await expect(page.getByRole('button', { name: PAUSE_NAME })).toHaveCount(0);
   });
 });
