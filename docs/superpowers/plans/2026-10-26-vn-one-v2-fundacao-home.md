@@ -1081,7 +1081,7 @@ Comportamento:
   - **hero:** abrir a pílula de horas, escolher "40 horas" e o `<output>` mostra `R$ 6.933`;
   - **um acento por seção:** para cada `section`, contar os elementos com `getComputedStyle` cuja cor ou fundo é `rgb(0, 229, 160)`. O resultado tem que ser ≤ 1. Ignorar o `WhatsAppButton`, que fica fora das seções.
   - **hash:** `goto('/#contato')`, e o `#contato` fica `toBeInViewport()` em até 2s com o topo da seção abaixo do header (não coberto); o mesmo para `/sobre` → clicar "Como funciona" no header → `#metodo` na viewport.
-  - **movimento reduzido:** com `test.use({ reducedMotion: 'reduce' })`, a aba ativa de UseCaseTabs não muda depois de 5s e todas as linhas do painel estão `data-state="done"`.
+  - **movimento reduzido:** com `test.use({ contextOptions: { reducedMotion: 'reduce' } })` (o Playwright 1.58 ignora `reducedMotion` solto no topo de `test.use`, sem avisar), a aba ativa de UseCaseTabs não muda depois de 5s e todas as linhas do painel estão `data-state="done"`.
 - [ ] **Step 2: Matriz de dispositivos** em `e2e/devices.spec.ts`. É uma lista de viewports, com um teste gerado por item:
 
   | Viewport | Aparelho |
