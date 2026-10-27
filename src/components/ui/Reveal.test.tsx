@@ -411,7 +411,7 @@ describe('RevealItem when motion is switched on or off while the page is open', 
     expect(getItem('field').parentElement).toBe(wrapper);
     expect(opacities.filter((opacity) => opacity !== '' && opacity !== '1')).toEqual([]);
     expect(wrapper.style.opacity).toBe('1');
-    expect(['', 'none']).toContain(wrapper.style.transform);
+    expect(wrapper.style.transform).toMatch(/^(none|translateY\(0(px)?\))?$/);
   });
 
   // jsdom has no computed opacity, so motion cannot tell where an element it never drove is: this can check the

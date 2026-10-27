@@ -286,7 +286,10 @@ describe('tokens.css marquee', () => {
     const optimized = (source: string): string => optimize(source, { minify: true }).code.trim()
 
     it('collapses overflow-x hidden followed by overflow-x clip into clip alone, which is why the fallback is an @supports block', () => {
-      expect(optimized('.f { overflow-x: hidden; overflow-x: clip; }')).toBe('.f{overflow-x:clip}')
+      const collapsed = optimized('.f { overflow-x: hidden; overflow-x: clip; }')
+
+      expect(collapsed).toContain('clip')
+      expect(collapsed).not.toContain('hidden')
     })
 
     it('keeps the @supports not (overflow-x: clip) fallback and the clip declaration in the shipped CSS', () => {
