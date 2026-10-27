@@ -77,7 +77,7 @@ describe('RoiSimulator results', () => {
     expect(document.body.textContent).not.toMatch(/NaN|-\d/);
   });
 
-  it('counts a rate that overflows to infinity as 0', () => {
+  it('counts a non finite value that the field hands over as 0, never NaN or Infinity', () => {
     renderSimulator();
 
     fireEvent.change(getRate(), { target: { value: '1e999' } });
@@ -164,6 +164,107 @@ describe('RoiSimulator incomplete rate text', () => {
     fireEvent.change(rate, { target: { value: '' } });
 
     expect(getAmounts(`R$${NBSP}0`)).toHaveLength(2);
+  });
+
+  // Chromium reports no value and badInput for "1e999", so typed key by key the count stays on the last readable
+  // text ("1e99", capped at R$ 5.000) and does not fall to R$ 0: the cost of the rule above.
+  it('keeps the last readable count for a huge exponent that the field cannot read', () => {
+    renderSimulator();
+    const rate = getRate();
+
+    fireEvent.change(rate, { target: { value: '1e99' } });
+    reportBadInput(rate, true);
+    fireEvent.change(rate, { target: { value: '' } });
+
+    const { cost, savings } = figuresOf({ ...DEFAULT_INPUT, hourlyRate: MAX_HOURLY_RATE });
+    expect(getAmounts(cost)).toHaveLength(1);
+    expect(getAmounts(savings)).toHaveLength(1);
+    expect(getAmounts(RATE_CAP_NOTE)).toHaveLength(1);
+  });
+});
+
+/**
+ * Clears text that the browser had called incomplete. The value was '' already (with badInput on), so it stays '' and
+ * React never calls onChange: only the input event says that the field is now really empty.
+ */
+function clearIncompleteText(rate: HTMLInputElement): void {
+  reportBadInput(rate, false);
+  fireEvent.input(rate, { target: { value: '' } });
+}
+
+describe('RoiSimulator field cleared after incomplete text', () => {
+  it('counts the field as 0 when "12." is cleared, instead of keeping the 12', () => {
+    renderSimulator();
+    const rate = getRate();
+
+    fireEvent.change(rate, { target: { value: '12' } });
+    reportBadInput(rate, true);
+    fireEvent.change(rate, { target: { value: '' } });
+    const { cost } = figuresOf({ ...DEFAULT_INPUT, hourlyRate: 12 });
+    expect(getAmounts(cost)).toHaveLength(1);
+
+    clearIncompleteText(rate);
+
+    expect(getAmounts(`R$${NBSP}0`)).toHaveLength(2);
+    expect(getAmounts(cost)).toHaveLength(0);
+  });
+
+  it('counts the field as 0 when "5-" is cleared too', () => {
+    renderSimulator();
+    const rate = getRate();
+
+    fireEvent.change(rate, { target: { value: '5' } });
+    reportBadInput(rate, true);
+    fireEvent.change(rate, { target: { value: '' } });
+    const { cost, savings } = figuresOf({ ...DEFAULT_INPUT, hourlyRate: 5 });
+    expect(getAmounts(cost)).toHaveLength(1);
+    expect(getAmounts(savings)).toHaveLength(1);
+
+    clearIncompleteText(rate);
+
+    expect(getAmounts(`R$${NBSP}0`)).toHaveLength(2);
+  });
+
+  it('takes the cap note away when "6000." is cleared', () => {
+    renderSimulator();
+    const rate = getRate();
+
+    fireEvent.change(rate, { target: { value: '6000' } });
+    reportBadInput(rate, true);
+    fireEvent.change(rate, { target: { value: '' } });
+    expect(getAmounts(RATE_CAP_NOTE)).toHaveLength(1);
+
+    clearIncompleteText(rate);
+
+    expect(getAmounts(RATE_CAP_NOTE)).toHaveLength(0);
+    expect(rate).not.toHaveAttribute('aria-describedby');
+    expect(getAmounts(`R$${NBSP}0`)).toHaveLength(2);
+  });
+
+  it('sends the rate of the cleared field, 0, and not the stale one', () => {
+    const onQuoteRequest = vi.fn();
+    renderSimulator({ onQuoteRequest });
+    const rate = getRate();
+
+    fireEvent.change(rate, { target: { value: '12' } });
+    reportBadInput(rate, true);
+    fireEvent.change(rate, { target: { value: '' } });
+    clearIncompleteText(rate);
+    fireEvent.click(getCta());
+
+    expect(onQuoteRequest).toHaveBeenCalledWith(buildQuoteMessage({ ...DEFAULT_INPUT, hourlyRate: 0 }));
+  });
+
+  it('counts a typed number once when both the change and the input handler run for it', () => {
+    renderSimulator();
+
+    // An input event that changes the value reaches both onChange and onInput, as a keystroke does in a browser.
+    fireEvent.input(getRate(), { target: { value: '15' } });
+
+    const { cost, savings } = figuresOf({ ...DEFAULT_INPUT, hourlyRate: 15 });
+    expect(getAmounts(cost)).toHaveLength(1);
+    expect(getAmounts(savings)).toHaveLength(1);
+    expect(getRate()).toHaveValue(15);
   });
 });
 

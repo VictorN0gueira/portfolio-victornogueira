@@ -1,4 +1,4 @@
-import { useId, type CSSProperties, type KeyboardEvent } from 'react';
+import { useId, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react';
 import { homeCopy } from '../../data/homeCopy';
 import { TEAM_OPTIONS } from '../../lib/roi';
 import { HOURS_MAX, HOURS_MIN, MAX_HOURLY_RATE, hoursPercent } from './roiInput';
@@ -128,10 +128,19 @@ interface RateFieldProps {
   onChange: (text: string, isIncomplete: boolean) => void;
 }
 
-/** The hourly rate: a number field that holds the text as typed. Turning it into a number is parseHourlyRate's job. */
+/**
+ * The hourly rate: a number field that holds the text as typed. Turning it into a number is parseHourlyRate's job.
+ * One handler goes to onChange and to onInput. React calls onChange only when the value of the field changed, and
+ * clearing text the browser called incomplete ("12." has no value) leaves the value '' (nothing changed) with badInput
+ * going from true to false: only the input event, which React does not de-duplicate by value, reports it. For a
+ * keystroke both run with the same arguments, and the handler is idempotent (it sets the same state twice in one
+ * batch, so there is a single render and nothing loops).
+ */
 function RateField({ text, capNote, onChange }: RateFieldProps) {
   const id = useId();
   const noteId = useId();
+  const handleInput = (event: FormEvent<HTMLInputElement>) =>
+    onChange(event.currentTarget.value, event.currentTarget.validity.badInput);
 
   return (
     <div>
@@ -147,7 +156,8 @@ function RateField({ text, capNote, onChange }: RateFieldProps) {
         step="any"
         value={text}
         aria-describedby={capNote ? noteId : undefined}
-        onChange={(event) => onChange(event.target.value, event.target.validity.badInput)}
+        onChange={handleInput}
+        onInput={handleInput}
         className={RATE_FIELD_CLASSES}
       />
       {capNote ? (
