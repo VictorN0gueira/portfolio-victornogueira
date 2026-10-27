@@ -158,12 +158,21 @@
  */
 .vn-marquee-frame {
   contain: inline-size;
-  /* hidden is the fallback for browsers without overflow clip (before Safari 16) */
-  overflow-x: hidden;
   overflow-x: clip;
   touch-action: pan-y;
   -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
   mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+/*
+ * Browsers without overflow clip (before Safari 16) clip with hidden instead. This is an @supports block
+ * and not a second overflow-x declaration because the CSS optimizer of the build collapses
+ * "overflow-x: hidden; overflow-x: clip" into the last one, so such a fallback would never ship.
+ */
+@supports not (overflow-x: clip) {
+  .vn-marquee-frame {
+    overflow-x: hidden;
+  }
 }
 
 .vn-marquee {

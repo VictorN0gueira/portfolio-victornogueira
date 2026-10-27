@@ -11,6 +11,7 @@ const A11Y_STORAGE_KEY = 'a11y-preferences';
 const WIDE_QUERY = '(min-width: 768px)';
 const REVEALED_TIMEOUT_MS = 3000;
 const NO_DELAY_TIMEOUT_MS = 500;
+const MOTION_BACK_ON_WINDOW_MS = 1000;
 
 function getGroup(container: HTMLElement): HTMLElement {
   return container.firstElementChild as HTMLElement;
@@ -389,6 +390,33 @@ describe('RevealItem when motion is switched on or off while the page is open', 
   });
 
   it('does not hide an item again when motion turns back on after its group was revealed', async () => {
+    const media = stubMatchMedia({ [WIDE_QUERY]: true });
+    const { container } = renderFormItem();
+    triggerIntersection(getFormGroup(container));
+    const wrapper = getItem('field').parentElement as HTMLElement;
+    await waitFor(() => expect(wrapper.style.opacity).toBe('1'), { timeout: REVEALED_TIMEOUT_MS });
+    act(() => media.set(REDUCED_MOTION_QUERY, true));
+    await waitFor(() => expect(wrapper.style.opacity).toBe('1'));
+    // The element has been driven by motion before, so motion knows where it is. A regression that
+    // animates it toward hidden when motion comes back would show up as an opacity below 1 in the window.
+    const opacities: string[] = [];
+    const observer = new MutationObserver(() => opacities.push(wrapper.style.opacity));
+    observer.observe(wrapper, { attributes: true, attributeFilter: ['style'] });
+
+    act(() => media.set(REDUCED_MOTION_QUERY, false));
+    // Longer than the 0.7s reveal: an item that started to animate toward hidden would be well on its way.
+    await new Promise((resolve) => setTimeout(resolve, MOTION_BACK_ON_WINDOW_MS));
+    observer.disconnect();
+
+    expect(getItem('field').parentElement).toBe(wrapper);
+    expect(opacities.filter((opacity) => opacity !== '' && opacity !== '1')).toEqual([]);
+    expect(wrapper.style.opacity).toBe('1');
+    expect(['', 'none']).toContain(wrapper.style.transform);
+  });
+
+  // jsdom has no computed opacity, so motion cannot tell where an element it never drove is: this can check the
+  // element identity and that nothing hides it at the flip, and the test above checks the animation window.
+  it('keeps the element of an item that was revealed while motion was off, and visible, when motion turns on', () => {
     const media = stubMatchMedia({ [WIDE_QUERY]: true, [REDUCED_MOTION_QUERY]: true });
     const { container } = renderFormItem();
     triggerIntersection(getFormGroup(container));

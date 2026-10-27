@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { optimize } from '@tailwindcss/node'
 import { describe, it, expect } from 'vitest'
 
 const css = readFileSync(resolve(__dirname, 'tokens.css'), 'utf8')
@@ -270,8 +271,33 @@ describe('tokens.css marquee', () => {
     expect(frame).toMatch(/touch-action:\s*pan-y/)
   })
 
-  it('falls back to overflow-x hidden right before overflow-x clip, for browsers before Safari 16', () => {
-    expect(blockBody(css, '.vn-marquee-frame')).toMatch(/overflow-x:\s*hidden;\s*overflow-x:\s*clip;/)
+  it('falls back to overflow-x hidden in an @supports not (overflow-x: clip) block, for browsers before Safari 16', () => {
+    const frame = blockBody(css, '.vn-marquee-frame')
+    const fallback = blockBody(blockBody(css, '@supports not (overflow-x: clip)'), '.vn-marquee-frame')
+
+    expect(frame).toMatch(/overflow-x:\s*clip/)
+    expect(frame).not.toMatch(/overflow-x:\s*hidden/)
+    expect(fallback).toMatch(/overflow-x:\s*hidden/)
+  })
+
+  // The Tailwind Vite build runs every stylesheet through lightningcss (the same optimize() used here,
+  // with its own browser targets), and this needs no build output to exist.
+  describe('through the optimizer of the Tailwind build', () => {
+    const optimized = (source: string): string => optimize(source, { minify: true }).code.trim()
+
+    it('collapses overflow-x hidden followed by overflow-x clip into clip alone, which is why the fallback is an @supports block', () => {
+      expect(optimized('.f { overflow-x: hidden; overflow-x: clip; }')).toBe('.f{overflow-x:clip}')
+    })
+
+    it('keeps the @supports not (overflow-x: clip) fallback and the clip declaration in the shipped CSS', () => {
+      const frame = blockBody(css, '.vn-marquee-frame')
+      const fallback = blockBody(css, '@supports not (overflow-x: clip)')
+
+      const shipped = optimized(`.vn-marquee-frame {${frame}}\n@supports not (overflow-x: clip) {${fallback}}`)
+
+      expect(shipped).toMatch(/\.vn-marquee-frame\{[^}]*overflow-x:clip[^}]*\}/)
+      expect(shipped).toContain('@supports not (overflow-x:clip){.vn-marquee-frame{overflow-x:hidden}}')
+    })
   })
 
   it('keeps the track width away from ancestors with inline size containment', () => {
