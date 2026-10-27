@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { motion } from 'motion/react';
-import Hero from '../components/Hero';
 import SEO from '../components/SEO';
+import { HeroSection } from '../sections/home/HeroSection';
 import { revealProps, SectionSkeleton } from '../lib/reveal';
 import { useScrollToHash } from '../lib/useScrollToHash';
 
@@ -18,7 +18,7 @@ export default function HomePage() {
     <>
       <SEO />
       <div>
-        <Hero />
+        <HeroSection />
 
         <Suspense fallback={<SectionSkeleton />}>
           <motion.div {...revealProps}><Stats /></motion.div>

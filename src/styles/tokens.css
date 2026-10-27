@@ -350,6 +350,23 @@
 }
 
 /*
+ * Cable pulse of the automation panel: a short dash that runs along a path and rests off the end of it.
+ * The path carries pathLength="100", so the dash (12 units) and the travel (from 12 to -100, which moves it
+ * from just before the start to just past the end) are the same on every cable, whatever its size in pixels.
+ * Only stroke-dashoffset animates. The stagger between cables comes from --vn-cable-delay on the element.
+ */
+@keyframes vn-cable {
+  0% { stroke-dashoffset: 12; }
+  70%, 100% { stroke-dashoffset: -100; }
+}
+
+.vn-cable-pulse {
+  stroke-dasharray: 12 100;
+  stroke-dashoffset: 12;
+  animation: vn-cable 2.8s linear var(--vn-cable-delay, 0s) infinite;
+}
+
+/*
  * Choice pill panel (the listbox of ChoicePill). It fades and scales in from the point Radix anchors it to.
  * Only the opening is animated: with no exit animation Radix unmounts it at once on close, so the focus
  * goes back to the trigger without waiting. Only transform and opacity move.
@@ -395,6 +412,10 @@
     display: none;
   }
 
+  .vn-cable-pulse {
+    display: none;
+  }
+
   .vn-menu-panel,
   .vn-menu-overlay,
   .vn-choice-panel {
@@ -423,6 +444,10 @@
 }
 
 .a11y-no-animations .vn-pulse-once {
+  display: none;
+}
+
+.a11y-no-animations .vn-cable-pulse {
   display: none;
 }
 

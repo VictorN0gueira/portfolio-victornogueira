@@ -494,3 +494,41 @@ describe('tokens.css copy rules', () => {
     expect(css).not.toMatch(/[\u2013\u2014]/)
   })
 })
+
+describe('tokens.css cable pulse', () => {
+  it('runs a short dash along the path with vn-cable, 2.8s, linear, on a stagger delay that defaults to none', () => {
+    const pulse = blockBody(css, '.vn-cable-pulse')
+
+    expect(pulse).toContain('animation: vn-cable 2.8s linear var(--vn-cable-delay, 0s) infinite')
+    expect(pulse).toMatch(/stroke-dasharray:\s*12 100/)
+  })
+
+  it('moves only stroke-dashoffset, from just before the start of the path to just past its end', () => {
+    const keyframes = blockBody(css, '@keyframes vn-cable')
+
+    expect(keyframes).toMatch(/0%\s*\{\s*stroke-dashoffset:\s*12;\s*\}/)
+    expect(keyframes).toMatch(/70%,\s*100%\s*\{\s*stroke-dashoffset:\s*-100;\s*\}/)
+    expect(keyframes.replace(/stroke-dashoffset/g, '')).not.toMatch(/(transform|width|height|top|left|margin|opacity):/)
+  })
+
+  it('keeps the pulse at rest before the animation runs, so a gated animation shows no dash on the cable', () => {
+    expect(blockBody(css, '.vn-cable-pulse')).toMatch(/stroke-dashoffset:\s*12/)
+  })
+
+  it('is not drawn under prefers-reduced-motion', () => {
+    const reduced = blockBody(css, REDUCED_MOTION_GATE)
+
+    expect(blockBody(reduced, '.vn-cable-pulse')).toContain('display: none')
+  })
+
+  it('is not drawn under .a11y-no-animations', () => {
+    expect(blockBody(css, '.a11y-no-animations .vn-cable-pulse')).toContain('display: none')
+  })
+
+  it('uses no color of its own: the stroke comes from the element, so the palette guard has nothing to check here', () => {
+    const pulse = blockBody(css, '.vn-cable-pulse')
+
+    expect(offPaletteHex(pulse)).toEqual([])
+    expect(pulse).not.toMatch(/stroke:/)
+  })
+})

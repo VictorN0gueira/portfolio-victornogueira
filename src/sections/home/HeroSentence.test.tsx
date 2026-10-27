@@ -526,6 +526,47 @@ describe('HeroSentence pills', () => {
   });
 });
 
+describe('HeroSentence line layout', () => {
+  // jsdom has no layout, so the classes are pinned here and the e2e spec (hero.spec.ts) measures the real lines.
+  it('makes the item with the period a flex row, where the pill shrinks and the period keeps its room', () => {
+    renderHero();
+
+    const taskPill = screen.getByRole('button', { name: TASK_TRIGGER });
+    const item = taskPill.closest('[data-reveal-item]') as HTMLElement;
+    expect(item).toHaveClass('inline-flex', 'items-end', 'max-w-full');
+    expect(taskPill).toHaveClass('min-w-0');
+    // A percentage cap resolved against the item, which is only as wide as the pill and the period, cut the pill short.
+    expect(taskPill.className).not.toMatch(/max-w-\[calc/);
+  });
+
+  it('gives the period the box of a pill without the ring, so the two share a baseline', () => {
+    renderHero();
+
+    const item = screen.getByRole('button', { name: TASK_TRIGGER }).closest('[data-reveal-item]') as HTMLElement;
+    const period = item.lastElementChild as HTMLElement;
+    expect(period).toHaveTextContent('.');
+    expect(period).toHaveClass('min-h-11', 'shrink-0', 'items-center', 'border-transparent');
+  });
+
+  it('keeps plain words as inline blocks', () => {
+    renderHero();
+
+    const word = screen.getByRole('heading', { level: 1 }).querySelector('[data-reveal-item]') as HTMLElement;
+    expect(word).toHaveClass('inline-block');
+    expect(word).not.toHaveClass('inline-flex');
+  });
+
+  it('gives both choice pills a soft corner instead of a full round one, so a wrapped pill is not an oval', () => {
+    renderHero();
+
+    [HOURS_TRIGGER, TASK_TRIGGER].forEach((name) => {
+      const pill = screen.getByRole('button', { name });
+      expect(pill).toHaveClass('rounded-[0.8em]');
+      expect(pill).not.toHaveClass('rounded-full');
+    });
+  });
+});
+
 describe('HeroSentence entrance', () => {
   function getItems(): HTMLElement[] {
     return Array.from(screen.getByRole('heading', { level: 1 }).querySelectorAll<HTMLElement>('[data-reveal-item]'));

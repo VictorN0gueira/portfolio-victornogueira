@@ -31,8 +31,20 @@ const HEADING_CLASSES = [
 ].join(' ');
 // The pills sit in the sentence as one more word: they scale with the heading, and a long one may wrap inside.
 const PILL_SIZE_CLASSES = 'px-[0.6em] py-[0.04em]';
-// A period is about 0.3em wide: this keeps that much of the line free next to the pill.
-const PILL_ROOM_FOR_SUFFIX = 'max-w-[calc(100%-0.45em)]';
+// An item with punctuation glued to it is a flex row. The punctuation never shrinks and the pill, which may shrink
+// (min-w-0), takes the rest of the width, so the period always keeps its room and a pill that fits on the line is
+// never narrowed. (A percentage max-width on the pill resolved against the item, which is only as wide as the pill
+// and the period together, and cut the pill a few pixels short: its text wrapped on a line wide enough for it.)
+// The period has the box of a pill without the ring (same minimum height, padding and a transparent border) and
+// both sit at the bottom of the row, so their texts share a baseline on one line and the period stays by the last
+// line of a pill whose text wrapped. (align-items: last baseline would read the chevron of the pill, not its text.)
+// The corner of a choice pill is 0.8em, not fully round: on one line the radius is capped at half the height, so
+// the pill is still a capsule, and when a long option wraps it stays a soft rectangle where rounded-full would
+// become an oval that clips the text at its corners.
+const PILL_CORNER_CLASSES = 'lowercase rounded-[0.8em]';
+const ITEM_CLASSES = 'inline-block max-w-full';
+const ITEM_WITH_SUFFIX_CLASSES = 'inline-flex max-w-full items-end';
+const SUFFIX_CLASSES = 'inline-flex min-h-11 shrink-0 items-center border border-transparent py-[0.04em]';
 const RESULT_CLASSES = [
   'relative inline-flex min-h-11 max-w-full items-center rounded-full bg-vn-accent text-vn-black',
   'font-bold normal-case tabular-nums align-baseline',
@@ -144,7 +156,7 @@ interface SentenceSlotProps {
   hours: HeroHourOption['value'];
   task: HeroTaskId;
   amount: number;
-  /** True when punctuation follows the pill in the same item, so the pill leaves room for it. */
+  /** True when punctuation follows the pill in the same item, so the pill may shrink to leave room for it. */
   hasSuffix: boolean;
   onHoursChange: (hours: HeroHourOption['value']) => void;
   onTaskChange: (task: HeroTaskId) => void;
@@ -153,8 +165,8 @@ interface SentenceSlotProps {
 /** The interactive piece that fills a slot of the sentence: one of the two pills, or the result. */
 function SentenceSlot({ slot, hours, task, amount, hasSuffix, onHoursChange, onTaskChange }: SentenceSlotProps) {
   const { aria, hourOptions } = homeCopy.hero;
-  // A pill with punctuation after it leaves room for it, so a pill as wide as the screen cannot push it off the line.
-  const pillClasses = hasSuffix ? `lowercase ${PILL_ROOM_FOR_SUFFIX}` : 'lowercase';
+  // A pill with punctuation after it is a shrinkable flex item, so a pill as wide as the screen cannot push it off the line.
+  const pillClasses = hasSuffix ? `${PILL_CORNER_CLASSES} min-w-0` : PILL_CORNER_CLASSES;
 
   if (slot === 'hours') {
     return (
@@ -226,7 +238,11 @@ export function HeroSentence({ task, onTaskChange }: HeroSentenceProps) {
         {SENTENCE_TOKENS.map((token, index) => (
           <Fragment key={token.key}>
             {token.hasSpaceBefore ? ' ' : null}
-            <RevealItem as="span" variant="rise-blur" className="inline-block max-w-full">
+            <RevealItem
+              as="span"
+              variant="rise-blur"
+              className={token.suffix ? ITEM_WITH_SUFFIX_CLASSES : ITEM_CLASSES}
+            >
               {token.slot ? (
                 <SentenceSlot
                   slot={token.slot}
@@ -240,7 +256,7 @@ export function HeroSentence({ task, onTaskChange }: HeroSentenceProps) {
               ) : (
                 token.word
               )}
-              {token.suffix ? <span className="align-bottom">{token.suffix}</span> : null}
+              {token.suffix ? <span className={SUFFIX_CLASSES}>{token.suffix}</span> : null}
               {/* The cursor travels with the last word, so it never ends up alone on a line. */}
               {index === lastIndex ? <Cursor tone="ink" className="ml-[0.2em]" /> : null}
             </RevealItem>
