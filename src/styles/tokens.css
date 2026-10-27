@@ -146,7 +146,143 @@
   will-change: transform;
 }
 
-/* Reduced motion: the cursor stays visible and still, the scan line is not drawn. */
+/*
+ * Marquee: a clipped frame that holds a track, and the track holds two identical groups. The track
+ * moves by half its own width, so the second group lands where the first one started and the loop has
+ * no seam. The frame must not report the track's width to its ancestors: overflow clip alone does not
+ * give a flex or grid item an automatic minimum of zero, and a plain wrapper around the frame would then
+ * stretch to the track width and scroll the page sideways. So the frame has min-width 0, max-width 100%
+ * and inline size containment (its own intrinsic width is zero), and it takes the width of its parent
+ * with width 100%. Layout (display, gap) comes from utilities in Marquee.tsx.
+ */
+.vn-marquee-frame {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  contain: inline-size;
+  overflow-x: clip;
+  touch-action: pan-y;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+.vn-marquee {
+  animation: vn-marquee var(--vn-marquee-duration, 32s) linear infinite;
+  will-change: transform;
+}
+
+.vn-marquee:focus-within {
+  animation-play-state: paused;
+}
+
+@media (hover: hover) {
+  .vn-marquee:hover {
+    animation-play-state: paused;
+  }
+}
+
+/*
+ * Spotlight card: the cursor following glow (--mx and --my, written by usePointerSpotlight) and the
+ * rotating conic ring exist only where the device can hover with a fine pointer and the visitor did not
+ * ask for less motion. Everywhere else (touch, reduced motion) the pseudo elements are never generated,
+ * so the card is static. Positioning (relative, isolate) comes from utilities in SpotlightCard.tsx.
+ */
+.vn-spotlight {
+  --vn-spot-color: rgba(26, 26, 26, .08);
+}
+
+.vn-spotlight--dark {
+  --vn-spot-color: rgba(255, 255, 255, .08);
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .vn-spotlight::before,
+  .vn-spotlight::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms var(--ease-out);
+  }
+
+  /* 1px ring: the gradient fills the padding box and the mask subtracts the content box. */
+  .vn-spotlight::before {
+    padding: 1px;
+    background: conic-gradient(from var(--vn-angle), transparent 70%, var(--color-vn-gray-mid), transparent);
+    -webkit-mask: linear-gradient(var(--color-vn-black) 0 0) content-box, linear-gradient(var(--color-vn-black) 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(var(--color-vn-black) 0 0) content-box, linear-gradient(var(--color-vn-black) 0 0);
+    mask-composite: exclude;
+  }
+
+  .vn-spotlight::after {
+    background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), var(--vn-spot-color), transparent 70%);
+  }
+
+  .vn-spotlight:hover::before,
+  .vn-spotlight:focus-within::before {
+    opacity: 1;
+    animation: vn-spin 4s linear infinite;
+  }
+
+  .vn-spotlight:hover::after {
+    opacity: 1;
+  }
+}
+
+.a11y-no-animations .vn-spotlight::before,
+.a11y-no-animations .vn-spotlight::after {
+  display: none;
+}
+
+/*
+ * Accordion. The panel animates grid-template-rows from 0fr to 1fr with an opacity fade, because the
+ * height of the answer is unknown. This is the single documented exception to compositor only animation.
+ * Opening starts from @starting-style (the closed content is not rendered, so there is no previous
+ * style to transition from). Closing animates only where ::details-content exists, which keeps the
+ * content visible until the transition ends; elsewhere it collapses at once.
+ */
+.vn-accordion-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 300ms var(--ease-out), opacity 300ms var(--ease-out);
+}
+
+.vn-accordion[open] > .vn-accordion-panel {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+@starting-style {
+  .vn-accordion[open] > .vn-accordion-panel {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+
+.vn-accordion-icon {
+  transition: transform 300ms var(--ease-out);
+}
+
+.vn-accordion[open] > summary .vn-accordion-icon {
+  transform: rotate(45deg);
+}
+
+@supports selector(::details-content) {
+  .vn-accordion::details-content {
+    transition: content-visibility 300ms allow-discrete;
+  }
+
+  .a11y-no-animations .vn-accordion::details-content {
+    transition: none;
+  }
+}
+
+/* Reduced motion: the cursor stays visible and still, the scan line is not drawn, the marquee and the accordion do not move. */
 @media (prefers-reduced-motion: reduce) {
   .vn-cursor {
     animation: none;
@@ -154,6 +290,24 @@
 
   .vn-scan-line {
     display: none;
+  }
+
+  .vn-marquee {
+    animation: none;
+  }
+
+  .vn-accordion-panel {
+    transition: none;
+  }
+
+  .vn-accordion-icon {
+    transition: none;
+  }
+
+  @supports selector(::details-content) {
+    .vn-accordion::details-content {
+      transition: none;
+    }
   }
 }
 
@@ -163,4 +317,16 @@
 
 .a11y-no-animations .vn-scan-line {
   display: none;
+}
+
+.a11y-no-animations .vn-marquee {
+  animation: none;
+}
+
+.a11y-no-animations .vn-accordion-panel {
+  transition: none;
+}
+
+.a11y-no-animations .vn-accordion-icon {
+  transition: none;
 }

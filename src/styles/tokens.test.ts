@@ -202,3 +202,228 @@ describe('index.html', () => {
     expect(indexHtml).not.toMatch(/fonts\.gstatic/)
   })
 })
+
+/**
+ * Body of the first block whose header is exactly `header` (a selector list or an at-rule prelude), found by
+ * brace matching. A selector that only appears as a later item of a comma separated list does not count.
+ */
+function blockBody(source: string, header: string): string {
+  const escaped = header.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const pattern = new RegExp(`(^|\\n)[ \\t]*${escaped} \\{`, 'g')
+  const match = [...source.matchAll(pattern)].find((candidate) => !source.slice(0, candidate.index).trimEnd().endsWith(','))
+  if (!match) return ''
+  const open = match.index + match[0].length - 1
+  let depth = 0
+  for (let index = open; index < source.length; index += 1) {
+    if (source[index] === '{') depth += 1
+    if (source[index] === '}') depth -= 1
+    if (depth === 0) return source.slice(open + 1, index)
+  }
+  return ''
+}
+
+const FINE_POINTER_MOTION_GATE = '@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
+const REDUCED_MOTION_GATE = '@media (prefers-reduced-motion: reduce)'
+const MARQUEE_MASK = 'linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)'
+
+describe('blockBody helper', () => {
+  it('returns the body of a flat rule and of an at-rule with nested rules', () => {
+    const sample = '.a { color: red; }\n@media (x) {\n  .b {\n    color: blue;\n  }\n}\n.c { color: green; }'
+
+    expect(blockBody(sample, '.a')).toContain('color: red')
+    expect(blockBody(sample, '@media (x)')).toContain('.b {')
+    expect(blockBody(blockBody(sample, '@media (x)'), '.b')).toContain('color: blue')
+    expect(blockBody(sample, '.c')).toContain('color: green')
+  })
+
+  it('does not mistake a longer selector for the one asked for', () => {
+    expect(blockBody('.a-b { color: red; }', '.a')).toBe('')
+  })
+
+  it('skips a selector that is only a later item of a selector list', () => {
+    expect(blockBody('.a,\n.b { color: red; }\n.b { color: blue; }', '.b')).toContain('color: blue')
+  })
+
+  it('returns an empty string for a missing block', () => {
+    expect(blockBody('.a { color: red; }', '.z')).toBe('')
+  })
+})
+
+describe('tokens.css marquee', () => {
+  it('loops the track with vn-marquee on the compositor, the duration coming from --vn-marquee-duration', () => {
+    const track = blockBody(css, '.vn-marquee')
+
+    expect(track).toContain('animation: vn-marquee var(--vn-marquee-duration, 32s) linear infinite')
+    expect(track).toContain('will-change: transform')
+  })
+
+  it('moves the track by half its width so two equal groups loop without a seam', () => {
+    const keyframes = blockBody(css, '@keyframes vn-marquee')
+
+    expect(keyframes).toMatch(/to\s*\{\s*transform:\s*translateX\(-50%\);\s*\}/)
+  })
+
+  it('clips the frame on x so the page never scrolls sideways, and lets the browser handle vertical pans', () => {
+    const frame = blockBody(css, '.vn-marquee-frame')
+
+    expect(frame).toMatch(/overflow-x:\s*clip/)
+    expect(frame).toMatch(/touch-action:\s*pan-y/)
+  })
+
+  it('keeps the track width away from ancestors, so a flex or grid wrapper cannot stretch the page', () => {
+    const frame = blockBody(css, '.vn-marquee-frame')
+
+    expect(frame).toMatch(/width:\s*100%/)
+    expect(frame).toMatch(/min-width:\s*0/)
+    expect(frame).toMatch(/max-width:\s*100%/)
+    expect(frame).toMatch(/contain:\s*inline-size/)
+  })
+
+  it('fades both edges with a mask', () => {
+    const frame = blockBody(css, '.vn-marquee-frame')
+
+    expect(frame).toContain(`mask-image: ${MARQUEE_MASK}`)
+    expect(frame).toContain(`-webkit-mask-image: ${MARQUEE_MASK}`)
+  })
+
+  it('pauses on focus within', () => {
+    expect(blockBody(css, '.vn-marquee:focus-within')).toContain('animation-play-state: paused')
+  })
+
+  it('pauses on hover only where the device can hover', () => {
+    const hoverBlock = blockBody(css, '@media (hover: hover)')
+
+    expect(blockBody(hoverBlock, '.vn-marquee:hover')).toContain('animation-play-state: paused')
+    expect(css.replace(hoverBlock, '')).not.toContain('.vn-marquee:hover')
+  })
+
+  it('stops under prefers-reduced-motion', () => {
+    const reduced = blockBody(css, REDUCED_MOTION_GATE)
+
+    expect(blockBody(reduced, '.vn-marquee')).toContain('animation: none')
+  })
+
+  it('stops under .a11y-no-animations', () => {
+    expect(blockBody(css, '.a11y-no-animations .vn-marquee')).toContain('animation: none')
+  })
+})
+
+describe('tokens.css spotlight card', () => {
+  const gated = blockBody(css, FINE_POINTER_MOTION_GATE)
+  const outsideGate = css.replace(gated, '')
+
+  it('has a gate that needs hover, a fine pointer and no reduced motion preference', () => {
+    expect(gated).not.toBe('')
+  })
+
+  it('draws the conic ring from var(--vn-angle) in palette gray, masked to a 1px ring', () => {
+    const ring = blockBody(gated, '.vn-spotlight::before')
+
+    expect(ring).toContain('conic-gradient(from var(--vn-angle), transparent 70%, var(--color-vn-gray-mid), transparent)')
+    expect(ring).toMatch(/padding:\s*1px/)
+    expect(ring).toContain('mask-composite: exclude')
+    expect(ring).toContain('-webkit-mask-composite: xor')
+  })
+
+  it('draws the spotlight as a radial gradient at --mx and --my', () => {
+    const glow = blockBody(gated, '.vn-spotlight::after')
+
+    expect(glow).toMatch(/radial-gradient\([^)]*at var\(--mx, 50%\) var\(--my, 50%\), var\(--vn-spot-color\), transparent 70%\)/)
+  })
+
+  it('spins the ring with vn-spin for 4s only on hover and focus within', () => {
+    const spinning = blockBody(gated, '.vn-spotlight:hover::before,\n  .vn-spotlight:focus-within::before')
+
+    expect(spinning).toContain('animation: vn-spin 4s linear infinite')
+    expect(spinning).toMatch(/opacity:\s*1/)
+    expect(gated.match(/vn-spin/g)).toHaveLength(1)
+  })
+
+  it('shows the spotlight glow on hover', () => {
+    expect(blockBody(gated, '.vn-spotlight:hover::after')).toMatch(/opacity:\s*1/)
+  })
+
+  it('draws nothing at all outside the gate (touch devices and reduced motion get a static card)', () => {
+    expect(outsideGate).not.toMatch(/(?<!\.a11y-no-animations )\.vn-spotlight::(before|after)/)
+    expect(outsideGate).not.toContain('.vn-spotlight:hover')
+    expect(outsideGate).not.toContain('conic-gradient')
+  })
+
+  it('hides both layers under .a11y-no-animations', () => {
+    const hidden = blockBody(css, '.a11y-no-animations .vn-spotlight::before,\n.a11y-no-animations .vn-spotlight::after')
+
+    expect(hidden).toMatch(/display:\s*none/)
+  })
+
+  it('tints the glow ink on light surfaces and white on dark ones, never the accent', () => {
+    expect(blockBody(css, '.vn-spotlight')).toContain('--vn-spot-color: rgba(26, 26, 26, .08)')
+    expect(blockBody(css, '.vn-spotlight--dark')).toContain('--vn-spot-color: rgba(255, 255, 255, .08)')
+  })
+
+  it('uses palette colors only in the spotlight rules', () => {
+    const spotlightCss = [gated, blockBody(css, '.vn-spotlight'), blockBody(css, '.vn-spotlight--dark')].join('\n')
+
+    expect(findRgbLiterals(spotlightCss).length).toBeGreaterThan(0)
+    expect(offPaletteHex(spotlightCss)).toEqual([])
+    expect(offPaletteRgb(spotlightCss)).toEqual([])
+    expect(spotlightCss.toLowerCase()).not.toContain('accent')
+    expect(spotlightCss.toLowerCase()).not.toContain('00e5a0')
+  })
+})
+
+describe('tokens.css accordion', () => {
+  it('documents grid-template-rows as the single exception to compositor only animation', () => {
+    expect(css).toMatch(/single documented exception to compositor only animation/)
+  })
+
+  it('animates the panel from 0fr to 1fr with an opacity fade, on the shared easing', () => {
+    const panel = blockBody(css, '.vn-accordion-panel')
+    const open = blockBody(css, '.vn-accordion[open] > .vn-accordion-panel')
+
+    expect(panel).toMatch(/display:\s*grid/)
+    expect(panel).toMatch(/grid-template-rows:\s*0fr/)
+    expect(panel).toMatch(/opacity:\s*0/)
+    expect(panel).toContain('transition: grid-template-rows 300ms var(--ease-out), opacity 300ms var(--ease-out)')
+    expect(open).toMatch(/grid-template-rows:\s*1fr/)
+    expect(open).toMatch(/opacity:\s*1/)
+  })
+
+  it('starts the opening animation from the collapsed state with @starting-style', () => {
+    const starting = blockBody(css, '@starting-style')
+
+    expect(blockBody(starting, '.vn-accordion[open] > .vn-accordion-panel')).toMatch(/grid-template-rows:\s*0fr/)
+  })
+
+  it('keeps the content visible while it collapses where ::details-content exists', () => {
+    const supported = blockBody(css, '@supports selector(::details-content)')
+
+    expect(blockBody(supported, '.vn-accordion::details-content')).toContain('transition: content-visibility 300ms allow-discrete')
+  })
+
+  it('rotates the plus icon 45 degrees with a transform when the item is open', () => {
+    expect(blockBody(css, '.vn-accordion-icon')).toContain('transition: transform 300ms var(--ease-out)')
+    expect(blockBody(css, '.vn-accordion[open] > summary .vn-accordion-icon')).toContain('transform: rotate(45deg)')
+  })
+
+  it('is instant under prefers-reduced-motion', () => {
+    const reduced = blockBody(css, REDUCED_MOTION_GATE)
+
+    expect(blockBody(reduced, '.vn-accordion-panel')).toContain('transition: none')
+    expect(blockBody(reduced, '.vn-accordion-icon')).toContain('transition: none')
+    expect(blockBody(reduced, '@supports selector(::details-content)')).toContain('transition: none')
+  })
+
+  it('is instant under .a11y-no-animations', () => {
+    expect(blockBody(css, '.a11y-no-animations .vn-accordion-panel')).toContain('transition: none')
+    expect(blockBody(css, '.a11y-no-animations .vn-accordion-icon')).toContain('transition: none')
+    const supported = blockBody(css, '@supports selector(::details-content)')
+
+    expect(blockBody(supported, '.a11y-no-animations .vn-accordion::details-content')).toContain('transition: none')
+  })
+})
+
+describe('tokens.css copy rules', () => {
+  it('has no em or en dash', () => {
+    expect(css).not.toMatch(/[\u2013\u2014]/)
+  })
+})
