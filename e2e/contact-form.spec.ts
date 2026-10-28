@@ -16,10 +16,13 @@ const FORM_PATH = '/contato';
 
 const SERVICE = 'Automação de processos';
 const NAME = 'Ana Lima';
-const EMAIL = 'ana@empresa.com.br';
+// Typed data is fictitious on purpose (example.com is reserved, 11 90000-0000 is not a line): a mock that fails open
+// could never put a fake lead on the real channel. The Evolution value is what toEvolutionFormat gives.
+const EMAIL = 'ana@example.com';
 const MESSAGE = 'Quero automatizar a emissão de notas fiscais';
-const WHATSAPP_TYPED = '81984451243';
-const WHATSAPP_EVOLUTION = '558184451243';
+const WHATSAPP_TYPED = '11900000000';
+const WHATSAPP_DISPLAY = '+55 11 9 0000-0000';
+const WHATSAPP_EVOLUTION = '551100000000';
 const WHATSAPP_LINK = 'wa.me/5581984451243';
 const EMAIL_PATH = '/webhook/portfolio-vn-email';
 const WHATSAPP_PATH = '/webhook/portfolio-vn-whatsapp';
@@ -61,6 +64,8 @@ async function fillEmailForm(form: Locator) {
   await form.getByRole('checkbox').check();
 }
 
+// The polite status region that says the send worked (the legacy page may have other status regions).
+const announcement = (page: Page): Locator => page.getByRole('status').filter({ hasText: SUCCESS_TITLE });
 const submit = (form: Locator): Locator => form.getByRole('button', { name: 'Enviar', exact: true });
 const errorAlert = (form: Locator): Locator => form.getByRole('alert').filter({ hasText: 'Não deu pra enviar' });
 
@@ -78,6 +83,8 @@ test.describe('contact form webhooks', () => {
     await submit(form).click();
 
     await expect(page.getByRole('heading', { level: 4, name: SUCCESS_TITLE })).toBeVisible();
+    // The region was mounted before the send, outside the success markup, and now holds the title and the text.
+    await expect(announcement(page)).toHaveText('Recebemos sua mensagem. Obrigado! A gente responde pelo e-mail em breve.');
     expect(network.calls).toHaveLength(1);
     const [call] = network.calls;
     expect(new URL(call.url).pathname).toBe(EMAIL_PATH);
@@ -86,7 +93,6 @@ test.describe('contact form webhooks', () => {
     expect(call.payload).toMatchObject({ nome: NAME, email: EMAIL, servico: SERVICE, mensagem: MESSAGE });
     expect(new Date(call.payload.timestamp).toISOString()).toBe(call.payload.timestamp);
     await testInfo.attach('email-payload.json', { body: JSON.stringify(call, null, 2), contentType: 'application/json' });
-    console.log(`[${testInfo.project.name}] e-mail request: ${JSON.stringify(call)}`);
   });
 
   test('sends the WhatsApp payload, in Evolution format, to the WhatsApp webhook', async ({ page, network }, testInfo) => {
@@ -95,17 +101,18 @@ test.describe('contact form webhooks', () => {
 
     await useWhatsapp(page, form);
     await fillCommon(form);
-    // A visitor taps the field first, which puts the caret after the +55 prefix; focus alone leaves it at the start.
+    // A tap at the very start of the field puts the caret before the +55 prefix: the field moves it behind the prefix,
+    // so the digits come out in order and the lead goes to the number that was typed.
     const whatsapp = form.getByLabel('WhatsApp', { exact: true });
-    await whatsapp.click();
-    await whatsapp.press('End');
+    await whatsapp.click({ position: { x: 2, y: 20 } });
     await whatsapp.pressSequentially(WHATSAPP_TYPED);
-    await expect(whatsapp).toHaveValue('+55 81 9 8445-1243');
+    await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
     await form.getByRole('checkbox').check();
     await submit(form).click();
 
     await expect(page.getByRole('heading', { level: 4, name: SUCCESS_TITLE })).toBeVisible();
-    await expect(page.getByText('Obrigado! A gente responde pelo WhatsApp em breve.')).toBeVisible();
+    await expect(page.getByText('Obrigado! A gente responde pelo WhatsApp em breve.', { exact: true })).toBeVisible();
+    await expect(announcement(page)).toHaveText('Recebemos sua mensagem. Obrigado! A gente responde pelo WhatsApp em breve.');
     expect(network.calls).toHaveLength(1);
     const [call] = network.calls;
     expect(new URL(call.url).pathname).toBe(WHATSAPP_PATH);
@@ -113,7 +120,6 @@ test.describe('contact form webhooks', () => {
     expect(call.payload.whatsapp).toBe(WHATSAPP_EVOLUTION);
     expect(call.payload).toMatchObject({ nome: NAME, servico: SERVICE, mensagem: MESSAGE });
     await testInfo.attach('whatsapp-payload.json', { body: JSON.stringify(call, null, 2), contentType: 'application/json' });
-    console.log(`[${testInfo.project.name}] WhatsApp request: ${JSON.stringify(call)}`);
   });
 
   test('starts over with Enviar outra', async ({ page, network }) => {
@@ -145,7 +151,9 @@ test.describe('contact form validation and failures', () => {
     await expect(alerts.filter({ hasText: 'Esse e-mail parece incompleto' })).toHaveCount(1);
     await expect(alerts.filter({ hasText: 'Escreve um pouco mais sobre o que você precisa' })).toHaveCount(1);
     await expect(form.getByLabel('Nome', { exact: true })).toHaveAttribute('aria-invalid', 'true');
-    await expect(form.getByRole('button', { name: 'Selecione um serviço' })).toHaveAttribute('aria-invalid', 'true');
+    // The trigger is named by its visible label and its own text, so it is found by the label too.
+    await expect(form.getByRole('button', { name: 'Serviço de interesse' })).toHaveAttribute('aria-invalid', 'true');
+    await expect(form.getByRole('button', { name: 'Serviço de interesse' })).toHaveAccessibleName(/Serviço de interesse/);
     expect(network.calls).toHaveLength(0);
   });
 

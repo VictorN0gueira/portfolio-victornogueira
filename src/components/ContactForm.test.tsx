@@ -3,6 +3,20 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { serviceOptions } from '../data/services';
+import {
+  EMAIL_WEBHOOK,
+  TEST_EMAIL,
+  TEST_PHONE_EVOLUTION,
+  TEST_PHONE_TYPED,
+  WHATSAPP_WEBHOOK,
+  pickService,
+  readCall,
+  rejectUnexpectedFetch,
+  serviceTrigger,
+  stubFetch,
+  submitButton,
+  type User,
+} from '../test/contactForm';
 import ContactForm from './ContactForm';
 
 // src/lib/constants.ts reads window.matchMedia while it is imported.
@@ -15,15 +29,10 @@ vi.hoisted(() => {
   })) as unknown as typeof window.matchMedia;
 });
 
-const EMAIL_WEBHOOK = 'https://n8n.vnone.com.br/webhook/portfolio-vn-email';
-const WHATSAPP_WEBHOOK = 'https://n8n.vnone.com.br/webhook/portfolio-vn-whatsapp';
-
-type User = ReturnType<typeof userEvent.setup>;
-
 // Every test starts with a rejecting fetch, so a validation regression can never reach
 // the real n8n webhooks. Tests that need a specific response call stubFetch again.
 beforeEach(() => {
-  stubFetch(() => Promise.reject(new Error('Unexpected network call in a form test')));
+  rejectUnexpectedFetch();
 });
 
 afterEach(() => vi.unstubAllGlobals());
@@ -38,31 +47,10 @@ function renderForm() {
   return user;
 }
 
-function stubFetch(impl: () => Promise<unknown>) {
-  const fetchMock = vi.fn(impl);
-  vi.stubGlobal('fetch', fetchMock);
-  return fetchMock;
-}
-
-const submitButton = () => screen.getByRole('button', { name: 'Enviar' });
-const serviceTrigger = () => screen.getByRole('button', { name: /selecione um serviço/i });
-
-async function pickService(user: User) {
-  await user.click(serviceTrigger());
-  await user.click(screen.getByRole('button', { name: serviceOptions[0] }));
-  // The list animates out; wait until only the trigger (now showing the value) is left.
-  await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
-}
-
 async function fillCommonFields(user: User) {
   await user.type(screen.getByLabelText('Nome'), ' Ana Lima ');
   await pickService(user);
   await user.type(screen.getByLabelText('Mensagem'), 'Quero automatizar notas fiscais');
-}
-
-function readCall(fetchMock: ReturnType<typeof stubFetch>) {
-  const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-  return { url, init, body: JSON.parse(init.body as string) as Record<string, string> };
 }
 
 describe('ContactForm validation', () => {
@@ -107,7 +95,7 @@ describe('ContactForm validation', () => {
     await pickService(user);
 
     expect(document.getElementById('contact-servico-error')).toBeNull();
-    const picked = screen.getByRole('button', { name: serviceOptions[0] });
+    const picked = screen.getByRole('button', { name: `Serviço de interesse ${serviceOptions[0]}` });
     expect(picked).not.toHaveAttribute('aria-invalid');
     expect(picked).not.toHaveAttribute('aria-describedby');
     expect(fetch).not.toHaveBeenCalled();
@@ -140,7 +128,7 @@ describe('ContactForm submit wiring', () => {
     const user = renderForm();
 
     await fillCommonFields(user);
-    await user.type(screen.getByLabelText('E-mail'), 'ana@empresa.com.br');
+    await user.type(screen.getByLabelText('E-mail'), TEST_EMAIL);
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 
@@ -152,11 +140,12 @@ describe('ContactForm submit wiring', () => {
     expect(Object.keys(body).sort()).toEqual(['email', 'mensagem', 'nome', 'servico', 'timestamp']);
     expect(body).toMatchObject({
       nome: 'Ana Lima',
-      email: 'ana@empresa.com.br',
+      email: TEST_EMAIL,
       servico: serviceOptions[0],
       mensagem: 'Quero automatizar notas fiscais',
     });
-    expect(await screen.findByText(/recebemos sua mensagem/i)).toBeInTheDocument();
+    // The same words are also in the status region, so the visible title is read by its role.
+    expect(await screen.findByRole('heading', { name: 'Recebemos sua mensagem' })).toBeInTheDocument();
   });
 
   it('posts the exact whatsapp payload to the whatsapp webhook', async () => {
@@ -165,7 +154,7 @@ describe('ContactForm submit wiring', () => {
 
     await user.click(screen.getByRole('button', { name: /por whatsapp/i }));
     await fillCommonFields(user);
-    await user.type(await screen.findByLabelText('WhatsApp'), '81984451243');
+    await user.type(await screen.findByLabelText('WhatsApp'), TEST_PHONE_TYPED);
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 
@@ -173,7 +162,7 @@ describe('ContactForm submit wiring', () => {
     const { url, body } = readCall(fetchMock);
     expect(url).toBe(WHATSAPP_WEBHOOK);
     expect(Object.keys(body).sort()).toEqual(['mensagem', 'nome', 'servico', 'timestamp', 'whatsapp']);
-    expect(body.whatsapp).toBe('558184451243');
+    expect(body.whatsapp).toBe(TEST_PHONE_EVOLUTION);
   });
 
   it('keeps DDD 55 when typing a Rio Grande do Sul number', async () => {
@@ -183,15 +172,15 @@ describe('ContactForm submit wiring', () => {
     await user.click(screen.getByRole('button', { name: /por whatsapp/i }));
     await fillCommonFields(user);
     const whatsapp = await screen.findByLabelText('WhatsApp');
-    await user.type(whatsapp, '55984451243');
-    expect(whatsapp).toHaveValue('+55 55 9 8445-1243');
+    await user.type(whatsapp, '55900000000');
+    expect(whatsapp).toHaveValue('+55 55 9 0000-0000');
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const { url, body } = readCall(fetchMock);
     expect(url).toBe(WHATSAPP_WEBHOOK);
-    expect(body.whatsapp).toBe('555584451243');
+    expect(body.whatsapp).toBe('555500000000');
   });
 
   it('shows the send error UI when the webhook answers not ok', async () => {
@@ -199,7 +188,7 @@ describe('ContactForm submit wiring', () => {
     const user = renderForm();
 
     await fillCommonFields(user);
-    await user.type(screen.getByLabelText('E-mail'), 'ana@empresa.com.br');
+    await user.type(screen.getByLabelText('E-mail'), TEST_EMAIL);
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 
@@ -211,7 +200,7 @@ describe('ContactForm submit wiring', () => {
     const user = renderForm();
 
     await fillCommonFields(user);
-    await user.type(screen.getByLabelText('E-mail'), 'ana@empresa.com.br');
+    await user.type(screen.getByLabelText('E-mail'), TEST_EMAIL);
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 

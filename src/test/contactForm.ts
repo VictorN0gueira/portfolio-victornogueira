@@ -8,6 +8,13 @@ export type User = ReturnType<typeof userEvent.setup>;
 export const EMAIL_WEBHOOK = 'https://n8n.vnone.com.br/webhook/portfolio-vn-email';
 export const WHATSAPP_WEBHOOK = 'https://n8n.vnone.com.br/webhook/portfolio-vn-whatsapp';
 
+// Typed test data is fictitious on purpose: example.com is reserved and 11 90000-0000 is not a real line, so a mock
+// that fails open can never put a fake lead on the real channel. The Evolution value is what toEvolutionFormat gives.
+export const TEST_EMAIL = 'ana@example.com';
+export const TEST_PHONE_TYPED = '11900000000';
+export const TEST_PHONE_DISPLAY = '+55 11 9 0000-0000';
+export const TEST_PHONE_EVOLUTION = '551100000000';
+
 /**
  * Replaces fetch with a mock. Call it in a beforeEach with a rejecting implementation, so a regression in
  * validation can never reach the real n8n webhooks, and again in a test that needs a specific answer.
@@ -23,7 +30,8 @@ export function rejectUnexpectedFetch() {
 }
 
 export const submitButton = () => screen.getByRole('button', { name: 'Enviar' });
-export const serviceTrigger = () => screen.getByRole('button', { name: 'Selecione um serviço' });
+// The trigger is named by its label and its own text ("Serviço de interesse Selecione um serviço").
+export const serviceTrigger = () => screen.getByRole('button', { name: /selecione um serviço/i });
 
 export async function pickService(user: User) {
   await user.click(serviceTrigger());
@@ -36,7 +44,7 @@ export async function pickService(user: User) {
 export async function fillEmailForm(user: User) {
   await user.type(screen.getByLabelText('Nome'), 'Ana Lima');
   await pickService(user);
-  await user.type(screen.getByLabelText('E-mail'), 'ana@empresa.com.br');
+  await user.type(screen.getByLabelText('E-mail'), TEST_EMAIL);
   await user.type(screen.getByLabelText('Mensagem'), 'Quero automatizar notas fiscais');
   await user.click(screen.getByRole('checkbox'));
 }

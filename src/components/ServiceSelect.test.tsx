@@ -2,13 +2,13 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { findAccentElements } from '../test/accent';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
+import { offPaletteClasses, offPaletteInHtml } from '../test/palette';
 import ServiceSelect from './ServiceSelect';
 
 const OPTIONS = ['Automação de processos', 'Agente de IA ou chatbot', 'Site ou landing page'];
 const PLACEHOLDER = 'Selecione um serviço';
-// Anything outside the VN One palette: the zincs, emeralds and reds of the old dark form.
-const OFF_PALETTE = /(?<![a-z])(emerald|green|red|zinc|slate|neutral)-|vn-accent/;
 
 expectNoConsoleOutput();
 
@@ -128,8 +128,9 @@ describe('ServiceSelect colors on the dark surface', () => {
 
     expect(tokens).toEqual(expect.arrayContaining(['bg-vn-white/5', 'text-base', 'min-h-11', 'focus-visible:outline-vn-white']));
     expect(tokens.filter((token) => /(^|:)text-(xs|sm)$/.test(token))).toEqual([]);
-    expect(trigger().innerHTML).not.toMatch(OFF_PALETTE);
-    expect(trigger().className).not.toMatch(OFF_PALETTE);
+    expect(offPaletteInHtml(trigger().innerHTML)).toEqual([]);
+    expect(findAccentElements(trigger())).toEqual([]);
+    expect(offPaletteClasses(trigger().className)).toEqual([]);
   });
 
   it('shows the placeholder in gray and a chosen value in white', () => {
@@ -144,7 +145,7 @@ describe('ServiceSelect colors on the dark surface', () => {
     render(<Harness invalid />);
 
     expect(trigger()).toHaveClass('border-vn-white');
-    expect(trigger().className).not.toMatch(OFF_PALETTE);
+    expect(offPaletteClasses(trigger().className)).toEqual([]);
   });
 
   it('paints the listbox, the hover, the selected option and the focus ring with tokens', async () => {
@@ -162,6 +163,38 @@ describe('ServiceSelect colors on the dark surface', () => {
     for (const option of [selected, other]) {
       expect(option).toHaveClass('focus-visible:outline-vn-white', 'min-h-11');
     }
-    expect(container.innerHTML).not.toMatch(OFF_PALETTE);
+    expect(offPaletteInHtml(container.innerHTML)).toEqual([]);
+    expect(findAccentElements(container)).toEqual([]);
+  });
+});
+
+describe('ServiceSelect label and motion', () => {
+  it('names the trigger by the label it points at, then by its own text', () => {
+    render(
+      <>
+        <span id="servico-label">Serviço de interesse</span>
+        <ServiceSelect value="" onChange={() => {}} options={OPTIONS} placeholder={PLACEHOLDER} labelledBy="servico-label" />
+      </>,
+    );
+
+    expect(trigger()).toHaveAccessibleName(`Serviço de interesse ${PLACEHOLDER}`);
+    expect(trigger()).toHaveAttribute('aria-labelledby', `servico-label ${trigger().id}`);
+    expect(trigger().id).not.toBe('');
+  });
+
+  it('keeps naming the trigger by its own text when there is no label to point at', () => {
+    render(<ServiceSelect value="" onChange={() => {}} options={OPTIONS} placeholder={PLACEHOLDER} />);
+
+    expect(trigger()).not.toHaveAttribute('aria-labelledby');
+    expect(trigger()).toHaveAccessibleName(PLACEHOLDER);
+  });
+
+  it('eases the chevron with the system easing class and gives the list a token shadow', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    expect(trigger().querySelector('svg')).toHaveClass('transition-transform', 'duration-300', 'ease-out');
+    await user.click(trigger());
+    expect(screen.getByRole('listbox')).toHaveClass('shadow-vn-black/40');
   });
 });

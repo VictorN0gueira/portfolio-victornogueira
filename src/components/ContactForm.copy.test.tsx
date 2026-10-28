@@ -1,10 +1,16 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { WHATSAPP_FALLBACK_URL } from '../lib/constants';
+import { findAccentElements } from '../test/accent';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
 import {
   EMAIL_WEBHOOK,
+  TEST_EMAIL,
+  TEST_PHONE_DISPLAY,
+  TEST_PHONE_EVOLUTION,
+  TEST_PHONE_TYPED,
+  WHATSAPP_WEBHOOK,
   pickService,
   readCall,
   rejectUnexpectedFetch,
@@ -12,6 +18,7 @@ import {
   submitButton,
   submitEmailForm,
 } from '../test/contactForm';
+import { offPaletteClasses, offPaletteInHtml } from '../test/palette';
 import { renderWithProviders } from '../test/render';
 import ContactForm from './ContactForm';
 
@@ -19,14 +26,20 @@ import ContactForm from './ContactForm';
 const ORIGINAL_CONSENT_TEXT =
   'Li e concordo com a Política de Privacidade e autorizo o uso dos meus dados para retorno do contato.';
 const ERROR_TEXT = 'Não deu pra enviar. Tenta de novo ou fala direto pelo WhatsApp.';
-// Anything that is not the palette: the old greens, reds and zincs, and the accent (the cursor owns it in FinalCta).
-const OFF_PALETTE = /(?<![a-z])(emerald|green|red|zinc|slate|neutral)-|vn-accent/;
+const SERVICE_TRIGGER_NAME = /selecione um serviço/i;
 
 expectNoConsoleOutput();
 
 beforeEach(() => {
   rejectUnexpectedFetch();
 });
+
+// Every class in the tree is a VN One token (or white, transparent, current, inherit), and the accent is not among
+// them: the cursor owns the accent of FinalCta, the form adds none.
+function expectOnlyPalette(container: HTMLElement) {
+  expect(offPaletteInHtml(container.innerHTML)).toEqual([]);
+  expect(findAccentElements(container)).toEqual([]);
+}
 
 const tokensOf = (element: Element): string[] => (element.getAttribute('class') ?? '').split(/\s+/).filter(Boolean);
 const togglePill = (name: string) => screen.getByRole('button', { name });
@@ -49,7 +62,7 @@ describe('ContactForm method toggle', () => {
     expect(togglePill('Por WhatsApp')).toHaveAttribute('aria-pressed', 'false');
     expect(togglePill('Por e-mail')).toHaveClass('bg-vn-white', 'text-vn-black');
     expect(togglePill('Por WhatsApp')).not.toHaveClass('bg-vn-white');
-    expect(togglePill('Por WhatsApp').className).not.toMatch(OFF_PALETTE);
+    expect(offPaletteClasses(togglePill('Por WhatsApp').className)).toEqual([]);
   });
 
   it('moves the active pill and the field when the method changes', async () => {
@@ -93,7 +106,7 @@ describe('ContactForm labels, placeholders and attributes', () => {
     expect(screen.getByPlaceholderText('Seu nome')).toBe(screen.getByLabelText('Nome'));
     expect(screen.getByPlaceholderText('voce@empresa.com.br')).toBe(screen.getByLabelText('E-mail'));
     expect(screen.getByPlaceholderText('Conta rapidinho o que você precisa')).toBe(screen.getByLabelText('Mensagem'));
-    expect(screen.getByRole('button', { name: 'Selecione um serviço' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: SERVICE_TRIGGER_NAME })).toBeInTheDocument();
     await user.click(togglePill('Por WhatsApp'));
     expect(await screen.findByPlaceholderText('+55 81 99999-9999')).toBe(screen.getByLabelText('WhatsApp'));
   });
@@ -111,11 +124,13 @@ describe('ContactForm labels, placeholders and attributes', () => {
     expect(whatsapp).toHaveAttribute('type', 'tel');
   });
 
-  it('opens the numeric keypad for the WhatsApp field and labels the Enter key of the message Enviar', async () => {
+  // The Enter key of a textarea inserts a new line, so its label must say so: "send" made a phone keyboard promise a
+  // submit that never happens (ruling R58 overrides the brief here).
+  it('opens the numeric keypad for the WhatsApp field and keeps the Enter key of the message a new line key', async () => {
     const user = userEvent.setup();
     renderWithProviders(<ContactForm />);
 
-    expect(screen.getByLabelText('Mensagem')).toHaveAttribute('enterkeyhint', 'send');
+    expect(screen.getByLabelText('Mensagem')).toHaveAttribute('enterkeyhint', 'enter');
     await user.click(togglePill('Por WhatsApp'));
     expect(await screen.findByLabelText('WhatsApp')).toHaveAttribute('inputmode', 'tel');
   });
@@ -137,7 +152,7 @@ describe('ContactForm field sizing', () => {
       screen.getByLabelText('Nome'),
       screen.getByLabelText('E-mail'),
       screen.getByLabelText('Mensagem'),
-      screen.getByRole('button', { name: 'Selecione um serviço' }),
+      screen.getByRole('button', { name: SERVICE_TRIGGER_NAME }),
     ];
 
     for (const control of controls) {
@@ -148,11 +163,11 @@ describe('ContactForm field sizing', () => {
       expect(tokens).toContain('min-h-11');
       expect(tokens).toContain('text-vn-white');
       expect(tokens).toContain('focus-visible:outline-vn-white');
-      expect(control.className).not.toMatch(OFF_PALETTE);
+      expect(offPaletteClasses(control.className)).toEqual([]);
     }
   });
 
-  it('keeps the leading and the radius of the fields after the class build', () => {
+  it('keeps the radius, the side padding and the ellipsis of the fields after the class build', () => {
     renderWithProviders(<ContactForm />);
 
     for (const control of [screen.getByLabelText('Nome'), screen.getByLabelText('Mensagem')]) {
@@ -197,7 +212,7 @@ describe('ContactForm consent', () => {
     const box = screen.getByRole('checkbox');
 
     expect(box).toHaveClass('accent-white');
-    expect(box.className).not.toMatch(OFF_PALETTE);
+    expect(offPaletteClasses(box.className)).toEqual([]);
   });
 
   it('gives the whole consent row a 44px target', () => {
@@ -220,7 +235,7 @@ describe('ContactForm validation messages', () => {
     for (const message of messages) {
       expect(message.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
       expect(message.textContent?.trim().length).toBeGreaterThan(0);
-      expect(message.className).not.toMatch(OFF_PALETTE);
+      expect(offPaletteClasses(message.className)).toEqual([]);
     }
   });
 
@@ -235,7 +250,7 @@ describe('ContactForm validation messages', () => {
     expect(nome).toHaveAttribute('aria-invalid', 'true');
     expect(nome).toHaveAttribute('aria-describedby', 'contact-nome-error');
     expect(nome).toHaveClass('border-vn-white');
-    expect(nome.className).not.toMatch(OFF_PALETTE);
+    expect(offPaletteClasses(nome.className)).toEqual([]);
   });
 
   it('does not move the focus on a failed submit, like before', async () => {
@@ -291,7 +306,7 @@ describe('ContactForm sending, success and error', () => {
     await user.click(togglePill('Por WhatsApp'));
     await user.type(screen.getByLabelText('Nome'), 'Ana Lima');
     await pickService(user);
-    await user.type(await screen.findByLabelText('WhatsApp'), '81984451243');
+    await user.type(await screen.findByLabelText('WhatsApp'), TEST_PHONE_TYPED);
     await user.type(screen.getByLabelText('Mensagem'), 'Quero automatizar notas fiscais');
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
@@ -311,7 +326,7 @@ describe('ContactForm sending, success and error', () => {
     expect(screen.getByLabelText('E-mail')).toHaveValue('');
     expect(screen.getByLabelText('Mensagem')).toHaveValue('');
     expect(screen.getByRole('checkbox')).not.toBeChecked();
-    expect(screen.getByRole('button', { name: 'Selecione um serviço' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: SERVICE_TRIGGER_NAME })).toBeInTheDocument();
   });
 
   it('shows the error with the WhatsApp link on the words fala direto pelo WhatsApp', async () => {
@@ -341,7 +356,7 @@ describe('ContactForm sending, success and error', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
-    expect(alert.className).not.toMatch(OFF_PALETTE);
+    expect(offPaletteClasses(alert.className)).toEqual([]);
   });
 
   it('dismisses the error with Fechar, keeps the typed values and sends again', async () => {
@@ -393,16 +408,16 @@ describe('ContactForm palette', () => {
     const user = userEvent.setup();
     const { container } = renderWithProviders(<ContactForm />);
 
-    expect(container.innerHTML).not.toMatch(OFF_PALETTE);
+    expectOnlyPalette(container);
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
-    expect(container.innerHTML).not.toMatch(OFF_PALETTE);
+    expectOnlyPalette(container);
     await user.click(togglePill('Por WhatsApp'));
     await waitFor(() => expect(screen.queryByLabelText('E-mail')).not.toBeInTheDocument());
-    expect(container.innerHTML).not.toMatch(OFF_PALETTE);
+    expectOnlyPalette(container);
   });
 
-  it('uses only the palette in the success and the error states', async () => {
+  it('uses only the palette in the success state', async () => {
     stubFetch(() => Promise.resolve({ ok: true }));
     const user = userEvent.setup();
     const { container } = renderWithProviders(<ContactForm />);
@@ -410,7 +425,18 @@ describe('ContactForm palette', () => {
     await submitEmailForm(user);
     await screen.findByRole('heading', { level: 4 });
 
-    expect(container.innerHTML).not.toMatch(OFF_PALETTE);
+    expectOnlyPalette(container);
+  });
+
+  it('uses only the palette in the error state', async () => {
+    stubFetch(() => Promise.resolve({ ok: false }));
+    const user = userEvent.setup();
+    const { container } = renderWithProviders(<ContactForm />);
+
+    await submitEmailForm(user);
+    await screen.findByRole('alert');
+
+    expectOnlyPalette(container);
   });
 });
 

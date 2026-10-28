@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { formatWhatsappDisplay } from '../../lib/phone';
-import { ContactInput, ContactMessage, ContactService } from './ContactFields';
+import { ContactInput, ContactMessage, ContactService } from './ContactFieldControls';
 import type { ContactFormState } from './useContactForm';
 
 const SWAP_MOTION = {
@@ -15,7 +15,7 @@ interface ContactFormFieldsProps {
 
 /** The e-mail field or the WhatsApp field, whichever the method asks for, swapped with a short fade. */
 function ContactMethodField({ form }: ContactFormFieldsProps) {
-  const { method, formData, setFormData, errors, clearError } = form;
+  const { method, formData, errors, setField } = form;
 
   return (
     <AnimatePresence mode="wait">
@@ -25,10 +25,7 @@ function ContactMethodField({ form }: ContactFormFieldsProps) {
             field="email"
             value={formData.email}
             error={errors.email}
-            onChange={(value) => {
-              setFormData({ ...formData, email: value });
-              clearError('email');
-            }}
+            onChange={(value) => setField('email', value)}
           />
         </motion.div>
       ) : (
@@ -37,11 +34,7 @@ function ContactMethodField({ form }: ContactFormFieldsProps) {
             field="whatsapp"
             value={formData.whatsapp}
             error={errors.whatsapp}
-            onChange={(value) => {
-              const formatted = formatWhatsappDisplay(value);
-              setFormData({ ...formData, whatsapp: formatted });
-              clearError('whatsapp');
-            }}
+            onChange={(value) => setField('whatsapp', formatWhatsappDisplay(value))}
           />
         </motion.div>
       )}
@@ -51,35 +44,17 @@ function ContactMethodField({ form }: ContactFormFieldsProps) {
 
 /** Nome, serviço, the contact field of the method and the message, in that order. */
 export function ContactFormFields({ form }: ContactFormFieldsProps) {
-  const { formData, setFormData, servico, setServico, errors, clearError } = form;
+  const { formData, servico, errors, setField, chooseService } = form;
 
   return (
     <>
-      <ContactInput
-        field="nome"
-        value={formData.nome}
-        error={errors.nome}
-        onChange={(value) => {
-          setFormData({ ...formData, nome: value });
-          clearError('nome');
-        }}
-      />
-      <ContactService
-        value={servico}
-        error={errors.servico}
-        onChange={(value) => {
-          setServico(value);
-          clearError('servico');
-        }}
-      />
+      <ContactInput field="nome" value={formData.nome} error={errors.nome} onChange={(value) => setField('nome', value)} />
+      <ContactService value={servico} error={errors.servico} onChange={chooseService} />
       <ContactMethodField form={form} />
       <ContactMessage
         value={formData.mensagem}
         error={errors.mensagem}
-        onChange={(value) => {
-          setFormData({ ...formData, mensagem: value });
-          clearError('mensagem');
-        }}
+        onChange={(value) => setField('mensagem', value)}
       />
     </>
   );

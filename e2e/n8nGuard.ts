@@ -3,8 +3,9 @@ import { expect, test as base, type Route } from '@playwright/test';
 /**
  * Safety net for every test that touches the contact form. The two n8n webhooks are the only lead channel of the
  * business: a real request from a test would create a real lead. So:
- *  - a catch-all route, registered before the test body, aborts and records every request that is neither the
- *    page's own origin nor answered by the test's own `page.route(N8N_WEBHOOK_PATTERN, ...)`;
+ *  - a catch-all route (on the page and on its context, so popups are covered), registered before the test body,
+ *    aborts and records every request that is neither the page's own origin nor answered by the test's own
+ *    `page.route(N8N_WEBHOOK_PATTERN, ...)`;
  *  - after the test, the fixture fails it if anything was blocked, if a request went to a host other than the
  *    page's own or n8n, or if the page sent an n8n POST that the test's route did not see.
  * A test must register its own n8n route first (see `n8nRoute`); forgetting it blocks the request and fails the test.
@@ -71,15 +72,17 @@ export const test = base.extend<{ network: NetworkGuard }>({
     async ({ page, baseURL }, use) => {
       const ownHost = new URL(baseURL ?? 'http://localhost:4173').host;
       const guard: NetworkGuard = { calls: [], blocked: [], hosts: new Set(), n8nPostsSent: [] };
+      const context = page.context();
 
-      page.on('request', (request) => {
+      // The context sees every page it opens, popups included, so a request from a window the page opened is counted.
+      context.on('request', (request) => {
         const url = new URL(request.url());
         if (!url.protocol.startsWith('http')) return;
         guard.hosts.add(url.host);
         if (url.host === N8N_HOST && request.method() === 'POST') guard.n8nPostsSent.push(request.url());
       });
-      // Registered first, so every route a test adds later runs before it. It only sees what no later route took.
-      await page.route('**/*', async (route) => {
+
+      const blockForeign = async (route: Route) => {
         const url = new URL(route.request().url());
         if (url.host === ownHost) {
           await route.fallback();
@@ -87,7 +90,11 @@ export const test = base.extend<{ network: NetworkGuard }>({
         }
         guard.blocked.push(route.request().url());
         await route.abort();
-      });
+      };
+      // Registered before the test body, so every route a test adds later runs before them. The page level one is the
+      // net of the page, the context level one is the net of any popup (page routes still take precedence).
+      await context.route('**/*', blockForeign);
+      await page.route('**/*', blockForeign);
 
       await use(guard);
 

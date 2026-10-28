@@ -1,10 +1,6 @@
-import ContactConsent from './contact/ContactConsent';
-import ContactErrorAlert from './contact/ContactErrorAlert';
-import ContactFormFields from './contact/ContactFormFields';
-import ContactMethodToggle from './contact/ContactMethodToggle';
-import ContactSubmit from './contact/ContactSubmit';
+import { contactFormCopy } from './contact/contactFormCopy';
+import ContactPanel from './contact/ContactPanel';
 import ContactSuccess from './contact/ContactSuccess';
-import { PANEL_CLASS } from './contact/contactStyles';
 import { useContactForm } from './contact/useContactForm';
 
 interface ContactFormProps {
@@ -15,24 +11,21 @@ interface ContactFormProps {
 /**
  * The contact form on a black surface, in a rounded panel. The state and the submit live in useContactForm;
  * this component only puts the pieces together. A sent form is replaced by the thanks message.
+ * The polite status region is mounted from the start and sits outside both branches: the submit button leaves the page
+ * with the form and the focus falls to the body, so the thanks has to be announced by a region that was already there
+ * (a live region that mounts together with its text is skipped by many screen readers).
  */
 export default function ContactForm({ initialMessage }: ContactFormProps) {
   const form = useContactForm(initialMessage);
-
-  if (form.status === 'success') {
-    return <ContactSuccess method={form.method} onReset={form.reset} />;
-  }
+  const isSent = form.status === 'success';
+  const { title, text } = contactFormCopy.success;
 
   return (
-    <div className={`${PANEL_CLASS} flex flex-col gap-6`}>
-      <ContactMethodToggle method={form.method} onSelect={form.selectMethod} />
-
-      <form name="contact" onSubmit={form.handleSubmit} className="flex flex-col gap-5" noValidate>
-        <ContactFormFields form={form} />
-        <ContactConsent checked={form.consent} onChange={form.setConsent} />
-        {form.status === 'error' && <ContactErrorAlert onClose={() => form.setStatus('idle')} />}
-        <ContactSubmit status={form.status} hasConsent={form.consent} />
-      </form>
-    </div>
+    <>
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {isSent ? `${title}. ${text(form.method)}` : ''}
+      </p>
+      {isSent ? <ContactSuccess method={form.method} onReset={form.reset} /> : <ContactPanel form={form} />}
+    </>
   );
 }
