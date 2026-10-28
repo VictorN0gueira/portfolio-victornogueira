@@ -230,32 +230,58 @@ test.describe('contact form WhatsApp number integrity', () => {
   // A synthetic paste event with a DataTransfer: the page code reads the clipboard text from the event, and nothing here
   // depends on the operating system clipboard, which two workers would share. (A synthetic event has no default action, so
   // only the pastes the page takes over can be tested this way; the default paste of a local number is checked on the
-  // built preview with a real Control+V.)
+  // built preview with a real Control+V.) The invisible and typographic characters are built from their code points.
+  const char = (codePoint: number): string => String.fromCodePoint(codePoint);
+  const LRE = char(0x202a);
+  const PDF = char(0x202c);
+  const EN_DASH = char(0x2013);
+  const NON_BREAKING_HYPHEN = char(0x2011);
   const SYNTHETIC_PASTES = [
     ['a number with the plus', INTERNATIONAL_NUMBER],
     ['a number after a label', 'tel: +55 11 90000-0000'],
-    ['a number wrapped in bidi controls', '\u202a+55 11 90000-0000\u202c'],
-    ['a number with no plus wrapped in bidi controls', '\u202a5511900000000\u202c'],
+    ['a number wrapped in bidi controls', `${LRE}+55 11 90000-0000${PDF}`],
+    ['a number with no plus wrapped in bidi controls', `${LRE}5511900000000${PDF}`],
     ['a number with a double zero for the plus', '00 55 11 90000 0000'],
+    ['a number with no plus after a label', 'Tel: 55 11 90000-0000'],
+    ['a WhatsApp link', 'https://wa.me/5511900000000'],
+    ['a name before a number with no plus', 'Ana 5511900000000'],
+    ['words after a number with no plus', '5511900000000 abc'],
+    ['an en dash inside a number with no plus', `55 11 90000${EN_DASH}0000`],
+    ['a non breaking hyphen inside a plus number', `+55 11 90000${NON_BREAKING_HYPHEN}0000`],
+    ['an en dash inside a plus number', `+55 11 90000${EN_DASH}0000`],
+    ['slashes inside a plus number', '+55/11/90000-0000'],
   ] as const;
 
-  for (const [label, text] of SYNTHETIC_PASTES) {
-    test(`takes ${label} as the whole number, not as the digits behind the +55 prefix`, async ({ page, network }) => {
-      const form = await openForm(page);
-      const whatsapp = await fillUpToTheNumber(page, form);
+  async function dispatchPaste(whatsapp: Locator, pasted: string): Promise<boolean> {
+    return whatsapp.evaluate((input, text) => {
+      const data = new DataTransfer();
+      data.setData('text', text);
+      const event = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true });
+      input.dispatchEvent(event);
+      return event.defaultPrevented;
+    }, pasted);
+  }
 
-      await whatsapp.click();
-      const wasCancelled = await whatsapp.evaluate((input, pasted) => {
-        const data = new DataTransfer();
-        data.setData('text', pasted);
-        const event = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true });
-        input.dispatchEvent(event);
-        return event.defaultPrevented;
-      }, text);
+  // A text with letters around a number that has its country code but no plus used to be left to the browser, which put it
+  // behind the "+55 " of the field and read its own 55 as the DDD (55 55 9 1190-0000): over an empty field, and over a
+  // typed number selected with select all, which the guard keeps after the prefix.
+  for (const where of ['an empty field', 'a typed number selected with select all'] as const) {
+    for (const [label, text] of SYNTHETIC_PASTES) {
+      test(`takes ${label} as the whole number over ${where}, not as the digits behind the +55 prefix`, async ({ page, network }) => {
+        const form = await openForm(page);
+        const whatsapp = await fillUpToTheNumber(page, form);
+        await whatsapp.click();
+        if (where !== 'an empty field') {
+          await whatsapp.pressSequentially('21900000000');
+          await whatsapp.press('Control+A');
+        }
 
-      expect(wasCancelled).toBe(true);
-      await expectLeadForTheTypedNumber(page, form, network, whatsapp);
-    });
+        const wasCancelled = await dispatchPaste(whatsapp, text);
+
+        expect(wasCancelled).toBe(true);
+        await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+      });
+    }
   }
 
   test('cancels a pasted number from another country and leaves the typed number as it was', async ({ page }) => {
@@ -264,13 +290,7 @@ test.describe('contact form WhatsApp number integrity', () => {
     await whatsapp.click();
     await whatsapp.pressSequentially(WHATSAPP_TYPED);
 
-    const wasCancelled = await whatsapp.evaluate((input) => {
-      const data = new DataTransfer();
-      data.setData('text', '+1 415 555 2671');
-      const event = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true });
-      input.dispatchEvent(event);
-      return event.defaultPrevented;
-    });
+    const wasCancelled = await dispatchPaste(whatsapp, '+1 415 555 2671');
 
     expect(wasCancelled).toBe(true);
     await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
@@ -320,14 +340,16 @@ test.describe('contact form WhatsApp number integrity', () => {
 
   // React raises its select event only when the selection differs from the last one it sampled: a caret that goes back to
   // the place a click had put it (offset 0 for PREFIX_CLICK), with no click and no key (a touch caret handle, the space bar
-  // swipe of a phone keyboard), may raise none. A script stands in for that move, twice, with a pause so the first one is
-  // handled.
+  // swipe of a phone keyboard), may raise none. A script stands in for that move, twice; between the two it waits for the
+  // selectionchange event of the first, so the first move has been handled by the page, with no fixed pause.
   async function returnCaretInsidePrefixTwice(whatsapp: Locator, offset: number) {
     await whatsapp.evaluate(async (input: HTMLInputElement, at: number) => {
-      for (let move = 0; move < 2; move += 1) {
-        input.setSelectionRange(at, at);
-        await new Promise((resolve) => setTimeout(resolve, 60));
-      }
+      const firstMoveHandled = new Promise<void>((resolve) =>
+        input.ownerDocument.addEventListener('selectionchange', () => resolve(), { once: true }),
+      );
+      input.setSelectionRange(at, at);
+      await firstMoveHandled;
+      input.setSelectionRange(at, at);
     }, offset);
   }
 
@@ -371,6 +393,89 @@ test.describe('contact form WhatsApp number integrity', () => {
 
     await expectLeadForTheTypedNumber(page, form, network, whatsapp);
   });
+
+  // A text dropped on the field does not go through the paste guards, and the drop point can sit inside the prefix: the
+  // field takes over every drop. A dispatched drop with a DataTransfer stands in where a real drag is not needed.
+  async function dispatchDrop(whatsapp: Locator, dropped: string): Promise<boolean> {
+    return whatsapp.evaluate((input, text) => {
+      const data = new DataTransfer();
+      data.setData('text', text);
+      const event = new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true });
+      input.dispatchEvent(event);
+      return event.defaultPrevented;
+    }, dropped);
+  }
+
+  for (const [label, text] of [
+    ['a whole number with the plus', INTERNATIONAL_NUMBER],
+    ['a number with no plus after a label', 'Tel: 55 11 90000-0000'],
+    ['a WhatsApp link', 'https://wa.me/5511900000000'],
+    ['a local number', WHATSAPP_TYPED],
+  ] as const) {
+    test(`sets the whole field from ${label} dropped on it`, async ({ page, network }) => {
+      const form = await openForm(page);
+      const whatsapp = await fillUpToTheNumber(page, form);
+      await whatsapp.click();
+      await whatsapp.pressSequentially('21900000000');
+
+      const wasCancelled = await dispatchDrop(whatsapp, text);
+
+      expect(wasCancelled).toBe(true);
+      await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+    });
+  }
+
+  test('leaves the typed number as it was when a number from another country is dropped on it', async ({ page }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+    await whatsapp.click();
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
+    const wasCancelled = await dispatchDrop(whatsapp, '+1 415 555 2671');
+
+    expect(wasCancelled).toBe(true);
+    await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
+  });
+
+  // A real drag: the number is selected in the message box and dragged onto the field with the mouse, the drop point
+  // inside the "+55 " prefix. The browser would insert it there, and the field would read its own 55 as the DDD.
+  test('takes a number dragged from the message box and dropped inside the prefix of the field', async ({ page, network }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+    const message = form.getByLabel('Mensagem', { exact: true });
+    await message.fill(INTERNATIONAL_NUMBER);
+    await message.press('Control+A');
+
+    const source = await message.boundingBox();
+    const target = await whatsapp.boundingBox();
+    if (!source || !target) throw new Error('the message box and the field need a box');
+    await page.mouse.move(source.x + 20, source.y + 14);
+    await page.mouse.down();
+    await page.mouse.move(target.x + 2, target.y + target.height / 2, { steps: 12 });
+    await page.mouse.up();
+    // The drag moved the text out of the message box: it needs a message again to be sent.
+    await message.fill(MESSAGE);
+
+    await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+  });
+
+  // An input method composition that begins with the caret inside the prefix, after the caret returned there with no
+  // event (the same exposure as text inserted with no key). Driven through the DevTools protocol; one composition that
+  // is then committed. A composition that the field reformats while it is still open is not covered (see whatsappInput.ts).
+  for (const offset of [0, 1, 2, 3]) {
+    test(`keeps the digits in order for an input method composition that begins at offset ${offset} of the prefix`, async ({ page, network }) => {
+      const form = await openForm(page);
+      const whatsapp = await fillUpToTheNumber(page, form);
+      await whatsapp.click(PREFIX_CLICK);
+      await returnCaretInsidePrefixTwice(whatsapp, offset);
+      const session = await page.context().newCDPSession(page);
+
+      await session.send('Input.imeSetComposition', { text: WHATSAPP_TYPED, selectionStart: WHATSAPP_TYPED.length, selectionEnd: WHATSAPP_TYPED.length });
+      await session.send('Input.insertText', { text: WHATSAPP_TYPED });
+
+      await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+    });
+  }
 });
 
 test.describe('contact form validation and failures', () => {

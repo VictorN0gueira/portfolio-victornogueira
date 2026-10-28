@@ -1,12 +1,17 @@
-import type { ClipboardEvent, SyntheticEvent } from 'react';
+import type { ClipboardEvent, DragEvent, SyntheticEvent } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { handleWhatsappPaste, keepSelectionAfterPrefix, whatsappInputProps } from './whatsappInput';
+import { range } from '../../test/contactForm';
+import { handleWhatsappDrop, handleWhatsappPaste, keepSelectionAfterPrefix, whatsappInputProps } from './whatsappInput';
 
 // These test the guards on their own, with a real input and a stand in for the event, so they do not depend on what React
 // does with its select event (it raises it only when the selection differs from the last one it sampled). The form level
 // behavior is in ContactForm.whatsapp.test.tsx and, in a real browser, in e2e/contact-form.spec.ts.
 
 const PREFIX = '+55 ';
+const char = (codePoint: number): string => String.fromCodePoint(codePoint);
+const LRE = char(0x202a);
+const PDF = char(0x202c);
+const fullwidth = (digits: string): string => [...digits].map((digit) => char(0xff10 + Number(digit))).join('');
 
 function phoneInput(value = `${PREFIX}11 9 0000-0000`): HTMLInputElement {
   const input = document.createElement('input');
@@ -18,13 +23,17 @@ function phoneInput(value = `${PREFIX}11 9 0000-0000`): HTMLInputElement {
 
 const eventOf = (input: HTMLInputElement) => ({ currentTarget: input }) as unknown as SyntheticEvent<HTMLInputElement>;
 
+function dropOf(input: HTMLInputElement, dataTransfer: { getData: (type: string) => string } | null | undefined) {
+  const preventDefault = vi.fn();
+  const event = { currentTarget: input, dataTransfer, preventDefault } as unknown as DragEvent<HTMLInputElement>;
+  return { event, preventDefault };
+}
+
 function pasteOf(input: HTMLInputElement, clipboardData: { getData: (type: string) => string } | null | undefined) {
   const preventDefault = vi.fn();
   const event = { currentTarget: input, clipboardData, preventDefault } as unknown as ClipboardEvent<HTMLInputElement>;
   return { event, preventDefault };
 }
-
-const range = (input: HTMLInputElement) => [input.selectionStart, input.selectionEnd];
 
 describe('keepSelectionAfterPrefix', () => {
   it.each([
@@ -90,9 +99,10 @@ describe('whatsappInputProps', () => {
   const props = whatsappInputProps(() => undefined);
 
   // Each event is a moment the selection may be inside the prefix with React having raised nothing: a click, the select
-  // event, the key that is about to insert a character and the text that is about to be inserted (a key, a dictation or
-  // an input method). All of them read the live selection.
-  it.each(['onSelect', 'onClick', 'onKeyDown', 'onBeforeInput'] as const)('guards the selection on %s', (name) => {
+  // event, the key that is about to insert a character, the text that is about to be inserted (a key or a dictation) and
+  // the start of an input method composition. All of them read the live selection. The row for onKeyDown is the pin of
+  // that handler: in jsdom React raises its own select event on key down too, so the form level tests cannot tell it.
+  it.each(['onSelect', 'onClick', 'onKeyDown', 'onBeforeInput', 'onCompositionStart'] as const)('guards the selection on %s', (name) => {
     const input = phoneInput();
     input.setSelectionRange(2, 18);
 
@@ -164,6 +174,34 @@ describe('handleWhatsappPaste', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['undefined', undefined],
+    ['a number', 5],
+    ['an object', {}],
+    ['null', null],
+  ])('treats a clipboard whose getData gives %s as an empty one', (_label, given) => {
+    const input = phoneInput(PREFIX);
+    const onChange = vi.fn();
+    const { event, preventDefault } = pasteOf(input, { getData: () => given as unknown as string });
+
+    expect(() => handleWhatsappPaste(event, onChange)).not.toThrow();
+
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  // A real event never throws from getData, so a throw is a bug somewhere else and is not swallowed here.
+  it('does not hide a getData that throws', () => {
+    const input = phoneInput(PREFIX);
+    const { event } = pasteOf(input, {
+      getData: () => {
+        throw new Error('getData failed');
+      },
+    });
+
+    expect(() => handleWhatsappPaste(event, vi.fn())).toThrow('getData failed');
+  });
+
   it('reads the text format of the clipboard', () => {
     const input = phoneInput(PREFIX);
     const getData = vi.fn(() => '');
@@ -172,5 +210,92 @@ describe('handleWhatsappPaste', () => {
     handleWhatsappPaste(event, vi.fn());
 
     expect(getData).toHaveBeenCalledWith('text');
+  });
+});
+
+describe('handleWhatsappDrop', () => {
+  it('always cancels the drop of the browser: the drop point can sit inside the prefix', () => {
+    for (const text of ['+55 11 90000-0000', '11900000000', '+1 415 555 2671', 'letters', '']) {
+      const { event, preventDefault } = dropOf(phoneInput(PREFIX), { getData: () => text });
+
+      handleWhatsappDrop(event, vi.fn());
+
+      expect(preventDefault).toHaveBeenCalledOnce();
+    }
+  });
+
+  it('sets the whole field from a whole Brazilian number', () => {
+    const onChange = vi.fn();
+    const { event } = dropOf(phoneInput(), { getData: () => `${LRE}+55 11 90000-0000${PDF}` });
+
+    handleWhatsappDrop(event, onChange);
+
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('+55 11 90000-0000');
+  });
+
+  it('sets the whole field from a number with no plus and letters around it', () => {
+    const onChange = vi.fn();
+    const { event } = dropOf(phoneInput(), { getData: () => 'https://wa.me/5511900000000' });
+
+    handleWhatsappDrop(event, onChange);
+
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('5511900000000');
+  });
+
+  it('sets the field from any other text with digits, as typed digits, in the normalized form', () => {
+    const onChange = vi.fn();
+    const { event } = dropOf(phoneInput(), { getData: () => ` 11 90000-0000${PDF}` });
+
+    handleWhatsappDrop(event, onChange);
+
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('11 90000-0000');
+  });
+
+  it('folds fullwidth digits before it sets the field, so they are not lost', () => {
+    const onChange = vi.fn();
+    const { event } = dropOf(phoneInput(), { getData: () => fullwidth('11900000000') });
+
+    handleWhatsappDrop(event, onChange);
+
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('11900000000');
+  });
+
+  it.each([
+    ['a number from another country', '+1 415 555 2671'],
+    ['a bare plus', '+'],
+    ['a bare double zero', '00'],
+    ['letters only', 'meu numero'],
+    ['nothing', ''],
+    ['spaces', '   '],
+  ])('leaves the field as it is for %s', (_label, text) => {
+    const onChange = vi.fn();
+    const { event } = dropOf(phoneInput(), { getData: () => text });
+
+    handleWhatsappDrop(event, onChange);
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+  ])('does not throw when the data transfer is %s', (_label, dataTransfer) => {
+    const onChange = vi.fn();
+    const { event, preventDefault } = dropOf(phoneInput(), dataTransfer);
+
+    expect(() => handleWhatsappDrop(event, onChange)).not.toThrow();
+
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('is the drop handler of the field props', () => {
+    const onChange = vi.fn();
+    const { event, preventDefault } = dropOf(phoneInput(), { getData: () => '+55 11 90000-0000' });
+
+    whatsappInputProps(onChange).onDrop(event);
+
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('+55 11 90000-0000');
   });
 });

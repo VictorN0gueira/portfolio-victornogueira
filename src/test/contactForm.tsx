@@ -87,3 +87,6 @@ export async function sendWhatsappForm(user: User, fetchMock: ReturnType<typeof 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
   return readCall(fetchMock);
 }
+
+/** The start and the end of the selection of an input, for the caret and range tests. */
+export const range = (input: HTMLInputElement): Array<number | null> => [input.selectionStart, input.selectionEnd];

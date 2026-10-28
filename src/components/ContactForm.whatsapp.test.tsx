@@ -8,6 +8,7 @@ import {
   TEST_PHONE_TYPED,
   WHATSAPP_WEBHOOK,
   openWhatsappForm as openWhatsapp,
+  range,
   rejectUnexpectedFetch,
   sendWhatsappForm,
   stubFetch,
@@ -24,8 +25,6 @@ expectNoConsoleOutput();
 beforeEach(() => {
   rejectUnexpectedFetch();
 });
-
-const range = (input: HTMLInputElement) => [input.selectionStart, input.selectionEnd];
 
 describe('ContactForm WhatsApp caret', () => {
   // Carets 2 and 3 are the ones that corrupt a lead: a digit typed at "+5|5 " gives "+585 ". All four must snap.
@@ -176,10 +175,11 @@ describe('ContactForm WhatsApp caret', () => {
     expect(body.whatsapp).toBe(TEST_PHONE_EVOLUTION);
   });
 
-  // The guard must not depend on React's de-duplicated select event: it also reads the live selection on key down and on
-  // before input, so a caret moved with no click and no key (a touch caret handle, the space bar swipe of a phone
-  // keyboard) cannot take the next character into the prefix.
-  it.each([0, 1, 2, 3])('snaps a caret at %i on key down, before the character is inserted', async (caret) => {
+  // What these four tests prove: a selection inside the prefix is moved out of it when a key goes down. In jsdom React
+  // raises its own select event on key down as well, so they pass with or without the onKeyDown handler: that handler is
+  // pinned by the isolated row "guards the selection on onKeyDown" in whatsappInput.test.ts, and the behavior in a real
+  // browser by e2e/contact-form.spec.ts (the caret that returns inside the prefix with no click and no key).
+  it.each([0, 1, 2, 3])('snaps a caret at %i when a key goes down', async (caret) => {
     const { whatsapp } = await openWhatsapp();
     whatsapp.focus();
 
@@ -189,7 +189,7 @@ describe('ContactForm WhatsApp caret', () => {
     expect(range(whatsapp)).toEqual([4, 4]);
   });
 
-  it('snaps a range that starts inside the prefix on key down', async () => {
+  it('clamps a range that starts inside the prefix when a key goes down', async () => {
     const { user, whatsapp } = await openWhatsapp();
     await user.type(whatsapp, '11900');
 
@@ -199,9 +199,7 @@ describe('ContactForm WhatsApp caret', () => {
     expect(range(whatsapp)).toEqual([4, 11]);
   });
 
-  // The key down guard alone: a key that inserts nothing (Shift) raises no before input event, and React's own select
-  // sample of this caret is the one the earlier click left, so React raises no select event either.
-  it.each([0, 1, 2])('snaps a caret returned to offset %i on a key down that React raises no select event for', async (caret) => {
+  it.each([0, 1, 2])('snaps a caret returned to offset %i when a key that inserts nothing (Shift) goes down', async (caret) => {
     const { user, whatsapp } = await openWhatsapp();
     await user.pointer({ target: whatsapp, offset: caret, keys: '[MouseLeft]' });
     expect(range(whatsapp)).toEqual([4, 4]);
@@ -261,6 +259,19 @@ describe('ContactForm WhatsApp caret', () => {
     expect(whatsapp).toHaveValue(TEST_PHONE_DISPLAY);
   });
 
+  // The prefix is protected on purpose (ruling R66): a select all selects the number only, so a copy or a cut gives the
+  // number without "+55 ". It still replaces the whole number when the visitor types over it.
+  it('turns a select all of the whole field into the range 4 to the end, so the number is selected and the prefix is not', async () => {
+    const { user, whatsapp } = await openWhatsapp();
+    await user.type(whatsapp, TEST_PHONE_TYPED);
+    expect(whatsapp).toHaveValue(TEST_PHONE_DISPLAY);
+
+    whatsapp.select();
+    fireEvent.select(whatsapp);
+
+    expect(range(whatsapp)).toEqual([4, TEST_PHONE_DISPLAY.length]);
+  });
+
   it('replaces a whole number selected with select all and retyped', async () => {
     const { user, whatsapp } = await openWhatsapp();
     await user.type(whatsapp, '218888');
@@ -295,165 +306,5 @@ describe('ContactForm WhatsApp caret', () => {
     fireEvent.keyUp(nome);
 
     expect(range(nome)).toEqual([1, 1]);
-  });
-});
-
-describe('ContactForm WhatsApp paste', () => {
-  const paste = (field: HTMLElement, text: string) => fireEvent.paste(field, { clipboardData: { getData: () => text } });
-
-  async function openPasteTarget() {
-    const { user, whatsapp } = await openWhatsapp();
-    await user.click(whatsapp);
-    return { user, whatsapp };
-  }
-
-  it.each([
-    ['a number with the plus', '+55 11 90000-0000'],
-    ['the same without spaces', '+5511900000000'],
-    ['a long number with no plus', '5511900000000'],
-    ['a long number with punctuation', '55 (11) 90000-0000'],
-    ['a number with spaces and newlines around it', '  \n+55 11 90000-0000 \n'],
-  ])('takes %s as the whole number and sends it to the right line', async (_label, text) => {
-    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
-    const { user, whatsapp } = await openPasteTarget();
-
-    await user.paste(text);
-
-    expect(whatsapp).toHaveValue(TEST_PHONE_DISPLAY);
-    const { url, body } = await sendWhatsappForm(user, fetchMock);
-    expect(url).toBe(WHATSAPP_WEBHOOK);
-    expect(body.whatsapp).toBe(TEST_PHONE_EVOLUTION);
-  });
-
-  it('cancels the browser default for a whole international number, so it is not inserted behind the +55 prefix', async () => {
-    const { whatsapp } = await openPasteTarget();
-
-    expect(paste(whatsapp, '+55 11 90000-0000')).toBe(false);
-    expect(whatsapp).toHaveValue(TEST_PHONE_DISPLAY);
-  });
-
-  it('keeps the browser default for a local number with no country code, which still gives the same number', async () => {
-    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
-    const { user, whatsapp } = await openPasteTarget();
-    expect(paste(whatsapp, TEST_PHONE_TYPED)).toBe(true);
-
-    await user.paste(TEST_PHONE_TYPED);
-
-    expect(whatsapp).toHaveValue(TEST_PHONE_DISPLAY);
-    const { body } = await sendWhatsappForm(user, fetchMock);
-    expect(body.whatsapp).toBe(TEST_PHONE_EVOLUTION);
-  });
-
-  // DDD 55 (Rio Grande do Sul) is a local number that starts with 55: it must stay local, not be read as a country code.
-  it.each(['55900000000', '55 90000-0000', '(55) 90000-0000'])(
-    'keeps the browser default for the DDD 55 local number %s and sends it as local',
-    async (text) => {
-      const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
-      const { user, whatsapp } = await openPasteTarget();
-      expect(paste(whatsapp, text)).toBe(true);
-
-      await user.paste(text);
-
-      expect(whatsapp).toHaveValue('+55 55 9 0000-0000');
-      const { body } = await sendWhatsappForm(user, fetchMock);
-      expect(body.whatsapp).toBe('555500000000');
-    },
-  );
-
-  it('takes a DDD 55 number that already carries the country code as international', async () => {
-    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
-    const { user, whatsapp } = await openPasteTarget();
-
-    await user.paste('5555900000000');
-
-    expect(whatsapp).toHaveValue('+55 55 9 0000-0000');
-    const { body } = await sendWhatsappForm(user, fetchMock);
-    expect(body.whatsapp).toBe('555500000000');
-  });
-
-  it('leaves an empty clipboard alone', async () => {
-    const { whatsapp } = await openPasteTarget();
-
-    expect(paste(whatsapp, '')).toBe(true);
-    expect(paste(whatsapp, '   \n ')).toBe(true);
-    expect(whatsapp).toHaveValue('+55 ');
-  });
-
-  it('leaves other text alone, such as a pasted note with a number in the middle of it', async () => {
-    const { whatsapp } = await openPasteTarget();
-
-    expect(paste(whatsapp, 'meu numero e 11 90000-0000')).toBe(true);
-  });
-
-  it('replaces the whole field with an international number even when part of it is selected', async () => {
-    const { user, whatsapp } = await openPasteTarget();
-    await user.type(whatsapp, '218888');
-    expect(whatsapp).toHaveValue('+55 21 9 8888');
-    whatsapp.setSelectionRange(4, 8);
-
-    await user.paste('+55 11 90000-0000');
-
-    expect(whatsapp).toHaveValue(TEST_PHONE_DISPLAY);
-  });
-
-  it('lets a local number replace a selected part of the field the usual way', async () => {
-    const { user, whatsapp } = await openPasteTarget();
-    await user.type(whatsapp, '218888');
-    whatsapp.setSelectionRange(4, whatsapp.value.length);
-
-    await user.paste(TEST_PHONE_TYPED);
-
-    expect(whatsapp).toHaveValue(TEST_PHONE_DISPLAY);
-  });
-
-  it('does not touch a paste into the name or the message', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<ContactForm />);
-    const nome = screen.getByLabelText('Nome');
-    const mensagem = screen.getByLabelText('Mensagem');
-
-    expect(paste(nome, '+55 11 90000-0000')).toBe(true);
-    expect(paste(mensagem, '+55 11 90000-0000')).toBe(true);
-    await user.click(nome);
-    await user.paste('+55 11 90000-0000');
-
-    expect(nome).toHaveValue('+55 11 90000-0000');
-  });
-
-  // A script or an extension can dispatch a paste with no clipboard data: it used to throw a TypeError.
-  it.each([
-    ['null', null],
-    ['undefined', undefined],
-  ])('does not throw and leaves the field alone when the clipboard data of the event is %s', async (_label, clipboardData) => {
-    const { whatsapp } = await openPasteTarget();
-    const event = new Event('paste', { bubbles: true, cancelable: true });
-    Object.defineProperty(event, 'clipboardData', { value: clipboardData });
-
-    const wasNotCancelled = fireEvent(whatsapp, event);
-
-    expect(wasNotCancelled).toBe(true);
-    expect(whatsapp).toHaveValue('+55 ');
-  });
-
-  // The paste goes after the prefix even when the caret was left inside it with no select event, and a local number
-  // that the browser pastes lands there too.
-  it('pastes a local number after the prefix when the caret is inside it', async () => {
-    const { user, whatsapp } = await openPasteTarget();
-    // A click at offset 1 leaves React's select sample at (1, 1), so the same caret again raises no select event.
-    await user.pointer({ target: whatsapp, offset: 1, keys: '[MouseLeft]' });
-    whatsapp.setSelectionRange(1, 1);
-
-    await user.paste(TEST_PHONE_TYPED);
-
-    expect(whatsapp).toHaveValue(TEST_PHONE_DISPLAY);
-  });
-
-  it('pastes an international number as the whole number when the caret is inside the prefix', async () => {
-    const { user, whatsapp } = await openPasteTarget();
-    whatsapp.setSelectionRange(2, 2);
-
-    await user.paste('+55 11 90000-0000');
-
-    expect(whatsapp).toHaveValue(TEST_PHONE_DISPLAY);
   });
 });
