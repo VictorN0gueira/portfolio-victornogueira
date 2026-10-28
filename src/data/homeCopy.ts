@@ -75,6 +75,21 @@ export const homeCopy = {
     heading: 'Do primeiro papo ao fluxo rodando',
     sub: 'Você conhece o negócio. A gente entra com o método e a execução.',
   },
+  // Os textos da seção de depoimentos (as falas e os autores estão em data/testimonials.ts, sem edição). `readFull` é o
+  // texto visível do botão de cada cartão; `readFullFor` é o nome dele para leitor de tela e começa com o texto visível.
+  // `dialogTitle` é o nome do diálogo aberto e `close` o nome do botão que fecha.
+  testimonials: {
+    kicker: 'clientes',
+    heading: 'Quem já automatizou com a gente',
+    readFull: 'Ler depoimento completo',
+    readFullFor: (name: string) => `Ler depoimento completo de ${name}`,
+    dialogTitle: (name: string) => `Depoimento de ${name}`,
+    close: 'Fechar',
+  },
+  // O título da lista de logos dos clientes (os nomes e as logos estão em data/partners.ts).
+  clients: {
+    kicker: 'quem confia',
+  },
   // Os textos do simulador de economia. As opções de equipe vêm de TEAM_OPTIONS (lib/roi.ts).
   roi: {
     kicker: 'simulador',
