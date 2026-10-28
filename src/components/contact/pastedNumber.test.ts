@@ -196,15 +196,45 @@ describe('readPastedNumber cancels the paste and leaves the field as it is', () 
 // R72: a number followed by something that has digits (a date, an amount, another number). The separator with a space on
 // both sides ends the number; a run of 55 and more than 13 digits is not one number and is never guessed.
 describe('readPastedNumber with something that has digits after the number', () => {
+  // A DDD 55 number with a label or words around it, and no spaced separator inside: right as before.
   it.each([
-    ['a slash between spaces and a day', '(55) 99999-9999 / 12'],
-    ['a slash between spaces and a second number', '55 99999-9999 / 55 98888-7777'],
-    ['a dash between spaces and a day', 'Tel 55 99999-9999 - 12'],
-    ['an en dash between spaces and a day', `Tel 55 99999-9999 ${EN_DASH} 12`],
-    ['a minus sign between spaces and a day', `Tel 55 99999-9999 ${MINUS_SIGN} 12`],
     ['a label and words after a DDD 55 number', 'Ligue (55) 99999-9999 oi'],
     ['a DDD 55 number alone', '55 99999-9999'],
   ])('keeps the browser default for a DDD 55 local number: %s', (_label, text) => {
+    expect(readPastedNumber(text)).toEqual({ action: 'default' });
+  });
+
+  // R75: a spaced separator inside a country coded run (55 and 12 digits or more) is ambiguous. `(55) 99999-9999 / 12` and
+  // `55 11 90000 - 0000` have the same digits and the same structure; cutting either one would hand the rest to the
+  // browser, which reads the number's own 55 as the DDD (555511900000). The paste is cancelled, the field is left alone.
+  it.each([
+    ['a number and a spaced slash and a day', '(55) 99999-9999 / 12'],
+    ['a DDD 55 number and a spaced slash and a second number', '55 99999-9999 / 55 98888-7777'],
+    ['a DDD 55 number and a spaced dash and a day', 'Tel 55 99999-9999 - 12'],
+    ['a spaced en dash and a day', `Tel 55 99999-9999 ${EN_DASH} 12`],
+    ['a spaced minus sign and a day', `Tel 55 99999-9999 ${MINUS_SIGN} 12`],
+    ['one number with a spaced dash inside', '55 11 90000 - 0000'],
+    ['one number with a spaced slash inside', '55 11 99999 / 9999'],
+    ['one number with a spaced en dash inside', `55 11 90000 ${EN_DASH} 0000`],
+    ['one number with the DDD in parentheses and a spaced dash', '55 (11) 90000 - 0000'],
+    ['a label and a spaced dash inside', 'Tel 55 11 99999 - 9999'],
+    ['a DDD 51 number with a spaced dash inside', '55 51 99999 - 9999'],
+    ['a label and a spaced dash after the whole number', 'Tel 55 11 90000-0000 - 12'],
+    ['a label and a spaced slash after the whole number', 'Tel 55 11 90000-0000 / 12'],
+    ['a double zero number with a spaced dash inside', '00 55 11 99999 - 9999'],
+    ['a plus number with the DDD in parentheses and a spaced dash', '+55 (11) 99999 - 9999'],
+    ['a plus number with a label and a spaced slash inside', 'tel: +55 11 99999 / 9999'],
+    ['a plus number and a spaced slash after it', '+55 11 90000-0000 / 12'],
+    ['a plus number and a spaced en dash inside', `+55 11 90000 ${EN_DASH} 0000`],
+  ])('cancels and leaves the field alone for a country coded number cut by a spaced separator: %s', (_label, text) => {
+    expect(readPastedNumber(text)).toEqual({ action: 'ignore' });
+  });
+
+  // A spaced separator after a number that is NOT country coded does not make it ambiguous.
+  it.each([
+    ['a local number and a spaced slash and a day', '(11) 90000-0000 / 12'],
+    ['a DDD 55 number of 11 digits and a spaced dash and words', 'Tel 55 99999-9999 - Ana'],
+  ])('keeps the browser default when the cut takes no country coded number: %s', (_label, text) => {
     expect(readPastedNumber(text)).toEqual({ action: 'default' });
   });
 
@@ -220,9 +250,7 @@ describe('readPastedNumber with something that has digits after the number', () 
   it.each([
     ['12 digits', '551100000000'],
     ['13 digits', '5511900000000'],
-    ['a label and a spaced dash after it', `Tel 55 11 90000-0000 ${EN_DASH} 12`],
-    ['a label and a spaced slash after it', 'Tel 55 11 90000-0000 / 12'],
-    ['a plus number and a spaced slash after it', '+55 11 90000-0000 / 12'],
+    ['a label and a trailing separator with no digits after it', 'Tel 55 11 90000-0000 - Ana'],
   ])('replaces the field for a run of 12 or 13 digits: %s', (_label, text) => {
     expect(outcome(text)).toMatchObject({ action: 'replace', display: DISPLAY, evolution: EVOLUTION });
   });

@@ -446,19 +446,22 @@ describe('a text dropped on an empty field', () => {
 
 // R72: a number followed by something with digits. The DDD 55 numbers that were right before the run widened keep their
 // number; a run of 55 and more than 13 digits is never guessed, the field is left as it is.
-describe('a DDD 55 number followed by something with digits', () => {
+describe('a country coded number with a spaced separator, or followed by something with digits', () => {
   it.each([
-    ['a slash between spaces and a day', '(55) 99999-9999 / 12'],
-    ['a slash between spaces and a second number', '55 99999-9999 / 55 98888-7777'],
-    ['a dash between spaces and a day', 'Tel 55 99999-9999 - 12'],
-  ])('keeps the DDD 55 number for %s, over an empty field and over a selected number', async (_label, text) => {
-    for (const where of ['an empty field', 'a typed number selected with select all'] as const) {
-      const { user, whatsapp } = await placeCaret(where);
+    ['a spaced slash and a day', '(55) 99999-9999 / 12'],
+    ['a spaced slash and a second number', '55 99999-9999 / 55 98888-7777'],
+    ['a spaced dash and a day', 'Tel 55 99999-9999 - 12'],
+    ['one number with a spaced dash inside', '55 11 90000 - 0000'],
+    ['one number with a spaced slash inside', '55 11 99999 / 9999'],
+    ['one number with a spaced en dash inside', `55 11 90000 ${EN_DASH} 0000`],
+  ])('cancels the paste and keeps what is in the field for %s (ambiguous, never a guessed number)', async (_label, text) => {
+    for (const where of ['an empty field', 'the caret before a typed number', 'a typed number selected with select all'] as const) {
+      const { whatsapp } = await placeCaret(where);
+      const before = whatsapp.value;
 
-      expect(dispatchPaste(whatsapp, text)).toBe(true);
-      await user.paste(text);
+      expect(dispatchPaste(whatsapp, text)).toBe(false);
 
-      expect(toEvolutionFormat(whatsapp.value)).toBe('555599999999');
+      expect(whatsapp).toHaveValue(before);
       cleanup();
     }
   });

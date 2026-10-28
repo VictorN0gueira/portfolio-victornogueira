@@ -42,10 +42,15 @@ const WHOLE_DIALING_TEXT = new RegExp(`^(?=.*\\d)[\\d${SEPARATORS}\\t ]+$`);
 // one number: it is a number followed by something with digits. The field is left alone rather than guessed.
 const COUNTRY_CODED_MAX_DIGITS = 13;
 
-/** The run of a match that ends where a separator with a space on both sides begins. */
-function endAtSpacedSeparator(run: string): string {
-  const end = run.search(SPACED_SEPARATOR);
-  return (end === -1 ? run : run.slice(0, end)).trim();
+/**
+ * The run of a match cut where a separator with a space on both sides begins, and whether the cut took digits away. A cut
+ * that takes digits away is a doubt: the text may be one number written with a spaced separator inside (`55 11 90000 - 0000`)
+ * or a number followed by something else (a DDD 55 number, a spaced slash, a day), and nothing but its structure tells them apart.
+ */
+function cutAtSpacedSeparator(match: string): { run: string; tookDigits: boolean } {
+  const end = match.search(SPACED_SEPARATOR);
+  const run = (end === -1 ? match : match.slice(0, end)).trim();
+  return { run, tookDigits: digitsOf(run) !== digitsOf(match) };
 }
 
 const digitsOf = (text: string): string => text.replace(/\D/g, '');
@@ -58,11 +63,14 @@ export function normalizePastedText(text: string): string {
   return text.replace(FORMAT_CHARACTERS, '').normalize('NFKC').trim();
 }
 
-/** The run of the first "+" that is followed, after separators, by a digit; a "+" with no digit after it does not count. */
-function runAtPlus(text: string): string | undefined {
+/**
+ * The run of the first "+" that is followed, after separators, by a digit; a "+" with no digit after it does not count.
+ * A run that a spaced separator cut short is `ambiguous`: the number is not applied (see cutAtSpacedSeparator).
+ */
+function runAtPlus(text: string): { run: string; isAmbiguous: boolean } | undefined {
   for (let at = text.indexOf('+'); at !== -1; at = text.indexOf('+', at + 1)) {
-    const run = endAtSpacedSeparator(NUMBER_AT_PLUS.exec(text.slice(at))?.[0] ?? '');
-    if (/\d/.test(run)) return run;
+    const { run, tookDigits } = cutAtSpacedSeparator(NUMBER_AT_PLUS.exec(text.slice(at))?.[0] ?? '');
+    if (/\d/.test(run)) return { run, isAmbiguous: tookDigits };
   }
   return undefined;
 }
@@ -82,6 +90,12 @@ function readCountryCodedNumber(afterPlus: string): PastedNumber {
   return isBrazilian ? { action: 'replace', text } : LEAVE_FIELD;
 }
 
+/** A run that is, or may be, a number with its country code: it starts with 00, or with 55 and has 12 digits or more. */
+function isCountryCoded(run: string): boolean {
+  const digits = digitsOf(run);
+  return digits.startsWith('00') || (digits.startsWith(COUNTRY_CODE) && digits.length >= WHOLE_NUMBER_MIN_DIGITS);
+}
+
 /**
  * The text of the clipboard as a pasted number, after normalizePastedText:
  * - a "+" followed (after separators) by a digit: the number that starts at the first such "+" (`tel: +55 ...`,
@@ -91,21 +105,27 @@ function readCountryCodedNumber(afterPlus: string): PastedNumber {
  *   the plus (`00 55 11 ...` would read as the DDD 00; a bare `00` is cancelled); a run that starts with 55 and has 12 or
  *   13 digits is a whole number (`Tel: 55 11 ...`, `https://wa.me/5511...`, `Ana 5511... abc`); one with more than 13 is
  *   a number followed by something with digits (`55 3222-1234 12/10/2026`): cancelled, the field is left alone;
+ * - a country coded number (a plus, 00, or 55 with 12 digits or more) that a spaced separator would cut is ambiguous: it
+ *   may be one number written with a separator inside (`55 11 90000 - 0000`) or a number followed by something else
+ *   (a DDD 55 number, a spaced slash, a day), and only its structure could tell, so the paste is cancelled and the field is left alone.
+ *   Known limit: such a number is not applied, and neither is a country coded number followed by a spaced separator and
+ *   more digits. Cutting it would hand the rest to the browser, which reads the number's own 55 as the DDD;
  * - everything else keeps the browser default: a local number, a DDD 55 local number (10 or 11 digits, `55 90000-0000`),
  *   whitespace only, any other text. A trunk zero (`0 11 90000-0000`) is not handled: it is pasted as the browser does.
  * Known limits, left to the browser on purpose: only the FIRST run is read, so a number that comes after a shorter run is
- * not found (`Ref 12 depois 5511900000000`, a short number and a slash before it, a footnote marker before the number, a number split
- * across two lines).
+ * not found (`Ref 12 depois 5511900000000`, a short number and a slash before it, a footnote marker before the number, a
+ * number split across two lines).
  */
 export function readPastedNumber(clipboardText: string): PastedNumber {
   const text = normalizePastedText(clipboardText);
 
-  const plusRun = runAtPlus(text);
-  if (plusRun !== undefined) return readCountryCodedNumber(plusRun.slice(1));
+  const plus = runAtPlus(text);
+  if (plus !== undefined) return plus.isAmbiguous ? LEAVE_FIELD : readCountryCodedNumber(plus.run.slice(1));
 
   const first = FIRST_RUN.exec(text)?.[0];
   if (first === undefined) return text.includes('+') ? LEAVE_FIELD : KEEP_DEFAULT;
-  const run = endAtSpacedSeparator(first);
+  const { run, tookDigits } = cutAtSpacedSeparator(first);
+  if (tookDigits && isCountryCoded(first)) return LEAVE_FIELD;
   if (run.startsWith('00')) return readCountryCodedNumber(run.slice(2));
 
   const digits = digitsOf(run);
