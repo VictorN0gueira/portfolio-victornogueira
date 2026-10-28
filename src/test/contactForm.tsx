@@ -1,7 +1,9 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, vi } from 'vitest';
+import ContactForm from '../components/ContactForm';
 import { serviceOptions } from '../data/services';
+import { renderWithProviders } from './render';
 
 export type User = ReturnType<typeof userEvent.setup>;
 
@@ -64,4 +66,24 @@ export async function submitEmailForm(user: User) {
 export function readCall(fetchMock: ReturnType<typeof stubFetch>) {
   const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
   return { url, init, body: JSON.parse(init.body as string) as Record<string, string> };
+}
+
+/** The form on the WhatsApp method, with the user and the number field ready. */
+export async function openWhatsappForm() {
+  const user = userEvent.setup();
+  renderWithProviders(<ContactForm />);
+  await user.click(screen.getByRole('button', { name: 'Por WhatsApp' }));
+  const whatsapp = (await findWhatsappField()) as HTMLInputElement;
+  return { user, whatsapp };
+}
+
+/** The rest of the WhatsApp form and the send: the number is whatever the field holds. */
+export async function sendWhatsappForm(user: User, fetchMock: ReturnType<typeof stubFetch>) {
+  await user.type(screen.getByLabelText('Nome'), 'Ana Lima');
+  await pickService(user);
+  await user.type(screen.getByLabelText('Mensagem'), 'Quero automatizar notas fiscais');
+  await user.click(screen.getByRole('checkbox'));
+  await user.click(submitButton());
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+  return readCall(fetchMock);
 }

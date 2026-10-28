@@ -228,21 +228,147 @@ test.describe('contact form WhatsApp number integrity', () => {
   });
 
   // A synthetic paste event with a DataTransfer: the page code reads the clipboard text from the event, and nothing here
-  // depends on the operating system clipboard, which two workers would share.
-  test('takes a pasted international number as the whole number, not as the digits behind the +55 prefix', async ({ page, network }) => {
+  // depends on the operating system clipboard, which two workers would share. (A synthetic event has no default action, so
+  // only the pastes the page takes over can be tested this way; the default paste of a local number is checked on the
+  // built preview with a real Control+V.)
+  const SYNTHETIC_PASTES = [
+    ['a number with the plus', INTERNATIONAL_NUMBER],
+    ['a number after a label', 'tel: +55 11 90000-0000'],
+    ['a number wrapped in bidi controls', '\u202a+55 11 90000-0000\u202c'],
+    ['a number with no plus wrapped in bidi controls', '\u202a5511900000000\u202c'],
+    ['a number with a double zero for the plus', '00 55 11 90000 0000'],
+  ] as const;
+
+  for (const [label, text] of SYNTHETIC_PASTES) {
+    test(`takes ${label} as the whole number, not as the digits behind the +55 prefix`, async ({ page, network }) => {
+      const form = await openForm(page);
+      const whatsapp = await fillUpToTheNumber(page, form);
+
+      await whatsapp.click();
+      const wasCancelled = await whatsapp.evaluate((input, pasted) => {
+        const data = new DataTransfer();
+        data.setData('text', pasted);
+        const event = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true });
+        input.dispatchEvent(event);
+        return event.defaultPrevented;
+      }, text);
+
+      expect(wasCancelled).toBe(true);
+      await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+    });
+  }
+
+  test('cancels a pasted number from another country and leaves the typed number as it was', async ({ page }) => {
     const form = await openForm(page);
     const whatsapp = await fillUpToTheNumber(page, form);
-
     await whatsapp.click();
-    const wasCancelled = await whatsapp.evaluate((input, text) => {
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
+    const wasCancelled = await whatsapp.evaluate((input) => {
       const data = new DataTransfer();
-      data.setData('text', text);
+      data.setData('text', '+1 415 555 2671');
       const event = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true });
       input.dispatchEvent(event);
       return event.defaultPrevented;
-    }, INTERNATIONAL_NUMBER);
+    });
 
     expect(wasCancelled).toBe(true);
+    await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
+  });
+
+  // A range that starts between the two 5s and reaches past the prefix used to be left alone: the next digit replaced
+  // everything after the first 5 and the surviving 5 joined it (+55 51 9 1900-0000 for a number that starts with 11).
+  test('keeps the digits in order after Shift+ArrowLeft stops between the two 5s', async ({ page, network }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+    await whatsapp.click();
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+    await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
+
+    // From the end of "+55 11 9 0000-0000" back to the index 2: all but the "+5".
+    const shiftLeftPresses = WHATSAPP_DISPLAY.length - 2;
+    for (let press = 0; press < shiftLeftPresses; press += 1) await whatsapp.press('Shift+ArrowLeft');
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
+    await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+  });
+
+  test('keeps the digits in order after a mouse drag from between the two 5s to the end of the field', async ({ page, network }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+    await whatsapp.click();
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+    await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
+
+    // The x of the gap between the "+5" and the second "5" is the width of "+5" in the font of the field, past its padding.
+    const drag = await whatsapp.evaluate((input: HTMLInputElement) => {
+      const style = getComputedStyle(input);
+      const context = document.createElement('canvas').getContext('2d') as CanvasRenderingContext2D;
+      context.font = style.font;
+      const box = input.getBoundingClientRect();
+      const textLeft = box.left + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
+      return { fromX: textLeft + context.measureText('+5').width, toX: box.right - 3, y: box.top + box.height / 2 };
+    });
+    await page.mouse.move(drag.fromX, drag.y);
+    await page.mouse.down();
+    await page.mouse.move(drag.toX, drag.y, { steps: 8 });
+    await page.mouse.up();
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
+    await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+  });
+
+  // React raises its select event only when the selection differs from the last one it sampled: a caret that goes back to
+  // the place a click had put it (offset 0 for PREFIX_CLICK), with no click and no key (a touch caret handle, the space bar
+  // swipe of a phone keyboard), may raise none. A script stands in for that move, twice, with a pause so the first one is
+  // handled.
+  async function returnCaretInsidePrefixTwice(whatsapp: Locator, offset: number) {
+    await whatsapp.evaluate(async (input: HTMLInputElement, at: number) => {
+      for (let move = 0; move < 2; move += 1) {
+        input.setSelectionRange(at, at);
+        await new Promise((resolve) => setTimeout(resolve, 60));
+      }
+    }, offset);
+  }
+
+  test('keeps the digits in order after the caret returns inside the prefix with no click and no key', async ({ page, network }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+
+    await whatsapp.click(PREFIX_CLICK);
+    await returnCaretInsidePrefixTwice(whatsapp, 0);
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
+    await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+  });
+
+  // Text inserted with no key at all (dictation, an input method commit, the clipboard of a keyboard app) has no key down.
+  test('keeps the digits in order when the text is inserted with no key after the caret returned inside the prefix', async ({ page, network }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+
+    await whatsapp.click(PREFIX_CLICK);
+    await returnCaretInsidePrefixTwice(whatsapp, 2);
+    await page.keyboard.insertText(WHATSAPP_TYPED);
+
+    await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+  });
+
+  test('keeps the number when Backspace is pressed at the start of it, and lets the visitor type again', async ({ page, network }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+    await whatsapp.click();
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+    await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
+
+    await whatsapp.evaluate((input: HTMLInputElement) => input.setSelectionRange(4, 4));
+    await whatsapp.press('Backspace');
+    await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
+    await whatsapp.press('Control+A');
+    await whatsapp.press('Backspace');
+    await expect(whatsapp).toHaveValue('+55 ');
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
     await expectLeadForTheTypedNumber(page, form, network, whatsapp);
   });
 });

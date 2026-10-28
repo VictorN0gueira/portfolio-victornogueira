@@ -1,10 +1,10 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { whatsappUrl } from '../../lib/constants';
 import { findAccentElements } from '../../test/accent';
 import { expectNoConsoleOutput } from '../../test/consoleGuard';
-import { rejectUnexpectedFetch, stubFetch, submitEmailForm } from '../../test/contactForm';
+import { SWAP_WAIT, findWhatsappField, rejectUnexpectedFetch, stubFetch, submitEmailForm } from '../../test/contactForm';
 import { renderWithProviders } from '../../test/render';
 import { FinalCta } from './FinalCta';
 
@@ -137,6 +137,9 @@ describe('FinalCta accent', () => {
     const { container } = renderWithProviders(<FinalCta />);
 
     await user.click(screen.getByRole('button', { name: 'Por WhatsApp' }));
+    // The e-mail field leaves and the WhatsApp field comes in with a short animation: count once the swap is over.
+    await findWhatsappField();
+    await waitFor(() => expect(screen.queryByLabelText('E-mail')).not.toBeInTheDocument(), SWAP_WAIT);
 
     expect(findAccentElements(container)).toHaveLength(1);
   });
