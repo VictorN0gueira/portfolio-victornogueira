@@ -23,7 +23,7 @@ describe('WhatsAppButton', () => {
   it('keeps 16px from the edges, or the safe area when it is larger, through inline styles', () => {
     const link = renderButton();
 
-    expect(link.style.right).toBe('max(16px, env(safe-area-inset-right))');
+    expect(link.style.right).toBe('calc(max(16px, env(safe-area-inset-right)) + var(--removed-body-scroll-bar-size, 0px))');
     expect(link.style.bottom).toBe('max(16px, env(safe-area-inset-bottom))');
   });
 

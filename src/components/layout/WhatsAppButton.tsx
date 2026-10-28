@@ -1,10 +1,13 @@
 import { WHATSAPP_GREETING, whatsappUrl } from '../../lib/constants';
+import { SCROLL_LOCK_BAR_SIZE } from '../../lib/scrollLock';
 import BrandIcon from '../ui/BrandIcon';
 
 // The offsets are inline because the safe area inset has to be compared with the 16px margin:
 // the pt-safe family of utilities replaces the padding instead of taking the larger of the two.
+// The right one adds the width of the scrollbar a modal removes (0 when none is open), so the button keeps its place
+// under the scroll lock: the class of lib/scrollLock.ts would replace the whole offset instead of adding to it.
 const POSITION = {
-  right: 'max(16px, env(safe-area-inset-right))',
+  right: `calc(max(16px, env(safe-area-inset-right)) + ${SCROLL_LOCK_BAR_SIZE})`,
   bottom: 'max(16px, env(safe-area-inset-bottom))',
 } as const;
 
@@ -24,7 +27,7 @@ export function WhatsAppButton() {
         rel="noopener noreferrer"
         aria-label="Falar no WhatsApp"
         style={POSITION}
-        className="fixed z-40 grid size-[52px] place-items-center rounded-full border border-vn-gray-dark bg-vn-black text-vn-white shadow-lg transition-transform duration-150 ease-out hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--color-vn-white),0_0_0_4px_var(--color-vn-ink)]"
+        className={`fixed z-40 grid size-[52px] place-items-center rounded-full border border-vn-gray-dark bg-vn-black text-vn-white shadow-lg transition-transform duration-150 ease-out hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--color-vn-white),0_0_0_4px_var(--color-vn-ink)]`}
       >
         <span
           aria-hidden="true"

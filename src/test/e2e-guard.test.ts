@@ -2,14 +2,17 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { MOCKED_FEED_HOSTS, MOCKED_HOSTS, MOCKED_IMAGE_HOSTS, N8N_HOST } from '../../e2e/guardHosts';
 
 // The n8n webhooks are the only lead channel of the business. e2e/n8nGuard.ts gives a test a catch-all net and the n8n
 // route helpers, but only a spec that takes its `test` from it is covered: a plain `@playwright/test` spec could submit
 // the form, or post to the webhook, and reach the real lead channel. So every spec that touches the form or the channel
 // has to import `test` from the guard, and none may import `test` from `@playwright/test` as well.
 //
-// Known limit: this reads each spec's own text. A spec that drives the form only through a helper imported from another
-// file shows none of the signs below; keep such helpers inside a spec, or add the sign of the helper here.
+// Known limits: this reads each spec's own text. A spec that drives the form only through a helper imported from another
+// file shows none of the signs below; keep such helpers inside a spec, or add the sign of the helper here. The same goes
+// for `page.goto(variable)`: the visit to the home or to the contact page is recognized only when the address is written
+// in the call, so a spec that builds its address in a variable and has no other sign needs the guard by hand.
 
 const E2E_DIR = resolve(__dirname, '../../e2e');
 const SPEC_FILE = /\.(spec|test)\.ts$/;
@@ -64,10 +67,26 @@ describe('the e2e specs that touch the lead channel', () => {
 
     expect(names).toContain('contact-form.spec.ts');
     expect(names).toContain('hero.spec.ts');
+    expect(names).toContain('home.spec.ts');
+    expect(names).toContain('scroll-lock.spec.ts');
   });
 
   it('all take their test from ./n8nGuard, never from @playwright/test', () => {
     expect(findUnguardedSpecs(readSpecs())).toEqual([]);
+  });
+
+  it('see the guard in the home spec, which mounts the real form', () => {
+    const source = readSpecs()['home.spec.ts'];
+
+    expect(touchesTheLeadChannel(source)).toBe(true);
+    expect(isGuarded(source)).toBe(true);
+  });
+
+  it('see the guard in the scroll lock spec, which opens the home', () => {
+    const source = readSpecs()['scroll-lock.spec.ts'];
+
+    expect(touchesTheLeadChannel(source)).toBe(true);
+    expect(isGuarded(source)).toBe(true);
   });
 
   it('see the guard in the contact form spec', () => {
@@ -136,5 +155,24 @@ describe('findUnguardedSpecs', () => {
     const plain = "import { test, expect } from '@playwright/test';\ntest('x', async ({ page }) => { await page.goto('/sobre'); await page.request.get('/'); });";
 
     expect(findUnguardedSpecs({ 'plain.spec.ts': plain })).toEqual([]);
+  });
+});
+
+describe('the hosts the network guard answers itself', () => {
+  it('never hold the n8n host, the lead channel, nor the host of the page under test', () => {
+    expect(MOCKED_HOSTS).not.toContain(N8N_HOST);
+    for (const host of MOCKED_HOSTS) {
+      expect(host.endsWith(N8N_HOST), host).toBe(false);
+      expect(host, 'the page under test').not.toMatch(/^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/);
+    }
+  });
+
+  it('are bare host names: no scheme, no path, no wildcard, no port', () => {
+    for (const host of MOCKED_HOSTS) expect(host).toMatch(/^[a-z0-9]+(?:[.-][a-z0-9]+)+$/);
+  });
+
+  it('are the union of the image hosts and the feed hosts, with none twice', () => {
+    expect([...MOCKED_HOSTS].sort()).toEqual([...MOCKED_IMAGE_HOSTS, ...MOCKED_FEED_HOSTS].sort());
+    expect(new Set(MOCKED_HOSTS).size).toBe(MOCKED_HOSTS.length);
   });
 });

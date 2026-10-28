@@ -2,27 +2,48 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { SectionSkeleton } from './reveal';
 
-describe('SectionSkeleton', () => {
+describe('SectionSkeleton as a band of the new design', () => {
+  const band = () => render(<SectionSkeleton heightClassName="min-h-[52rem] lg:min-h-[40rem]" />);
+
   it('holds the height classes it is given, so a late section does not move what sits under it', () => {
-    const { container } = render(<SectionSkeleton heightClassName="min-h-[52rem] lg:min-h-[40rem]" />);
+    const { container } = band();
 
     expect(container.firstElementChild).toHaveClass('min-h-[52rem]', 'lg:min-h-[40rem]');
-    expect(container.firstElementChild).not.toHaveClass('min-h-[clamp(18rem,40vh,32rem)]');
   });
 
-  it('has a default height of its own', () => {
-    const { container } = render(<SectionSkeleton />);
+  it('is a cream band with the spinner near its top', () => {
+    const { container } = band();
 
-    expect(container.firstElementChild).toHaveClass('min-h-[clamp(18rem,40vh,32rem)]');
+    expect(container.firstElementChild).toHaveClass('bg-vn-cream', 'items-start');
   });
+});
 
-  it('says it is loading and uses only VN One tokens: no dark variants, no zinc palette', () => {
+describe('SectionSkeleton as the compact placeholder of the legacy pages', () => {
+  it('is transparent, centered and has no height of its own, as it was before the redesign', () => {
     const { container } = render(<SectionSkeleton />);
-    const markup = container.innerHTML;
+    const root = container.firstElementChild as HTMLElement;
 
+    expect(root).toHaveClass('items-center', 'py-24');
+    expect(root.className).not.toMatch(/bg-|min-h-/);
+  });
+});
+
+describe('SectionSkeleton in both looks', () => {
+  it.each([
+    ['the band', <SectionSkeleton key="band" heightClassName="min-h-[10rem]" />],
+    ['the compact one', <SectionSkeleton key="compact" />],
+  ])('is hidden from assistive tech (%s), so a page of eight of them does not announce loading eight times', (_name, ui) => {
+    const { container } = render(ui);
+
+    expect(container.firstElementChild).toHaveAttribute('aria-hidden', 'true');
+    expect(container.querySelector('[role="status"]')).toBeNull();
     expect(screen.getByText('Carregando...')).toBeInTheDocument();
-    expect(markup).not.toMatch(/dark:|zinc|slate|gray-\d/);
-    expect(markup).toContain('bg-vn-cream');
+  });
+
+  it('uses only VN One tokens: no dark variants, no zinc or numbered gray palette', () => {
+    const { container } = render(<SectionSkeleton heightClassName="min-h-[10rem]" />);
+
+    expect(container.innerHTML).not.toMatch(/dark:|zinc|slate|gray-\d/);
   });
 
   it('spins only when motion is welcome', () => {

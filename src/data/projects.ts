@@ -148,8 +148,6 @@ export const projects: Project[] = [
   }
 ];
 
-export const featuredProjects: Project[] = projects.filter((p) => p.featured);
-
 export function getProjectBySlug(slug: string): Project | undefined {
   return projects.find((p) => p.slug === slug);
 }

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Accessibility } from 'lucide-react';
 import { useAccessibility } from '../contexts/AccessibilityContext';
+import { KEEPS_PLACE_UNDER_SCROLL_LOCK } from '../lib/scrollLock';
 
 interface Option {
   key: 'fontSize' | 'highContrast' | 'grayscale' | 'noAnimations' | 'underlineLinks' | 'readableFont';
@@ -103,7 +104,7 @@ export default function AccessibilityWidget() {
     /* Mobile: ancorado no bottom para alcance do polegar; Desktop: centralizado na lateral */
     <div
       ref={panelRef}
-      className="fixed right-0 bottom-52 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 z-[150] flex items-center"
+      className={`${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed right-0 bottom-52 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 z-[150] flex items-center`}
       style={{ direction: 'rtl' }}
     >
       {/* Painel */}

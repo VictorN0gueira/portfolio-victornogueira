@@ -20,8 +20,6 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
-    /* The scrollbar keeps its place when a Radix modal locks the scroll, so the fixed header and the WhatsApp button do not jump by its width. */
-    scrollbar-gutter: stable;
     /* Anchors stop below the floating header, which sits at max(12px, notch inset) from the top. */
     scroll-padding-top: max(96px, calc(env(safe-area-inset-top) + 84px));
   }
@@ -110,6 +108,42 @@
 
 .a11y-font-large {
   font-size: 120% !important;
+}
+
+/* Text wraps into more lines with the larger font than the rem scale alone gives, most on a narrow screen. The skeletons
+   of the lazy home sections (HomePage) multiply their height by this, from the heights measured with the option on. */
+.a11y-font-large {
+  --vn-skeleton-scale: 1.12;
+}
+
+@media (min-width: 350px) {
+  .a11y-font-large {
+    --vn-skeleton-scale: 1.05;
+  }
+}
+
+@media (min-width: 500px) {
+  .a11y-font-large {
+    --vn-skeleton-scale: 1;
+  }
+}
+
+@media (min-width: 768px) {
+  .a11y-font-large {
+    --vn-skeleton-scale: 1.03;
+  }
+}
+
+@media (min-width: 1000px) {
+  .a11y-font-large {
+    --vn-skeleton-scale: 0.99;
+  }
+}
+
+@media (min-width: 1700px) {
+  .a11y-font-large {
+    --vn-skeleton-scale: 1.04;
+  }
 }
 
 .a11y-high-contrast {

@@ -1,8 +1,9 @@
-import { Suspense, lazy, useCallback, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import SEO from '../components/SEO';
 import { faqs } from '../data/faqs';
 import { buildFaqJsonLd } from '../lib/faqJsonLd';
 import { SectionSkeleton } from '../lib/reveal';
+import { scrollToIdWhenMounted } from '../lib/scrollToIdWhenMounted';
 import { useScrollToHash } from '../lib/useScrollToHash';
 import { HeroSection } from '../sections/home/HeroSection';
 import { IntegrationsMarquee } from '../sections/home/IntegrationsMarquee';
@@ -21,29 +22,33 @@ const FinalCta = lazy(() => import('../sections/home/FinalCta'));
 /** The id of the section the ROI quote scrolls to (the final call to action, which holds the one form of the page). */
 const CONTACT_ID = 'contato';
 
-// How tall each lazy section is once it has loaded, so a late chunk does not move the anchors under it (#metodo and
-// #clientes). The rems are the heights measured in Chromium at 320 to 2560px wide. On a phone one column of text wraps
-// more the narrower the screen is, so the first class is a line between the height at 320px and the one at 412px
-// (clamp keeps it inside them); the others hold one height per breakpoint. A section is taller with the larger font
-// option, which a skeleton does not chase. The class names are written out in full for the stylesheet generator.
+// How tall each lazy section is once it has loaded, so a late chunk moves little of what is under it (the anchors
+// #metodo and #clientes are also put back after a late chunk, see scrollToIdWhenMounted). One min-height per band of
+// widths, set to the middle of the heights measured in Chromium at 30 widths from 320 to 2560 (a band spans at most
+// about 100px of height, so a skeleton is off by 50px or less at the normal font). The unit is rem, so it follows the
+// larger font option, and --vn-skeleton-scale (index.css) adds the extra lines the text wraps into when it is on.
+// Written out in full, as the stylesheet generator reads class names from the source.
 const SKELETON_HEIGHTS = {
   statement:
-    'min-h-[clamp(79.9rem,93.78rem-53.91vw,83rem)] sm:min-h-[55rem] md:min-h-[63rem] lg:min-h-[52rem] xl:min-h-[62rem] 2xl:min-h-[65rem]',
+    'min-h-[calc(81.4rem*var(--vn-skeleton-scale,1))] min-[640px]:min-h-[calc(56.4rem*var(--vn-skeleton-scale,1))] min-[768px]:min-h-[calc(62.3rem*var(--vn-skeleton-scale,1))] min-[1024px]:min-h-[calc(54.0rem*var(--vn-skeleton-scale,1))] min-[1366px]:min-h-[calc(64.3rem*var(--vn-skeleton-scale,1))]',
   useCases:
-    'min-h-[clamp(60.9rem,84.63rem-92.17vw,66.2rem)] sm:min-h-[57rem] md:min-h-[61rem] lg:min-h-[56rem] 2xl:min-h-[60rem]',
+    'min-h-[calc(63.4rem*var(--vn-skeleton-scale,1))] min-[440px]:min-h-[calc(57.3rem*var(--vn-skeleton-scale,1))] min-[768px]:min-h-[calc(62.8rem*var(--vn-skeleton-scale,1))] min-[1024px]:min-h-[calc(57.6rem*var(--vn-skeleton-scale,1))]',
   services:
-    'min-h-[clamp(101.1rem,150.36rem-191.3vw,112.1rem)] sm:min-h-[97rem] md:min-h-[85rem] lg:min-h-[65rem]',
+    'min-h-[calc(109.4rem*var(--vn-skeleton-scale,1))] min-[375px]:min-h-[calc(102.1rem*var(--vn-skeleton-scale,1))] min-[480px]:min-h-[calc(98.0rem*var(--vn-skeleton-scale,1))] min-[768px]:min-h-[calc(83.1rem*var(--vn-skeleton-scale,1))] min-[1024px]:min-h-[calc(65.5rem*var(--vn-skeleton-scale,1))]',
   method:
-    'min-h-[clamp(98.6rem,121.44rem-88.7vw,103.7rem)] sm:min-h-[94rem] md:min-h-[68rem] lg:min-h-[57rem] xl:min-h-[61rem]',
-  roi: 'min-h-[clamp(74rem,78.03rem-15.65vw,74.9rem)] sm:min-h-[70rem] md:min-h-[74rem] lg:min-h-[57rem] xl:min-h-[60rem]',
+    'min-h-[calc(100.7rem*var(--vn-skeleton-scale,1))] min-[520px]:min-h-[calc(95.6rem*var(--vn-skeleton-scale,1))] min-[768px]:min-h-[calc(67.4rem*var(--vn-skeleton-scale,1))] min-[1024px]:min-h-[calc(59.2rem*var(--vn-skeleton-scale,1))] min-[1700px]:min-h-[calc(63.6rem*var(--vn-skeleton-scale,1))]',
+  roi:
+    'min-h-[calc(73.0rem*var(--vn-skeleton-scale,1))] min-[1023px]:min-h-[calc(76.4rem*var(--vn-skeleton-scale,1))] min-[1024px]:min-h-[calc(59.7rem*var(--vn-skeleton-scale,1))] min-[1920px]:min-h-[calc(63.8rem*var(--vn-skeleton-scale,1))]',
   testimonials:
-    'min-h-[clamp(200rem,247.02rem-182.61vw,210.5rem)] sm:min-h-[192rem] md:min-h-[130rem] lg:min-h-[106rem] xl:min-h-[109rem]',
-  faq: 'min-h-[clamp(58rem,93.38rem-137.39vw,65.9rem)] sm:min-h-[54rem] md:min-h-[58rem] lg:min-h-[41rem] 2xl:min-h-[44rem]',
-  finalCta: 'min-h-[clamp(83.6rem,88.53rem-19.13vw,84.7rem)] sm:min-h-[78rem] md:min-h-[82rem] lg:min-h-[60rem]',
+    'min-h-[calc(209.1rem*var(--vn-skeleton-scale,1))] min-[390px]:min-h-[calc(200.7rem*var(--vn-skeleton-scale,1))] min-[480px]:min-h-[calc(192.1rem*var(--vn-skeleton-scale,1))] min-[700px]:min-h-[calc(182.6rem*var(--vn-skeleton-scale,1))] min-[768px]:min-h-[calc(129.9rem*var(--vn-skeleton-scale,1))] min-[900px]:min-h-[calc(121.4rem*var(--vn-skeleton-scale,1))] min-[1024px]:min-h-[calc(108.9rem*var(--vn-skeleton-scale,1))] min-[1920px]:min-h-[calc(112.9rem*var(--vn-skeleton-scale,1))]',
+  faq:
+    'min-h-[calc(63.2rem*var(--vn-skeleton-scale,1))] min-[412px]:min-h-[calc(56.1rem*var(--vn-skeleton-scale,1))] min-[1023px]:min-h-[calc(59.6rem*var(--vn-skeleton-scale,1))] min-[1024px]:min-h-[calc(42.3rem*var(--vn-skeleton-scale,1))]',
+  finalCta:
+    'min-h-[calc(82.1rem*var(--vn-skeleton-scale,1))] min-[560px]:min-h-[calc(79.9rem*var(--vn-skeleton-scale,1))] min-[960px]:min-h-[calc(83.8rem*var(--vn-skeleton-scale,1))] min-[1024px]:min-h-[calc(61.8rem*var(--vn-skeleton-scale,1))]',
 } as const;
 
-// The FAQPage schema comes from the same list as the accordion of the section.
-const faqJsonLd = buildFaqJsonLd(faqs);
+// The FAQPage schema comes from the same list as the accordion of the section. Built once, not on every render.
+const HOME_JSON_LD = [buildFaqJsonLd(faqs)];
 
 /**
  * The home: the hero and the integrations strip first, then the lazy sections in the order of the brief. The one contact
@@ -56,15 +61,20 @@ export default function HomePage() {
   const [prefillMessage, setPrefillMessage] = useState<string | undefined>();
   const [prefillNonce, setPrefillNonce] = useState(0);
 
+  // The form is in a lazy section: the scroll waits for it when the chunk has not arrived yet.
+  const cancelScroll = useRef<(() => void) | undefined>(undefined);
+  useEffect(() => () => cancelScroll.current?.(), []);
+
   const handleQuoteRequest = useCallback((message: string) => {
     setPrefillMessage(message);
     setPrefillNonce((nonce) => nonce + 1);
-    document.getElementById(CONTACT_ID)?.scrollIntoView({ behavior: 'smooth' });
+    cancelScroll.current?.();
+    cancelScroll.current = scrollToIdWhenMounted(CONTACT_ID);
   }, []);
 
   return (
     <>
-      <SEO path="/" jsonLd={[faqJsonLd]} />
+      <SEO path="/" jsonLd={HOME_JSON_LD} />
       <HeroSection />
       <IntegrationsMarquee />
 

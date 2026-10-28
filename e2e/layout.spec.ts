@@ -1,6 +1,5 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './n8nGuard';
-import { useOverlayScrollbars } from './phoneEmulation';
 
 const MAIN_NAV_NAME = 'Navegação principal';
 const SKIP_LINK_NAME = 'Pular para o conteúdo';
@@ -172,7 +171,6 @@ test.describe('mobile menu drawer width', () => {
 
     test('fills the whole screen, with no strip of page beside it', async ({ page }) => {
       await page.goto('/');
-      await useOverlayScrollbars(page);
       await page.getByRole('button', { name: 'Abrir menu' }).click();
 
       const dialog = page.getByRole('dialog', { name: MENU_DIALOG_NAME });
@@ -187,7 +185,6 @@ test.describe('mobile menu drawer width', () => {
 
     test('is 24rem wide and docked to the right edge', async ({ page }) => {
       await page.goto('/');
-      await useOverlayScrollbars(page);
       await page.getByRole('button', { name: 'Abrir menu' }).click();
 
       const dialog = page.getByRole('dialog', { name: MENU_DIALOG_NAME });
@@ -209,7 +206,6 @@ test.describe('header on a phone held sideways', () => {
 
   test('sits 8px higher, stays centered and keeps its side gutters', async ({ page }) => {
     await page.goto('/');
-    await useOverlayScrollbars(page);
 
     const box = await page.getByRole('banner').boundingBox();
     expect(box?.y).toBe(HEADER_MIN_GUTTER_PX - 8);
@@ -326,7 +322,6 @@ test.describe('footer', () => {
 
       await page.setViewportSize(viewport);
       await page.goto('/sobre');
-      await useOverlayScrollbars(page);
       const wordmark = page.locator('footer#rodape [data-footer-wordmark]');
 
       // Computed lengths are serialized differently per engine, so the number is compared with a tolerance.

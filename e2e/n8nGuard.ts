@@ -1,4 +1,7 @@
 import { expect, test as base, type Route } from '@playwright/test';
+import { MOCKED_FEED_HOSTS, MOCKED_HOSTS, MOCKED_IMAGE_HOSTS, N8N_HOST } from './guardHosts';
+
+export { N8N_HOST };
 
 /**
  * Safety net for every test that touches the contact form. The two n8n webhooks are the only lead channel of the
@@ -8,19 +11,13 @@ import { expect, test as base, type Route } from '@playwright/test';
  *    `page.route(N8N_WEBHOOK_PATTERN, ...)`;
  *  - after the test, the fixture fails it if anything was blocked, if a request went to a host other than the
  *    page's own or n8n, or if the page sent an n8n POST that the test's route did not see.
- * The home also shows the client logos from the image host of the business (MOCKED_IMAGE_HOSTS), and the blog route
- * reads article feeds and shows fallback cover images (MOCKED_FEED_HOSTS, MOCKED_IMAGE_HOSTS): the guard answers those requests itself, with a one pixel PNG and
- * an empty list, so the pages render and no request ever leaves the machine.
+ * The home also shows the client logos from the image host of the business, and the blog route reads article feeds and
+ * shows fallback cover images: the guard answers those requests itself (hosts in ./guardHosts), with a one pixel PNG
+ * and an empty list, so the pages render and no request ever leaves the machine.
  * A test must register its own n8n route first (see `n8nRoute`); forgetting it blocks the request and fails the test.
  */
-export const N8N_HOST = 'n8n.vnone.com.br';
 export const N8N_WEBHOOK_PATTERN = `https://${N8N_HOST}/webhook/**`;
 
-/** Hosts the page loads images from. The guard answers them with a tiny PNG, so they are never really requested. */
-export const MOCKED_IMAGE_HOSTS: readonly string[] = ['minio.vnone.com.br', 'images.unsplash.com'];
-/** The article feeds the blog reads (the last one is its edge function). The guard answers them with an empty list. */
-export const MOCKED_FEED_HOSTS: readonly string[] = ['dev.to', 'www.tabnews.com.br', 'qpcwoioflaxiasmcdfbd.supabase.co'];
-const MOCKED_HOSTS: readonly string[] = [...MOCKED_IMAGE_HOSTS, ...MOCKED_FEED_HOSTS];
 const PIXEL_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
   'base64',

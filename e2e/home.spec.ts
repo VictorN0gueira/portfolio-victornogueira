@@ -1,6 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
 import { N8N_WEBHOOK_PATTERN, expect, fulfillOk, n8nRoute, test } from './n8nGuard';
-import { useOverlayScrollbars } from './phoneEmulation';
 
 // The whole home, assembled: the sections in order, no horizontal overflow, the anchors that point into it and the
 // hand over of the ROI quote to the form. Every test goes through the guard of ./n8nGuard (the home mounts the real
@@ -24,14 +23,16 @@ const SMALLEST_PHONE = { width: 280, height: 653 };
 const DESKTOP_1440 = { width: 1440, height: 900 };
 const ULTRA_WIDE = { width: 2560, height: 1080 };
 const MIN_TOUCH_PX = 44;
+const TOUCH_ROUNDING_PX = 0.01;
 const PLACEHOLDER_EMAIL = 'voce@empresa.com.br';
-// The header floats over the top of the page and the anchors stop below it (scroll-padding-top of index.css).
-const ANCHOR_TOP_MAX_PX = 140;
-const ANCHOR_TOP_MIN_PX = -2;
 const PAGE_LOAD_TIMEOUT_MS = 20_000;
 // A late chunk: long enough for the sections around it to be laid out first.
 const CHUNK_DELAY_MS = 1200;
 const SUBPIXEL_PX = 1;
+// How far from its place an anchor may end after late chunks. The page puts a section back when it is more than 8px off.
+const SETTLED_TOLERANCE_PX = 12;
+// Frames in a row the section must stay in place to count as settled (30 is half a second at 60 frames a second).
+const SETTLED_FRAMES = 30;
 
 /** The home is ready when its last lazy section, the form, is in the page. */
 async function openHome(page: Page, path = '/') {
@@ -54,12 +55,6 @@ const nextFrames = (page: Page) =>
 
 const topOf = (page: Page, id: string) =>
   page.evaluate((target) => document.getElementById(target)?.getBoundingClientRect().top ?? Number.NaN, id);
-
-/** Waits for the smooth scroll of an anchor to end with the section right under the header. */
-async function expectSectionAtTop(page: Page, id: string) {
-  await expect.poll(() => topOf(page, id), { timeout: PAGE_LOAD_TIMEOUT_MS }).toBeLessThanOrEqual(ANCHOR_TOP_MAX_PX);
-  await expect.poll(() => topOf(page, id), { timeout: PAGE_LOAD_TIMEOUT_MS }).toBeGreaterThanOrEqual(ANCHOR_TOP_MIN_PX);
-}
 
 test.describe('home sections', () => {
   test('shows the hero first and every section after it, one under the other, in the order of the brief', async ({ page }) => {
@@ -111,26 +106,77 @@ test.describe('home sections', () => {
   }
 });
 
+/**
+ * Makes the chunks of the given sections answer late and counts how many times each was asked for. The count is what
+ * proves the delay was really applied: a chunk that is renamed or merged would otherwise degrade the test in silence.
+ */
+async function delayChunks(page: Page, chunks: string[], delayMs: number): Promise<Map<string, number>> {
+  const hits = new Map<string, number>(chunks.map((chunk) => [chunk, 0]));
+  for (const chunk of chunks) {
+    await page.route(new RegExp(`/assets/${chunk}-[^/]+\.js$`), async (route) => {
+      hits.set(chunk, (hits.get(chunk) ?? 0) + 1);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      await route.continue();
+    });
+  }
+  return hits;
+}
+
+function expectEveryChunkAnsweredLate(hits: Map<string, number>, chunks: string[]) {
+  expect([...hits.keys()]).toEqual(chunks);
+  for (const chunk of chunks) expect(hits.get(chunk), `${chunk} was requested and delayed`).toBeGreaterThanOrEqual(1);
+}
+
+/**
+ * The section ends where an anchor puts it, however late the chunks came: it waits until the section has stayed within
+ * the tolerance of its place for a run of frames (about half a second), so a position crossed on the way, or a section
+ * that is put back after the last late chunk, does not count as settled.
+ */
+async function expectSettledAtAnchor(page: Page, id: string) {
+  await page.waitForFunction(
+    ({ target, tolerance, frames }) => {
+      const state = window as unknown as { __settledFrames?: number };
+      const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
+      const top = document.getElementById(target)?.getBoundingClientRect().top ?? Number.NaN;
+      state.__settledFrames = Math.abs(top - padding) <= tolerance ? (state.__settledFrames ?? 0) + 1 : 0;
+      return state.__settledFrames >= frames;
+    },
+    { target: id, tolerance: SETTLED_TOLERANCE_PX, frames: SETTLED_FRAMES },
+    { timeout: PAGE_LOAD_TIMEOUT_MS },
+  );
+}
+
 test.describe('home anchors', () => {
+  const CHUNKS_ABOVE = ['StatementStats', 'UseCaseTabs', 'ServicesCards'];
+  const OWN_CHUNK: Record<string, string> = { metodo: 'MethodSteps', clientes: 'Testimonials' };
+  // The first scroll was once given only one second to find its target: this is longer than that.
+  const OWN_CHUNK_DELAY_MS = 2500;
+
   for (const id of ['metodo', 'clientes']) {
     test(`lands on #${id} after the lazy sections have loaded`, async ({ page }) => {
       await openHome(page, `/#${id}`);
 
-      await expectSectionAtTop(page, id);
+      await expectSettledAtAnchor(page, id);
     });
 
     test(`keeps #${id} in place when the sections above it arrive late`, async ({ page }) => {
-      // The chunks of the sections above both anchors answer late, one after the other, while the rest is there.
-      for (const chunk of ['StatementStats', 'UseCaseTabs', 'ServicesCards']) {
-        await page.route(new RegExp(`/assets/${chunk}-[^/]+\\.js$`), async (route) => {
-          await new Promise((resolve) => setTimeout(resolve, CHUNK_DELAY_MS));
-          await route.continue();
-        });
-      }
-      await openHome(page, `/#${id}`);
-      await nextFrames(page);
+      const hits = await delayChunks(page, CHUNKS_ABOVE, CHUNK_DELAY_MS);
 
-      await expectSectionAtTop(page, id);
+      await openHome(page, `/#${id}`);
+      // Every delayed chunk has answered (the page is complete).
+      expectEveryChunkAnsweredLate(hits, CHUNKS_ABOVE);
+
+      await expectSettledAtAnchor(page, id);
+    });
+
+    test(`reaches #${id} when its own chunk and the ones above it arrive late`, async ({ page }) => {
+      const chunks = [...CHUNKS_ABOVE, OWN_CHUNK[id]];
+      const hits = await delayChunks(page, chunks, OWN_CHUNK_DELAY_MS);
+
+      await openHome(page, `/#${id}`);
+      expectEveryChunkAnsweredLate(hits, chunks);
+
+      await expectSettledAtAnchor(page, id);
     });
   }
 });
@@ -146,7 +192,7 @@ test.describe('home quote hand over', () => {
     await quote.click();
 
     await expect(messageField(page)).toHaveValue(new RegExp(`^${QUOTE_START}`));
-    await expectSectionAtTop(page, 'contato');
+    await expectSettledAtAnchor(page, 'contato');
     const message = await messageField(page).inputValue();
 
     await messageField(page).fill('Outra coisa');
@@ -155,7 +201,7 @@ test.describe('home quote hand over', () => {
     await quote.click();
 
     await expect(messageField(page)).toHaveValue(message);
-    await expectSectionAtTop(page, 'contato');
+    await expectSettledAtAnchor(page, 'contato');
     expect(network.calls).toHaveLength(0);
   });
 });
@@ -197,7 +243,6 @@ test.describe('final call to action fit (M11)', () => {
   test('fits the longest placeholder in the e-mail field at 280px, and every control is 44px tall', async ({ page }) => {
     await page.setViewportSize(SMALLEST_PHONE);
     await openHome(page);
-    await useOverlayScrollbars(page);
     const form = page.locator('form[name="contact"]');
     await form.scrollIntoViewIfNeeded();
     const email = form.getByLabel('E-mail', { exact: true });
@@ -225,7 +270,8 @@ test.describe('final call to action fit (M11)', () => {
     for (const [name, control] of Object.entries(controls)) {
       const box = await control.boundingBox();
       expect(box, name).not.toBeNull();
-      expect(box?.height ?? 0, name).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
+      // A box of 44px can be measured as 43.99997 (floating point), which is not a smaller target.
+      expect(box?.height ?? 0, name).toBeGreaterThanOrEqual(MIN_TOUCH_PX - TOUCH_ROUNDING_PX);
     }
   });
 });

@@ -1,5 +1,6 @@
 import { motion, useScroll, useSpring } from 'motion/react';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
+import { KEEPS_PLACE_UNDER_SCROLL_LOCK } from '../../lib/scrollLock';
 
 const SPRING = { stiffness: 100, damping: 30, restDelta: 0.001 } as const;
 
@@ -28,7 +29,7 @@ export function ScrollProgress({ tone = 'light' }: ScrollProgressProps) {
   return (
     <motion.div
       aria-hidden="true"
-      className={`fixed inset-x-0 top-0 z-[60] h-0.5 origin-left ${TONE_CLASSES[tone]}`}
+      className={`${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed inset-x-0 top-0 z-[60] h-0.5 origin-left ${TONE_CLASSES[tone]}`}
       style={{ scaleX: isMotionAllowed ? smoothProgress : scrollYProgress }}
     />
   );

@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { faqs } from '../data/faqs';
+import { SITE } from '../lib/site';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
 import { rejectUnexpectedFetch } from '../test/contactForm';
 import { stubMatchMedia } from '../test/matchMedia';
@@ -121,7 +122,7 @@ describe('HomePage SEO', () => {
     });
   });
 
-  it('keeps the organization and website schemas of the home and the canonical address', async () => {
+  it('keeps the organization and website schemas, the title, the description and the canonical address of the home', async () => {
     await renderHome();
 
     await waitFor(() => {
@@ -131,6 +132,8 @@ describe('HomePage SEO', () => {
 
       expect(types).toEqual(expect.arrayContaining(['Organization', 'WebSite', 'FAQPage']));
       expect(document.head.querySelector('link[rel="canonical"]')).toHaveAttribute('href', 'https://vnone.com.br/');
+      expect(document.title).toBe(SITE.title);
+      expect(document.head.querySelector('meta[name="description"]')).toHaveAttribute('content', SITE.description);
     });
   });
 });

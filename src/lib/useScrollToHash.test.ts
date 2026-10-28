@@ -5,7 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useScrollToHash } from './useScrollToHash';
 
 const FRAME_MS = 16;
-const RETRY_WINDOW_MS = 1000;
+const RETRY_WINDOW_MS = 5000;
+// The first window of the hook was one second: a lazy chunk that takes longer than that must still be waited for.
+const OLD_WINDOW_MS = 1000;
 
 function routerAt(entry: string) {
   return function Wrapper({ children }: { children: ReactNode }) {
@@ -42,7 +44,7 @@ describe('useScrollToHash', () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
   });
 
-  it('keeps retrying and scrolls once the element mounts within one second', () => {
+  it('keeps retrying and scrolls once the element mounts a few frames later', () => {
     renderHook(() => useScrollToHash(), { wrapper: routerAt('/#x') });
     vi.advanceTimersByTime(3 * FRAME_MS);
 
@@ -54,9 +56,21 @@ describe('useScrollToHash', () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
   });
 
-  it('still scrolls when the element mounts just inside the one second window', () => {
+  it('still scrolls when the element mounts just inside the window', () => {
     renderHook(() => useScrollToHash(), { wrapper: routerAt('/#x') });
     vi.advanceTimersByTime(RETRY_WINDOW_MS - 100);
+
+    const scrollIntoView = mountTarget('x');
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(2 * FRAME_MS);
+
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+  });
+
+  it('waits for a target whose chunk takes longer than the old one second window', () => {
+    renderHook(() => useScrollToHash(), { wrapper: routerAt('/#x') });
+    vi.advanceTimersByTime(OLD_WINDOW_MS + 1500);
 
     const scrollIntoView = mountTarget('x');
     expect(scrollIntoView).not.toHaveBeenCalled();
@@ -75,7 +89,7 @@ describe('useScrollToHash', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('gives up after about one second when the element never appears', () => {
+  it('gives up after the window when the element never appears', () => {
     expect(() => {
       renderHook(() => useScrollToHash(), { wrapper: routerAt('/#missing') });
       vi.advanceTimersByTime(RETRY_WINDOW_MS + 4 * FRAME_MS);
