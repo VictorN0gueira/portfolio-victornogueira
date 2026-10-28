@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { blockBody } from '../test/css';
+import { blockBody, declarations } from '../test/css';
 
 const css = readFileSync(resolve(__dirname, 'tokens.css'), 'utf8');
 
@@ -10,14 +10,6 @@ const BASE = '.vn-card-includes';
 const GATE = '@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)';
 const HOVER = '.vn-spotlight:hover .vn-card-includes';
 const RESET = '.a11y-no-animations .vn-card-includes';
-
-/** The `property: value` declarations of a flat rule body, as trimmed strings. */
-function declarations(body: string): string[] {
-  return body
-    .split(';')
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
 
 const gated = blockBody(css, GATE, BASE);
 const outsideGate = css.replace(gated, '');
@@ -38,7 +30,8 @@ describe('tokens.css card includes list', () => {
 
   it('rests 8px low only for a fine pointer with hover and no reduced motion preference', () => {
     expect(declarations(blockBody(gated, BASE))).toEqual(['transform: translateY(8px)']);
-    expect(outsideGate).not.toContain('translateY(8px)');
+    // No rule outside the gate offsets the list, whatever its selector (a second rule, a hover or focus variant).
+    expect(outsideGate).not.toMatch(/\.vn-card-includes[^{}]*\{[^}]*translateY/);
   });
 
   it('settles into place when the pointer is over the spotlight card that holds the list', () => {

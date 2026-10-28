@@ -30,3 +30,22 @@ function bodyAfter(source: string, open: number): string {
   }
   return '';
 }
+
+/** The `property: value` declarations of a flat rule body, as trimmed strings. */
+export function declarations(body: string): string[] {
+  return body
+    .split(';')
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Body of the first rule of `source` whose comma separated selector list holds `selector`, wherever it sits in the list
+ * (`blockBody` only finds a rule by its whole header). Rules with nested blocks are not matched; search the body of the
+ * at-rule instead. Returns an empty string when no rule has that selector.
+ */
+export function ruleWithSelector(source: string, selector: string): string {
+  const rules = [...source.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+
+  return rules.find(([, selectors]) => selectors.split(',').some((item) => item.trim() === selector))?.[2] ?? '';
+}

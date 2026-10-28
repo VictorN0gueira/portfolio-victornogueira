@@ -77,13 +77,14 @@ export const homeCopy = {
   },
   // Os textos da seção de depoimentos (as falas e os autores estão em data/testimonials.ts, sem edição). `readFull` é o
   // texto visível do botão de cada cartão; `readFullFor` é o nome dele para leitor de tela e começa com o texto visível.
-  // `dialogTitle` é o nome do diálogo aberto e `close` o nome do botão que fecha.
+  // `dialogTitleLead` vem antes do nome do autor, só para leitor de tela (o nome visível dá o nome ao diálogo aberto, e o
+  // nome acessível fica "Depoimento de {nome}"); `close` é o nome do botão que fecha.
   testimonials: {
     kicker: 'clientes',
     heading: 'Quem já automatizou com a gente',
     readFull: 'Ler depoimento completo',
     readFullFor: (name: string) => `Ler depoimento completo de ${name}`,
-    dialogTitle: (name: string) => `Depoimento de ${name}`,
+    dialogTitleLead: 'Depoimento de',
     close: 'Fechar',
   },
   // O título da lista de logos dos clientes (os nomes e as logos estão em data/partners.ts).

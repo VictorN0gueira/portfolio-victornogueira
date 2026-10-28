@@ -3,6 +3,7 @@ import { Button } from '../../components/ui/Button';
 import { homeCopy } from '../../data/homeCopy';
 import type { Testimonial } from '../../data/testimonials';
 import { cn } from '../../lib/utils';
+import { describeAuthor } from './describeAuthor';
 import { excerptOf } from './excerpt';
 import { LogoImage } from './LogoImage';
 
@@ -17,11 +18,6 @@ interface TestimonialCardProps {
   onOpen: (testimonial: Testimonial, opener: HTMLElement) => void;
 }
 
-/** What the author does and where: the role, then the company unless it is only the author's own name again. */
-export function describeAuthor({ name, role, company }: Pick<Testimonial, 'name' | 'role' | 'company'>): string {
-  return company === name ? role : `${role}, ${company}`;
-}
-
 /**
  * One testimonial: the company logo (decorative, the name is written below it), the excerpt in a blockquote, the author
  * and the button that opens the full text. The article is named by the author, and the button says whose testimonial it
@@ -30,7 +26,7 @@ export function describeAuthor({ name, role, company }: Pick<Testimonial, 'name'
  */
 export function TestimonialCard({ testimonial, onOpen }: TestimonialCardProps) {
   const nameId = useId();
-  const { name, logo, logoFit, text } = testimonial;
+  const { name, company, logo, logoFit, text } = testimonial;
   const { readFull, readFullFor } = homeCopy.testimonials;
 
   return (
@@ -38,7 +34,7 @@ export function TestimonialCard({ testimonial, onOpen }: TestimonialCardProps) {
       <div className={cn(LOGO_BOX_CLASSES, logoFit !== 'cover' && 'p-2')}>
         <LogoImage
           src={logo}
-          name={testimonial.company}
+          name={company}
           isDecorative
           fit={logoFit}
           width={LOGO_SIZE}

@@ -19,7 +19,9 @@ function lastWhitespaceIndex(chars: readonly string[]): number {
  * The first `limit` characters of a testimonial, cut at the last whole word, with an ellipsis appended.
  * A text of `limit` characters or fewer comes back untouched. The cut keeps a word that ends exactly at the limit
  * when a space follows it, drops the punctuation and the spaces left at its end, and falls back to a cut at the limit
- * when there is no space to cut at. Characters are counted as code points, so an emoji is never split in two.
+ * when there is no space to cut at. Characters are counted as code points, so an emoji is never split in two. The cut
+ * only happens at whitespace, on purpose: when the limit falls inside a token such as 3,5 or NF-e the whole token is
+ * dropped instead of being cut in the middle.
  */
 export function excerptOf(text: string, limit: number = EXCERPT_LIMIT): string {
   const chars = Array.from(text);

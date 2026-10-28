@@ -1,42 +1,30 @@
 import { fireEvent, screen, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { partners } from '../../data/partners';
 import { findAccentElements } from '../../test/accent';
-import { stubMatchMedia } from '../../test/matchMedia';
+import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { renderWithProviders } from '../../test/render';
 import { ClientGrid, fillerClasses } from './ClientGrid';
 
 type Breakpoint = 'base' | 'md' | 'lg';
 const COLUMNS: Record<Breakpoint, number> = { base: 2, md: 3, lg: 5 };
 
-let errorSpy: MockInstance<typeof console.error>;
-
-beforeEach(() => {
-  stubMatchMedia();
-  errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-});
-
-afterEach(() => {
-  expect(errorSpy).not.toHaveBeenCalled();
-  errorSpy.mockRestore();
-});
+expectNoConsoleOutput();
 
 const listOf = (): HTMLElement => screen.getByRole('list', { name: 'quem confia' });
 const cellsOf = (list: HTMLElement): HTMLElement[] => Array.from(list.children) as HTMLElement[];
 const fillersOf = (list: HTMLElement): HTMLElement[] => cellsOf(list).filter((cell) => cell.getAttribute('aria-hidden') === 'true');
 
-/** Whether a filler cell shows at a breakpoint, resolving its hidden/block classes the way the cascade does (mobile first). */
-function isShownAt(filler: HTMLElement, breakpoint: Breakpoint): boolean {
-  const classes = new Set(filler.className.split(/\s+/));
-  const pick = (prefix: string): string | undefined => ['block', 'hidden'].find((display) => classes.has(`${prefix}${display}`));
-  const display = {
-    base: pick(''),
-    md: pick('md:') ?? pick(''),
-    lg: pick('lg:') ?? pick('md:') ?? pick(''),
-  }[breakpoint];
+/** The display a filler gets at a breakpoint from its hidden and block classes, with the cascade of Tailwind (mobile first). */
+function displayAt(classNames: string, breakpoint: Breakpoint): 'block' | 'hidden' | undefined {
+  const classes = new Set(classNames.split(/\s+/));
+  const pick = (prefix: string): 'block' | 'hidden' | undefined =>
+    (['block', 'hidden'] as const).find((display) => classes.has(`${prefix}${display}`));
 
-  return display === 'block';
+  return { base: pick(''), md: pick('md:') ?? pick(''), lg: pick('lg:') ?? pick('md:') ?? pick('') }[breakpoint];
 }
+
+const isShownAt = (filler: HTMLElement, breakpoint: Breakpoint): boolean => displayAt(filler.className, breakpoint) === 'block';
 
 describe('ClientGrid', () => {
   it('is a list named by the quem confia kicker, with one item per partner', () => {
@@ -109,6 +97,14 @@ describe('ClientGrid', () => {
       for (const cell of cellsOf(listOf())) {
         expect(cell).toHaveClass('border-r', 'border-b', 'border-vn-gray-light');
       }
+    });
+
+    it('paints every cell white, filler or logo, so a short last row reads as empty cells and not as a hole in the grid', () => {
+      renderWithProviders(<ClientGrid />);
+      const cells = cellsOf(listOf());
+
+      expect(fillersOf(listOf()).length).toBeGreaterThan(0);
+      for (const cell of cells) expect(cell).toHaveClass('bg-vn-white');
     });
 
     it.each(['base', 'md', 'lg'] as const)(
@@ -189,15 +185,8 @@ describe('ClientGrid', () => {
 });
 
 describe('fillerClasses', () => {
-  /** Fillers shown at a breakpoint for a filler list, with the same cascade as the test helper above. */
   const shownAt = (classes: string[], breakpoint: Breakpoint): number =>
-    classes.filter((filler) => {
-      const tokens = new Set(filler.split(' '));
-      const pick = (prefix: string) => ['block', 'hidden'].find((display) => tokens.has(`${prefix}${display}`));
-      const display = { base: pick(''), md: pick('md:') ?? pick(''), lg: pick('lg:') ?? pick('md:') ?? pick('') }[breakpoint];
-
-      return display === 'block';
-    }).length;
+    classes.filter((filler) => displayAt(filler, breakpoint) === 'block').length;
 
   it.each(Array.from({ length: 23 }, (_, index) => index + 1))(
     'completes the last row at 2, 3 and 5 columns for %i logos, with fewer fillers than a row',

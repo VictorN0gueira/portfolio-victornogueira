@@ -4,7 +4,7 @@ import { EXCERPT_LIMIT, ELLIPSIS, excerptOf } from './excerpt';
 
 /** A text of exactly `length` characters made of 4 letter words and single spaces, ending on a letter. */
 function wordsOfLength(length: number): string {
-  const text = 'abcd '.repeat(Math.ceil(length / 5)).slice(0, length);
+  const text = 'abcd '.repeat(length).slice(0, length);
   return text.endsWith(' ') ? `${text.slice(0, -1)}x` : text;
 }
 
@@ -98,6 +98,28 @@ describe('excerptOf', () => {
 
     expect(Array.from(result)).toHaveLength(EXCERPT_LIMIT + 1);
     expect(result).toBe(`${'\u{1F600}'.repeat(EXCERPT_LIMIT)}${ELLIPSIS}`);
+  });
+
+  it('breaks at a no break space like at a plain one', () => {
+    const text = `${'a'.repeat(100)} ${'b'.repeat(100)}`;
+
+    expect(excerptOf(text)).toBe(`${'a'.repeat(100)}${ELLIPSIS}`);
+  });
+
+  it('keeps an emoji whole when it has to cut hard in the middle of a run of them', () => {
+    // 139 letters and 5 emoji: the limit falls after the first emoji, which stays whole, and the other four go.
+    const text = `${'a'.repeat(139)}${'\u{1F600}'.repeat(5)}`;
+
+    expect(excerptOf(text)).toBe(`${'a'.repeat(139)}\u{1F600}${ELLIPSIS}`);
+  });
+
+  // The cut only happens at whitespace, on purpose: a token such as 3,5 or NF-e is dropped whole instead of being cut
+  // in the middle (3 followed by an ellipsis would change the number, NF- followed by one would break the word).
+  it.each([
+    ['a decimal number cut at its comma', wordsOfLength(138), '3,5 mais texto'],
+    ['a hyphenated word cut after its hyphen', wordsOfLength(136), 'NF-e dos clientes'],
+  ])('drops the last token whole when the limit falls inside %s', (_label, filler, rest) => {
+    expect(excerptOf(`${filler} ${rest}`)).toBe(`${filler}${ELLIPSIS}`);
   });
 
   it('accepts another limit', () => {

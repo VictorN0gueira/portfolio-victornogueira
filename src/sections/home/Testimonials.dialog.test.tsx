@@ -1,8 +1,9 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { testimonials } from '../../data/testimonials';
 import { findAccentElements } from '../../test/accent';
+import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import { Testimonials } from './Testimonials';
@@ -10,22 +11,11 @@ import { Testimonials } from './Testimonials';
 const OPEN_NAME = /ler depoimento completo/i;
 const A11Y_STORAGE_KEY = 'a11y-preferences';
 
-let errorSpy: MockInstance<typeof console.error>;
-let warnSpy: MockInstance<typeof console.warn>;
-
-beforeEach(() => {
-  stubMatchMedia();
-  errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-  warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-});
+// Pristine output: no act warning, no Radix missing title or description warning.
+expectNoConsoleOutput();
 
 afterEach(() => {
   localStorage.clear();
-  // Pristine output: no act warning, no Radix missing title or description warning.
-  expect(errorSpy).not.toHaveBeenCalled();
-  expect(warnSpy).not.toHaveBeenCalled();
-  errorSpy.mockRestore();
-  warnSpy.mockRestore();
 });
 
 const openButtons = (): HTMLElement[] => screen.getAllByRole('button', { name: OPEN_NAME });
@@ -104,6 +94,35 @@ describe('Testimonials dialog', () => {
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
     expect(within(dialog).getByText(testimonials[2].text)).toBeInTheDocument();
     expect(within(dialog).queryByText(testimonials[0].text)).not.toBeInTheDocument();
+  });
+
+  it('names itself with the visible author name, once: the lead in is sr-only text inside it', async () => {
+    const { user } = renderSection();
+    const { name } = testimonials[0];
+
+    const dialog = await openCard(user, 0);
+    const title = within(dialog).getByText(name);
+    const text = dialog.textContent;
+    if (text === null) throw new Error('the dialog has no text content');
+
+    expect(within(dialog).getAllByText(name)).toHaveLength(1);
+    expect(text.split(name)).toHaveLength(2);
+    expect(dialog).toHaveAttribute('aria-labelledby', title.id);
+    expect(title.tagName).toBe('P');
+    expect(title.querySelector('.sr-only')).toHaveTextContent('Depoimento de');
+    expect(dialog).toHaveAccessibleName(`Depoimento de ${name}`);
+    // twMerge keeps every class of the visible name.
+    expect(title).toHaveClass('break-words', 'text-lg', 'font-medium', 'leading-snug');
+  });
+
+  it.each(testimonials.map((item) => [item.name] as const))('shows the name of %s once as an element of its own', async (name) => {
+    const { user } = renderSection();
+    const position = testimonials.findIndex((item) => item.name === name);
+
+    const dialog = await openCard(user, position);
+
+    expect(within(dialog).getAllByText(name)).toHaveLength(1);
+    expect(dialog).toHaveAccessibleName(`Depoimento de ${name}`);
   });
 
   it('has an accessible name with the author and the full text as its description', async () => {
@@ -197,19 +216,23 @@ describe('Testimonials dialog', () => {
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
   });
 
-  it('scrolls on its own on a short screen, never wider than the viewport, and pads itself with the safe area', async () => {
+  it('scrolls on its own on a short screen, never wider than the viewport, and keeps clear of the safe area, in CSS only', async () => {
     const { user } = renderSection();
     const dialog = await openCard(user, 0);
 
-    expect(dialog).toHaveClass('max-h-[90dvh]', 'overflow-y-auto', 'overscroll-contain', 'fixed', 'm-auto', 'h-fit', 'max-w-2xl');
-    expect(dialog.style.top).toBe('max(1rem, env(safe-area-inset-top))');
-    expect(dialog.style.right).toBe('max(1rem, env(safe-area-inset-right))');
-    expect(dialog.style.bottom).toBe('max(1rem, env(safe-area-inset-bottom))');
-    expect(dialog.style.left).toBe('max(1rem, env(safe-area-inset-left))');
-    // The 90dvh also stays between the top and the bottom inset, so a big notch never pushes the panel under it.
-    expect(dialog.style.maxHeight).toContain('90dvh');
-    expect(dialog.style.maxHeight).toContain('env(safe-area-inset-top)');
-    expect(dialog.style.maxHeight).toContain('env(safe-area-inset-bottom)');
+    expect(dialog).toHaveClass('overflow-y-auto', 'overscroll-contain', 'fixed', 'm-auto', 'h-fit', 'max-w-2xl');
+    // Each side keeps at least 1rem and more where the safe area needs it.
+    for (const side of ['top', 'right', 'bottom', 'left']) {
+      expect(dialog).toHaveClass(`${side}-[max(1rem,env(safe-area-inset-${side}))]`);
+    }
+    // The 90dvh cap also stays between the top and the bottom inset, so a big notch never pushes the panel under it.
+    expect(dialog.className).toContain(
+      'max-h-[min(90dvh,calc(100dvh_-_max(1rem,env(safe-area-inset-top))_-_max(1rem,env(safe-area-inset-bottom))))]',
+    );
+    // Nothing is set inline: the style of the panel holds no inset and no max-height that could override a class.
+    for (const property of ['top', 'right', 'bottom', 'left', 'maxHeight'] as const) {
+      expect(dialog.style[property], property).toBe('');
+    }
     // No fixed width: the insets give it the width of the viewport minus the margins, up to max-w-2xl.
     expect(dialog.className).not.toMatch(/(^|\s)w-(\[|\d)/);
   });

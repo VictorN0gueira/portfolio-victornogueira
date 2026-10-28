@@ -10,8 +10,9 @@ import { LogoImage } from './LogoImage';
 // grid draws the line of the top and left edges, so a row of any length ends with a line.
 const LIST_CLASSES =
   'mt-6 grid grid-cols-2 border-t border-l border-vn-gray-light md:grid-cols-3 lg:grid-cols-5';
-const CELL_CLASSES = 'border-r border-b border-vn-gray-light';
-const LOGO_CELL_CLASSES = `vn-logo-host flex min-h-24 min-w-0 items-center justify-center bg-vn-white p-4 ${CELL_CLASSES}`;
+// Every cell is white, the fillers too, so a short last row reads as empty cells of the grid and not as a hole in it.
+const CELL_CLASSES = 'border-r border-b border-vn-gray-light bg-vn-white';
+const LOGO_CELL_CLASSES = `vn-logo-host flex min-h-24 min-w-0 items-center justify-center p-4 ${CELL_CLASSES}`;
 // The logo box is fixed (48px high, the width of the cell), so a logo that fails to load changes nothing around it.
 const LOGO_CLASSES = 'h-12 w-full vn-logo-tone';
 const LOGO_WIDTH = 160;

@@ -435,8 +435,9 @@
 }
 
 /*
- * Testimonial dialog (the full text of a client). The panel rises 12px and fades in, and settles back a little lower
- * when it closes; the overlay fades with the same keyframes as the menu overlay. Only opacity and transform move, and
+ * Testimonial dialog (the full text of a client). The panel rises 12px and fades in, and on close it returns along the
+ * same path (12px low, a little smaller, faded out) but quicker, 200ms against 280ms; the overlay fades with the same
+ * keyframes as the menu overlay. Only opacity and transform move, and
  * the panel is never centered with a transform (it centers itself with auto margins and fixed insets), so these
  * keyframes do not fight a position. Radix waits for the exit animation before it unmounts them, and unmounts at once
  * when the animation is off. The reduced motion and .a11y-no-animations resets are the shared lists further down.
@@ -446,7 +447,7 @@
 }
 
 @keyframes vn-dialog-out {
-  to { opacity: 0; transform: translateY(10px) scale(.98); }
+  to { opacity: 0; transform: translateY(12px) scale(.98); }
 }
 
 .vn-dialog-panel[data-state="open"] {

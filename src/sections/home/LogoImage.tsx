@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
 
-export type LogoFit = 'contain' | 'cover';
+type LogoFit = 'contain' | 'cover';
 
 // Connectors of Brazilian company names: they do not give a letter to the initials.
 const CONNECTORS = /^(de|da|do|das|dos|e)$/i;

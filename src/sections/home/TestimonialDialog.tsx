@@ -4,26 +4,20 @@ import { homeCopy } from '../../data/homeCopy';
 import type { Testimonial } from '../../data/testimonials';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import { cn } from '../../lib/utils';
+import { describeAuthor } from './describeAuthor';
 import { LogoImage } from './LogoImage';
-import { describeAuthor } from './TestimonialCard';
-
-// The panel keeps at least 1rem from every edge of the screen and more where the safe area needs it (a notch, the home
-// indicator, a notch on the side of a phone held sideways). Inline because each side compares the inset with a minimum.
-// With the insets set, auto margins center the panel and its height is the one of its content. The inline max-height
-// is the 90dvh of the max-h class, also held between the top and the bottom inset: without it a tall panel on a phone
-// with a big notch would be over-constrained and the auto margins would go negative, pushing it under the notch.
-const PANEL_INSETS = {
-  top: 'max(1rem, env(safe-area-inset-top))',
-  right: 'max(1rem, env(safe-area-inset-right))',
-  bottom: 'max(1rem, env(safe-area-inset-bottom))',
-  left: 'max(1rem, env(safe-area-inset-left))',
-  maxHeight:
-    'min(90dvh, calc(100dvh - max(1rem, env(safe-area-inset-top)) - max(1rem, env(safe-area-inset-bottom))))',
-} as const;
 
 const OVERLAY_CLASSES = 'fixed inset-0 z-[160] bg-vn-black/70';
-const PANEL_CLASSES =
-  'fixed z-[170] m-auto h-fit max-h-[90dvh] max-w-2xl overflow-y-auto overscroll-contain rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-white text-vn-ink outline-none';
+// The panel keeps at least 1rem from every edge of the screen and more where the safe area needs it (a notch, the home
+// indicator, a notch on the side of a phone held sideways): each side is max(1rem, inset). With the four insets set,
+// auto margins center the panel and its height is the one of its content. The max-height is 90dvh, also held between the
+// top and the bottom inset: without that a tall panel on a phone with a big notch would be over-constrained and the auto
+// margins would go negative, pushing it under the notch. Underscores are spaces, which calc() needs around its operators.
+const PANEL_INSET_CLASSES =
+  'top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] bottom-[max(1rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))]';
+const PANEL_MAX_HEIGHT_CLASS =
+  'max-h-[min(90dvh,calc(100dvh_-_max(1rem,env(safe-area-inset-top))_-_max(1rem,env(safe-area-inset-bottom))))]';
+const PANEL_CLASSES = `fixed z-[170] m-auto h-fit max-w-2xl overflow-y-auto overscroll-contain rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-white text-vn-ink outline-none ${PANEL_INSET_CLASSES} ${PANEL_MAX_HEIGHT_CLASS}`;
 const FOCUS_RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-ink';
 const LOGO_SIZE = 64;
 
@@ -63,11 +57,13 @@ function DialogBody({ testimonial }: { testimonial: Testimonial }) {
           <LogoImage src={logo} name={company} isDecorative fit={logoFit} width={LOGO_SIZE} height={LOGO_SIZE} className="size-full" />
         </div>
         <div className="min-w-0">
-          {/* The name of the dialog is plain text (a p, not an h2), so the page outline gains no heading. */}
+          {/* The visible name is the name of the dialog (a p, not an h2, so the page outline gains no heading). The lead in is
+              for assistive tech only, so the name is read once: "Depoimento de" and then the name. */}
           <Dialog.Title asChild>
-            <p className="sr-only">{homeCopy.testimonials.dialogTitle(name)}</p>
+            <p className="break-words text-lg font-medium leading-snug">
+              <span className="sr-only">{homeCopy.testimonials.dialogTitleLead}</span> {name}
+            </p>
           </Dialog.Title>
-          <p className="break-words text-lg font-medium leading-snug">{name}</p>
           <p className="mt-1 break-words text-sm text-vn-gray-dark">{describeAuthor(testimonial)}</p>
         </div>
       </div>
@@ -96,7 +92,6 @@ export function TestimonialDialog({ testimonial, isOpen, onOpenChange, onCloseAu
       <Dialog.Portal>
         <Dialog.Overlay className={cn(OVERLAY_CLASSES, isMotionAllowed && 'vn-dialog-overlay')} />
         <Dialog.Content
-          style={PANEL_INSETS}
           onCloseAutoFocus={onCloseAutoFocus}
           className={cn(PANEL_CLASSES, isMotionAllowed && 'vn-dialog-panel')}
         >

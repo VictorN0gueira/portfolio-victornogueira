@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { blockBody } from './css';
+import { blockBody, declarations, ruleWithSelector } from './css';
 
 describe('blockBody', () => {
   it('returns the body of a flat rule and of an at-rule with nested rules', () => {
@@ -43,5 +43,39 @@ describe('blockBody', () => {
       expect(blockBody('.a,\n.b { color: red; }', '.b', 'red')).toBe('');
       expect(blockBody('.x .b { color: red; }', '.b', 'red')).toBe('');
     });
+  });
+});
+
+describe('declarations', () => {
+  it('splits a flat rule body into trimmed property: value strings', () => {
+    expect(declarations('\n  filter: grayscale(1);\n  opacity: .7;\n')).toEqual(['filter: grayscale(1)', 'opacity: .7']);
+  });
+
+  it('keeps a value that holds a comma and skips empty pieces', () => {
+    expect(declarations('transition: opacity 300ms var(--ease-out), filter 300ms var(--ease-out);;')).toEqual([
+      'transition: opacity 300ms var(--ease-out), filter 300ms var(--ease-out)',
+    ]);
+    expect(declarations('')).toEqual([]);
+  });
+});
+
+describe('ruleWithSelector', () => {
+  const sample = '.a { color: red; }\n.b,\n.c,\n.d { animation: none !important; }\n@media (x) {\n  .e { color: blue; }\n}';
+
+  it('finds a rule by any selector of its list, first, middle or last', () => {
+    for (const selector of ['.b', '.c', '.d']) {
+      expect(ruleWithSelector(sample, selector)).toContain('animation: none !important');
+    }
+  });
+
+  it('finds a flat rule and a rule inside an at-rule body', () => {
+    expect(ruleWithSelector(sample, '.a')).toContain('color: red');
+    expect(ruleWithSelector(blockBody(sample, '@media (x)'), '.e')).toContain('color: blue');
+  });
+
+  it('matches whole selectors only', () => {
+    expect(ruleWithSelector(sample, '.')).toBe('');
+    expect(ruleWithSelector(sample, '.a-b')).toBe('');
+    expect(ruleWithSelector(sample, '.z')).toBe('');
   });
 });

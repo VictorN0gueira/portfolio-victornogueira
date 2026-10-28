@@ -1,9 +1,9 @@
 import { fireEvent, screen, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { testimonials } from '../../data/testimonials';
 import { partners } from '../../data/partners';
 import { findAccentElements } from '../../test/accent';
-import { stubMatchMedia } from '../../test/matchMedia';
+import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { renderWithProviders } from '../../test/render';
 import { excerptOf } from './excerpt';
 import { Testimonials } from './Testimonials';
@@ -11,22 +11,8 @@ import { Testimonials } from './Testimonials';
 const OPEN_NAME = /ler depoimento completo/i;
 const STAGGERED_POSITIONS = [1, 4];
 
-let errorSpy: MockInstance<typeof console.error>;
-let warnSpy: MockInstance<typeof console.warn>;
-
-beforeEach(() => {
-  stubMatchMedia();
-  errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-  warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-});
-
-afterEach(() => {
-  // Pristine output: no act warning, no Radix missing title or description warning.
-  expect(errorSpy).not.toHaveBeenCalled();
-  expect(warnSpy).not.toHaveBeenCalled();
-  errorSpy.mockRestore();
-  warnSpy.mockRestore();
-});
+// Pristine output: no act warning, no Radix missing title or description warning.
+expectNoConsoleOutput();
 
 const cardOf = (name: string): HTMLElement => screen.getByRole('article', { name });
 const itemOf = (card: HTMLElement): HTMLElement => card.closest('[data-reveal-item]') as HTMLElement;
