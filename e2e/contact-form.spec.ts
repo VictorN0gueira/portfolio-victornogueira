@@ -437,6 +437,39 @@ test.describe('contact form WhatsApp number integrity', () => {
     await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
   });
 
+  // A sentence with digits is not a number: dropped, it is cancelled and the typed number stays (it used to be turned into
+  // a valid looking number by the formatter). The same for a number followed by a date, which is ambiguous.
+  for (const [label, text] of [
+    ['a sentence with digits and a date', 'Pedido 123 de 2026-10-28 total 4500'],
+    ['a sentence with a time', 'Reuniao dia 12 as 15h'],
+    ['a number and a date after it', '55 3222-1234 12/10/2026'],
+  ] as const) {
+    test(`leaves the typed number as it was when ${label} is dropped on it`, async ({ page }) => {
+      const form = await openForm(page);
+      const whatsapp = await fillUpToTheNumber(page, form);
+      await whatsapp.click();
+      await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
+      const wasCancelled = await dispatchDrop(whatsapp, text);
+
+      expect(wasCancelled).toBe(true);
+      await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
+    });
+  }
+
+  // A number followed by something with digits is cancelled when pasted: never a guessed number.
+  test('cancels a pasted DDD 55 number followed by a date and leaves the typed number as it was', async ({ page }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+    await whatsapp.click();
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
+    const wasCancelled = await dispatchPaste(whatsapp, '55 3222-1234 12/10/2026');
+
+    expect(wasCancelled).toBe(true);
+    await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
+  });
+
   // A real drag: the number is selected in the message box and dragged onto the field with the mouse, the drop point
   // inside the "+55 " prefix. The browser would insert it there, and the field would read its own 55 as the DDD.
   test('takes a number dragged from the message box and dropped inside the prefix of the field', async ({ page, network }) => {
@@ -458,6 +491,33 @@ test.describe('contact form WhatsApp number integrity', () => {
 
     await expectLeadForTheTypedNumber(page, form, network, whatsapp);
   });
+
+  // The same real drag with text that is not a number, over a typed number and into an empty field: the field is untouched.
+  for (const text of ['Pedido 123 de 2026-10-28 total 4500', 'Reuniao dia 12 as 15h']) {
+    for (const typed of [true, false]) {
+      test(`keeps the field as it was when ${JSON.stringify(text)} is dragged onto it (${typed ? 'a typed number' : 'an empty field'})`, async ({ page }) => {
+        const form = await openForm(page);
+        const whatsapp = await fillUpToTheNumber(page, form);
+        if (typed) {
+          await whatsapp.click();
+          await whatsapp.pressSequentially(WHATSAPP_TYPED);
+        }
+        const message = form.getByLabel('Mensagem', { exact: true });
+        await message.fill(text);
+        await message.press('Control+A');
+        const source = await message.boundingBox();
+        const target = await whatsapp.boundingBox();
+        if (!source || !target) throw new Error('the message box and the field need a box');
+
+        await page.mouse.move(source.x + 20, source.y + 14);
+        await page.mouse.down();
+        await page.mouse.move(target.x + 2, target.y + target.height / 2, { steps: 12 });
+        await page.mouse.up();
+
+        await expect(whatsapp).toHaveValue(typed ? WHATSAPP_DISPLAY : '+55 ');
+      });
+    }
+  }
 
   // An input method composition that begins with the caret inside the prefix, after the caret returned there with no
   // event (the same exposure as text inserted with no key). Driven through the DevTools protocol; one composition that

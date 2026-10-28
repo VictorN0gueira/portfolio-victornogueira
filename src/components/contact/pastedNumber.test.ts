@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatWhatsappDisplay, toEvolutionFormat } from '../../lib/phone';
-import { normalizePastedText, readPastedNumber } from './pastedNumber';
+import { isWholeDialingText, normalizePastedText, readPastedNumber } from './pastedNumber';
 
 // Fictitious numbers only (11 90000-0000, DDD 55 90000-0000): see src/test/contactForm.tsx. Every invisible or typographic
 // character is built from its code point, so this source holds none of them and no escape for one.
@@ -190,5 +190,73 @@ describe('readPastedNumber cancels the paste and leaves the field as it is', () 
     for (const text of ['+1 415 555 2671', '+81 98445 1243', '+44 7911 123456']) {
       expect(readPastedNumber(text).action).not.toBe('replace');
     }
+  });
+});
+
+// R72: a number followed by something that has digits (a date, an amount, another number). The separator with a space on
+// both sides ends the number; a run of 55 and more than 13 digits is not one number and is never guessed.
+describe('readPastedNumber with something that has digits after the number', () => {
+  it.each([
+    ['a slash between spaces and a day', '(55) 99999-9999 / 12'],
+    ['a slash between spaces and a second number', '55 99999-9999 / 55 98888-7777'],
+    ['a dash between spaces and a day', 'Tel 55 99999-9999 - 12'],
+    ['an en dash between spaces and a day', `Tel 55 99999-9999 ${EN_DASH} 12`],
+    ['a minus sign between spaces and a day', `Tel 55 99999-9999 ${MINUS_SIGN} 12`],
+    ['a label and words after a DDD 55 number', 'Ligue (55) 99999-9999 oi'],
+    ['a DDD 55 number alone', '55 99999-9999'],
+  ])('keeps the browser default for a DDD 55 local number: %s', (_label, text) => {
+    expect(readPastedNumber(text)).toEqual({ action: 'default' });
+  });
+
+  it.each([
+    ['a date with slashes after a DDD 55 number', '55 99999-9999 12/10/2026'],
+    ['a date after a DDD 55 landline', '55 3222-1234 12/10/2026'],
+    ['two numbers with only a space between them', '5511900000000 5521911111111'],
+    ['14 digits in one run', '55119000000001'],
+  ])('cancels and leaves the field alone when the run has more than 13 digits: %s', (_label, text) => {
+    expect(readPastedNumber(text)).toEqual({ action: 'ignore' });
+  });
+
+  it.each([
+    ['12 digits', '551100000000'],
+    ['13 digits', '5511900000000'],
+    ['a label and a spaced dash after it', `Tel 55 11 90000-0000 ${EN_DASH} 12`],
+    ['a label and a spaced slash after it', 'Tel 55 11 90000-0000 / 12'],
+    ['a plus number and a spaced slash after it', '+55 11 90000-0000 / 12'],
+  ])('replaces the field for a run of 12 or 13 digits: %s', (_label, text) => {
+    expect(outcome(text)).toMatchObject({ action: 'replace', display: DISPLAY, evolution: EVOLUTION });
+  });
+
+  it('keeps the dash without spaces inside the number (it is one run)', () => {
+    expect(outcome(`55 11 90000${EN_DASH}0000`)).toMatchObject({ action: 'replace', display: DISPLAY });
+  });
+
+  // Only the first run is read: a short first run decides, so a later full number is NOT looked for. These are the
+  // known limits, left to the browser on purpose; the digits of the whole text must never be counted.
+  it.each([
+    ['a short first run and a later full number', '55 e 5521911111111'],
+    ['a short number before the number', 'Ref 12 depois 5511900000000'],
+    ['a short number and a slash before the number', '7 / 5511900000000'],
+    ['a footnote marker before the number', '1 5511900000000'],
+    ['a number split across two lines', '5511900\n000000'],
+  ])('does not look past the first run: %s', (_label, text) => {
+    expect(readPastedNumber(text)).toEqual({ action: 'default' });
+  });
+});
+
+describe('isWholeDialingText', () => {
+  it.each(['11900000000', '(11) 90000-0000', '55 11 90000-0000', `11 90000${EN_DASH}0000`, '55/11/90000.0000'])('is true for %j', (text) => {
+    expect(isWholeDialingText(text)).toBe(true);
+  });
+
+  it.each([
+    ['letters', 'Reuniao dia 12 as 15h'],
+    ['a sentence with a date', 'Pedido 123 de 2026-10-28 total 4500'],
+    ['a plus', '11 90000-0000 +'],
+    ['no digit', '- / ()'],
+    ['nothing', ''],
+    ['two lines', '11900000000\n21911111111'],
+  ])('is false for %s', (_label, text) => {
+    expect(isWholeDialingText(text)).toBe(false);
   });
 });

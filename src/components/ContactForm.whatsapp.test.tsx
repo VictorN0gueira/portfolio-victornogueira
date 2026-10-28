@@ -8,11 +8,11 @@ import {
   TEST_PHONE_TYPED,
   WHATSAPP_WEBHOOK,
   openWhatsappForm as openWhatsapp,
-  range,
   rejectUnexpectedFetch,
   sendWhatsappForm,
   stubFetch,
 } from '../test/contactForm';
+import { range } from '../test/range';
 import { renderWithProviders } from '../test/render';
 import ContactForm from './ContactForm';
 
@@ -175,10 +175,10 @@ describe('ContactForm WhatsApp caret', () => {
     expect(body.whatsapp).toBe(TEST_PHONE_EVOLUTION);
   });
 
-  // What these four tests prove: a selection inside the prefix is moved out of it when a key goes down. In jsdom React
-  // raises its own select event on key down as well, so they pass with or without the onKeyDown handler: that handler is
-  // pinned by the isolated row "guards the selection on onKeyDown" in whatsappInput.test.ts, and the behavior in a real
-  // browser by e2e/contact-form.spec.ts (the caret that returns inside the prefix with no click and no key).
+  // The next three blocks move a selection out of the prefix when a key goes down. In jsdom React raises its own select
+  // event on key down as well, so the three blocks (the first two and the Shift rows) pass with or without the onKeyDown
+  // handler: that handler is pinned by the isolated row "guards the selection on onKeyDown" in whatsappInput.test.ts, and
+  // the behavior in a real browser by e2e/contact-form.spec.ts (the caret that returns inside the prefix with no click).
   it.each([0, 1, 2, 3])('snaps a caret at %i when a key goes down', async (caret) => {
     const { whatsapp } = await openWhatsapp();
     whatsapp.focus();
@@ -199,6 +199,7 @@ describe('ContactForm WhatsApp caret', () => {
     expect(range(whatsapp)).toEqual([4, 11]);
   });
 
+  // A caret that returns to the offset of an earlier click, then a key that inserts nothing (Shift) goes down.
   it.each([0, 1, 2])('snaps a caret returned to offset %i when a key that inserts nothing (Shift) goes down', async (caret) => {
     const { user, whatsapp } = await openWhatsapp();
     await user.pointer({ target: whatsapp, offset: caret, keys: '[MouseLeft]' });

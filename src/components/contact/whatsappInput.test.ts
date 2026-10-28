@@ -1,6 +1,6 @@
 import type { ClipboardEvent, DragEvent, SyntheticEvent } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { range } from '../../test/contactForm';
+import { range } from '../../test/range';
 import { handleWhatsappDrop, handleWhatsappPaste, keepSelectionAfterPrefix, whatsappInputProps } from './whatsappInput';
 
 // These test the guards on their own, with a real input and a stand in for the event, so they do not depend on what React
@@ -242,7 +242,7 @@ describe('handleWhatsappDrop', () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith('5511900000000');
   });
 
-  it('sets the field from any other text with digits, as typed digits, in the normalized form', () => {
+  it('sets the field from a text that is only a number, as typed digits, in the normalized form', () => {
     const onChange = vi.fn();
     const { event } = dropOf(phoneInput(), { getData: () => ` 11 90000-0000${PDF}` });
 
@@ -260,10 +260,26 @@ describe('handleWhatsappDrop', () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith('11900000000');
   });
 
+  it('sets the field from a plain local number, with or without punctuation', () => {
+    for (const text of ['11900000000', '(11) 90000-0000']) {
+      const onChange = vi.fn();
+      const { event } = dropOf(phoneInput(), { getData: () => text });
+
+      handleWhatsappDrop(event, onChange);
+
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(text);
+    }
+  });
+
   it.each([
     ['a number from another country', '+1 415 555 2671'],
     ['a bare plus', '+'],
     ['a bare double zero', '00'],
+    ['a sentence with digits and a date', 'Pedido 123 de 2026-10-28 total 4500'],
+    ['a sentence with a time', 'Reuniao dia 12 as 15h'],
+    ['a number and a date after it', '55 3222-1234 12/10/2026'],
+    ['a local number and a stray plus', '11 90000-0000 +'],
+    ['two lines of digits', '11900000000' + String.fromCharCode(10) + '21911111111'],
     ['letters only', 'meu numero'],
     ['nothing', ''],
     ['spaces', '   '],

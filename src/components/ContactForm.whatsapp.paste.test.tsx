@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { toEvolutionFormat } from '../lib/phone';
@@ -9,11 +9,11 @@ import {
   TEST_PHONE_TYPED,
   WHATSAPP_WEBHOOK,
   openWhatsappForm,
-  range,
   rejectUnexpectedFetch,
   sendWhatsappForm,
   stubFetch,
 } from '../test/contactForm';
+import { range } from '../test/range';
 import { renderWithProviders } from '../test/render';
 import ContactForm from './ContactForm';
 
@@ -416,6 +416,9 @@ describe('a text dropped on the field', () => {
     ['a bare plus', '+'],
     ['letters only', 'meu numero'],
     ['nothing', ''],
+    ['a sentence with digits and a date', 'Pedido 123 de 2026-10-28 total 4500'],
+    ['a sentence with a time', 'Reuniao dia 12 as 15h'],
+    ['a number and a date after it', '55 3222-1234 12/10/2026'],
   ])('leaves a typed number untouched when %s is dropped, and still cancels the drop', async (_label, text) => {
     const { whatsapp } = await placeCaret('a typed number selected with select all');
 
@@ -423,5 +426,55 @@ describe('a text dropped on the field', () => {
 
     expect(wasNotCancelled).toBe(false);
     expect(whatsapp).toHaveValue('+55 21 9 0000-0000');
+  });
+});
+
+describe('a text dropped on an empty field', () => {
+  it.each([
+    ['a sentence with digits and a date', 'Pedido 123 de 2026-10-28 total 4500'],
+    ['a sentence with a time', 'Reuniao dia 12 as 15h'],
+    ['a number from another country', '+1 415 555 2671'],
+  ])('keeps the field empty when %s is dropped', async (_label, text) => {
+    const { whatsapp } = await placeCaret('an empty field');
+
+    const wasNotCancelled = fireEvent.drop(whatsapp, { dataTransfer: { getData: () => text } });
+
+    expect(wasNotCancelled).toBe(false);
+    expect(whatsapp).toHaveValue(EMPTY_FIELD);
+  });
+});
+
+// R72: a number followed by something with digits. The DDD 55 numbers that were right before the run widened keep their
+// number; a run of 55 and more than 13 digits is never guessed, the field is left as it is.
+describe('a DDD 55 number followed by something with digits', () => {
+  it.each([
+    ['a slash between spaces and a day', '(55) 99999-9999 / 12'],
+    ['a slash between spaces and a second number', '55 99999-9999 / 55 98888-7777'],
+    ['a dash between spaces and a day', 'Tel 55 99999-9999 - 12'],
+  ])('keeps the DDD 55 number for %s, over an empty field and over a selected number', async (_label, text) => {
+    for (const where of ['an empty field', 'a typed number selected with select all'] as const) {
+      const { user, whatsapp } = await placeCaret(where);
+
+      expect(dispatchPaste(whatsapp, text)).toBe(true);
+      await user.paste(text);
+
+      expect(toEvolutionFormat(whatsapp.value)).toBe('555599999999');
+      cleanup();
+    }
+  });
+
+  it.each([
+    ['a date with slashes', '55 99999-9999 12/10/2026'],
+    ['a date after a landline', '55 3222-1234 12/10/2026'],
+  ])('cancels the paste and keeps what is in the field for %s', async (_label, text) => {
+    for (const where of ['an empty field', 'the caret before a typed number', 'a typed number selected with select all'] as const) {
+      const { whatsapp } = await placeCaret(where);
+      const before = whatsapp.value;
+
+      expect(dispatchPaste(whatsapp, text)).toBe(false);
+
+      expect(whatsapp).toHaveValue(before);
+      cleanup();
+    }
   });
 });

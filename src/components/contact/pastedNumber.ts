@@ -24,12 +24,29 @@ const FORMAT_CHARACTERS = /\p{Cf}/gu;
 // The dashes and the minus sign of typography, U+2010 to U+2015 and U+2212 (U+2011, the non breaking hyphen, becomes
 // U+2010 under NFKC). They are built from their code points: this file holds none of them, not even as an escape.
 const TYPOGRAPHIC_DASHES = String.fromCodePoint(0x2010, 0x2011, 0x2012, 0x2013, 0x2014, 0x2015, 0x2212);
-// What a number is written with: digits, the separators ( ) . - / and the typographic dashes, and spaces on the same
-// line. A letter, a comma, a line break or any other character ends it, so "TEL:+55 11 90000-0000" followed by
-// "REV:2026" never takes the digits of the next line and two numbers with a comma between them never merge.
-const NUMBER_CHARACTER = `(?:[\\d().\\-/${TYPOGRAPHIC_DASHES}]|[^\\S\\r\\n])`;
-const RUN_AT_PLUS = new RegExp(`\\+${NUMBER_CHARACTER}*`, 'y');
+// The separators a number is written with: brackets, dots, hyphens, slashes and the typographic dashes.
+const SEPARATORS = `().\\-/${TYPOGRAPHIC_DASHES}`;
+// What a number is written with: digits, the separators above and spaces on the same line. A letter, a comma, a line
+// break or any other character ends it, so "TEL:+55 11 90000-0000" followed by "REV:2026" never takes the digits of the
+// next line and two numbers with a comma between them never merge.
+const NUMBER_CHARACTER = `(?:[\\d${SEPARATORS}]|[^\\S\\r\\n])`;
+// A separator with a space on both sides (a slash or a dash between two spaces) is the end of the number, not a part of
+// it: what follows is another thing (a date, an amount, another number).
+const SPACED_SEPARATOR = new RegExp(`\\s[${SEPARATORS.replace('().', '')}]\\s`);
+// Stateless on purpose: they are applied to a slice of the text, so there is no lastIndex to share between calls.
+const NUMBER_AT_PLUS = new RegExp(`^\\+${NUMBER_CHARACTER}*`);
 const FIRST_RUN = new RegExp(`\\d${NUMBER_CHARACTER}*`);
+// A text that is a number as a whole, on one line: digits (at least one), the separators and spaces, nothing else.
+const WHOLE_DIALING_TEXT = new RegExp(`^(?=.*\\d)[\\d${SEPARATORS}\\t ]+$`);
+// A run that starts with 55 and has more digits than a country coded number can have (55, a DDD and nine digits) is not
+// one number: it is a number followed by something with digits. The field is left alone rather than guessed.
+const COUNTRY_CODED_MAX_DIGITS = 13;
+
+/** The run of a match that ends where a separator with a space on both sides begins. */
+function endAtSpacedSeparator(run: string): string {
+  const end = run.search(SPACED_SEPARATOR);
+  return (end === -1 ? run : run.slice(0, end)).trim();
+}
 
 const digitsOf = (text: string): string => text.replace(/\D/g, '');
 
@@ -44,8 +61,7 @@ export function normalizePastedText(text: string): string {
 /** The run of the first "+" that is followed, after separators, by a digit; a "+" with no digit after it does not count. */
 function runAtPlus(text: string): string | undefined {
   for (let at = text.indexOf('+'); at !== -1; at = text.indexOf('+', at + 1)) {
-    RUN_AT_PLUS.lastIndex = at;
-    const run = RUN_AT_PLUS.exec(text)?.[0] ?? '';
+    const run = endAtSpacedSeparator(NUMBER_AT_PLUS.exec(text.slice(at))?.[0] ?? '');
     if (/\d/.test(run)) return run;
   }
   return undefined;
@@ -71,11 +87,15 @@ function readCountryCodedNumber(afterPlus: string): PastedNumber {
  * - a "+" followed (after separators) by a digit: the number that starts at the first such "+" (`tel: +55 ...`,
  *   `(+55) ...`, `+55/11/90000-0000`);
  * - no such plus, and no digit anywhere (`+`, `++`, `C++`): the paste is cancelled, the field is left alone;
- * - otherwise the FIRST run of digits and separators: a leading "00" is the plus (`00 55 11 ...` would read as the DDD
- *   00; a bare `00` is cancelled), 12 or more digits starting with 55 are a whole number, wherever the run sits in the
- *   text (`Tel: 55 11 ...`, `https://wa.me/5511...`, `Ana 5511... abc`);
+ * - otherwise the FIRST run of digits and separators (a separator with a space on both sides ends it): a leading "00" is
+ *   the plus (`00 55 11 ...` would read as the DDD 00; a bare `00` is cancelled); a run that starts with 55 and has 12 or
+ *   13 digits is a whole number (`Tel: 55 11 ...`, `https://wa.me/5511...`, `Ana 5511... abc`); one with more than 13 is
+ *   a number followed by something with digits (`55 3222-1234 12/10/2026`): cancelled, the field is left alone;
  * - everything else keeps the browser default: a local number, a DDD 55 local number (10 or 11 digits, `55 90000-0000`),
  *   whitespace only, any other text. A trunk zero (`0 11 90000-0000`) is not handled: it is pasted as the browser does.
+ * Known limits, left to the browser on purpose: only the FIRST run is read, so a number that comes after a shorter run is
+ * not found (`Ref 12 depois 5511900000000`, a short number and a slash before it, a footnote marker before the number, a number split
+ * across two lines).
  */
 export function readPastedNumber(clipboardText: string): PastedNumber {
   const text = normalizePastedText(clipboardText);
@@ -83,11 +103,17 @@ export function readPastedNumber(clipboardText: string): PastedNumber {
   const plusRun = runAtPlus(text);
   if (plusRun !== undefined) return readCountryCodedNumber(plusRun.slice(1));
 
-  const run = FIRST_RUN.exec(text)?.[0].trim();
-  if (run === undefined) return text.includes('+') ? LEAVE_FIELD : KEEP_DEFAULT;
+  const first = FIRST_RUN.exec(text)?.[0];
+  if (first === undefined) return text.includes('+') ? LEAVE_FIELD : KEEP_DEFAULT;
+  const run = endAtSpacedSeparator(first);
   if (run.startsWith('00')) return readCountryCodedNumber(run.slice(2));
 
   const digits = digitsOf(run);
-  const isWholeNumber = digits.startsWith(COUNTRY_CODE) && digits.length >= WHOLE_NUMBER_MIN_DIGITS;
-  return isWholeNumber ? { action: 'replace', text: run } : KEEP_DEFAULT;
+  if (!digits.startsWith(COUNTRY_CODE) || digits.length < WHOLE_NUMBER_MIN_DIGITS) return KEEP_DEFAULT;
+  return digits.length > COUNTRY_CODED_MAX_DIGITS ? LEAVE_FIELD : { action: 'replace', text: run };
+}
+
+/** True for a text that is a number as a whole (a local number, a number with its code): what a drop may set the field from. */
+export function isWholeDialingText(text: string): boolean {
+  return WHOLE_DIALING_TEXT.test(text);
 }

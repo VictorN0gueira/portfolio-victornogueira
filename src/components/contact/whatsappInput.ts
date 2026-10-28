@@ -1,5 +1,5 @@
 import type { ClipboardEvent, DragEvent, SyntheticEvent } from 'react';
-import { normalizePastedText, readPastedNumber } from './pastedNumber';
+import { isWholeDialingText, normalizePastedText, readPastedNumber } from './pastedNumber';
 import { EMPTY_FORM_DATA } from './useContactForm';
 
 // The number is the one thing of a lead that cannot be wrong: a number that passes the validation but is not the one the
@@ -70,18 +70,18 @@ export function handleWhatsappPaste(event: ClipboardEvent<HTMLInputElement>, onC
 
 /**
  * What a drop does in the WhatsApp field. The paste guards do not run for a drop, and the drop point can sit inside the
- * prefix, so the browser's own drop is always cancelled and the text is read as a paste over a select all: a whole
- * Brazilian number sets the whole field, a number from another country or a text with no digit leaves it as it is, and
- * any other text with digits sets the field too (the formatter reads it as typed digits). It all goes through `onChange`.
+ * prefix, so the browser's own drop is always cancelled. The field is set only from a whole number: one that readPastedNumber
+ * takes as it is (a country coded number), or a text that is nothing but a number (a local number, with or without
+ * punctuation, which the formatter reads as typed digits). Any other text (a sentence with digits, letters only), a number
+ * from another country and a bare plus leave the field as it is. It all goes through `onChange`.
  */
 export function handleWhatsappDrop(event: DragEvent<HTMLInputElement>, onChange: (text: string) => void) {
   event.preventDefault();
 
   const text = normalizePastedText(textOf(event.dataTransfer));
   const read = readPastedNumber(text);
-  if (read.action === 'ignore') return;
   if (read.action === 'replace') onChange(read.text);
-  else if (/\d/.test(text)) onChange(text);
+  else if (read.action === 'default' && isWholeDialingText(text)) onChange(text);
 }
 
 /** What the WhatsApp field adds to a plain input. `onChange` is the one of the field: it formats the text it is given. */
