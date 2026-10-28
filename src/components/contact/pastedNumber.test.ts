@@ -193,8 +193,9 @@ describe('readPastedNumber cancels the paste and leaves the field as it is', () 
   });
 });
 
-// R72: a number followed by something that has digits (a date, an amount, another number). The separator with a space on
-// both sides ends the number; a run of 55 and more than 13 digits is not one number and is never guessed.
+// R72: a number followed by something that has digits (a date, an amount, another number). For a number that is
+// not country coded, a separator with a space on both sides ends the number (a country coded number with one inside is
+// ignored, see R75 below); a run of 55 and more than 13 digits is not one number and is never guessed.
 describe('readPastedNumber with something that has digits after the number', () => {
   // A DDD 55 number with a label or words around it, and no spaced separator inside: right as before.
   it.each([
@@ -204,9 +205,10 @@ describe('readPastedNumber with something that has digits after the number', () 
     expect(readPastedNumber(text)).toEqual({ action: 'default' });
   });
 
-  // R75: a spaced separator inside a country coded run (55 and 12 digits or more) is ambiguous. `(55) 99999-9999 / 12` and
-  // `55 11 90000 - 0000` have the same digits and the same structure; cutting either one would hand the rest to the
-  // browser, which reads the number's own 55 as the DDD (555511900000). The paste is cancelled, the field is left alone.
+  // R75: a spaced separator inside a country coded run (55 and 12 digits or more) is ambiguous. A DDD 55 number followed by a
+  // spaced slash and a day, and `55 11 90000 - 0000`, have the same digits and the same structure; cutting either one
+  // would hand the rest to the browser, which reads the number's own 55 as the DDD (555511900000). The paste is cancelled,
+  // the field is left alone.
   it.each([
     ['a number and a spaced slash and a day', '(55) 99999-9999 / 12'],
     ['a DDD 55 number and a spaced slash and a second number', '55 99999-9999 / 55 98888-7777'],

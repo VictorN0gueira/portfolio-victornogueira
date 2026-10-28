@@ -90,9 +90,9 @@ function readCountryCodedNumber(afterPlus: string): PastedNumber {
   return isBrazilian ? { action: 'replace', text } : LEAVE_FIELD;
 }
 
-/** A run that is, or may be, a number with its country code: it starts with 00, or with 55 and has 12 digits or more. */
-function isCountryCoded(run: string): boolean {
-  const digits = digitsOf(run);
+/** True when a match is, or may be, a number with its country code: it starts with 00, or with 55 and has 12+ digits. */
+function isCountryCoded(uncutMatch: string): boolean {
+  const digits = digitsOf(uncutMatch);
   return digits.startsWith('00') || (digits.startsWith(COUNTRY_CODE) && digits.length >= WHOLE_NUMBER_MIN_DIGITS);
 }
 
@@ -107,7 +107,8 @@ function isCountryCoded(run: string): boolean {
  *   a number followed by something with digits (`55 3222-1234 12/10/2026`): cancelled, the field is left alone;
  * - a country coded number (a plus, 00, or 55 with 12 digits or more) that a spaced separator would cut is ambiguous: it
  *   may be one number written with a separator inside (`55 11 90000 - 0000`) or a number followed by something else
- *   (a DDD 55 number, a spaced slash, a day), and only its structure could tell, so the paste is cancelled and the field is left alone.
+ *   (a DDD 55 number, a spaced slash, a day), and only its structure could tell, so the paste is cancelled and the field
+ *   is left alone.
  *   Known limit: such a number is not applied, and neither is a country coded number followed by a spaced separator and
  *   more digits. Cutting it would hand the rest to the browser, which reads the number's own 55 as the DDD;
  * - everything else keeps the browser default: a local number, a DDD 55 local number (10 or 11 digits, `55 90000-0000`),
