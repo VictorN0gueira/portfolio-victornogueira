@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './n8nGuard';
 
 const ROWS_LIST_NAME = 'Passos da automação';
 const HOURS_PILL_NAME = /^Horas por semana/;

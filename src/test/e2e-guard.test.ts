@@ -24,6 +24,8 @@ const LEAD_CHANNEL_SIGNS = [
   /\/enviar\/i/,
   /name:\s*['"]Enviar['"]/,
   /goto\([^)]*contato/,
+  // The home mounts the real form (the final call to action), so a visit to it is a visit to the form.
+  /goto\(\s*['"`]\/(?:#[^'"`]*)?['"`]/,
   /FORM_PATH/,
   /form\[name=["']contact["']\]/,
   /n8n\.vnone\.com\.br/,
@@ -98,6 +100,8 @@ describe('findUnguardedSpecs', () => {
   it.each([
     ["await page.getByRole('button', { name: /enviar/i }).click();", 'a press on Enviar'],
     ["await page.goto('/contato');", 'a visit to the contact page'],
+    ["await page.goto('/');", 'a visit to the home, which mounts the form'],
+    ["await page.goto('/#metodo');", 'a visit to a section of the home'],
     ["await page.route('https://n8n.vnone.com.br/webhook/**', route);", 'the webhook host'],
     ['const form = page.locator(\'form[name="contact"]\');', 'the form locator'],
     ['await page.goto(FORM_PATH);', 'the form path constant'],
@@ -129,8 +133,8 @@ describe('findUnguardedSpecs', () => {
   });
 
   it('leaves a spec that never touches the form alone', () => {
-    const plain = "import { test, expect } from '@playwright/test';\ntest('x', async ({ page }) => { await page.goto('/'); });";
+    const plain = "import { test, expect } from '@playwright/test';\ntest('x', async ({ page }) => { await page.goto('/sobre'); await page.request.get('/'); });";
 
-    expect(findUnguardedSpecs({ 'hero.spec.ts': plain })).toEqual([]);
+    expect(findUnguardedSpecs({ 'plain.spec.ts': plain })).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './n8nGuard';
 
 test('home page mounts the React app', async ({ page }) => {
   await page.goto('/');

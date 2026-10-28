@@ -11,9 +11,10 @@ import {
   type NetworkGuard,
 } from './n8nGuard';
 
-// Where the form lives. Today it is the legacy /contato page. Task 18 mounts the FinalCta on the home: it repoints
-// this constant to '/#contato' and keeps a short smoke test of /contato. Everything below goes through the constant.
-const FORM_PATH = '/contato';
+// Where the form lives: the final call to action of the home. The legacy /contato page renders the same form until it
+// is rebuilt, and has its own smoke test at the end of this file. Everything else goes through the constant.
+const FORM_PATH = '/#contato';
+const LEGACY_FORM_PATH = '/contato';
 
 const SERVICE = 'Automação de processos';
 const NAME = 'Ana Lima';
@@ -658,5 +659,21 @@ test.describe('contact form on small screens', () => {
       expect(box, name).not.toBeNull();
       expect(box?.height ?? 0, name).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
     }
+  });
+});
+
+test.describe('legacy /contato page', () => {
+  test('still renders the same contact form, with the same fields', async ({ page, network }) => {
+    await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
+    await page.goto(LEGACY_FORM_PATH);
+    const form = formOf(page);
+    await form.scrollIntoViewIfNeeded();
+
+    await expect(form).toBeVisible();
+    await expect(form.getByLabel('Nome', { exact: true })).toBeVisible();
+    await expect(form.getByLabel('E-mail', { exact: true })).toBeVisible();
+    await expect(form.getByLabel('Mensagem', { exact: true })).toBeVisible();
+    await expect(submit(form)).toBeVisible();
+    expect(network.calls).toHaveLength(0);
   });
 });
