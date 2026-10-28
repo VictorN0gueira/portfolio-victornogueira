@@ -1,6 +1,3 @@
-export const isTouchDevice =
-  typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
-
 export const WHATSAPP_NUMBER = '5581984451243';
 export const WHATSAPP_DISPLAY = '(81) 98445-1243';
 export const CONTACT_EMAIL = 'contato@vnone.com.br';

@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import type { ComponentProps } from 'react';
+import { cn } from './utils';
 
 export const revealProps: ComponentProps<typeof motion.div> = {
   initial: { opacity: 0, y: 30 },
@@ -8,13 +9,25 @@ export const revealProps: ComponentProps<typeof motion.div> = {
   transition: { duration: 0.8, ease: 'easeOut' },
 };
 
-/* Skeleton de carregamento reutilizável */
-export function SectionSkeleton() {
+/** The height a skeleton holds when the page does not say how tall its section will be. */
+const DEFAULT_SKELETON_HEIGHT = 'min-h-[clamp(18rem,40vh,32rem)]';
+
+interface SectionSkeletonProps {
+  /**
+   * The min-height classes (one per breakpoint) of what the lazy section will be about as tall as. A section that loads
+   * late grows from this height to its own, so the closer this is, the less the sections below it (and an anchor such
+   * as #metodo) move when it arrives. Full class names, written out, so the stylesheet generator can see them.
+   */
+  heightClassName?: string;
+}
+
+/** Placeholder of a lazy section: a cream band with the spinner near its top, as tall as the section it stands for. */
+export function SectionSkeleton({ heightClassName = DEFAULT_SKELETON_HEIGHT }: SectionSkeletonProps) {
   return (
-    <div className="py-24 flex items-center justify-center">
+    <div className={cn('flex items-start justify-center bg-vn-cream py-24', heightClassName)}>
       <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-2 border-zinc-200 dark:border-zinc-700 border-t-zinc-500 dark:border-t-zinc-400 rounded-full animate-spin" />
-        <span className="text-xs text-zinc-400 uppercase tracking-widest font-medium">Carregando...</span>
+        <div className="size-10 rounded-full border-2 border-vn-gray-light border-t-vn-gray-mid motion-safe:animate-spin" />
+        <span className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-vn-gray-dark">Carregando...</span>
       </div>
     </div>
   );

@@ -55,7 +55,7 @@ export function LogoImage({ src, name, isDecorative = false, fit = 'contain', wi
     );
   }
 
-  // The same logos run on the live site with no-referrer (src/components/SocialProof.tsx), so it is known to load them.
+  // The same logos ran on the live site of the old design with no-referrer, so it is known to load them.
   return (
     <img
       src={src}

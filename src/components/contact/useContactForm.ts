@@ -46,28 +46,36 @@ async function sendContact(fields: ContactFields, method: ContactMethod): Promis
 
 type TextField = keyof typeof EMPTY_FORM_DATA;
 
-/** Fills the message with the one the parent hands over (the ROI simulator quote), each time that string changes. */
-function usePrefill(initialMessage: string | undefined, setFormData: Dispatch<SetStateAction<typeof EMPTY_FORM_DATA>>) {
+/**
+ * Fills the message with the one the parent hands over (the ROI simulator quote), each time that string changes.
+ * The nonce makes the same string count again: the parent bumps it for a request that repeats the message after the
+ * visitor edited the field.
+ */
+function usePrefill(
+  initialMessage: string | undefined,
+  prefillNonce: number | undefined,
+  setFormData: Dispatch<SetStateAction<typeof EMPTY_FORM_DATA>>,
+) {
   // Pré-preenche a mensagem quando o usuário usa a calculadora de ROI
   useEffect(() => {
     if (initialMessage) {
       setFormData((prev) => ({ ...prev, mensagem: initialMessage }));
     }
-  }, [initialMessage, setFormData]);
+  }, [initialMessage, prefillNonce, setFormData]);
 }
 
 /**
  * What the visitor typed and chose: the method, the fields, the errors and the consent. The raw setters stay in here:
  * the form gets `setField`, `chooseService` and `selectMethod`, which are the same updates the handlers always made.
  */
-function useContactDraft(initialMessage?: string) {
+function useContactDraft(initialMessage?: string, prefillNonce?: number) {
   const [method, setMethod] = useState<ContactMethod>('email');
   const [formData, setFormData] = useState(EMPTY_FORM_DATA);
   const [servico, setServico] = useState('');
   const [errors, setErrors] = useState<ContactErrors>({});
   // Consentimento LGPD: obrigatório para enviar
   const [consent, setConsent] = useState(false);
-  usePrefill(initialMessage, setFormData);
+  usePrefill(initialMessage, prefillNonce, setFormData);
 
   // Digitar num campo limpa só o erro daquele campo.
   const clearError = (field: keyof ContactFields) => {
@@ -97,8 +105,8 @@ function useContactDraft(initialMessage?: string) {
 }
 
 /** The state and the submit of the contact form (ContactForm renders it). */
-export function useContactForm(initialMessage?: string) {
-  const { setErrors, resetDraft, ...draft } = useContactDraft(initialMessage);
+export function useContactForm(initialMessage?: string, prefillNonce?: number) {
+  const { setErrors, resetDraft, ...draft } = useContactDraft(initialMessage, prefillNonce);
   const [status, setStatus] = useState<ContactStatus>('idle');
   const { method, formData, servico } = draft;
 

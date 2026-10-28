@@ -56,6 +56,8 @@ function FinalCtaIntro({ headingId }: FinalCtaIntroProps) {
 interface FinalCtaProps {
   /** A message to fill the form with, for example the quote the ROI simulator builds. A new message replaces the field. */
   prefillMessage?: string;
+  /** Bumped by the parent for each request, so the same message fills the field again after the visitor edited it. */
+  prefillNonce?: number;
 }
 
 /**
@@ -64,7 +66,7 @@ interface FinalCtaProps {
  * contact form. Two columns from lg, stacked below it with the form at full width. One RevealGroup for the one
  * container.
  */
-export function FinalCta({ prefillMessage }: FinalCtaProps) {
+export function FinalCta({ prefillMessage, prefillNonce }: FinalCtaProps) {
   const headingId = useId();
 
   return (
@@ -76,7 +78,7 @@ export function FinalCta({ prefillMessage }: FinalCtaProps) {
             <FinalCtaIntro headingId={headingId} />
           </RevealItem>
           <RevealItem className="min-w-0">
-            <ContactForm initialMessage={prefillMessage} />
+            <ContactForm initialMessage={prefillMessage} prefillNonce={prefillNonce} />
           </RevealItem>
         </RevealGroup>
       </Container>

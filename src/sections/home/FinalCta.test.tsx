@@ -192,4 +192,38 @@ describe('FinalCta prefill', () => {
 
     expect(screen.getByLabelText('Mensagem')).toHaveValue('Segunda mensagem do simulador');
   });
+
+  it('fills the same message again when the nonce changes after the visitor edited the field', async () => {
+    const user = userEvent.setup();
+    const message = 'Quero automatizar notas fiscais';
+    const { rerender } = renderWithProviders(<FinalCta prefillMessage={message} prefillNonce={1} />);
+    await user.clear(screen.getByLabelText('Mensagem'));
+    await user.type(screen.getByLabelText('Mensagem'), 'Outra coisa');
+
+    rerender(<FinalCta prefillMessage={message} prefillNonce={2} />);
+
+    expect(screen.getByLabelText('Mensagem')).toHaveValue(message);
+  });
+
+  it('leaves the edited message alone when neither the message nor the nonce changes', async () => {
+    const user = userEvent.setup();
+    const message = 'Quero automatizar notas fiscais';
+    const { rerender } = renderWithProviders(<FinalCta prefillMessage={message} prefillNonce={1} />);
+    await user.clear(screen.getByLabelText('Mensagem'));
+    await user.type(screen.getByLabelText('Mensagem'), 'Outra coisa');
+
+    rerender(<FinalCta prefillMessage={message} prefillNonce={1} />);
+
+    expect(screen.getByLabelText('Mensagem')).toHaveValue('Outra coisa');
+  });
+
+  it('keeps the other fields when the nonce changes', async () => {
+    const user = userEvent.setup();
+    const { rerender } = renderWithProviders(<FinalCta prefillMessage="Quero automatizar" prefillNonce={1} />);
+    await user.type(screen.getByLabelText('Nome'), 'Ana Lima');
+
+    rerender(<FinalCta prefillMessage="Quero automatizar" prefillNonce={2} />);
+
+    expect(screen.getByLabelText('Nome')).toHaveValue('Ana Lima');
+  });
 });

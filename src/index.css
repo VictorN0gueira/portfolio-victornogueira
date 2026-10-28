@@ -11,9 +11,8 @@
   --color-brand-black: #0A0A0A;
 }
 
-/* Legacy values still read by old components (HeroBackground, ROICalculator). */
+/* Legacy values still read by the old ROICalculator of /contato. */
 :root {
-  --grid-line-color: rgba(10, 10, 10, 0.04);
   --roi-slider-fill: #1A1A1A;
   --roi-slider-track: #C7C7C7;
 }
@@ -21,6 +20,8 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    /* The scrollbar keeps its place when a Radix modal locks the scroll, so the fixed header and the WhatsApp button do not jump by its width. */
+    scrollbar-gutter: stable;
     /* Anchors stop below the floating header, which sits at max(12px, notch inset) from the top. */
     scroll-padding-top: max(96px, calc(env(safe-area-inset-top) + 84px));
   }
@@ -103,16 +104,6 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-}
-
-/* Marquee (compositor thread, no JS cost). Still used by SocialProof until it is rebuilt. */
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-.marquee {
-  animation: marquee 30s linear infinite;
-  will-change: transform;
 }
 
 /* Acessibilidade: classes aplicadas ao <html> pelo AccessibilityWidget */

@@ -51,4 +51,11 @@ describe('WhatsAppButton', () => {
     expect(ring).toHaveClass('border-vn-accent');
     expect(ring?.className).not.toMatch(/animate-ping|animate-pulse/);
   });
+
+  it('sits in its own landmark, so no content of the page is left outside a landmark', () => {
+    const link = renderButton();
+    const landmark = screen.getByRole('complementary', { name: 'Contato rápido' });
+
+    expect(landmark).toContainElement(link);
+  });
 });

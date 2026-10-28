@@ -4,21 +4,14 @@ import SEO from '../components/SEO';
 import { revealProps, SectionSkeleton } from '../lib/reveal';
 import { useScrollToHash } from '../lib/useScrollToHash';
 import { faqs } from '../data/faqs';
+import { buildFaqJsonLd } from '../lib/faqJsonLd';
 
 const ROICalculator = lazy(() => import('../components/ROICalculator'));
 const Contact = lazy(() => import('../components/Contact'));
 const FAQ = lazy(() => import('../components/FAQ'));
 
-// FAQPage JSON-LD gerado da mesma fonte que o accordion — só nesta página
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqs.map((faq) => ({
-    '@type': 'Question',
-    name: faq.question,
-    acceptedAnswer: { '@type': 'Answer', text: faq.answer },
-  })),
-};
+// FAQPage JSON-LD gerado da mesma fonte que o accordion, só nesta página
+const faqJsonLd = buildFaqJsonLd(faqs);
 
 export default function ContactPage() {
   useScrollToHash();
