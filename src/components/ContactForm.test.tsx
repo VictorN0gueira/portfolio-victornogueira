@@ -44,7 +44,7 @@ function stubFetch(impl: () => Promise<unknown>) {
   return fetchMock;
 }
 
-const submitButton = () => screen.getByRole('button', { name: /solicitar contato/i });
+const submitButton = () => screen.getByRole('button', { name: 'Enviar' });
 const serviceTrigger = () => screen.getByRole('button', { name: /selecione um serviço/i });
 
 async function pickService(user: User) {
@@ -77,7 +77,7 @@ describe('ContactForm validation', () => {
     expect(nome).toHaveAttribute('aria-invalid', 'true');
     expect(nome).toHaveAttribute('aria-describedby', 'contact-nome-error');
     expect(document.getElementById('contact-nome-error')).toHaveTextContent('Conta pra gente seu nome');
-    expect(screen.getByLabelText('Email')).toHaveAttribute('aria-describedby', 'contact-email-error');
+    expect(screen.getByLabelText('E-mail')).toHaveAttribute('aria-describedby', 'contact-email-error');
     expect(document.getElementById('contact-email-error')).toHaveTextContent('Esse e-mail parece incompleto');
     expect(screen.getByLabelText('Mensagem')).toHaveAttribute('aria-describedby', 'contact-mensagem-error');
     expect(document.getElementById('contact-mensagem-error')).toHaveTextContent(
@@ -127,9 +127,9 @@ describe('ContactForm validation', () => {
     expect(screen.getByLabelText('Nome')).toHaveAttribute('aria-invalid', 'false');
     expect(await screen.findByLabelText('WhatsApp')).toHaveAttribute('aria-invalid', 'false');
 
-    await user.click(screen.getByRole('button', { name: /por email/i }));
+    await user.click(screen.getByRole('button', { name: /por e-mail/i }));
     await waitFor(() => expect(screen.queryAllByRole('alert')).toHaveLength(0));
-    expect(await screen.findByLabelText('Email')).toHaveAttribute('aria-invalid', 'false');
+    expect(await screen.findByLabelText('E-mail')).toHaveAttribute('aria-invalid', 'false');
     expect(fetch).not.toHaveBeenCalled();
   });
 });
@@ -140,7 +140,7 @@ describe('ContactForm submit wiring', () => {
     const user = renderForm();
 
     await fillCommonFields(user);
-    await user.type(screen.getByLabelText('Email'), 'ana@empresa.com.br');
+    await user.type(screen.getByLabelText('E-mail'), 'ana@empresa.com.br');
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 
@@ -156,7 +156,7 @@ describe('ContactForm submit wiring', () => {
       servico: serviceOptions[0],
       mensagem: 'Quero automatizar notas fiscais',
     });
-    expect(await screen.findByText(/mensagem enviada/i)).toBeInTheDocument();
+    expect(await screen.findByText(/recebemos sua mensagem/i)).toBeInTheDocument();
   });
 
   it('posts the exact whatsapp payload to the whatsapp webhook', async () => {
@@ -199,11 +199,11 @@ describe('ContactForm submit wiring', () => {
     const user = renderForm();
 
     await fillCommonFields(user);
-    await user.type(screen.getByLabelText('Email'), 'ana@empresa.com.br');
+    await user.type(screen.getByLabelText('E-mail'), 'ana@empresa.com.br');
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 
-    expect(await screen.findByText(/erro ao enviar/i)).toBeInTheDocument();
+    expect(await screen.findByText(/não deu pra enviar/i)).toBeInTheDocument();
   });
 
   it('shows the send error UI with the WhatsApp fallback link when the network fails', async () => {
@@ -211,13 +211,13 @@ describe('ContactForm submit wiring', () => {
     const user = renderForm();
 
     await fillCommonFields(user);
-    await user.type(screen.getByLabelText('Email'), 'ana@empresa.com.br');
+    await user.type(screen.getByLabelText('E-mail'), 'ana@empresa.com.br');
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 
-    expect(await screen.findByText(/erro ao enviar/i)).toBeInTheDocument();
+    expect(await screen.findByText(/não deu pra enviar/i)).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const fallback = screen.getByRole('link', { name: /fale direto pelo whatsapp/i });
+    const fallback = screen.getByRole('link', { name: /fala direto pelo whatsapp/i });
     expect(fallback).toHaveAttribute('href', expect.stringContaining('https://wa.me/5581984451243'));
   });
 });

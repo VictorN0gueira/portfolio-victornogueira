@@ -1,6 +1,16 @@
 import { useState, useRef, useEffect, useId } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, Check } from 'lucide-react';
+import { FIELD_CLASS, FIELD_INVALID_CLASS, FIELD_VALID_CLASS } from './contact/contactStyles';
+
+// Colors of the list on the black surface, in VN One tokens: the focus ring of an option is drawn inside it, so the
+// scroll box does not clip it.
+const LIST_CLASS =
+  'absolute left-0 right-0 top-full mt-2 z-50 max-h-64 overflow-y-auto rounded-xl border border-vn-gray-mid bg-vn-ink shadow-2xl shadow-black/40 py-2 custom-scrollbar';
+const OPTION_CLASS =
+  'w-full flex min-h-11 items-center justify-between gap-3 px-4 py-3 text-sm text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vn-white';
+const OPTION_SELECTED_CLASS = 'bg-vn-white/10 text-vn-white';
+const OPTION_IDLE_CLASS = 'text-vn-gray-light hover:bg-vn-white/10';
 
 interface ServiceSelectProps {
   value: string;
@@ -12,8 +22,8 @@ interface ServiceSelectProps {
   describedBy?: string;
 }
 
-/* Dropdown customizado no estilo dos campos do form (fundo escuro).
-   Fecha ao clicar fora / Esc; navegável por teclado; responsivo no toque. */
+/* Dropdown customizado no estilo dos campos do form (fundo preto, tokens VN One).
+   Fecha ao clicar fora ou com Esc; navegável por teclado; responsivo no toque. */
 export default function ServiceSelect({
   value,
   onChange,
@@ -54,17 +64,13 @@ export default function ServiceSelect({
         aria-controls={listId}
         aria-invalid={invalid || undefined}
         aria-describedby={invalid ? describedBy : undefined}
-        className={`w-full flex items-center justify-between gap-3 bg-white/5 border rounded-2xl px-6 py-3.5 md:py-4 text-sm text-left transition-all focus:outline-none focus:ring-2 ${
-          invalid
-            ? 'border-red-500/50 focus:ring-red-500/20'
-            : 'border-white/10 focus:ring-white/20'
-        }`}
+        className={`${FIELD_CLASS} ${invalid ? FIELD_INVALID_CLASS : FIELD_VALID_CLASS} flex items-center justify-between gap-3 text-left`}
       >
-        <span className={value ? 'text-white' : 'text-zinc-600'}>
+        <span className={`min-w-0 ${value ? 'text-vn-white' : 'text-vn-gray-mid'}`}>
           {value || placeholder}
         </span>
         <ChevronDown
-          className={`w-4 h-4 shrink-0 text-zinc-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 shrink-0 text-vn-gray-light transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -77,7 +83,7 @@ export default function ServiceSelect({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute left-0 right-0 top-full mt-2 z-50 max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-zinc-900 shadow-2xl shadow-black/40 py-2 custom-scrollbar"
+            className={LIST_CLASS}
           >
             {options.map((option) => {
               const selected = option === value;
@@ -89,9 +95,7 @@ export default function ServiceSelect({
                       onChange(option);
                       setOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between gap-3 px-6 py-3 text-sm text-left transition-colors ${
-                      selected ? 'text-emerald-400 bg-white/5' : 'text-zinc-300 hover:bg-white/5'
-                    }`}
+                    className={`${OPTION_CLASS} ${selected ? OPTION_SELECTED_CLASS : OPTION_IDLE_CLASS}`}
                   >
                     {option}
                     {selected && <Check className="w-4 h-4 shrink-0" />}

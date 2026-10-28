@@ -91,6 +91,24 @@ export const homeCopy = {
   clients: {
     kicker: 'quem confia',
   },
+  // Os textos das perguntas frequentes (as perguntas e as respostas estão em data/faqs.ts). `message` é a primeira frase
+  // da conversa aberta pelo botão.
+  faq: {
+    kicker: 'dúvidas',
+    heading: 'Perguntas que a gente sempre ouve',
+    sub: 'Se a sua não estiver aqui, chama no WhatsApp.',
+    cta: 'Falar no WhatsApp',
+    message: 'Olá! Tenho uma dúvida sobre automação.',
+  },
+  // Os textos da chamada final, que leva o formulário de contato (os textos do formulário estão em
+  // components/contact/contactFormCopy.ts). `message` é a primeira frase da conversa aberta pelo botão.
+  finalCta: {
+    kicker: 'próximo passo',
+    heading: 'Qual processo a gente automatiza primeiro?',
+    body: 'Conta como funciona hoje. Em 30 minutos a gente mostra por onde começar, sem compromisso.',
+    cta: 'Chamar no WhatsApp',
+    message: 'Olá! Quero automatizar um processo da minha empresa.',
+  },
   // Os textos do simulador de economia. As opções de equipe vêm de TEAM_OPTIONS (lib/roi.ts).
   roi: {
     kicker: 'simulador',
