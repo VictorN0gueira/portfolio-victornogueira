@@ -17,6 +17,8 @@ import {
   stubFetch,
   submitButton,
   submitEmailForm,
+  SWAP_WAIT,
+  findWhatsappField,
 } from '../test/contactForm';
 import { offPaletteClasses, offPaletteInHtml } from '../test/palette';
 import { renderWithProviders } from '../test/render';
@@ -74,8 +76,8 @@ describe('ContactForm method toggle', () => {
     expect(togglePill('Por WhatsApp')).toHaveAttribute('aria-pressed', 'true');
     expect(togglePill('Por WhatsApp')).toHaveClass('bg-vn-white', 'text-vn-black');
     expect(togglePill('Por e-mail')).not.toHaveClass('bg-vn-white');
-    expect(await screen.findByLabelText('WhatsApp')).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByLabelText('E-mail')).not.toBeInTheDocument());
+    expect(await findWhatsappField()).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByLabelText('E-mail')).not.toBeInTheDocument(), SWAP_WAIT);
   });
 
   it('gives each pill a 44px target', () => {
@@ -96,7 +98,7 @@ describe('ContactForm labels, placeholders and attributes', () => {
     expect(screen.getByLabelText('E-mail')).toBeInTheDocument();
     expect(screen.getByLabelText('Mensagem')).toBeInTheDocument();
     await user.click(togglePill('Por WhatsApp'));
-    expect(await screen.findByLabelText('WhatsApp')).toBeInTheDocument();
+    expect(await findWhatsappField()).toBeInTheDocument();
   });
 
   it('uses the final placeholders', async () => {
@@ -108,7 +110,7 @@ describe('ContactForm labels, placeholders and attributes', () => {
     expect(screen.getByPlaceholderText('Conta rapidinho o que você precisa')).toBe(screen.getByLabelText('Mensagem'));
     expect(screen.getByRole('button', { name: SERVICE_TRIGGER_NAME })).toBeInTheDocument();
     await user.click(togglePill('Por WhatsApp'));
-    expect(await screen.findByPlaceholderText('+55 81 99999-9999')).toBe(screen.getByLabelText('WhatsApp'));
+    expect(await screen.findByPlaceholderText('+55 81 99999-9999', undefined, SWAP_WAIT)).toBe(screen.getByLabelText('WhatsApp'));
   });
 
   it('asks the browser to autofill the name, the e-mail and the phone', async () => {
@@ -119,7 +121,7 @@ describe('ContactForm labels, placeholders and attributes', () => {
     expect(screen.getByLabelText('E-mail')).toHaveAttribute('autocomplete', 'email');
     expect(screen.getByLabelText('E-mail')).toHaveAttribute('type', 'email');
     await user.click(togglePill('Por WhatsApp'));
-    const whatsapp = await screen.findByLabelText('WhatsApp');
+    const whatsapp = await findWhatsappField();
     expect(whatsapp).toHaveAttribute('autocomplete', 'tel');
     expect(whatsapp).toHaveAttribute('type', 'tel');
   });
@@ -132,7 +134,7 @@ describe('ContactForm labels, placeholders and attributes', () => {
 
     expect(screen.getByLabelText('Mensagem')).toHaveAttribute('enterkeyhint', 'enter');
     await user.click(togglePill('Por WhatsApp'));
-    expect(await screen.findByLabelText('WhatsApp')).toHaveAttribute('inputmode', 'tel');
+    expect(await findWhatsappField()).toHaveAttribute('inputmode', 'tel');
   });
 
   it('keeps every field required for assistive tech', () => {
@@ -306,7 +308,7 @@ describe('ContactForm sending, success and error', () => {
     await user.click(togglePill('Por WhatsApp'));
     await user.type(screen.getByLabelText('Nome'), 'Ana Lima');
     await pickService(user);
-    await user.type(await screen.findByLabelText('WhatsApp'), TEST_PHONE_TYPED);
+    await user.type(await findWhatsappField(), TEST_PHONE_TYPED);
     await user.type(screen.getByLabelText('Mensagem'), 'Quero automatizar notas fiscais');
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
@@ -413,7 +415,7 @@ describe('ContactForm palette', () => {
     await user.click(submitButton());
     expectOnlyPalette(container);
     await user.click(togglePill('Por WhatsApp'));
-    await waitFor(() => expect(screen.queryByLabelText('E-mail')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByLabelText('E-mail')).not.toBeInTheDocument(), SWAP_WAIT);
     expectOnlyPalette(container);
   });
 

@@ -8,6 +8,7 @@ import {
   n8nRoute,
   test,
   type N8nAnswer,
+  type NetworkGuard,
 } from './n8nGuard';
 
 // Where the form lives. Today it is the legacy /contato page. Task 18 mounts the FinalCta on the home: it repoints
@@ -133,6 +134,116 @@ test.describe('contact form webhooks', () => {
     await expect(formOf(page)).toBeVisible();
     await expect(formOf(page).getByLabel('Nome', { exact: true })).toHaveValue('');
     await expect(formOf(page).getByRole('checkbox')).not.toBeChecked();
+  });
+});
+
+// The number of a lead cannot be wrong. These scenarios drive the WhatsApp field the way a visitor can corrupt it in a
+// real browser (jsdom cannot see them): a caret or a selection inside the +55 prefix, a second click at the same place
+// (React raises no select event for it), the Home key, and an international number pasted behind the prefix. Each one
+// ends in the same check: the field shows the typed number in order and the webhook gets the Evolution number of it.
+test.describe('contact form WhatsApp number integrity', () => {
+  const PREFIX_CLICK = { position: { x: 2, y: 20 } };
+  // Two taps closer than this are one double tap, which selects a word and so takes another path (the select event).
+  const DOUBLE_TAP_GAP_MS = 700;
+  const INTERNATIONAL_NUMBER = '+55 11 90000-0000';
+
+  async function fillUpToTheNumber(page: Page, form: Locator): Promise<Locator> {
+    await useWhatsapp(page, form);
+    await fillCommon(form);
+    return form.getByLabel('WhatsApp', { exact: true });
+  }
+
+  /** Sends the form and checks that the lead goes to the number that was typed, in order and in the right format. */
+  async function expectLeadForTheTypedNumber(page: Page, form: Locator, network: NetworkGuard, whatsapp: Locator) {
+    await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
+    await form.getByRole('checkbox').check();
+    await submit(form).click();
+
+    await expect(page.getByRole('heading', { level: 4, name: SUCCESS_TITLE })).toBeVisible();
+    expect(network.calls).toHaveLength(1);
+    const [call] = network.calls;
+    expect(new URL(call.url).pathname).toBe(WHATSAPP_PATH);
+    expect(call.payload.whatsapp).toBe(WHATSAPP_EVOLUTION);
+  }
+
+  test.beforeEach(async ({ page, network }) => {
+    await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
+  });
+
+  test('keeps the digits in order after two clicks at the same place inside the prefix', async ({ page, network }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+
+    await whatsapp.click(PREFIX_CLICK);
+    await whatsapp.click(PREFIX_CLICK);
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
+    await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+  });
+
+  test('keeps the digits in order after a double click on the prefix', async ({ page, network }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+
+    await whatsapp.dblclick(PREFIX_CLICK);
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
+    await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+  });
+
+  test('keeps the digits in order after a tap and a second tap at the same place', async ({ page, network }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'a tap needs a touch screen');
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+
+    await whatsapp.tap(PREFIX_CLICK);
+    await page.waitForTimeout(DOUBLE_TAP_GAP_MS);
+    await whatsapp.tap(PREFIX_CLICK);
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
+    await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+  });
+
+  test('keeps the digits in order after the Home key pressed twice', async ({ page, network }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+
+    await whatsapp.click();
+    await whatsapp.press('Home');
+    await whatsapp.press('Home');
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
+    await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+  });
+
+  test('keeps the digits in order after Shift+Home selects the prefix', async ({ page, network }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+
+    await whatsapp.click();
+    await whatsapp.press('Shift+Home');
+    await whatsapp.pressSequentially(WHATSAPP_TYPED);
+
+    await expectLeadForTheTypedNumber(page, form, network, whatsapp);
+  });
+
+  // A synthetic paste event with a DataTransfer: the page code reads the clipboard text from the event, and nothing here
+  // depends on the operating system clipboard, which two workers would share.
+  test('takes a pasted international number as the whole number, not as the digits behind the +55 prefix', async ({ page, network }) => {
+    const form = await openForm(page);
+    const whatsapp = await fillUpToTheNumber(page, form);
+
+    await whatsapp.click();
+    const wasCancelled = await whatsapp.evaluate((input, text) => {
+      const data = new DataTransfer();
+      data.setData('text', text);
+      const event = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true });
+      input.dispatchEvent(event);
+      return event.defaultPrevented;
+    }, INTERNATIONAL_NUMBER);
+
+    expect(wasCancelled).toBe(true);
+    await expectLeadForTheTypedNumber(page, form, network, whatsapp);
   });
 });
 

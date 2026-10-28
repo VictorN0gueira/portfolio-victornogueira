@@ -16,6 +16,8 @@ import {
   stubFetch,
   submitButton,
   type User,
+  SWAP_WAIT,
+  findWhatsappField,
 } from '../test/contactForm';
 import ContactForm from './ContactForm';
 
@@ -111,13 +113,13 @@ describe('ContactForm validation', () => {
 
     // The leaving field keeps its last frame while it fades out, so wait for it to go.
     await user.click(screen.getByRole('button', { name: /por whatsapp/i }));
-    await waitFor(() => expect(screen.queryAllByRole('alert')).toHaveLength(0));
+    await waitFor(() => expect(screen.queryAllByRole('alert')).toHaveLength(0), SWAP_WAIT);
     expect(screen.getByLabelText('Nome')).toHaveAttribute('aria-invalid', 'false');
-    expect(await screen.findByLabelText('WhatsApp')).toHaveAttribute('aria-invalid', 'false');
+    expect(await findWhatsappField()).toHaveAttribute('aria-invalid', 'false');
 
     await user.click(screen.getByRole('button', { name: /por e-mail/i }));
-    await waitFor(() => expect(screen.queryAllByRole('alert')).toHaveLength(0));
-    expect(await screen.findByLabelText('E-mail')).toHaveAttribute('aria-invalid', 'false');
+    await waitFor(() => expect(screen.queryAllByRole('alert')).toHaveLength(0), SWAP_WAIT);
+    expect(await screen.findByLabelText('E-mail', undefined, SWAP_WAIT)).toHaveAttribute('aria-invalid', 'false');
     expect(fetch).not.toHaveBeenCalled();
   });
 });
@@ -154,7 +156,7 @@ describe('ContactForm submit wiring', () => {
 
     await user.click(screen.getByRole('button', { name: /por whatsapp/i }));
     await fillCommonFields(user);
-    await user.type(await screen.findByLabelText('WhatsApp'), TEST_PHONE_TYPED);
+    await user.type(await findWhatsappField(), TEST_PHONE_TYPED);
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 
@@ -171,7 +173,7 @@ describe('ContactForm submit wiring', () => {
 
     await user.click(screen.getByRole('button', { name: /por whatsapp/i }));
     await fillCommonFields(user);
-    const whatsapp = await screen.findByLabelText('WhatsApp');
+    const whatsapp = await findWhatsappField();
     await user.type(whatsapp, '55900000000');
     expect(whatsapp).toHaveValue('+55 55 9 0000-0000');
     await user.click(screen.getByRole('checkbox'));

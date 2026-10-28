@@ -1,14 +1,11 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
 import {
-  TEST_PHONE_DISPLAY,
-  TEST_PHONE_EVOLUTION,
   TEST_PHONE_TYPED,
-  WHATSAPP_WEBHOOK,
+  findWhatsappField,
   pickService,
-  readCall,
   rejectUnexpectedFetch,
   stubFetch,
   submitButton,
@@ -65,7 +62,7 @@ describe('ContactForm success announcement', () => {
     await user.click(togglePill('Por WhatsApp'));
     await user.type(screen.getByLabelText('Nome'), 'Ana Lima');
     await pickService(user);
-    await user.type(await screen.findByLabelText('WhatsApp'), TEST_PHONE_TYPED);
+    await user.type(await findWhatsappField(), TEST_PHONE_TYPED);
     await user.type(screen.getByLabelText('Mensagem'), 'Quero automatizar notas fiscais');
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
@@ -137,82 +134,5 @@ describe('ContactForm service label', () => {
     expect(label).toHaveTextContent('Serviço de interesse');
     expect(trigger.id).not.toBe('');
     expect(trigger).toHaveAttribute('aria-labelledby', `contact-servico-label ${trigger.id}`);
-  });
-});
-
-describe('ContactForm WhatsApp caret', () => {
-  async function openWhatsapp() {
-    const user = userEvent.setup();
-    renderWithProviders(<ContactForm />);
-    await user.click(togglePill('Por WhatsApp'));
-    const whatsapp = (await screen.findByLabelText('WhatsApp')) as HTMLInputElement;
-    return { user, whatsapp };
-  }
-
-  it('moves a caret placed inside the +55 prefix to just after it', async () => {
-    const { user, whatsapp } = await openWhatsapp();
-
-    await user.pointer({ target: whatsapp, offset: 1, keys: '[MouseLeft]' });
-
-    expect([whatsapp.selectionStart, whatsapp.selectionEnd]).toEqual([4, 4]);
-  });
-
-  it('types the number in order after a tap at the very start of the field', async () => {
-    const { user, whatsapp } = await openWhatsapp();
-
-    await user.pointer({ target: whatsapp, offset: 0, keys: '[MouseLeft]' });
-    await user.keyboard(TEST_PHONE_TYPED);
-
-    expect(whatsapp).toHaveValue(TEST_PHONE_DISPLAY);
-  });
-
-  it('sends the number that was typed, not a scrambled one, when the visitor tapped inside the prefix first', async () => {
-    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
-    const { user, whatsapp } = await openWhatsapp();
-
-    await user.type(screen.getByLabelText('Nome'), 'Ana Lima');
-    await pickService(user);
-    await user.type(screen.getByLabelText('Mensagem'), 'Quero automatizar notas fiscais');
-    await user.pointer({ target: whatsapp, offset: 0, keys: '[MouseLeft]' });
-    await user.keyboard(TEST_PHONE_TYPED);
-    await user.click(screen.getByRole('checkbox'));
-    await user.click(submitButton());
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    const { url, body } = readCall(fetchMock);
-    expect(url).toBe(WHATSAPP_WEBHOOK);
-    expect(body.whatsapp).toBe(TEST_PHONE_EVOLUTION);
-  });
-
-  it('leaves a selection that is not collapsed alone, such as the select all of a Tab focus', async () => {
-    const { whatsapp } = await openWhatsapp();
-    whatsapp.focus();
-
-    whatsapp.setSelectionRange(0, 4);
-    fireEvent.keyUp(whatsapp);
-
-    expect([whatsapp.selectionStart, whatsapp.selectionEnd]).toEqual([0, 4]);
-  });
-
-  it('leaves a caret that is already after the prefix alone', async () => {
-    const { user, whatsapp } = await openWhatsapp();
-    await user.type(whatsapp, '119');
-    whatsapp.setSelectionRange(6, 6);
-
-    fireEvent.keyUp(whatsapp);
-
-    expect([whatsapp.selectionStart, whatsapp.selectionEnd]).toEqual([6, 6]);
-  });
-
-  it('does not touch the caret of any other field', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<ContactForm />);
-    const nome = screen.getByLabelText('Nome') as HTMLInputElement;
-    await user.type(nome, 'Ana');
-
-    nome.setSelectionRange(1, 1);
-    fireEvent.keyUp(nome);
-
-    expect([nome.selectionStart, nome.selectionEnd]).toEqual([1, 1]);
   });
 });

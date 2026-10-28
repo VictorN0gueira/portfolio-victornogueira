@@ -13,6 +13,14 @@ const WIDE_QUERY = MD_QUERY;
 const REVEALED_TIMEOUT_MS = 3000;
 const NO_DELAY_TIMEOUT_MS = 500;
 const MOTION_BACK_ON_WINDOW_MS = 1000;
+// How far from its end value (opacity 1, blur and offset 0) an animated style may still be and count as arrived.
+const SETTLED_TOLERANCE = 0.01;
+
+/** The first number of a style value such as `blur(0.0003px)` or `translateY(2px)`; `none` and an empty value are 0. */
+function firstNumber(value: string): number {
+  const match = /-?\d*\.?\d+(?:e-?\d+)?/i.exec(value);
+  return match ? Number(match[0]) : 0;
+}
 
 function getGroup(container: HTMLElement): HTMLElement {
   return container.firstElementChild as HTMLElement;
@@ -140,9 +148,16 @@ describe('RevealItem with motion allowed', () => {
 
     triggerIntersection(getGroup(container));
 
-    await waitFor(() => expect(wrapper.style.opacity).toBe('1'), { timeout: REVEALED_TIMEOUT_MS });
-    await waitFor(() => expect(wrapper.style.filter).toMatch(/^(none|blur\(0(px)?\))$/), { timeout: REVEALED_TIMEOUT_MS });
-    expect(wrapper.style.transform).toMatch(/^(none|translateY\(0(px)?\))?$/);
+    // The three values settle on their last frame together, and on a busy machine a frame can land a hair short of
+    // the end (opacity 0.99999, blur 0.0003px): they are read as numbers and must come within a hundredth of the end.
+    await waitFor(
+      () => {
+        expect(1 - Number(wrapper.style.opacity)).toBeLessThan(SETTLED_TOLERANCE);
+        expect(firstNumber(wrapper.style.filter)).toBeLessThan(SETTLED_TOLERANCE);
+        expect(Math.abs(firstNumber(wrapper.style.transform))).toBeLessThan(SETTLED_TOLERANCE);
+      },
+      { timeout: REVEALED_TIMEOUT_MS },
+    );
   });
 
   it('renders a div item by default and a span item with as="span", so a heading can hold items', () => {

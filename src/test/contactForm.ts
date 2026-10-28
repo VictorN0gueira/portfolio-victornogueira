@@ -29,6 +29,13 @@ export function rejectUnexpectedFetch() {
   return stubFetch(() => Promise.reject(new Error('Unexpected network call in a form test')));
 }
 
+// The contact field swaps with a short exit and enter animation (AnimatePresence, mode wait): on a busy machine the
+// default one second of the queries is not always enough, so every wait that follows a method swap takes this one.
+export const SWAP_WAIT = { timeout: 3000 } as const;
+
+/** The WhatsApp field once the method swap has finished. */
+export const findWhatsappField = () => screen.findByLabelText('WhatsApp', undefined, SWAP_WAIT);
+
 export const submitButton = () => screen.getByRole('button', { name: 'Enviar' });
 // The trigger is named by its label and its own text ("Serviço de interesse Selecione um serviço").
 export const serviceTrigger = () => screen.getByRole('button', { name: /selecione um serviço/i });
@@ -37,11 +44,11 @@ export async function pickService(user: User) {
   await user.click(serviceTrigger());
   await user.click(screen.getByRole('button', { name: serviceOptions[0] }));
   // The list animates out; wait until only the trigger (now showing the value) is left.
-  await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+  await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument(), SWAP_WAIT);
 }
 
 /** Name, service, message, consent and the e-mail, ready to submit. */
-export async function fillEmailForm(user: User) {
+async function fillEmailForm(user: User) {
   await user.type(screen.getByLabelText('Nome'), 'Ana Lima');
   await pickService(user);
   await user.type(screen.getByLabelText('E-mail'), TEST_EMAIL);

@@ -1,4 +1,4 @@
-import type { ReactNode, SyntheticEvent } from 'react';
+import type { ReactNode } from 'react';
 import { serviceOptions } from '../../data/services';
 import type { ContactFields } from '../../lib/contact';
 import ServiceSelect from '../ServiceSelect';
@@ -6,35 +6,18 @@ import { contactFormCopy } from './contactFormCopy';
 import { LABEL_CLASS } from './contactStyles';
 import FieldError from './FieldError';
 import { errorId, fieldProps } from './fieldProps';
-import { EMPTY_FORM_DATA } from './useContactForm';
+import { whatsappInputProps } from './whatsappInput';
 
 const { labels, placeholders } = contactFormCopy;
 
 /** Id of the visible label of the service field: the trigger names itself by it and by its own text. */
 export const SERVICE_LABEL_ID = 'contact-servico-label';
 
-// The WhatsApp field always starts with "+55 " (EMPTY_FORM_DATA.whatsapp): a caret before the end of it would make the
-// next digits land in front of the prefix, and the formatter would then read them as the country code and the DDD.
-const PHONE_PREFIX_LENGTH = EMPTY_FORM_DATA.whatsapp.length;
-
-/**
- * Moves a caret that sits inside the prefix to just after it. Only a collapsed caret moves: the select all that a
- * Tab brings, and a drag or a double click, are ranges and stay as they are. Needs a type that supports selection
- * ranges (tel does).
- */
-function keepCaretAfterPrefix(event: SyntheticEvent<HTMLInputElement>) {
-  const input = event.currentTarget;
-  const { selectionStart, selectionEnd } = input;
-  if (selectionStart === null || selectionStart !== selectionEnd || selectionStart >= PHONE_PREFIX_LENGTH) return;
-
-  input.setSelectionRange(PHONE_PREFIX_LENGTH, PHONE_PREFIX_LENGTH);
-}
-
 // Which browser autofill and which keyboard each text field asks for.
 const INPUT_CONFIG = {
   nome: { type: 'text', autoComplete: 'name' },
   email: { type: 'email', autoComplete: 'email' },
-  whatsapp: { type: 'tel', autoComplete: 'tel', inputMode: 'tel', onSelect: keepCaretAfterPrefix },
+  whatsapp: { type: 'tel', autoComplete: 'tel' },
 } as const;
 
 interface FieldFrameProps {
@@ -68,15 +51,14 @@ interface ContactInputProps {
   onChange: (value: string) => void;
 }
 
-/** A single line field of the form: nome, email or whatsapp. */
+/**
+ * A single line field of the form: nome, email or whatsapp. The WhatsApp field also gets its caret and paste guards
+ * (see whatsappInput.ts); the other two fields have none.
+ */
 export function ContactInput({ field, value, error, onChange }: ContactInputProps) {
   const id = `contact-${field}`;
-  const config: {
-    type: string;
-    autoComplete: string;
-    inputMode?: 'tel';
-    onSelect?: (event: SyntheticEvent<HTMLInputElement>) => void;
-  } = INPUT_CONFIG[field];
+  const config = INPUT_CONFIG[field];
+  const extra = field === 'whatsapp' ? whatsappInputProps(onChange) : undefined;
 
   return (
     <FieldFrame field={field} label={labels[field]} error={error} htmlFor={id}>
@@ -88,10 +70,9 @@ export function ContactInput({ field, value, error, onChange }: ContactInputProp
         type={config.type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onSelect={config.onSelect}
         placeholder={placeholders[field]}
         autoComplete={config.autoComplete}
-        inputMode={config.inputMode}
+        {...extra}
       />
     </FieldFrame>
   );
