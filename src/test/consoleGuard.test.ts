@@ -33,7 +33,7 @@ describe('assertSilentThenRestore', () => {
 
     expect(() => assertSilentThenRestore([error.spy, warn.spy], ['error', 'warn'])).toThrow(/console\.error was called/);
 
-    // The second spy comes after the one that failed: it is restored only if the restore does not depend on the assertion.
+    // The assertion throws at the first spy, before anything looks at the second one, so the second spy is restored only because the restore runs in a finally.
     expect(error.restore).toHaveBeenCalledTimes(1);
     expect(warn.restore).toHaveBeenCalledTimes(1);
   });
@@ -49,12 +49,35 @@ describe('assertSilentThenRestore', () => {
     expect(warn.restore).toHaveBeenCalledTimes(1);
   });
 
-  it('checks only the methods it is given, in the order of the spies', () => {
+  it('checks only the methods it is given: a spy of a method that is not in the list may have been called', () => {
     const error = fakeSpy();
-    error.spy('ignored message');
+    const warn = fakeSpy();
+    warn.spy('not guarded here');
 
-    expect(() => assertSilentThenRestore([error.spy], ['error'])).toThrow(/console\.error was called/);
+    expect(() => assertSilentThenRestore([error.spy, warn.spy], ['error'])).not.toThrow();
+
     expect(error.restore).toHaveBeenCalledTimes(1);
+    expect(warn.restore).toHaveBeenCalledTimes(1);
+  });
+
+  it('still fails for a method that is in the list when another one is left out of it', () => {
+    const error = fakeSpy();
+    const warn = fakeSpy();
+    error.spy('guarded');
+    warn.spy('not guarded here');
+
+    expect(() => assertSilentThenRestore([error.spy, warn.spy], ['error'])).toThrow(/console\.error was called/);
+
+    expect(error.restore).toHaveBeenCalledTimes(1);
+    expect(warn.restore).toHaveBeenCalledTimes(1);
+  });
+
+  it('names each spy after the method at the same position in the list', () => {
+    const first = fakeSpy();
+    const second = fakeSpy();
+    first.spy('called');
+
+    expect(() => assertSilentThenRestore([first.spy, second.spy], ['warn', 'error'])).toThrow(/console\.warn was called/);
   });
 });
 
