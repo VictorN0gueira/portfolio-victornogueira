@@ -101,7 +101,8 @@ describe('excerptOf', () => {
   });
 
   it('breaks at a no break space like at a plain one', () => {
-    const text = `${'a'.repeat(100)} ${'b'.repeat(100)}`;
+    // The character between the two runs is a non-breaking space (U+00A0), written as an escape on purpose: raw, it looks like a plain space.
+    const text = `${'a'.repeat(100)}\u00A0${'b'.repeat(100)}`;
 
     expect(excerptOf(text)).toBe(`${'a'.repeat(100)}${ELLIPSIS}`);
   });
