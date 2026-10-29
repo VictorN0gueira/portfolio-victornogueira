@@ -187,7 +187,14 @@ const SHORT_PHONES = [
   { width: 360, height: 640 },
   { width: 375, height: 667 },
   { width: 844, height: 390 },
+  // Phones on their side: lifted from the bottom the panel left its list 8px to 10px high at 568x320.
+  { width: 568, height: 320 },
+  { width: 640, height: 360 },
+  { width: 667, height: 375 },
+  { width: 740, height: 360 },
 ];
+// A list with room for two options at least (the options are 44px each), so the panel is not a header bar only.
+const MIN_LIST_HEIGHT_PX = 2 * MIN_TOUCH_PX;
 const FONTS = [
   { name: 'normal', isLarge: false },
   { name: 'larger', isLarge: true },
@@ -214,6 +221,20 @@ for (const phone of SHORT_PHONES) {
         expect(box?.y ?? -1, 'panel top is inside the window').toBeGreaterThanOrEqual(0);
         expect((box?.y ?? 0) + (box?.height ?? 0), 'panel bottom is inside the window').toBeLessThanOrEqual(phone.height);
 
+        const listBox = await panel.getByRole('list').first().boundingBox();
+        expect(listBox?.height ?? 0, 'the option list has room for two options').toBeGreaterThanOrEqual(MIN_LIST_HEIGHT_PX);
+        for (const [label, locator] of [
+          ['the trigger', page.getByRole('button', { name: A11Y_TRIGGER_NAME })],
+          ['the WhatsApp button', page.getByRole('complementary', { name: 'Contato rápido' }).getByRole('link')],
+        ] as const) {
+          const target = await locator.boundingBox();
+          expect(target, label).not.toBeNull();
+          const cx = (target?.x ?? 0) + (target?.width ?? 0) / 2;
+          const cy = (target?.y ?? 0) + (target?.height ?? 0) / 2;
+          const covered = box !== null && cx >= box.x && cx <= box.x + box.width && cy >= box.y && cy <= box.y + box.height;
+          expect(covered, `the panel does not cover the centre of ${label}`).toBe(false);
+        }
+
         const largeFont = panel.getByRole('button', { name: /Texto maior/ });
         await largeFont.scrollIntoViewIfNeeded();
         await expect(largeFont).toBeVisible();
@@ -225,7 +246,58 @@ for (const phone of SHORT_PHONES) {
 
         await largeFont.tap();
         await expect(largeFont).toHaveAttribute('aria-pressed', String(!isLarge));
+
+        // Escape from inside the panel closes it and the focus goes back to the button that opened it.
+        await panel.getByRole('button', { name: /Texto maior/ }).focus();
+        await page.keyboard.press('Escape');
+        await expect(panel).toHaveCount(0);
+        await expect(page.getByRole('button', { name: A11Y_TRIGGER_NAME })).toBeFocused();
       });
     });
   }
+}
+
+// The title bar of the hero panel wraps in three ways (the title alone on the first row, or with the status, or all on
+// one row), and where it wraps depends on the width and on the font. At every integer width from 270 to 440 the 52px
+// pause button must not enter the title line, must not lie on the title, the dots or the status, and its disc must be
+// level with the status pill when they share a row.
+const PAUSE_SWEEP = { from: 270, to: 440 };
+
+/** What the pause button of the hero panel does to its title bar at the current width, or an empty list when it is clean. */
+function pauseBarProblems(page: Page, minTouch: number): Promise<string[]> {
+  return page.evaluate((min) => {
+    const button = document.querySelector('[data-flow-window] button[aria-label="Pausar animação"]') as HTMLElement;
+    const bar = button.parentElement?.parentElement as HTMLElement;
+    const [, title, status] = Array.from(bar.children).filter((child) => !child.contains(button)) as HTMLElement[];
+    const own = button.getBoundingClientRect();
+    const disc = (button.firstElementChild as HTMLElement).getBoundingClientRect();
+    const titleBox = title.getBoundingClientRect();
+    const pill = status.getBoundingClientRect();
+    const problems: string[] = [];
+    if (own.width < min || own.height < min) problems.push(`box ${own.width.toFixed(1)}x${own.height.toFixed(1)}`);
+    const isTitleAbove = titleBox.bottom < own.top + own.height / 2;
+    if (isTitleAbove && titleBox.bottom - own.top > 0.5) problems.push(`enters the title line by ${(titleBox.bottom - own.top).toFixed(1)}px`);
+    const isOnPillRow = pill.top < own.bottom && pill.bottom > own.top && Math.abs(pill.y + pill.height / 2 - (own.y + own.height / 2)) < own.height;
+    const offset = disc.y + disc.height / 2 - (pill.y + pill.height / 2);
+    if (isOnPillRow && Math.abs(offset) > 0.5 && Math.abs(offset) < own.height / 2) problems.push(`disc ${offset.toFixed(1)}px off the pill`);
+    return problems;
+  }, minTouch);
+}
+
+for (const { name, isLarge } of FONTS) {
+  test(`keeps the hero pause button clear of its title bar at every width from ${PAUSE_SWEEP.from} to ${PAUSE_SWEEP.to} with the ${name} font`, async ({ page }) => {
+    test.slow();
+    if (isLarge) await enableLargeFont(page);
+    await page.setViewportSize({ width: PAUSE_SWEEP.to, height: 800 });
+    await openHome(page);
+    const failures: string[] = [];
+    for (let width = PAUSE_SWEEP.from; width <= PAUSE_SWEEP.to; width += 1) {
+      await page.setViewportSize({ width, height: 800 });
+      await scrollPanelFlat(page);
+      const problems = [...(await pauseBarProblems(page, MIN_TOUCH_PX - TOUCH_ROUNDING_PX)), ...(await measurePauseOverlaps(page))];
+      if (problems.length > 0) failures.push(`${width}px: ${problems.join(', ')}`);
+    }
+
+    expect(failures).toEqual([]);
+  });
 }
