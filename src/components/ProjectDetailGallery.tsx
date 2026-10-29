@@ -9,6 +9,10 @@ const STACK_SIZES = '(min-width: 1152px) 640px, (min-width: 768px) 55vw, 85vw';
 const HERO_COVER_SIZES = '(min-width: 1152px) 1100px, 92vw';
 const HERO_THUMB_SIZES = '(min-width: 1152px) 540px, (min-width: 640px) 46vw, 92vw';
 
+const LANDSCAPE_CLASSES = 'w-full h-auto object-contain rounded-2xl shadow-2xl';
+// A phone screenshot is tall: it keeps its proportions and stops at a height, centered, instead of filling the width.
+const PORTRAIT_CLASSES = 'h-auto w-auto max-h-[32rem] max-w-full object-contain mx-auto rounded-2xl shadow-2xl';
+
 interface ShotFigureProps {
   shot: ProjectShot;
   index: number;
@@ -18,6 +22,7 @@ interface ShotFigureProps {
 
 function ShotFigure({ shot, index, sizes, className }: ShotFigureProps) {
   const { image, alt } = shot;
+  const isPortrait = image.height > image.width;
 
   return (
     <img
@@ -27,7 +32,7 @@ function ShotFigure({ shot, index, sizes, className }: ShotFigureProps) {
       width={image.width}
       height={image.height}
       alt={alt}
-      className={className ?? 'w-full h-auto object-contain rounded-2xl shadow-2xl'}
+      className={className ?? (isPortrait ? PORTRAIT_CLASSES : LANDSCAPE_CLASSES)}
       loading={index === 0 ? 'eager' : 'lazy'}
       fetchPriority={index === 0 ? 'high' : 'auto'}
       decoding="async"

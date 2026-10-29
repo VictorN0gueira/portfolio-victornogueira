@@ -20,6 +20,8 @@ export interface Project {
   tags: readonly string[];
   /** The screenshots, at most three. The first one is the cover: the card image and the large image of the case page. */
   shots: readonly ProjectShot[];
+  /** The 1200 by 630 image shared on social networks, when the cover has one made for it. */
+  shareImage?: ProjectImage;
   impact?: readonly { label: string; value: string }[];
 }
 
@@ -32,12 +34,8 @@ export function coverOf(project: Project): ProjectImage {
   return project.shots[0].image;
 }
 
-// Hub081 screenshots are prepared on the branch assets/dizpara-hub081. Until it lands, these DizPara
-// files stand in for them. The final swap: replace this constant with
-//   ['hub081/login', 'hub081/conversas', 'hub081/dashboards']
-// and the DizPara keys below with the three names that branch adds.
-const HUB081_PLACEHOLDER = ['dizpara/login', 'dizpara/leads', 'dizpara/dashboard'] as const;
-const DIZPARA_KEYS = ['dizpara/cover', 'dizpara/dashboard', 'dizpara/campanhas'] as const;
+const HUB081_KEYS = ['hub081/dashboards', 'hub081/conversas', 'hub081/login'] as const;
+const DIZPARA_KEYS = ['dizpara/lista-de-leads', 'dizpara/captura-de-leads', 'dizpara/nova-campanha'] as const;
 
 export const projects: readonly Project[] = [
   {
@@ -50,16 +48,18 @@ export const projects: readonly Project[] = [
     highlight: 'Da busca no Google Maps ao disparo no WhatsApp e no e-mail, sem sair do painel.',
     features: [
       'Busca empresas no Google Maps por nicho e cidade e transforma o resultado em leads.',
-      'Dispara campanhas por e-mail e por WhatsApp, com objetivo de prospecção ou de marketing.',
-      'Organiza os leads em pipeline, listas, favoritos e grupos.',
+      'Importa leads de CSV e do Google Sheets, aceita cadastro manual e detecta duplicados.',
+      'Mostra cada lead com pontuação e status: novo, em contato, qualificado ou descartado.',
+      'Dispara campanhas por e-mail e por WhatsApp, em um passo a passo de criação.',
       'Qualifica os contatos com IA.',
     ],
     tags: ['WhatsApp API', 'SMTP', 'IA', 'Qualificação de leads'],
     impact: [{ label: 'Leads', value: 'Qualificação por IA' }],
+    shareImage: projectImage('dizpara/cover'),
     shots: shotsOf(DIZPARA_KEYS, [
-      'Página inicial do DizPara com a chamada para capturar leads, disparar campanhas e fechar negócios',
-      'Painel do DizPara com leads capturados, campanhas enviadas, conexões ativas e o menu de prospecção',
-      'Assistente de nova campanha do DizPara para escolher o canal, e-mail ou WhatsApp, e o objetivo',
+      'Lista de leads do DizPara, com filtros por status, importação de CSV e do Google Sheets e a busca no Maps',
+      'Janela de captura de leads do DizPara, para buscar empresas no Google Maps por nicho, cidade e quantidade',
+      'Assistente de nova campanha do DizPara, para escolher o canal, e-mail ou WhatsApp, e o objetivo',
     ]),
   },
   {
@@ -71,16 +71,18 @@ export const projects: readonly Project[] = [
       'Central de atendimento e CRM no WhatsApp, com conversas, contatos, agentes de IA, pipelines, propostas, produtos e financeiro no mesmo painel.',
     highlight: 'O atendimento no WhatsApp e a gestão comercial no mesmo painel.',
     features: [
-      'Atende por conversas do WhatsApp e mantém os contatos organizados.',
-      'Reúne agentes de IA no atendimento.',
-      'Cuida da parte comercial com pipelines, propostas e produtos.',
-      'Mostra o financeiro e dashboards por área, em abas: visão geral, comercial, financeiro, produtos e turmas, atendimento e IA.',
+      'Lista as conversas do WhatsApp em abas: ativas, pendentes, pausadas e concluídas.',
+      'Reúne atendimento, chat interno, contatos, agentes de IA e canais.',
+      'Cuida da parte comercial com pipelines, turmas, propostas e produtos.',
+      'Controla o financeiro: contas a pagar, contas a receber e repasses.',
+      'Mostra dashboards por área, em abas, com filtros de período e exportação para Excel.',
     ],
     tags: ['WhatsApp', 'CRM', 'Agentes de IA', 'Pipelines'],
-    shots: shotsOf(HUB081_PLACEHOLDER, [
+    shareImage: projectImage('hub081/cover'),
+    shots: shotsOf(HUB081_KEYS, [
+      'Dashboards do Hub081, com as abas visão geral, comercial, financeiro, produtos e turmas, atendimento e IA, e a central de atenção',
+      'Lista de conversas do WhatsApp no Hub081, com as abas ativas, pendentes, pausadas e concluídas e o menu de atendimento, comercial e financeiro',
       'Tela de login do Hub081, a central de atendimento e CRM no WhatsApp',
-      'Tela de conversas do Hub081, com a lista de atendimentos e a conversa aberta',
-      'Dashboards do Hub081, com as abas visão geral, comercial, financeiro, produtos e turmas, atendimento e IA',
     ]),
   },
   {
@@ -143,10 +145,11 @@ export const projects: readonly Project[] = [
     tags: ['Spotify API', 'Automação de Fluxos', 'SMTP', 'Inteligência Artificial'],
     impact: [{ label: 'Curadoria', value: 'IA personalizada' }],
     shots: shotsOf(
-      ['ai-playlist-maker/cover', 'ai-playlist-maker/tela-email'],
+      ['ai-playlist-maker/cover', 'ai-playlist-maker/tela-email', 'ai-playlist-maker/tela-mobile'],
       [
         'Formulário do AI Playlist Maker para descrever a playlist, escolher o número de faixas e informar o e-mail da conta Spotify',
         'E-mail que avisa que a playlist ficou pronta, com o botão para ouvir no Spotify',
+        'Formulário do AI Playlist Maker na tela do celular, com o pedido da playlist logo abaixo do título',
       ],
     ),
   },
@@ -159,10 +162,11 @@ export const projects: readonly Project[] = [
     tags: ['Automação de Fluxos', 'APIs', 'SMTP', 'OpenAI'],
     impact: [{ label: 'Roteiro', value: 'Gerado em segundos' }],
     shots: shotsOf(
-      ['travel-ia/cover', 'travel-ia/tela-email'],
+      ['travel-ia/cover', 'travel-ia/tela-email', 'travel-ia/tela-mobile'],
       [
         'Formulário do Travel IA para escolher destino, duração, estilo da viagem e o e-mail que recebe o roteiro',
         'E-mail com o roteiro de viagem dia a dia, com previsão do tempo e sugestões de manhã e tarde',
+        'Formulário do Travel IA na tela do celular, com o título Roteiro Inteligente e o campo de destino',
       ],
     ),
   },

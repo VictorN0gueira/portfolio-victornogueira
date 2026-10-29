@@ -25,7 +25,7 @@ export default function ProjectDetailPage() {
         title={project.title}
         description={project.description}
         path={`/projetos/${project.slug}`}
-        image={coverOf(project).shareUrl}
+        image={(project.shareImage ?? coverOf(project)).shareUrl}
         imageAlt={project.shots[0].alt}
       />
       <div className="pt-28 md:pt-36 pb-24 px-4 md:px-12 bg-brand-white min-h-screen">

@@ -13,8 +13,6 @@ const EXPECTED_ORDER = [
   'travel-ia',
 ];
 const REMOVED_SLUGS = ['troco', 'importacao-massiva-nfe'];
-// Only two screenshots exist for these two (the cover and the e-mail), and no image is generated or fetched here.
-const TWO_IMAGE_SLUGS = ['ai-playlist-maker', 'travel-ia'];
 const FULL_IMAGE_COUNT = 3;
 const REMOTE_OR_ACCESS = /https?:\/\/|www\.|dizpara\.com|vupt\.site|minio/i;
 const DASHES = /[\u2013\u2014]/;
@@ -44,10 +42,13 @@ describe('projects data', () => {
     }
   });
 
-  it('gives each project three images, the cover first, except the two that only have two screenshots', () => {
-    for (const project of projects) {
-      const expected = TWO_IMAGE_SLUGS.includes(project.slug) ? 2 : FULL_IMAGE_COUNT;
-      expect(project.shots, project.slug).toHaveLength(expected);
+  it('gives each project exactly three images, the cover first', () => {
+    for (const project of projects) expect(project.shots, project.slug).toHaveLength(FULL_IMAGE_COUNT);
+  });
+
+  it('gives the two featured projects a share image, made for link previews', () => {
+    for (const project of projects.filter((item) => item.featured)) {
+      expect(project.shareImage?.shareUrl, project.slug).toMatch(/^https:\/\/vnone\.com\.br\/projects\/.+\/cover-share\.jpg$/);
     }
   });
 

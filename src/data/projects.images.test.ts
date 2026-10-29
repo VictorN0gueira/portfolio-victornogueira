@@ -10,25 +10,11 @@ const PUBLIC_DIR = resolve(__dirname, '../../public');
 const MAX_FILE_BYTES = 200 * 1024;
 const REMOTE_HOST = /https?:\/\//;
 
-/**
- * Manifest entries that no project uses. The manifest is generated (scripts/process-project-images.mjs), so these
- * stay until the assets branch regenerates it: the projects dropped from the site, and the DizPara shots replaced by
- * the new ones. Remove an entry from here when it leaves the manifest.
- */
-const ORPHANS_UNTIL_ASSETS_REGENERATE = new Set([
-  'troco/cover',
-  'troco/dashboard-troco',
-  'troco/investimentos-troco',
-  'troco/lembretes-troco',
-  'importacao-massiva-nfe/cover',
-  'diagnostico-empresarial/login',
-  'diagnostico-empresarial/whatsapp',
-  'dizpara/login',
-  'dizpara/leads',
-]);
-
 const allImages = projects.flatMap((project) =>
-  project.shots.map((shot) => ({ slug: project.slug, image: shot.image })),
+  [...project.shots.map((shot) => shot.image), ...(project.shareImage ? [project.shareImage] : [])].map((image) => ({
+    slug: project.slug,
+    image,
+  })),
 );
 
 /** The file paths a ProjectImage points at, under public/. */
@@ -95,11 +81,9 @@ describe('project images', () => {
     expect(oversized).toEqual([]);
   });
 
-  it('has no manifest entry that no project uses, apart from the ones the assets branch will drop', () => {
+  it('has no manifest entry that no project uses', () => {
     const used = new Set(allImages.map(({ image }) => image.src));
-    const unused = Object.keys(projectImageManifest)
-      .filter((key) => !ORPHANS_UNTIL_ASSETS_REGENERATE.has(key))
-      .filter((key) => !used.has(`/projects/${key}-${Math.max(...projectImageManifest[key].widths)}.webp`));
+    const unused = Object.keys(projectImageManifest).filter((key) => !used.has(`/projects/${key}-${Math.max(...projectImageManifest[key].widths)}.webp`));
 
     expect(unused).toEqual([]);
   });
