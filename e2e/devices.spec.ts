@@ -201,6 +201,9 @@ for (const phone of SHORT_PHONES) {
         await page.getByRole('button', { name: A11Y_TRIGGER_NAME }).tap();
         const panel = page.getByRole('dialog', { name: 'Opções de acessibilidade' });
         await expect(panel).toBeVisible();
+        // With an option on the panel shows its reset row too, which makes it taller: the worst case for the window.
+        await panel.getByRole('button', { name: /Sublinhar links/ }).tap();
+        await expect(panel.getByRole('button', { name: /Resetar tudo/ })).toBeVisible();
         await waitForStableBox(panel);
 
         const box = await panel.boundingBox();
