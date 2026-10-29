@@ -2,11 +2,14 @@ import { motion } from 'motion/react';
 import { ArrowUpRight, ChevronRight } from 'lucide-react';
 import { Project } from '../data/projects';
 
+// The width a gallery image takes: 60% of the 1152px case on desktop, 85vw in the phone carousel.
+const DETAIL_IMAGE_SIZES = '(min-width: 1152px) 640px, (min-width: 768px) 55vw, 85vw';
+
 interface ProjectDetailProps {
   project: Project;
 }
 
-/* Conteúdo do case como seção de página — layout herdado do antigo ProjectModal,
+/* Conteúdo do case como seção de página, layout herdado do antigo ProjectModal,
    agora renderizado no fluxo normal (visível para SEO, deep-linkável) */
 export default function ProjectDetail({ project }: ProjectDetailProps) {
   const images = [project.image, ...(project.gallery || [])];
@@ -22,7 +25,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
       <div className="w-full md:w-[60%] shrink-0 bg-zinc-950 relative flex flex-col border-b md:border-b-0 md:border-r border-white/5 min-h-[50vw] md:min-h-[480px]">
         <div
           className="absolute inset-0 bg-cover bg-center blur-2xl opacity-20 scale-110 pointer-events-none"
-          style={{ backgroundImage: `url(${project.image})` }}
+          style={{ backgroundImage: `url(${project.image.thumbSrc})` }}
         />
         <div className="relative z-10 flex md:flex-col overflow-x-auto md:overflow-visible snap-x snap-mandatory scrollbar-hide p-4 md:p-6 gap-4 md:gap-6 h-full">
           {images.map((img, i) => (
@@ -31,11 +34,16 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
               className="w-[85vw] md:w-full shrink-0 snap-center flex items-center justify-center"
             >
               <img
-                src={img}
-                alt={i === 0 ? `${project.title} — imagem principal` : `${project.title} — imagem ${i + 1}`}
-                className="w-full object-contain rounded-2xl shadow-2xl"
-                referrerPolicy="no-referrer"
+                src={img.src}
+                srcSet={img.srcSet}
+                sizes={DETAIL_IMAGE_SIZES}
+                width={img.width}
+                height={img.height}
+                alt={i === 0 ? `${project.title}, imagem principal` : `${project.title}, imagem ${i + 1}`}
+                className="w-full h-auto object-contain rounded-2xl shadow-2xl"
                 loading={i === 0 ? 'eager' : 'lazy'}
+                fetchPriority={i === 0 ? 'high' : 'auto'}
+                decoding="async"
               />
             </div>
           ))}

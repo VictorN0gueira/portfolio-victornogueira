@@ -25,7 +25,8 @@ export default function ProjectDetailPage() {
         title={project.title}
         description={project.description}
         path={`/projetos/${project.slug}`}
-        image={project.image}
+        image={project.image.shareUrl}
+        imageAlt={`Screenshot do projeto ${project.title}`}
       />
       <div className="pt-28 md:pt-36 pb-24 px-4 md:px-12 bg-brand-white min-h-screen">
         <div className="max-w-6xl mx-auto">

@@ -2,22 +2,29 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight, TrendingUp } from 'lucide-react';
 import { Project } from '../data/projects';
 
+// The width the card image takes: half of the 1280px page on desktop, almost the full window on a phone.
+const CARD_IMAGE_SIZES = '(min-width: 1280px) 560px, (min-width: 768px) 46vw, 92vw';
+
 interface ProjectCardProps {
   project: Project;
 }
 
 /* Card compartilhado entre a galeria (/projetos) e o teaser da home.
-   O pai controla a animação (variants ou layout) — aqui é só apresentação. */
+   O pai controla a animação (variants ou layout), aqui é só apresentação. */
 export default function ProjectCard({ project }: ProjectCardProps) {
   return (
     <Link to={`/projetos/${project.slug}`} className="group block cursor-pointer">
       <div className="aspect-video md:aspect-[16/10] rounded-3xl md:rounded-4xl mb-6 md:mb-8 overflow-hidden relative shadow-sm transition-all duration-500 hover:shadow-2xl hover:shadow-black/10 hover:-translate-y-2 bg-zinc-900">
         <img
-          src={project.image}
+          src={project.image.src}
+          srcSet={project.image.srcSet}
+          sizes={CARD_IMAGE_SIZES}
+          width={project.image.width}
+          height={project.image.height}
           alt={`Screenshot do projeto ${project.title}`}
           className="relative z-10 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-          referrerPolicy="no-referrer"
           loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors duration-700 z-20" />
         {project.type === 'client' && (
