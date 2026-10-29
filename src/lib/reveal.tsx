@@ -21,7 +21,7 @@ interface SectionSkeletonProps {
 }
 
 // The legacy pages (/sobre, /contato, /projetos) have the same cream body as the home, so the compact placeholder is
-// drawn for a light page: the label is gray-dark (7.4:1 on cream; gray-mid would be 3.1:1 at this size) and the
+// drawn for a light page: the label is gray-dark (7.5:1 on cream; gray-mid would be 3.1:1 at this size) and the
 // spinner, a graphic, is gray-mid (3.1:1).
 const SPINNER_CLASSES = 'size-10 rounded-full border-2 border-vn-gray-mid/40 border-t-vn-gray-mid motion-safe:animate-spin';
 const LABEL_CLASSES = 'font-mono text-xs font-medium uppercase tracking-[0.18em] text-vn-gray-dark';

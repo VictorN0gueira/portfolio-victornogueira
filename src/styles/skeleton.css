@@ -6,6 +6,11 @@
  * Each band spans at most about 64px of height and holds the middle of it. Normal font values are in rem of 16px, the
  * larger font ones in rem of 19.2px (120%), so both are the measured pixels. The larger font rules come after the normal
  * ones and are more specific, so they win at every width. skeleton.test.ts checks that every section has both.
+ *
+ * To measure again, after a change of the copy or the layout of a lazy section (see scripts/measure-skeletons.mjs):
+ *   npm run build && npx vite preview --port 4191 --strictPort      # in another terminal
+ *   npm run measure:skeletons -- http://localhost:4191/ --write
+ * The e2e case "skeleton heights" of e2e/home.spec.ts fails when a band is more than 60px off the real section.
  */
 
 /* Normal font */
@@ -63,8 +68,8 @@
 
 @media (min-width: 480px) {
   :root {
-    --vn-skeleton-services: 98.0rem;
-    --vn-skeleton-testimonials: 192.0rem;
+    --vn-skeleton-services: 98rem;
+    --vn-skeleton-testimonials: 192rem;
   }
 }
 
@@ -107,7 +112,7 @@
 @media (min-width: 860px) {
   :root {
     --vn-skeleton-services: 80.8rem;
-    --vn-skeleton-testimonials: 124.0rem;
+    --vn-skeleton-testimonials: 124rem;
   }
 }
 
@@ -119,9 +124,9 @@
 
 @media (min-width: 1024px) {
   :root {
-    --vn-skeleton-statement: 54.0rem;
+    --vn-skeleton-statement: 54rem;
     --vn-skeleton-use-cases: 56.7rem;
-    --vn-skeleton-services: 65.0rem;
+    --vn-skeleton-services: 65rem;
     --vn-skeleton-method: 56.5rem;
     --vn-skeleton-roi: 58.9rem;
     --vn-skeleton-testimonials: 108.2rem;
@@ -158,7 +163,7 @@
   :root {
     --vn-skeleton-use-cases: 59.6rem;
     --vn-skeleton-faq: 44.5rem;
-    --vn-skeleton-final-cta: 64.0rem;
+    --vn-skeleton-final-cta: 64rem;
   }
 }
 
@@ -189,7 +194,7 @@ html.a11y-font-large {
 
 @media (min-width: 340px) {
   html.a11y-font-large {
-    --vn-skeleton-roi: 79.0rem;
+    --vn-skeleton-roi: 79rem;
     --vn-skeleton-testimonials: 229.7rem;
   }
 }
@@ -220,13 +225,13 @@ html.a11y-font-large {
 
 @media (min-width: 380px) {
   html.a11y-font-large {
-    --vn-skeleton-services: 113.0rem;
+    --vn-skeleton-services: 113rem;
   }
 }
 
 @media (min-width: 390px) {
   html.a11y-font-large {
-    --vn-skeleton-roi: 75.0rem;
+    --vn-skeleton-roi: 75rem;
     --vn-skeleton-testimonials: 213.6rem;
   }
 }
@@ -235,7 +240,7 @@ html.a11y-font-large {
   html.a11y-font-large {
     --vn-skeleton-use-cases: 63.5rem;
     --vn-skeleton-testimonials: 207.3rem;
-    --vn-skeleton-final-cta: 82.0rem;
+    --vn-skeleton-final-cta: 82rem;
   }
 }
 
@@ -274,14 +279,14 @@ html.a11y-font-large {
 
 @media (min-width: 520px) {
   html.a11y-font-large {
-    --vn-skeleton-roi: 71.0rem;
+    --vn-skeleton-roi: 71rem;
     --vn-skeleton-final-cta: 78.5rem;
   }
 }
 
 @media (min-width: 540px) {
   html.a11y-font-large {
-    --vn-skeleton-method: 96.0rem;
+    --vn-skeleton-method: 96rem;
   }
 }
 
@@ -321,11 +326,11 @@ html.a11y-font-large {
 
 @media (min-width: 768px) {
   html.a11y-font-large {
-    --vn-skeleton-statement: 63.0rem;
+    --vn-skeleton-statement: 63rem;
     --vn-skeleton-use-cases: 61.6rem;
     --vn-skeleton-services: 86.2rem;
-    --vn-skeleton-method: 73.0rem;
-    --vn-skeleton-roi: 74.0rem;
+    --vn-skeleton-method: 73rem;
+    --vn-skeleton-roi: 74rem;
     --vn-skeleton-testimonials: 138.4rem;
     --vn-skeleton-faq: 57.7rem;
     --vn-skeleton-final-cta: 82.1rem;
@@ -373,7 +378,7 @@ html.a11y-font-large {
     --vn-skeleton-roi: 57.8rem;
     --vn-skeleton-testimonials: 115.4rem;
     --vn-skeleton-faq: 43.7rem;
-    --vn-skeleton-final-cta: 61.0rem;
+    --vn-skeleton-final-cta: 61rem;
   }
 }
 

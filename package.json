@@ -14,7 +14,8 @@
     "coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "og": "node scripts/generate-og-banner.mjs",
-    "lcp": "node scripts/measure-lcp.mjs"
+    "lcp": "node scripts/measure-lcp.mjs",
+    "measure:skeletons": "node scripts/measure-skeletons.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

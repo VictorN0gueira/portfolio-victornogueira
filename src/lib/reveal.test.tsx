@@ -27,7 +27,7 @@ describe('SectionSkeleton as the compact placeholder of the legacy pages', () =>
     expect(root.className).not.toMatch(/bg-|min-h-/);
   });
 
-  it('draws its label dark enough for a cream page (gray-dark, 7.4:1), not gray-mid (3.1:1)', () => {
+  it('draws its label dark enough for a cream page (gray-dark, 7.5:1), not gray-mid (3.1:1)', () => {
     render(<SectionSkeleton />);
     const label = screen.getByText('Carregando...');
 

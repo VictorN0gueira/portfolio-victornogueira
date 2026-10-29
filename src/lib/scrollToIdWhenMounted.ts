@@ -63,11 +63,11 @@ function keepAligned(element: HTMLElement): () => void {
 
 /**
  * Scrolls to the element with this id (smoothly unless the visitor asked for reduced motion, which the CSS of the page
- * decides), even when it is not in the page yet (a lazy section is mounted by a
- * chunk that may arrive late), and then keeps it aligned while late content settles above it. The page has no scroll
- * anchoring in every browser, so the correction does not rely on it. It gives up looking for the element after
- * MOUNT_WINDOW_MS and stops correcting at the first wheel, touch, key or pointer input of the visitor, or after
- * REALIGN_WINDOW_MS. Returns the function that cancels all of it.
+ * decides), even when it is not in the page yet (a lazy section is mounted by a chunk that may arrive late), and then
+ * keeps it aligned while late content settles above it. The page has no scroll anchoring in every browser, so the
+ * correction does not rely on it. It gives up looking for the element after MOUNT_WINDOW_MS and stops correcting at the
+ * first wheel, touch, key or pointer input of the visitor, or after REALIGN_WINDOW_MS. Returns the function that
+ * cancels all of it.
  */
 export function scrollToIdWhenMounted(id: string): () => void {
   const startedAt = performance.now();

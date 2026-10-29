@@ -186,6 +186,87 @@ test.describe('home anchors', () => {
   }
 });
 
+test.describe('skeleton heights', () => {
+  // The skeletons of the lazy sections (styles/skeleton.css) are measured data. When the copy or the layout of a section
+  // changes its height, the table goes stale without a sound: this holds the eight chunks, reads each skeleton, lets the
+  // sections in, reads each section, and compares. A failure names the section, the width and the font. If the table is
+  // stale, measure it again with scripts/measure-skeletons.mjs.
+  const SECTION_NAMES = ['statement', 'use-cases', 'services', 'method', 'roi', 'testimonials', 'faq', 'final-cta'];
+  const LAZY_CHUNKS = [
+    'StatementStats',
+    'UseCaseTabs',
+    'ServicesCards',
+    'MethodSteps',
+    'RoiSimulator',
+    'Testimonials',
+    'FaqSection',
+    'FinalCta',
+  ];
+  const WIDTHS = [390, 1024, 1920];
+  const FONTS = [
+    { name: 'normal', isLarge: false },
+    { name: 'larger', isLarge: true },
+  ];
+  const MAX_DRIFT_PX = 60;
+  // Frames in a row with the same page height: the layout has stopped moving (images, fonts, late sections).
+  const STEADY_FRAMES = 30;
+
+  /** The heights of the eight lazy sections, or of their skeletons: the last eight blocks of the page. */
+  const lazyBlockHeights = (page: Page) =>
+    page.evaluate(() => {
+      const blocks = Array.from((document.querySelector('main > *') as Element).children).slice(-8);
+      return blocks.map((block) => block.getBoundingClientRect().height);
+    });
+
+  for (const { name: fontName, isLarge } of FONTS) {
+    for (const width of WIDTHS) {
+      test(`holds a height within ${MAX_DRIFT_PX}px of the real section, at ${width}px with the ${fontName} font`, async ({ page }) => {
+        if (isLarge) await enableLargeFont(page);
+        await page.setViewportSize({ width, height: 900 });
+        let release: () => void = () => {};
+        const gate = new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        const held = new Set<string>();
+        for (const chunk of LAZY_CHUNKS) {
+          await page.route(new RegExp(`/assets/${chunk}-[^/]+[.]js$`), async (route) => {
+            held.add(chunk);
+            await gate;
+            await route.continue();
+          });
+        }
+
+        await page.goto('/');
+        await expect(page.getByText('Carregando...')).toHaveCount(LAZY_CHUNKS.length);
+        await expect.poll(() => held.size, { message: 'every lazy chunk was held' }).toBe(LAZY_CHUNKS.length);
+        const skeletons = await lazyBlockHeights(page);
+
+        release();
+        await openHome(page, '/');
+        await page.waitForFunction(
+          (frames) => {
+            const state = window as unknown as { __steady?: { height: number; count: number } };
+            const height = document.documentElement.scrollHeight;
+            state.__steady = state.__steady?.height === height ? { height, count: state.__steady.count + 1 } : { height, count: 0 };
+            return state.__steady.count >= frames;
+          },
+          STEADY_FRAMES,
+          { timeout: PAGE_LOAD_TIMEOUT_MS },
+        );
+        const sections = await lazyBlockHeights(page);
+
+        SECTION_NAMES.forEach((section, index) => {
+          const drift = Math.abs(skeletons[index] - sections[index]);
+          expect(
+            drift,
+            `${section} at ${width}px, ${fontName} font: skeleton ${Math.round(skeletons[index])}px, real ${Math.round(sections[index])}px`,
+          ).toBeLessThanOrEqual(MAX_DRIFT_PX);
+        });
+      });
+    }
+  }
+});
+
 test.describe('hash anchor motion', () => {
   // How many scroll positions the page passes through on the way to #metodo, counting every frame. A glide has dozens;
   // a jump has the one it lands on, and a correction after a late chunk adds one more.
