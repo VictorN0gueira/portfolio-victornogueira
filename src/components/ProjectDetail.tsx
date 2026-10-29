@@ -6,7 +6,7 @@ interface ProjectDetailProps {
   project: Project;
 }
 
-const LABEL_CLASSES = 'text-zinc-500 font-bold uppercase tracking-widest text-[10px] mb-3';
+const LABEL_CLASSES = 'text-zinc-400 font-bold uppercase tracking-widest text-[10px] mb-3';
 
 function Impact({ items }: { items: NonNullable<Project['impact']> }) {
   return (
@@ -15,7 +15,7 @@ function Impact({ items }: { items: NonNullable<Project['impact']> }) {
       <div className="flex flex-wrap gap-3">
         {items.map((metric) => (
           <div key={metric.label} className="px-4 py-3 bg-white/5 rounded-2xl border border-white/10">
-            <p className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">{metric.label}</p>
+            <p className="text-[9px] uppercase tracking-widest text-zinc-400 mb-1">{metric.label}</p>
             <p className="text-white font-bold text-sm">{metric.value}</p>
           </div>
         ))}
@@ -60,7 +60,7 @@ function Heading({ project, large }: { project: Project; large: boolean }) {
 
   return (
     <div>
-      <p className="text-zinc-500 font-bold uppercase tracking-[0.3em] text-[10px] mb-2">{project.category}</p>
+      <p className="text-zinc-400 font-bold uppercase tracking-[0.3em] text-[10px] mb-2">{project.category}</p>
       <h1 className={`${size} font-bold text-white mb-4 md:mb-6 font-display italic tracking-tight`}>{project.title}</h1>
       <div className="w-12 h-1 bg-white/20 mb-5 rounded-full" />
       {project.highlight && <p className="text-white text-lg md:text-2xl font-medium leading-snug mb-4">{project.highlight}</p>}
@@ -87,7 +87,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
         className={`flex-1 p-6 pb-10 md:p-16 bg-zinc-950 md:bg-zinc-900 ${isFeatured ? 'grid gap-10 lg:grid-cols-2 lg:gap-16' : 'flex flex-col'}`}
       >
         <Heading project={project} large={isFeatured} />
-        <div className="space-y-6 md:space-y-8 mt-8 lg:mt-0">
+        <div className={`space-y-6 md:space-y-8 ${isFeatured ? '' : 'mt-8'}`}>
           {project.features && <Features items={project.features} />}
           {project.impact && project.impact.length > 0 && <Impact items={project.impact} />}
           <Tags tags={project.tags} />

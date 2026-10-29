@@ -52,7 +52,7 @@ export default function FeaturedProjectCard({ project, priority = false }: Featu
           {strip.map((shot, index) => (
             <div
               key={shot.image.src}
-              className={`w-[48%] overflow-hidden rounded-xl md:rounded-2xl bg-zinc-900 ring-2 ring-zinc-950 shadow-xl shadow-black/40 transition-transform duration-500 group-hover:-translate-y-1 ${index > 0 ? '-ml-[6%] translate-y-3' : ''}`}
+              className={`w-[48%] overflow-hidden rounded-xl md:rounded-2xl bg-zinc-900 ring-2 ring-zinc-950 shadow-xl shadow-black/40 ${index > 0 ? '-ml-[6%] translate-y-3' : ''}`}
             >
               <ShotImage shot={shot} sizes={STRIP_SIZES} />
             </div>
@@ -61,7 +61,7 @@ export default function FeaturedProjectCard({ project, priority = false }: Featu
       </div>
 
       <div className="flex min-w-0 flex-col justify-center pb-4 pt-6 md:pt-8 lg:py-6 lg:pr-4">
-        <p className="mb-3 text-[10px] md:text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">{project.category}</p>
+        <p className="mb-3 text-[10px] md:text-xs font-bold uppercase tracking-[0.25em] text-zinc-400">{project.category}</p>
         <h3 id={titleId} className="mb-4 font-display text-4xl font-bold italic tracking-tight md:text-6xl">
           {project.title}
         </h3>

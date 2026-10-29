@@ -56,7 +56,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             )}
           </div>
           <h3 id={titleId} className="text-xl md:text-2xl font-bold mb-3 font-display transition-colors group-hover:text-zinc-600 dark:group-hover:text-zinc-300">{project.title}</h3>
-          <p className="text-zinc-500 font-light leading-relaxed max-w-sm line-clamp-3">{project.description}</p>
+          <p className="text-zinc-500 font-light leading-relaxed max-w-sm">{project.description}</p>
         </div>
         <div aria-hidden="true" className="w-12 h-12 md:w-14 md:h-14 rounded-full border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 group-hover:bg-black dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-black group-hover:border-black dark:group-hover:border-white transition-colors duration-500">
           <ArrowRight className="w-5 h-5 md:w-6 md:h-6 transition-transform duration-500 group-hover:translate-x-0.5" />
