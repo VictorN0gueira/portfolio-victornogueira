@@ -69,6 +69,8 @@ describe('the e2e specs that touch the lead channel', () => {
     expect(names).toContain('hero.spec.ts');
     expect(names).toContain('home.spec.ts');
     expect(names).toContain('scroll-lock.spec.ts');
+    expect(names).toContain('devices.spec.ts');
+    expect(names).toContain('visual.spec.ts');
   });
 
   it('all take their test from ./n8nGuard, never from @playwright/test', () => {
@@ -87,6 +89,17 @@ describe('the e2e specs that touch the lead channel', () => {
 
     expect(touchesTheLeadChannel(source)).toBe(true);
     expect(isGuarded(source)).toBe(true);
+  });
+
+  // These two open the home through the helpers of homeSupport.ts, so the visit to it is not written in the spec: the
+  // guard import is what protects them, and this pins it. They may look at the Enviar button (the WhatsApp button must
+  // not cover it) but never press it nor submit the form.
+  it.each(['devices.spec.ts', 'visual.spec.ts'])('see the guard in %s, which opens the home and walks it', (name) => {
+    const source = readSpecs()[name];
+
+    expect(isGuarded(source)).toBe(true);
+    expect(source).not.toMatch(/\bsend\b[^;\n]*\.(?:click|tap|press|dispatchEvent)\(/);
+    expect(source).not.toMatch(/\.fill\(|requestSubmit|\.submit\(/);
   });
 
   it('see the guard in the contact form spec', () => {

@@ -1,0 +1,131 @@
+import type { Page } from '@playwright/test';
+import {
+  MIN_TOUCH_PX,
+  TOUCH_ROUNDING_PX,
+  enableLargeFont,
+  measureOverflow,
+  measureSmallTargets,
+  nextFrames,
+  openHome,
+  walkPage,
+} from './homeSupport';
+import { expect, test } from './n8nGuard';
+
+// The home on the devices people really use, from the Galaxy Fold closed to a large monitor. One test per device sets
+// its own viewport and touch options (so the results do not depend on the defaults of the Playwright project) and walks
+// the whole page. The home mounts the real form, so the test comes from ./n8nGuard, and nothing here sends the form.
+
+interface Device {
+  name: string;
+  width: number;
+  height: number;
+  /** Phones and tablets are touch screens; the laptops and monitors are not. */
+  isTouch: boolean;
+}
+
+const DEVICES: readonly Device[] = [
+  { name: 'Galaxy Fold closed', width: 280, height: 653, isTouch: true },
+  { name: 'iPhone SE 1st gen', width: 320, height: 568, isTouch: true },
+  { name: 'common Android', width: 360, height: 740, isTouch: true },
+  { name: 'iPhone SE', width: 375, height: 667, isTouch: true },
+  { name: 'iPhone 13/14', width: 390, height: 844, isTouch: true },
+  { name: 'iPhone Pro Max', width: 430, height: 932, isTouch: true },
+  { name: 'iPhone landscape', width: 844, height: 390, isTouch: true },
+  { name: 'iPad portrait', width: 768, height: 1024, isTouch: true },
+  { name: 'iPad landscape', width: 1024, height: 768, isTouch: true },
+  { name: 'iPad Air', width: 820, height: 1180, isTouch: true },
+  { name: 'laptop', width: 1280, height: 800, isTouch: false },
+  { name: 'desktop', width: 1440, height: 900, isTouch: false },
+  { name: 'full HD', width: 1920, height: 1080, isTouch: false },
+  { name: 'large monitor', width: 2560, height: 1440, isTouch: false },
+];
+
+const HOURS_PILL_NAME = /^Horas por semana/;
+const OVERFLOW_ALLOWANCE_PX = 0;
+const LARGE_FONT_PHONE = { width: 375, height: 667 };
+
+/** The header ends above the top of the main heading when the page opens. */
+async function headerClearance(page: Page): Promise<number> {
+  const header = await page.getByRole('banner').boundingBox();
+  const heading = await page.getByRole('heading', { level: 1 }).boundingBox();
+  if (!header || !heading) throw new Error('the header or the main heading has no box');
+  return heading.y - (header.y + header.height);
+}
+
+/** The WhatsApp button and the Enviar button, with Enviar scrolled into view, and how many px of one lie on the other. */
+async function whatsAppOverlapWithSend(page: Page): Promise<number> {
+  const send = page.locator('form[name="contact"]').getByRole('button', { name: 'Enviar', exact: true });
+  await send.evaluate((element) => element.scrollIntoView({ block: 'center', behavior: 'instant' }));
+  await nextFrames(page);
+  const sendBox = await send.boundingBox();
+  const chatBox = await page.getByRole('complementary', { name: 'Contato rápido' }).getByRole('link').boundingBox();
+  if (!sendBox || !chatBox) throw new Error('the Enviar button or the WhatsApp button has no box');
+  const overlapX = Math.min(sendBox.x + sendBox.width, chatBox.x + chatBox.width) - Math.max(sendBox.x, chatBox.x);
+  const overlapY = Math.min(sendBox.y + sendBox.height, chatBox.y + chatBox.height) - Math.max(sendBox.y, chatBox.y);
+  return overlapX > 0 && overlapY > 0 ? overlapX * overlapY : 0;
+}
+
+/** Taps the hours pill (a click on a screen with no touch) and a tab, and checks that each did its job. */
+async function useTheControls(page: Page, isTouch: boolean) {
+  const press = (locator: ReturnType<Page['locator']>) => (isTouch ? locator.tap() : locator.click());
+
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await press(page.getByRole('button', { name: HOURS_PILL_NAME }));
+  await expect(page.getByRole('listbox')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+
+  const other = page.getByRole('tab', { selected: false }).first();
+  const otherName = (await other.innerText()).trim();
+  await press(other);
+  await expect(page.getByRole('tab', { name: otherName, selected: true })).toBeVisible();
+}
+
+for (const device of DEVICES) {
+  test.describe(`${device.name} ${device.width}x${device.height}`, () => {
+    test.use({
+      viewport: { width: device.width, height: device.height },
+      hasTouch: device.isTouch,
+      isMobile: device.isTouch,
+    });
+
+    test('has no overflow, a clear header, no overlap with the form, 44px targets and working controls', async ({ page }) => {
+      await openHome(page);
+      await nextFrames(page);
+      const clearance = await headerClearance(page);
+
+      const small = new Map<string, string>();
+      await walkPage(page, async () => {
+        for (const target of await measureSmallTargets(page, MIN_TOUCH_PX - TOUCH_ROUNDING_PX)) {
+          small.set(`${target.element}|${Math.round(target.width)}x${Math.round(target.height)}`, `${target.element} ${target.width.toFixed(1)}x${target.height.toFixed(1)}`);
+        }
+      });
+      const overflow = await measureOverflow(page, device.width);
+      const overlap = await whatsAppOverlapWithSend(page);
+
+      expect.soft(overflow.documentExcess, 'scrollWidth past the viewport width').toBeLessThanOrEqual(OVERFLOW_ALLOWANCE_PX);
+      expect.soft(overflow.elements, 'visible elements past the right edge').toEqual([]);
+      expect.soft(clearance, 'gap between the header and the main heading at load').toBeGreaterThan(0);
+      expect.soft(overlap, 'overlap area between the WhatsApp button and Enviar').toBe(0);
+      expect.soft([...small.values()], `targets under ${MIN_TOUCH_PX}px`).toEqual([]);
+
+      await useTheControls(page, device.isTouch);
+    });
+  });
+}
+
+test.describe(`the larger font at ${LARGE_FONT_PHONE.width}x${LARGE_FONT_PHONE.height}`, () => {
+  test.use({ viewport: LARGE_FONT_PHONE, hasTouch: true, isMobile: true });
+
+  test('has no horizontal scroll and nothing past the right edge', async ({ page }) => {
+    await enableLargeFont(page);
+    await openHome(page);
+    await expect(page.locator('html')).toHaveClass(/a11y-font-large/);
+    await walkPage(page);
+
+    const overflow = await measureOverflow(page, LARGE_FONT_PHONE.width);
+
+    expect.soft(overflow.documentExcess, 'scrollWidth past the viewport width').toBeLessThanOrEqual(OVERFLOW_ALLOWANCE_PX);
+    expect.soft(overflow.elements, 'visible elements past the right edge').toEqual([]);
+  });
+});

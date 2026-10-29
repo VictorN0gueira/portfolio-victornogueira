@@ -1,31 +1,29 @@
 import type { Locator, Page } from '@playwright/test';
+import {
+  FINAL_HEADING,
+  MIN_TOUCH_PX,
+  PAGE_LOAD_TIMEOUT_MS,
+  SECTION_HEADINGS,
+  STATEMENT_HEADING,
+  TOUCH_ROUNDING_PX,
+  enableLargeFont,
+  nextFrames,
+  openHome,
+  walkPage,
+} from './homeSupport';
 import { N8N_WEBHOOK_PATTERN, expect, fulfillOk, n8nRoute, test } from './n8nGuard';
 
 // The whole home, assembled: the sections in order, no horizontal overflow, the anchors that point into it and the
 // hand over of the ROI quote to the form. Every test goes through the guard of ./n8nGuard (the home mounts the real
 // form, so nothing may reach n8n), and none sends the form.
 
-const STATEMENT_HEADING = 'O trabalho repetitivo vai para os fluxos. A equipe fica com o resto.';
-const FINAL_HEADING = 'Qual processo a gente automatiza primeiro?';
-const SECTION_HEADINGS = [
-  'Comece pelo processo que mais pesa na rotina',
-  'Três jeitos de tirar trabalho manual da sua frente',
-  'Do primeiro papo ao fluxo rodando',
-  'Quanto o trabalho manual custa por ano',
-  'Quem já automatizou com a gente',
-  'Perguntas que a gente sempre ouve',
-  FINAL_HEADING,
-];
 const QUOTE_BUTTON = 'Quero automatizar esse processo';
 const QUOTE_START = 'Olá, VN One! Usei a calculadora do site';
 const OVERFLOW_WIDTHS = [320, 768, 1024, 1440];
 const SMALLEST_PHONE = { width: 280, height: 653 };
 const DESKTOP_1440 = { width: 1440, height: 900 };
 const ULTRA_WIDE = { width: 2560, height: 1080 };
-const MIN_TOUCH_PX = 44;
-const TOUCH_ROUNDING_PX = 0.01;
 const PLACEHOLDER_EMAIL = 'voce@empresa.com.br';
-const PAGE_LOAD_TIMEOUT_MS = 20_000;
 // A late chunk: long enough for the sections around it to be laid out first.
 const CHUNK_DELAY_MS = 1200;
 const SUBPIXEL_PX = 1;
@@ -33,25 +31,6 @@ const SUBPIXEL_PX = 1;
 const SETTLED_TOLERANCE_PX = 12;
 // Frames in a row the section must stay in place to count as settled (30 is half a second at 60 frames a second).
 const SETTLED_FRAMES = 30;
-
-/** The home is ready when its last lazy section, the form, is in the page. */
-async function openHome(page: Page, path = '/') {
-  await page.goto(path);
-  await expect(page.locator('form[name="contact"]')).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
-  for (const name of [STATEMENT_HEADING, ...SECTION_HEADINGS]) {
-    await expect(page.getByRole('heading', { level: 2, name })).toBeAttached();
-  }
-}
-
-async function enableLargeFont(page: Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('a11y-preferences', JSON.stringify({ fontSize: true }));
-  });
-}
-
-/** Two frames later: layout and any scroll the page started have been applied. */
-const nextFrames = (page: Page) =>
-  page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 
 const topOf = (page: Page, id: string) =>
   page.evaluate((target) => document.getElementById(target)?.getBoundingClientRect().top ?? Number.NaN, id);
@@ -406,5 +385,192 @@ test.describe('final call to action fit (M11)', () => {
       // A box of 44px can be measured as 43.99997 (floating point), which is not a smaller target.
       expect(box?.height ?? 0, name).toBeGreaterThanOrEqual(MIN_TOUCH_PX - TOUCH_ROUNDING_PX);
     }
+  });
+});
+
+test.describe('hero hours', () => {
+  test('moves the sentence from R$ 1.733 (10 hours) to R$ 6.933 (40 hours) and back, on the assembled home', async ({ page }) => {
+    await openHome(page);
+    const sentence = page.getByRole('heading', { level: 1 });
+    const choose = async (hours: string) => {
+      await page.getByRole('button', { name: /^Horas por semana/ }).click();
+      await page.getByRole('option', { name: hours }).click();
+    };
+
+    // 10 hours is the starting choice; hero.spec.ts covers the hero alone, this goes through the full page.
+    await expect(sentence).toContainText(/R\$\s1\.733/);
+    await choose('40 horas');
+    await expect(sentence).toContainText(/R\$\s6\.933/);
+    await choose('10 horas');
+    await expect(sentence).toContainText(/R\$\s1\.733/);
+  });
+});
+
+test.describe('one accent per section', () => {
+  const ACCENT_RGB = 'rgb(0, 229, 160)';
+  const MAX_ACCENT_PER_SECTION = 1;
+
+  /**
+   * For every section of the main content, the elements that draw #00E5A0 themselves. An element counts once when its
+   * own text color, background, border, SVG fill or SVG stroke is the accent, or when its ::before or ::after has the
+   * accent as background or border (a pseudo element counts as an element of its own). The inherited properties (text
+   * color, fill and stroke) are counted where they start, never again on the descendants that inherit them.
+   * Gradients and shadows are not counted. The WhatsApp button is an aside outside the sections and is not measured.
+   */
+  const accentBySection = (page: Page) =>
+    page.evaluate((accent) => {
+      const visible = (element: Element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return (rect.width > 0 || rect.height > 0) && style.display !== 'none' && style.visibility !== 'hidden';
+      };
+      const hasBorder = (style: CSSStyleDeclaration) =>
+        ['Top', 'Right', 'Bottom', 'Left'].some((side) => {
+          const values = style as unknown as Record<string, string>;
+          return (
+            values[`border${side}Color`] === accent &&
+            parseFloat(values[`border${side}Width`]) > 0 &&
+            values[`border${side}Style`] !== 'none'
+          );
+        });
+      const paintsBox = (style: CSSStyleDeclaration) => style.backgroundColor === accent || hasBorder(style);
+      const startsInherited = (element: Element, style: CSSStyleDeclaration) => {
+        const parent = element.parentElement ? getComputedStyle(element.parentElement) : null;
+        const hasText = (element.textContent ?? '').trim().length > 0 || element.querySelector('svg') !== null;
+        const isSvg = element instanceof SVGElement;
+        const textColor = style.color === accent && parent?.color !== accent && hasText;
+        const fill = isSvg && style.fill === accent && parent?.fill !== accent;
+        const stroke = isSvg && style.stroke === accent && parent?.stroke !== accent;
+        return textColor || fill || stroke;
+      };
+      const label = (element: Element, extra = '') =>
+        `${element.tagName.toLowerCase()}${extra} "${(element.textContent ?? '').trim().slice(0, 30)}"`;
+      return Array.from(document.querySelectorAll('main section')).map((section, index) => {
+        const hits: string[] = [];
+        for (const element of [section, ...Array.from(section.querySelectorAll('*'))]) {
+          if (!visible(element)) continue;
+          const style = getComputedStyle(element);
+          if (paintsBox(style) || startsInherited(element, style)) hits.push(label(element));
+          for (const pseudo of ['::before', '::after']) {
+            const pseudoStyle = getComputedStyle(element, pseudo);
+            if (pseudoStyle.content !== 'none' && paintsBox(pseudoStyle)) hits.push(label(element, pseudo));
+          }
+        }
+        const headingId = section.getAttribute('aria-labelledby');
+        const name = headingId ? (document.getElementById(headingId)?.textContent ?? '') : `section ${index}`;
+        return { name, hits };
+      });
+    }, ACCENT_RGB);
+
+  async function expectAtMostOneAccentEach(page: Page) {
+    await openHome(page);
+    await walkPage(page);
+    const sections = await accentBySection(page);
+
+    // The count of each section goes to the report (annotations), so a section close to the limit is seen early.
+    for (const { name, hits } of sections) test.info().annotations.push({ type: 'accent', description: `${name}: ${hits.length} ${hits.join(' | ')}` });
+    expect(sections.length).toBeGreaterThanOrEqual(SECTION_HEADINGS.length);
+    for (const { name, hits } of sections) {
+      expect(hits.length, `${name}: ${hits.join(' | ')}`).toBeLessThanOrEqual(MAX_ACCENT_PER_SECTION);
+    }
+  }
+
+  test('draws #00E5A0 on at most one element in each section', async ({ page }) => {
+    await expectAtMostOneAccentEach(page);
+  });
+
+  test.describe('with a preference for reduced motion', () => {
+    test.use({ contextOptions: { reducedMotion: 'reduce' } });
+
+    test('draws #00E5A0 on at most one element in each section', async ({ page }) => {
+      await expectAtMostOneAccentEach(page);
+    });
+  });
+});
+
+test.describe('hash anchors into the home', () => {
+  const MAX_ARRIVAL_MS = 2000;
+  const MENU_BUTTON = 'Abrir menu';
+  const DESKTOP_NAV_MIN_WIDTH = 1024;
+
+  /** Where the section is against the bottom of the header: positive when the header leaves it free. */
+  const clearance = (page: Page, id: string) =>
+    page.evaluate((target) => {
+      const header = document.querySelector('header')?.getBoundingClientRect();
+      const top = document.getElementById(target)?.getBoundingClientRect().top;
+      return header && top !== undefined ? top - header.bottom : Number.NaN;
+    }, id);
+
+  test('opens /#contato with the form in the window and its top under the header', async ({ page }) => {
+    await openHome(page, '/#contato');
+
+    await expect
+      .poll(
+        async () => {
+          const gap = await clearance(page, 'contato');
+          const top = await topOf(page, 'contato');
+          const height = await page.evaluate(() => window.innerHeight);
+          return gap >= -SUBPIXEL_PX && top < height;
+        },
+        { timeout: MAX_ARRIVAL_MS },
+      )
+      .toBe(true);
+  });
+
+  test('goes from /sobre to #metodo on the home when "Como funciona" is clicked in the header', async ({ page }) => {
+    await page.goto('/sobre');
+    await expect(page.getByRole('heading', { level: 2, name: 'Sobre mim' })).toBeVisible();
+    const isDesktop = (page.viewportSize()?.width ?? 0) >= DESKTOP_NAV_MIN_WIDTH;
+    if (isDesktop) {
+      await page.getByRole('navigation', { name: 'Navegação principal' }).getByRole('link', { name: 'Como funciona' }).click();
+    } else {
+      await page.getByRole('button', { name: MENU_BUTTON }).click();
+      await page.getByRole('dialog', { name: 'Menu de navegação' }).getByRole('link', { name: 'Como funciona' }).click();
+    }
+
+    await expect(page).toHaveURL(/\/#metodo$/);
+    await expect(page.locator('form[name="contact"]')).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
+    await expectSettledAtAnchor(page, 'metodo');
+    expect(await clearance(page, 'metodo')).toBeGreaterThanOrEqual(-SUBPIXEL_PX);
+  });
+});
+
+test.describe('reduced motion on the home', () => {
+  test.use({ contextOptions: { reducedMotion: 'reduce' } });
+  // The assertion is the absence of change, so it needs a window: longer than the 4200ms a tab stays selected.
+  const OBSERVATION_MS = 5000;
+
+  test('keeps the use case tab where it is for 5 seconds, and shows every hero row done', async ({ page }) => {
+    await openHome(page);
+    await page.getByRole('tab').first().scrollIntoViewIfNeeded();
+    const selectedBefore = await page.getByRole('tab', { selected: true }).innerText();
+
+    const changes = await page.evaluate(
+      (windowMs) =>
+        new Promise<number>((resolve) => {
+          let count = 0;
+          const observer = new MutationObserver((records) => {
+            count += records.length;
+          });
+          for (const tab of document.querySelectorAll('[role="tab"]')) {
+            observer.observe(tab, { attributes: true, attributeFilter: ['aria-selected'] });
+          }
+          setTimeout(() => {
+            observer.disconnect();
+            resolve(count);
+          }, windowMs);
+        }),
+      OBSERVATION_MS,
+    );
+
+    expect(changes).toBe(0);
+    expect(await page.getByRole('tab', { selected: true }).innerText()).toBe(selectedBefore);
+    const rows = page.locator('[data-flow-window] li[data-state]');
+    expect(await rows.evaluateAll((items) => items.map((item) => item.getAttribute('data-state')))).toEqual([
+      'done',
+      'done',
+      'done',
+      'done',
+    ]);
   });
 });
