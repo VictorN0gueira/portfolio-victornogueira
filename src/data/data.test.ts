@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   CONTACT_EMAIL,
@@ -95,6 +97,9 @@ describe('processSteps', () => {
   });
 });
 
+const LOCAL_LOGO = /\/clients\/[a-z-]+\.webp$/;
+const CLIENTS_DIR = join(process.cwd(), 'public', 'clients');
+
 describe('testimonials and partners', () => {
   it('has six testimonials with unique ids', () => {
     expect(testimonials).toHaveLength(6);
@@ -111,7 +116,7 @@ describe('testimonials and partners', () => {
     for (const item of testimonials) {
       expect(item.text.length).toBeGreaterThan(0);
       expect(item.name.length).toBeGreaterThan(0);
-      expect(item.logo).toMatch(/^https:\/\//);
+      expect(item.logo).toMatch(LOCAL_LOGO);
     }
   });
 
@@ -119,8 +124,28 @@ describe('testimonials and partners', () => {
     expect(partners).toHaveLength(9);
     for (const partner of partners) {
       expect(partner.name.length).toBeGreaterThan(0);
-      expect(partner.logo).toMatch(/^https:\/\//);
+      expect(partner.logo).toMatch(LOCAL_LOGO);
     }
+  });
+
+  it('serves every logo from a self-hosted file that exists in public/clients', () => {
+    for (const { logo } of [...testimonials, ...partners]) {
+      const file = logo.slice(logo.lastIndexOf('/') + 1);
+
+      expect(existsSync(join(CLIENTS_DIR, file)), file).toBe(true);
+    }
+  });
+
+  it('gives a company the same logo in its testimonial and in the client grid', () => {
+    for (const { company, logo } of testimonials) {
+      expect(partners.find((partner) => partner.name === company)?.logo, company).toBe(logo);
+    }
+  });
+
+  it('writes Karla Álvares with the accent on the first A, for the person and for the store', () => {
+    expect(testimonials[1].name).toBe('Karla Álvares');
+    expect(testimonials[1].company).toBe('Loja Karla Álvares');
+    expect(partners.map((partner) => partner.name)).toContain(testimonials[1].company);
   });
 });
 

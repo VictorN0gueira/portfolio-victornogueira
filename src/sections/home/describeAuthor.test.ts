@@ -17,14 +17,18 @@ describe('describeAuthor', () => {
   });
 
   it('ignores accents when it compares them', () => {
-    expect(describeAuthor({ name: 'Karla Alvares', role: 'Proprietária', company: 'Karla Alvarés' })).toBe('Proprietária');
+    const { name } = testimonials[1];
+    const withoutAccent = name.normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+    expect(withoutAccent).not.toBe(name);
+    expect(describeAuthor({ name: withoutAccent, role: 'Proprietária', company: name })).toBe('Proprietária');
     expect(describeAuthor({ name: 'Henrique França', role: 'CEO', company: 'Henrique Franca' })).toBe('CEO');
   });
 
   it('keeps a company that only contains the name, such as a store that carries it', () => {
-    expect(describeAuthor({ name: 'Karla Alvarés', role: 'Proprietária', company: 'Loja Karla Alvarés' })).toBe(
-      'Proprietária, Loja Karla Alvarés',
-    );
+    const { name, company } = testimonials[1];
+
+    expect(describeAuthor({ name, role: 'Proprietária', company })).toBe(`Proprietária, ${company}`);
   });
 
   it('gives the company alone when there is no role', () => {

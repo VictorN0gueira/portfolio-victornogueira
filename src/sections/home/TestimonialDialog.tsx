@@ -5,7 +5,7 @@ import type { Testimonial } from '../../data/testimonials';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import { cn } from '../../lib/utils';
 import { describeAuthor } from './describeAuthor';
-import { LogoImage } from './LogoImage';
+import { LogoPlate } from './LogoImage';
 
 const OVERLAY_CLASSES = 'fixed inset-0 z-[160] bg-vn-black/70';
 // The panel keeps at least 1rem from every edge of the screen and more where the safe area needs it (a notch, the home
@@ -19,7 +19,6 @@ const PANEL_MAX_HEIGHT_CLASS =
   'max-h-[min(90dvh,calc(100dvh_-_max(1rem,env(safe-area-inset-top))_-_max(1rem,env(safe-area-inset-bottom))))]';
 const PANEL_CLASSES = `fixed z-[170] m-auto h-fit max-w-2xl overflow-y-auto overscroll-contain rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-white text-vn-ink outline-none ${PANEL_INSET_CLASSES} ${PANEL_MAX_HEIGHT_CLASS}`;
 const FOCUS_RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-ink';
-const LOGO_SIZE = 64;
 
 interface TestimonialDialogProps {
   /** What the dialog shows. It is kept after the dialog closes, so the content does not vanish during the exit animation. */
@@ -48,14 +47,12 @@ function CloseButton() {
 }
 
 function DialogBody({ testimonial }: { testimonial: Testimonial }) {
-  const { name, logo, logoFit, company, text } = testimonial;
+  const { name, logo, company, text } = testimonial;
 
   return (
     <div className="p-5 pt-6 md:p-8">
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4 sm:pr-12">
-        <div className={cn('size-16 shrink-0 overflow-hidden rounded-2xl border border-vn-gray-light bg-vn-white', logoFit !== 'cover' && 'p-2')}>
-          <LogoImage src={logo} name={company} isDecorative fit={logoFit} width={LOGO_SIZE} height={LOGO_SIZE} className="size-full" />
-        </div>
+        <LogoPlate src={logo} name={company} />
         <div className="min-w-0">
           {/* The visible name is the name of the dialog (a p, not an h2, so the page outline gains no heading). The lead in is
               for assistive tech only, so the name is read once: "Depoimento de" and then the name. */}

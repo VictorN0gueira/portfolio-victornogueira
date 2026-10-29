@@ -4,27 +4,16 @@ import { partners } from '../../data/partners';
 import { findAccentElements } from '../../test/accent';
 import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { renderWithProviders } from '../../test/render';
-import { ClientGrid, fillerClasses } from './ClientGrid';
-
-type Breakpoint = 'base' | 'md' | 'lg';
-const COLUMNS: Record<Breakpoint, number> = { base: 2, md: 3, lg: 5 };
+import { ClientGrid, spansLastRow } from './ClientGrid';
+import { LOGO_HEIGHT, LOGO_WIDTH } from './LogoImage';
 
 expectNoConsoleOutput();
 
+const COLUMNS_BASE = 2;
+const COLUMNS_MD = 3;
+
 const listOf = (): HTMLElement => screen.getByRole('list', { name: 'quem confia' });
 const cellsOf = (list: HTMLElement): HTMLElement[] => Array.from(list.children) as HTMLElement[];
-const fillersOf = (list: HTMLElement): HTMLElement[] => cellsOf(list).filter((cell) => cell.getAttribute('aria-hidden') === 'true');
-
-/** The display a filler gets at a breakpoint from its hidden and block classes, with the cascade of Tailwind (mobile first). */
-function displayAt(classNames: string, breakpoint: Breakpoint): 'block' | 'hidden' | undefined {
-  const classes = new Set(classNames.split(/\s+/));
-  const pick = (prefix: string): 'block' | 'hidden' | undefined =>
-    (['block', 'hidden'] as const).find((display) => classes.has(`${prefix}${display}`));
-
-  return { base: pick(''), md: pick('md:') ?? pick(''), lg: pick('lg:') ?? pick('md:') ?? pick('') }[breakpoint];
-}
-
-const isShownAt = (filler: HTMLElement, breakpoint: Breakpoint): boolean => displayAt(filler.className, breakpoint) === 'block';
 
 describe('ClientGrid', () => {
   it('is a list named by the quem confia kicker, with one item per partner', () => {
@@ -43,24 +32,34 @@ describe('ClientGrid', () => {
     expect(list).toHaveAttribute('role', 'list');
   });
 
-  it('draws every partner logo named by the partner, sized, lazy and async', () => {
+  it('draws every partner logo named by the partner, sized like the canvas of the files, lazy and async', () => {
     renderWithProviders(<ClientGrid />);
 
     for (const { name, logo } of partners) {
       const img = within(listOf()).getByRole('img', { name });
 
       expect(img).toHaveAttribute('src', logo);
-      expect(img).toHaveAttribute('width');
-      expect(img).toHaveAttribute('height');
+      expect(img).toHaveAttribute('width', String(LOGO_WIDTH));
+      expect(img).toHaveAttribute('height', String(LOGO_HEIGHT));
       expect(img).toHaveAttribute('loading', 'lazy');
       expect(img).toHaveAttribute('decoding', 'async');
       expect(img).toHaveClass('object-contain');
     }
   });
 
+  it('gives every logo the same 2 to 1 slot with a common maximum width, so none is tiny and none is oversized', () => {
+    renderWithProviders(<ClientGrid />);
+    const classLists = partners.map(({ name }) => within(listOf()).getByRole('img', { name }).className);
+
+    expect(new Set(classLists).size).toBe(1);
+    expect(classLists[0]).toContain('aspect-[2/1]');
+    expect(classLists[0]).toContain('w-full');
+    expect(classLists[0]).toContain('max-w-56');
+  });
+
   it('tones the logos gray at rest and colored on hover and focus within the cell, through the vn-logo-tone utility', () => {
     renderWithProviders(<ClientGrid />);
-    const cells = cellsOf(listOf()).filter((cell) => cell.getAttribute('aria-hidden') !== 'true');
+    const cells = cellsOf(listOf());
 
     expect(cells).toHaveLength(partners.length);
     for (const cell of cells) {
@@ -84,77 +83,51 @@ describe('ClientGrid', () => {
   });
 
   describe('grid lines', () => {
-    it('is 2 columns on mobile, 3 from md and 5 from lg, with a gray light line on the top and left of the grid', () => {
+    it('is 2 columns on mobile and 3 from md, with a gray light line on the top and left of the grid', () => {
       renderWithProviders(<ClientGrid />);
 
-      expect(listOf()).toHaveClass('grid', 'grid-cols-2', 'md:grid-cols-3', 'lg:grid-cols-5');
+      expect(listOf()).toHaveClass('grid', 'grid-cols-2', 'md:grid-cols-3');
+      expect(listOf()).not.toHaveClass('lg:grid-cols-5');
       expect(listOf()).toHaveClass('border-t', 'border-l', 'border-vn-gray-light');
     });
 
-    it('closes every cell, logo or filler, with a line on its right and bottom', () => {
+    it('closes every cell with a line on its right and bottom and paints it white', () => {
       renderWithProviders(<ClientGrid />);
 
       for (const cell of cellsOf(listOf())) {
-        expect(cell).toHaveClass('border-r', 'border-b', 'border-vn-gray-light');
+        expect(cell).toHaveClass('border-r', 'border-b', 'border-vn-gray-light', 'bg-vn-white');
       }
-    });
-
-    it('paints every cell white, filler or logo, so a short last row reads as empty cells and not as a hole in the grid', () => {
-      renderWithProviders(<ClientGrid />);
-      const cells = cellsOf(listOf());
-
-      expect(fillersOf(listOf()).length).toBeGreaterThan(0);
-      for (const cell of cells) expect(cell).toHaveClass('bg-vn-white');
-    });
-
-    it.each(['base', 'md', 'lg'] as const)(
-      'fills every row at %s: the logos plus the visible fillers make a whole number of rows',
-      (breakpoint) => {
-        renderWithProviders(<ClientGrid />);
-        const visibleFillers = fillersOf(listOf()).filter((filler) => isShownAt(filler, breakpoint)).length;
-
-        expect((partners.length + visibleFillers) % COLUMNS[breakpoint]).toBe(0);
-        // And no more fillers than one row would need, so no row is made only of empty cells.
-        expect(visibleFillers).toBeLessThan(COLUMNS[breakpoint]);
-      },
-    );
-
-    it('needs one filler at 2 columns, none at 3 and one at 5 for the 9 partners', () => {
-      renderWithProviders(<ClientGrid />);
-      const fillers = fillersOf(listOf());
-
-      expect(fillers.filter((filler) => isShownAt(filler, 'base'))).toHaveLength(1);
-      expect(fillers.filter((filler) => isShownAt(filler, 'md'))).toHaveLength(0);
-      expect(fillers.filter((filler) => isShownAt(filler, 'lg'))).toHaveLength(1);
-    });
-
-    it('puts every filler after every logo, so it can only complete the last row', () => {
-      renderWithProviders(<ClientGrid />);
-      const cells = cellsOf(listOf());
-      const firstFiller = cells.findIndex((cell) => cell.getAttribute('aria-hidden') === 'true');
-
-      expect(firstFiller).toBe(partners.length);
-      expect(cells.slice(firstFiller).every((cell) => cell.getAttribute('aria-hidden') === 'true')).toBe(true);
     });
   });
 
-  describe('filler cells', () => {
-    it('are hidden from assistive tech, hold no text and no focusable element', () => {
+  describe('last row', () => {
+    it('has no empty filler cell: every cell is a logo and nothing is hidden from assistive tech', () => {
       renderWithProviders(<ClientGrid />);
-      const fillers = fillersOf(listOf());
+      const cells = cellsOf(listOf());
 
-      expect(fillers.length).toBeGreaterThan(0);
-      for (const filler of fillers) {
-        expect(filler.tagName).toBe('LI');
-        expect(filler.textContent).toBe('');
-        expect(filler.querySelectorAll('img, a, button, input, [tabindex]')).toHaveLength(0);
+      expect(cells).toHaveLength(partners.length);
+      for (const cell of cells) {
+        expect(cell).not.toHaveAttribute('aria-hidden');
+        expect(cell.querySelector('img, [data-logo-fallback]')).not.toBeNull();
       }
     });
 
-    it('do not count as list items for assistive tech', () => {
-      renderWithProviders(<ClientGrid />);
+    it('makes whole rows at 3 columns, where the 9 logos fill 3 rows of 3', () => {
+      expect(partners.length % COLUMNS_MD).toBe(0);
+    });
 
-      expect(within(listOf()).getAllByRole('listitem')).toHaveLength(partners.length);
+    it('makes the last logo span both columns on mobile, where 9 logos would end on a lone cell, and only there', () => {
+      renderWithProviders(<ClientGrid />);
+      const cells = cellsOf(listOf());
+      const last = cells[cells.length - 1];
+
+      expect(partners.length % COLUMNS_BASE).toBe(1);
+      expect(last).toHaveClass('col-span-2', 'md:col-span-1');
+      for (const cell of cells.slice(0, -1)) expect(cell).not.toHaveClass('col-span-2');
+    });
+
+    it('ends on the widest wordmark, the one that fills a row of its own best', () => {
+      expect(partners[partners.length - 1].name).toBe('Criativa Marketing');
     });
   });
 
@@ -184,31 +157,14 @@ describe('ClientGrid', () => {
   });
 });
 
-describe('fillerClasses', () => {
-  const shownAt = (classes: string[], breakpoint: Breakpoint): number =>
-    classes.filter((filler) => displayAt(filler, breakpoint) === 'block').length;
-
-  it.each(Array.from({ length: 23 }, (_, index) => index + 1))(
-    'completes the last row at 2, 3 and 5 columns for %i logos, with fewer fillers than a row',
+describe('spansLastRow', () => {
+  it.each(Array.from({ length: 12 }, (_, index) => index + 1))(
+    'spans only the last of %i logos, and only when the 2 column rows would end on a lone cell',
     (count) => {
-      const fillers = fillerClasses(count);
+      const spanning = Array.from({ length: count }, (_, position) => spansLastRow(position, count));
 
-      for (const breakpoint of ['base', 'md', 'lg'] as const) {
-        const shown = shownAt(fillers, breakpoint);
-
-        expect((count + shown) % COLUMNS[breakpoint]).toBe(0);
-        expect(shown).toBeLessThan(COLUMNS[breakpoint]);
-      }
+      expect(spanning.filter(Boolean)).toHaveLength(count % COLUMNS_BASE === 1 ? 1 : 0);
+      if (count % COLUMNS_BASE === 1) expect(spanning[count - 1]).toBe(true);
     },
   );
-
-  it('uses whole class names Tailwind can find in the source', () => {
-    for (const filler of fillerClasses(9)) {
-      expect(filler).toMatch(/^(block|hidden) md:(block|hidden) lg:(block|hidden)$/);
-    }
-  });
-
-  it('adds no filler when every breakpoint already ends on a whole row', () => {
-    expect(fillerClasses(30)).toEqual([]);
-  });
 });

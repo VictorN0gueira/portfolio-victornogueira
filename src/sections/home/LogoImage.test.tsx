@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { initialsOf, LogoImage } from './LogoImage';
+import { testimonials } from '../../data/testimonials';
+import { initialsOf, LOGO_HEIGHT, LOGO_WIDTH, LogoImage, LogoPlate } from './LogoImage';
 
 const SRC = 'https://example.test/logo.png';
 
@@ -34,15 +35,11 @@ describe('LogoImage', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 
-  it('contains the logo by default and covers its box when asked', () => {
-    const contained = renderLogo();
-    expect(contained.container.querySelector('img')).toHaveClass('object-contain');
-    expect(contained.container.querySelector('img')).not.toHaveClass('object-cover');
-    contained.unmount();
+  it('always contains the logo in its box and never crops it: the files are already trimmed and sized', () => {
+    const { container } = renderLogo();
 
-    const covered = renderLogo({ fit: 'cover' });
-    expect(covered.container.querySelector('img')).toHaveClass('object-cover');
-    expect(covered.container.querySelector('img')).not.toHaveClass('object-contain');
+    expect(container.querySelector('img')).toHaveClass('object-contain');
+    expect(container.querySelector('img')).not.toHaveClass('object-cover');
   });
 
   it('puts the className of the caller on the img', () => {
@@ -108,10 +105,65 @@ describe('LogoImage', () => {
   });
 });
 
+describe('LogoImage canvas', () => {
+  it('has a 2 to 1 canvas, the 1x size of the 384x192 files that scripts/process-client-logos.mjs writes', () => {
+    expect(LOGO_WIDTH).toBe(192);
+    expect(LOGO_HEIGHT).toBe(96);
+    expect(LOGO_WIDTH / LOGO_HEIGHT).toBe(2);
+  });
+});
+
+describe('LogoPlate', () => {
+  const SRC_LOCAL = '/clients/contador-de-padarias.webp';
+  const renderPlate = (props: Partial<Parameters<typeof LogoPlate>[0]> = {}) =>
+    render(<LogoPlate src={SRC_LOCAL} name="Contador de Padarias" {...props} />);
+
+  it('is a fixed 2 to 1 plate on the cream surface, so every logo sits in the same box', () => {
+    const { container } = renderPlate();
+    const plate = container.firstElementChild as HTMLElement;
+
+    expect(plate).toHaveClass('h-20', 'w-40', 'shrink-0', 'rounded-xl', 'bg-vn-cream');
+    expect(plate.querySelector('img')).toHaveClass('size-full', 'object-contain');
+  });
+
+  it('draws the logo as decorative, sized like the canvas, lazy and async, because the company name is written next to it', () => {
+    const { container } = renderPlate();
+    const img = container.querySelector('img') as HTMLImageElement;
+
+    expect(img).toHaveAttribute('alt', '');
+    expect(img).toHaveAttribute('width', String(LOGO_WIDTH));
+    expect(img).toHaveAttribute('height', String(LOGO_HEIGHT));
+    expect(img).toHaveAttribute('loading', 'lazy');
+    expect(img).toHaveAttribute('decoding', 'async');
+  });
+
+  it('tones the logo only when asked, because the tone needs a host that wakes it up', () => {
+    const plain = renderPlate();
+    expect(plain.container.querySelector('img')).not.toHaveClass('vn-logo-tone');
+    plain.unmount();
+
+    const toned = renderPlate({ isToned: true });
+    expect(toned.container.querySelector('img')).toHaveClass('vn-logo-tone');
+  });
+
+  it('swaps the logo for the initials, hidden from assistive tech, inside the same plate', () => {
+    const { container } = renderPlate();
+    const plate = container.firstElementChild as HTMLElement;
+
+    fireEvent.error(container.querySelector('img') as HTMLImageElement);
+
+    const fallback = plate.querySelector('[data-logo-fallback]') as HTMLElement;
+    expect(container.querySelector('img')).toBeNull();
+    expect(fallback).toHaveTextContent('CP');
+    expect(fallback).toHaveAttribute('aria-hidden', 'true');
+    expect(fallback).toHaveClass('size-full');
+  });
+});
+
 describe('initialsOf', () => {
   it.each([
     ['Contador de Padarias', 'CP'],
-    ['Loja Karla Alvarés', 'LK'],
+    [testimonials[1].company, 'LK'],
     ['Henrique França', 'HF'],
     ['ShipSmart', 'S'],
     ['Mercadinho Irmão Cruz', 'MI'],

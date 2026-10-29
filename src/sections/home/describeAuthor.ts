@@ -1,6 +1,6 @@
 import type { Testimonial } from '../../data/testimonials';
 
-/** Same words, whatever the spaces around them, the case and the accents: "Karla Alvares " is "karla alvarés". */
+/** Same words, whatever the spaces around them, the case and the accents: "Karla Alvares " is "karla álvares". */
 const isSameText = (first: string, second: string): boolean =>
   first.trim().localeCompare(second.trim(), 'pt-BR', { sensitivity: 'base' }) === 0;
 

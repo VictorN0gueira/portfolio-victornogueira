@@ -128,7 +128,7 @@ describe('Testimonials cards', () => {
   it('draws the logo as a decorative image, since the company name is next to it, sized, lazy and async', () => {
     renderWithProviders(<Testimonials />);
 
-    for (const { name, logo, logoFit } of testimonials) {
+    for (const { name, logo } of testimonials) {
       const img = cardOf(name).querySelector('img') as HTMLImageElement;
 
       expect(img).toHaveAttribute('src', logo);
@@ -137,8 +137,25 @@ describe('Testimonials cards', () => {
       expect(img).toHaveAttribute('height');
       expect(img).toHaveAttribute('loading', 'lazy');
       expect(img).toHaveAttribute('decoding', 'async');
-      expect(img).toHaveClass(logoFit === 'cover' ? 'object-cover' : 'object-contain');
+      expect(img).toHaveClass('object-contain');
+      expect(img).not.toHaveClass('object-cover');
     }
+  });
+
+  it('puts every card logo on the same fixed 2 to 1 plate, so the nine logos sit in one frame', () => {
+    renderWithProviders(<Testimonials />);
+    const plates = testimonials.map(({ name }) => (cardOf(name).querySelector('img') as HTMLImageElement).parentElement as HTMLElement);
+
+    expect(new Set(plates.map((plate) => plate.className)).size).toBe(1);
+    expect(plates[0]).toHaveClass('h-20', 'w-40', 'shrink-0', 'bg-vn-cream');
+  });
+
+  it('writes the Karla Álvares card with the accent, for the author and for the store', () => {
+    renderWithProviders(<Testimonials />);
+    const card = cardOf(testimonials[1].name);
+
+    expect(within(card).getByText('Karla Álvares')).toBeInTheDocument();
+    expect(card.textContent).toContain('Proprietária, Loja Karla Álvares');
   });
 
   it('tones the card logo like the grid logos: gray at rest, colored on hover and focus within the card', () => {
