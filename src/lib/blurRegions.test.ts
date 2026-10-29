@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 // The blur step lives in the build scripts; these tests run it on synthetic images (no screenshot is needed).
 import { applyBlurRegions, regionBounds, regionReach } from '../../scripts/blur-regions.mjs';
-import { BLUR_DEFAULTS, BLUR_SOURCES, regionsFor } from '../../scripts/project-blur-regions.mjs';
+import { ALLOWED_UNBLURRED, BLUR_DEFAULTS, BLUR_SOURCES, blurKey, blurProblem, regionsFor } from '../../scripts/project-blur-regions.mjs';
 
 const WIDTH = 480;
 const HEIGHT = 240;
@@ -127,7 +127,30 @@ describe('applyBlurRegions on a synthetic text like fixture', () => {
     // Along the middle row, just right of the pill, the values have to come from the blur band, not from the noise.
     const jump = Math.abs(after.data[row * WIDTH + PILL.x + PILL.w + 2] - after.data[row * WIDTH + PILL.x + PILL.w - 2]);
 
-    expect(jump).toBeLessThan(90);
+    expect(jump).toBeLessThan(60);
+  });
+
+  it('hides one pixel lines at the sigma that thin text gets (8), like the real captions', async () => {
+    const pixels = Buffer.alloc(WIDTH * HEIGHT * 3, BACKGROUND);
+    for (let y = PILL.y; y < PILL.y + PILL.h; y += 3) {
+      for (let x = PILL.x; x < PILL.x + PILL.w; x += 1) pixels.fill(230, (y * WIDTH + x) * 3, (y * WIDTH + x) * 3 + 3);
+    }
+    const original = await encode(pixels);
+    const blurred = await applyBlurRegions(original, [{ ...PILL, sigma: 8, feather: 3 }], BLUR_DEFAULTS);
+    const inner = { x: PILL.x + PILL.radius, y: PILL.y + 4, w: PILL.w - PILL.radius * 2, h: PILL.h - 8 };
+
+    const before = edgeEnergy(await toGray(original), inner);
+    const after = edgeEnergy(await toGray(blurred), inner);
+
+    expect(before).toBeGreaterThan(50);
+    expect(after).toBeLessThan(before * (1 - MIN_ENERGY_DROP));
+  });
+
+  it('fails instead of painting black when a region covers its whole patch', async () => {
+    const original = await encode(noisyImage([]));
+    const everything = { shape: 'rect', x: 0, y: 0, w: WIDTH, h: HEIGHT, radius: 0 } as const;
+
+    await expect(applyBlurRegions(original, [everything], { sigma: 1, feather: 1 })).rejects.toThrow(/no background left/);
   });
 
   it('returns the very same bytes when there is nothing to blur', async () => {
@@ -146,45 +169,67 @@ describe('applyBlurRegions on a synthetic text like fixture', () => {
 });
 
 describe('the blur configuration', () => {
-  const HUB_CONVERSAS = 'hub081/conversas.png';
-  const HUB_SIZE = { width: 1919, height: 911 };
+  const HUB_CONVERSAS = 'hub081/conversas';
 
-  it('blurs contact names only when the blurNames switch is on', () => {
-    const base = regionsFor(HUB_CONVERSAS);
-    const withNames = regionsFor(HUB_CONVERSAS, { blurNames: true });
+  it('blurs the names of leads by default and keeps them only with keepNames', () => {
+    const kept = regionsFor(HUB_CONVERSAS, { keepNames: true });
+    const blurred = regionsFor(HUB_CONVERSAS);
 
-    expect(withNames.length).toBe(base.length + BLUR_SOURCES[HUB_CONVERSAS].nameRegions.length);
+    expect(blurred.length).toBe(kept.length + BLUR_SOURCES[HUB_CONVERSAS].nameRegions.length);
     expect(BLUR_SOURCES[HUB_CONVERSAS].nameRegions.length).toBe(5);
   });
 
-  it('has a photo and a phone number region for each of the five conversations, plus the owner block', () => {
-    const regions = regionsFor(HUB_CONVERSAS);
-
-    // 5 contact photos + 5 phone numbers + owner photo, name and e-mail (bottom left) + owner photo (top right)
-    expect(regions).toHaveLength(14);
+  it('has a photo, a phone number and a name region for each of the five conversations, plus the owner block', () => {
+    // 5 contact photos + 5 phone numbers + 5 names + owner photo, name and e-mail (bottom left) + owner photo (top right)
+    expect(regionsFor(HUB_CONVERSAS)).toHaveLength(19);
   });
 
-  it('keeps every region inside the screenshot', () => {
-    for (const key of Object.keys(BLUR_SOURCES)) {
-      for (const region of regionsFor(key, { blurNames: true })) {
+  it('keeps every region inside the screenshot it was measured on', () => {
+    for (const [key, source] of Object.entries(BLUR_SOURCES)) {
+      const widest = Math.max(...source.sizes.map((size) => size.width));
+      const lowest = Math.max(...source.sizes.map((size) => size.height));
+      for (const region of regionsFor(key)) {
         const bounds = regionBounds(region);
-        expect(bounds.left).toBeGreaterThanOrEqual(0);
-        expect(bounds.top).toBeGreaterThanOrEqual(0);
-        expect(bounds.left + bounds.width).toBeLessThanOrEqual(HUB_SIZE.width + 1);
-        expect(bounds.top + bounds.height).toBeLessThanOrEqual(HUB_SIZE.height);
+        expect(bounds.left, key).toBeGreaterThanOrEqual(0);
+        expect(bounds.top, key).toBeGreaterThanOrEqual(0);
+        expect(bounds.left + bounds.width, key).toBeLessThanOrEqual(widest);
+        expect(bounds.top + bounds.height, key).toBeLessThanOrEqual(lowest);
       }
     }
   });
 
   it('uses a blur strong enough to hide digits and faces', () => {
     for (const key of Object.keys(BLUR_SOURCES)) {
-      for (const region of regionsFor(key, { blurNames: true })) {
+      for (const region of regionsFor(key)) {
         expect(region.sigma ?? BLUR_DEFAULTS.sigma).toBeGreaterThanOrEqual(8);
       }
     }
   });
 
   it('has nothing to blur for a file that is not listed', () => {
-    expect(regionsFor('hub081/login.png')).toEqual([]);
+    expect(regionsFor('hub081/login')).toEqual([]);
+  });
+
+  it.each(['hub081/conversas.PNG', 'HUB081/Conversas', 'hub081/conversas.jpg', 'hub081/conversas.jpeg'])(
+    'finds the same regions whatever the extension or the case: %s',
+    (name) => {
+      const [slug, ...rest] = name.split('/');
+      const key = blurKey(slug.toLowerCase(), rest.join('/'));
+
+      expect(key).toBe(HUB_CONVERSAS);
+      expect(regionsFor(key)).toHaveLength(19);
+      expect(regionsFor(name.replace(/\.[^.]+$/, ''))).toHaveLength(19);
+    },
+  );
+
+  it('refuses an original that is neither listed to blur nor judged clean, and one of another size', () => {
+    expect(blurProblem('hub081/conversas', { width: 1919, height: 911 })).toBeNull();
+    expect(blurProblem('hub081/conversas', { width: 1280, height: 720 })).toMatch(/measured on 1919x911/);
+    expect(blurProblem('hub081/login', { width: 10, height: 10 })).toBeNull();
+    expect(blurProblem('hub081/novo-segredo', { width: 10, height: 10 })).toMatch(/not listed/);
+  });
+
+  it('lists every original that is judged clean outside the blurred ones', () => {
+    for (const key of ALLOWED_UNBLURRED) expect(BLUR_SOURCES).not.toHaveProperty(key);
   });
 });

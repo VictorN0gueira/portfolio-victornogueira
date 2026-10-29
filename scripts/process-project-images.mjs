@@ -1,81 +1,117 @@
 // Builds the self-hosted project screenshots: it reads the original PNG or JPEG files from an input
 // folder, writes optimized WebP files into the output folder and generates the manifest the site reads.
-// It never fetches anything: the originals are put in the input folder by hand.
+// It never fetches anything: the originals are put in the input folder by hand and never enter the repo.
 //
-//   node scripts/process-project-images.mjs <input folder> <output folder> [--manifest=<file>] [--clean] [--blur-names]
+//   node scripts/process-project-images.mjs <input folder> <output folder> [--manifest=<file>] [--clean] [--keep-names] [--preview=<folder>]
 //
-// Input layout:   <input>/<project-slug>/<name>.png
+// Input layout:   <input>/<project-slug>/<name>.png   (lower case kebab-case, .png .jpg .jpeg in any case)
 // Output layout:  <output>/<project-slug>/<name>-<width>.webp  (800 and 1600 wide, never upscaled)
-// A file named cover.* is the project card image. It also gets <name>-share.jpg (1200 by 630), the
-// image shared on social networks, because scrapers do not all read WebP.
+// The image shared on social networks is a 1200 by 630 JPEG, <name>-share.jpg, made for one image per project:
+// the one called cover, or the one named for that project in COVER_SOURCES (it then has no copy of its own).
 // The manifest (default src/data/projectImages.ts) lists the sizes of every image so that the pages
 // can set width, height and srcset without any layout shift.
 //
-// Blur step: BEFORE resizing, the regions listed for a file in scripts/project-blur-regions.mjs (contact
-// photos, phone numbers, the owner's name, e-mail and photo) are blurred with scripts/blur-regions.mjs.
-// The originals with private data therefore only ever live in the input folder, never in the repo, and
-// every output can be rebuilt from them. --blur-names also blurs the contact names (the blurNames switch,
-// off by default).
+// Private data, step by step, BEFORE resizing:
+//   1. every original must be listed in scripts/project-blur-regions.mjs, with regions to blur or as judged
+//      clean; anything else stops the run (fail closed). The listed regions (contact photos, phone numbers,
+//      names of leads, the owner's name, e-mail and photo, credential looking names, private links) are blurred
+//      with scripts/blur-regions.mjs. Names of leads are blurred unless --keep-names is given.
+//   2. scripts/project-crops.mjs may then cut the blurred image (a crop only cuts).
+// --preview=<folder> writes each original back with its regions outlined in red and exits, to check the numbers.
 //
-// Covers: for the slugs in COVER_SOURCES, the named image is also written as <slug>/cover (card image
-// and share image) unless the input folder has its own cover.* file.
-//
+// Safety: nothing in the output folder is touched until every image has been processed into a staging folder.
 // Without --clean the run only adds or replaces the images it was given and merges them into the existing
-// manifest, so other projects keep their files. --clean first empties the output folder of every project
-// that was given, and drops the manifest entries of that project.
+// manifest. --clean also removes, for the projects present in the input only, the files and manifest entries
+// that the run did not write. The input folder may not overlap the output folder or live inside the repo.
 //
 // Typical call (the output folder is public/projects):
 //   node scripts/process-project-images.mjs "<folder with the originals>" public/projects
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, extname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from 'node:fs';
+import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { applyBlurRegions } from './blur-regions.mjs';
-import { BLUR_DEFAULTS, regionsFor } from './project-blur-regions.mjs';
+import { cropsFor } from './project-crops.mjs';
+import { BLUR_DEFAULTS, blurKey, blurProblem, regionsFor } from './project-blur-regions.mjs';
+import { mergeEntries, readManifestEntries, renderManifest, writeFileAtomic } from './project-images-manifest.mjs';
+import { drawPreview } from './project-images-preview.mjs';
 
-const WIDTHS = [800, 1600];
+export const WIDTHS = [800, 1600];
 const WEBP_QUALITY = 85;
 const WEBP_EFFORT = 5;
 // The featured projects get a higher quality: the interface text has to stay sharp.
 const FEATURED_SLUGS = new Set(['hub081', 'dizpara']);
 const FEATURED_WEBP_QUALITY = 94;
 const FEATURED_WEBP_EFFORT = 6;
-const COVER_SOURCES = { hub081: 'dashboards', dizpara: 'lista-de-leads' };
+/** The image of a project that is also shared on social networks, when it is not the one named "cover". */
+export const COVER_SOURCES = Object.freeze({ hub081: 'dashboards', dizpara: 'lista-de-leads', 'ai-playlist-maker': 'tela-email' });
+const DEFAULT_COVER_NAME = 'cover';
 const SHARE_WIDTH = 1200;
 const SHARE_HEIGHT = 630;
 const SHARE_QUALITY = 80;
-const COVER_NAME = 'cover';
 const MAX_INPUT_PIXELS = 40_000_000;
 const MAX_INPUT_BYTES = 20 * 1024 * 1024;
 const SHARE_BACKGROUND = '#0a0a0a';
 const KEBAB_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg'];
+const JUNK_FILES = new Set(['thumbs.db', 'desktop.ini', '.ds_store']);
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const JPEG_MAGIC = Buffer.from([0xff, 0xd8, 0xff]);
+const STAGING_FOLDER = '.staging';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_MANIFEST = join(repoRoot, 'src', 'data', 'projectImages.ts');
 
+export class PipelineError extends Error {}
+
 function fail(message) {
-  process.stderr.write(`process-project-images: ${message}\n`);
-  process.exit(1);
+  throw new PipelineError(message);
 }
 
 function log(message) {
   process.stdout.write(`${message}\n`);
 }
 
-function parseArguments(argv) {
+/** The name of the image of a project that also gets the share JPEG. */
+export function shareNameFor(slug) {
+  return COVER_SOURCES[slug] ?? DEFAULT_COVER_NAME;
+}
+
+export function parseArguments(argv) {
   const flags = argv.filter((argument) => argument.startsWith('--'));
   const positional = argv.filter((argument) => !argument.startsWith('--'));
-  if (positional.length !== 2) fail('usage: node scripts/process-project-images.mjs <input folder> <output folder> [--manifest=<file>] [--clean] [--blur-names]');
-  const manifestFlag = flags.find((flag) => flag.startsWith('--manifest='));
+  const known = ['--clean', '--keep-names'];
+  const unknown = flags.filter((flag) => !known.includes(flag) && !flag.startsWith('--manifest=') && !flag.startsWith('--preview='));
+  if (unknown.length > 0) fail(`unknown option ${unknown.join(', ')}`);
+  if (positional.length !== 2) {
+    fail('usage: node scripts/process-project-images.mjs <input folder> <output folder> [--manifest=<file>] [--clean] [--keep-names] [--preview=<folder>]');
+  }
+  const valueOf = (name) => flags.find((flag) => flag.startsWith(`${name}=`))?.slice(name.length + 1);
+  const manifest = valueOf('--manifest');
+  const preview = valueOf('--preview');
   return {
     inputDir: resolve(positional[0]),
     outputDir: resolve(positional[1]),
-    manifestFile: manifestFlag ? resolve(manifestFlag.slice('--manifest='.length)) : DEFAULT_MANIFEST,
+    manifestFile: manifest ? resolve(manifest) : DEFAULT_MANIFEST,
+    previewDir: preview ? resolve(preview) : null,
     clean: flags.includes('--clean'),
-    blurNames: flags.includes('--blur-names'),
+    keepNames: flags.includes('--keep-names'),
   };
+}
+
+function isInside(parent, child) {
+  const path = relative(parent, child);
+  return path === '' || (!path.startsWith('..') && !isAbsolute(path));
+}
+
+/** Refuses folders that overlap (the originals would be deleted or published) or an input inside the repo. */
+export function checkFolders(inputDir, outputDir) {
+  if (isInside(inputDir, outputDir) || isInside(outputDir, inputDir)) {
+    fail(`the input folder (${inputDir}) and the output folder (${outputDir}) overlap`);
+  }
+  for (const published of ['public', 'src']) {
+    if (isInside(join(repoRoot, published), inputDir)) fail(`the originals must live outside the repo, not in ${published}/ (${inputDir})`);
+  }
 }
 
 function isFolder(path) {
@@ -83,21 +119,27 @@ function isFolder(path) {
 }
 
 /** True when the file starts with the PNG or the JPEG signature: the extension alone is never trusted. */
-function hasImageSignature(bytes) {
+export function hasImageSignature(bytes) {
   return bytes.subarray(0, PNG_MAGIC.length).equals(PNG_MAGIC) || bytes.subarray(0, JPEG_MAGIC.length).equals(JPEG_MAGIC);
 }
 
+function isJunk(fileName) {
+  return fileName.startsWith('.') || JUNK_FILES.has(fileName.toLowerCase());
+}
+
 /** The originals found in the input folder, as { slug, name, file }, in a stable order. */
-function listOriginals(inputDir) {
+export function listOriginals(inputDir) {
   const originals = [];
   for (const slug of readdirSync(inputDir).sort()) {
+    if (isJunk(slug)) continue;
     const folder = join(inputDir, slug);
     if (!isFolder(folder)) fail(`${folder}: expected a folder per project, found a file`);
     if (!KEBAB_NAME.test(slug)) fail(`${slug}: the project folder must be lower case kebab-case ASCII`);
     for (const fileName of readdirSync(folder).sort()) {
+      if (isJunk(fileName)) continue;
       const extension = extname(fileName).toLowerCase();
       const name = fileName.slice(0, fileName.length - extension.length);
-      if (!['.png', '.jpg', '.jpeg'].includes(extension)) fail(`${slug}/${fileName}: only PNG and JPEG originals are accepted`);
+      if (!IMAGE_EXTENSIONS.includes(extension)) fail(`${slug}/${fileName}: only PNG and JPEG originals are accepted`);
       if (!KEBAB_NAME.test(name)) fail(`${slug}/${fileName}: the name must be lower case kebab-case ASCII`);
       originals.push({ slug, name, file: join(folder, fileName) });
     }
@@ -114,7 +156,7 @@ function readOriginal(original) {
 }
 
 /** The widths to write for an image: the wanted ones that fit, or the natural width when it is narrower than all. */
-function widthsFor(naturalWidth) {
+export function widthsFor(naturalWidth) {
   const fitting = WIDTHS.filter((width) => width <= naturalWidth);
   return fitting.length > 0 ? fitting : [naturalWidth];
 }
@@ -134,11 +176,7 @@ async function writeWebp(bytes, hasOpaqueSurface, width, target, slug) {
   const flat = hasOpaqueSurface ? pipeline.removeAlpha() : pipeline;
   const featured = FEATURED_SLUGS.has(slug);
   return flat
-    .webp({
-      quality: featured ? FEATURED_WEBP_QUALITY : WEBP_QUALITY,
-      effort: featured ? FEATURED_WEBP_EFFORT : WEBP_EFFORT,
-      smartSubsample: true,
-    })
+    .webp({ quality: featured ? FEATURED_WEBP_QUALITY : WEBP_QUALITY, effort: featured ? FEATURED_WEBP_EFFORT : WEBP_EFFORT, smartSubsample: true })
     .toFile(target);
 }
 
@@ -156,108 +194,116 @@ async function writeShare(bytes, target) {
     .toFile(target);
 }
 
-/** The original's bytes with its private regions blurred (the bytes themselves when it has none). */
-async function blurredBytes(original, bytes, blurNames) {
-  const regions = regionsFor(`${original.slug}/${original.file.split(/[\\/]/).pop()}`, { blurNames });
-  return applyBlurRegions(bytes, regions, BLUR_DEFAULTS);
+/** The images made from one original: its blurred bytes, or one cut out of them per crop of project-crops.mjs. */
+async function imagesOfOriginal(original, keepNames) {
+  const source = readOriginal(original);
+  const { width, height } = await openImage(source).metadata();
+  if (!width || !height) fail(`${original.file}: could not read the dimensions`);
+  const key = blurKey(original.slug, basename(original.file));
+  const problem = blurProblem(key, { width, height });
+  if (problem) fail(problem);
+  const blurred = await applyBlurRegions(source, regionsFor(key, { keepNames }), BLUR_DEFAULTS);
+  const crops = cropsFor(key, { width, height });
+  if (!crops) return [{ name: original.name, bytes: blurred }];
+  const cut = [];
+  for (const { name, ...rect } of crops) cut.push({ name, bytes: await openImage(blurred).extract(rect).png().toBuffer() });
+  return cut;
 }
 
-async function processOriginal(original, outputDir, blurNames) {
-  const bytes = await blurredBytes(original, readOriginal(original), blurNames);
+async function processImage(slug, image, stagingFolder) {
+  const { name, bytes } = image;
   const { width: naturalWidth, height: naturalHeight } = await openImage(bytes).metadata();
-  if (!naturalWidth || !naturalHeight) fail(`${original.file}: could not read the dimensions`);
+  if (!naturalWidth || !naturalHeight) fail(`${slug}/${name}: could not read the dimensions`);
   const hasOpaqueSurface = await isOpaque(bytes);
-  const folder = join(outputDir, original.slug);
   const sizes = [];
   for (const width of widthsFor(naturalWidth)) {
-    const target = join(folder, `${original.name}-${width}.webp`);
-    const info = await writeWebp(bytes, hasOpaqueSurface, width, target, original.slug);
+    const info = await writeWebp(bytes, hasOpaqueSurface, width, join(stagingFolder, `${name}-${width}.webp`), slug);
     sizes.push({ width: info.width, height: info.height, bytes: info.size });
   }
-  const hasShare = original.name === COVER_NAME;
-  if (hasShare) await writeShare(bytes, join(folder, `${original.name}-share.jpg`));
+  const hasShare = name === shareNameFor(slug);
+  if (hasShare) await writeShare(bytes, join(stagingFolder, `${name}-share.jpg`));
   const widest = sizes[sizes.length - 1];
-  return { key: `${original.slug}/${original.name}`, width: widest.width, height: widest.height, widths: sizes.map((size) => size.width), hasShare, sizes };
+  return { key: `${slug}/${name}`, width: widest.width, height: widest.height, widths: sizes.map((size) => size.width), hasShare, sizes };
 }
 
-/** Adds a cover for each slug of COVER_SOURCES whose named image is present and that has no cover of its own. */
-function withCovers(originals) {
-  const covers = [];
-  for (const [slug, name] of Object.entries(COVER_SOURCES)) {
-    const hasOwnCover = originals.some((original) => original.slug === slug && original.name === COVER_NAME);
-    const source = originals.find((original) => original.slug === slug && original.name === name);
-    if (source && !hasOwnCover) covers.push({ slug, name: COVER_NAME, file: source.file });
+/** Moves the staged files of every project into the output folder; with clean, drops the files of those projects it did not write. */
+function publishStaged(stagingDir, outputDir, slugs, clean) {
+  const removed = [];
+  for (const slug of slugs) {
+    const staged = join(stagingDir, slug);
+    const target = join(outputDir, slug);
+    mkdirSync(target, { recursive: true });
+    const written = new Set(readdirSync(staged));
+    if (clean) {
+      for (const existing of readdirSync(target)) {
+        if (written.has(existing)) continue;
+        rmSync(join(target, existing), { recursive: true, force: true });
+        removed.push(`${slug}/${existing}`);
+      }
+    }
+    for (const file of written) renameSync(join(staged, file), join(target, file));
   }
-  return [...originals, ...covers];
+  return removed;
 }
 
-function renderManifest(entries) {
-  const lines = entries
-    .slice()
-    .sort((a, b) => a.key.localeCompare(b.key))
-    .map((entry) => `  '${entry.key}': { width: ${entry.width}, height: ${entry.height}, widths: [${entry.widths.join(', ')}], hasShare: ${entry.hasShare} },`);
-  return [
-    '// Generated by scripts/process-project-images.mjs. Do not edit by hand: run the script again.',
-    '// width and height are the pixel size of the widest file, so the aspect ratio is known before the image loads.',
-    '',
-    'export interface ProjectImageEntry {',
-    '  readonly width: number;',
-    '  readonly height: number;',
-    '  readonly widths: readonly number[];',
-    '  readonly hasShare: boolean;',
-    '}',
-    '',
-    'export const projectImageManifest: Readonly<Record<string, ProjectImageEntry>> = {',
-    ...lines,
-    '};',
-    '',
-  ].join('\n');
-}
-
-const MANIFEST_LINE = /^\s*'([^']+)': \{ width: (\d+), height: (\d+), widths: \[([\d, ]+)\], hasShare: (true|false) \},$/;
-
-/** The entries of the manifest already on disk (none when it does not exist yet). */
-function readManifestEntries(manifestFile) {
-  if (!existsSync(manifestFile)) return [];
-  const entries = [];
-  for (const line of readFileSync(manifestFile, 'utf8').split(/\r?\n/)) {
-    const match = MANIFEST_LINE.exec(line);
-    if (!match) continue;
-    const widths = match[4].split(',').map((width) => Number(width.trim()));
-    entries.push({ key: match[1], width: Number(match[2]), height: Number(match[3]), widths, hasShare: match[5] === 'true' });
+async function writePreviews(originals, previewDir, keepNames) {
+  mkdirSync(previewDir, { recursive: true });
+  for (const original of originals) {
+    const key = blurKey(original.slug, basename(original.file));
+    const outline = await drawPreview(readOriginal(original), regionsFor(key, { keepNames }));
+    await sharp(outline).toFile(join(previewDir, `${original.slug}-${original.name}-regions.png`));
+    log(`preview: ${original.slug}/${original.name}`);
   }
-  return entries;
 }
 
-/** The existing entries that survive this run (all of them, or those of untouched projects with --clean), then the new ones. */
-function mergeEntries(existing, fresh, slugs, clean) {
-  const replaced = new Set(fresh.map((entry) => entry.key));
-  const kept = existing.filter((entry) => !replaced.has(entry.key) && !(clean && slugs.has(entry.key.split('/')[0])));
-  return [...kept, ...fresh];
+/** Runs the whole pipeline. Returns { entries, removed }; throws PipelineError on any refusal. */
+export async function run(options) {
+  const { inputDir, outputDir, manifestFile, previewDir, clean, keepNames } = options;
+  if (!isFolder(inputDir)) fail(`input folder not found: ${inputDir}`);
+  checkFolders(inputDir, outputDir);
+  const originals = listOriginals(inputDir);
+  if (originals.length === 0) fail(`no images found in ${inputDir}`);
+  if (previewDir) {
+    await writePreviews(originals, previewDir, keepNames);
+    return { entries: [], removed: [] };
+  }
+  const slugs = new Set(originals.map((original) => original.slug));
+  // Read first: a manifest that cannot be read stops the run before any image is processed.
+  const existingEntries = readManifestEntries(manifestFile);
+  const stagingDir = join(outputDir, STAGING_FOLDER);
+  rmSync(stagingDir, { recursive: true, force: true });
+  try {
+    const fresh = [];
+    for (const original of originals) {
+      mkdirSync(join(stagingDir, original.slug), { recursive: true });
+      for (const image of await imagesOfOriginal(original, keepNames)) {
+        const entry = await processImage(original.slug, image, join(stagingDir, original.slug));
+        fresh.push(entry);
+        log(`${entry.key}: ${entry.width}x${entry.height}  ${entry.sizes.map((size) => `${size.width}w ${(size.bytes / 1024).toFixed(1)} KB`).join(', ')}`);
+      }
+    }
+    const entries = mergeEntries(existingEntries, fresh, clean ? slugs : new Set());
+    const removed = publishStaged(stagingDir, outputDir, slugs, clean);
+    mkdirSync(dirname(manifestFile), { recursive: true });
+    writeFileAtomic(manifestFile, renderManifest(entries));
+    return { entries, removed, written: fresh.length };
+  } finally {
+    rmSync(stagingDir, { recursive: true, force: true });
+  }
 }
 
 async function main() {
-  const { inputDir, outputDir, manifestFile, clean, blurNames } = parseArguments(process.argv.slice(2));
-  if (!isFolder(inputDir)) fail(`input folder not found: ${inputDir}`);
-  const originals = withCovers(listOriginals(inputDir));
-  if (originals.length === 0) fail(`no images found in ${inputDir}`);
-  const slugs = new Set(originals.map((original) => original.slug));
-  for (const slug of slugs) {
-    // --clean rebuilds a project folder from scratch so a renamed or removed original leaves no stale file behind.
-    if (clean) rmSync(join(outputDir, slug), { recursive: true, force: true });
-    mkdirSync(join(outputDir, slug), { recursive: true });
-  }
-  const fresh = [];
-  for (const original of originals) {
-    const entry = await processOriginal(original, outputDir, blurNames);
-    fresh.push(entry);
-    const kilobytes = entry.sizes.map((size) => `${size.width}w ${(size.bytes / 1024).toFixed(1)} KB`).join(', ');
-    log(`${entry.key}: ${entry.width}x${entry.height}  ${kilobytes}`);
-  }
-  const entries = mergeEntries(readManifestEntries(manifestFile), fresh, slugs, clean);
-  mkdirSync(dirname(manifestFile), { recursive: true });
-  writeFileSync(manifestFile, renderManifest(entries), 'utf8');
-  log(`manifest: ${manifestFile} (${entries.length} images, ${fresh.length} written now${blurNames ? ', contact names blurred' : ''})`);
+  const options = parseArguments(process.argv.slice(2));
+  const { entries, removed = [], written = 0 } = await run(options);
+  if (options.previewDir) return;
+  if (removed.length > 0) log(`removed: ${removed.join(', ')}`);
+  log(`manifest: ${options.manifestFile} (${entries.length} images, ${written} written now${options.keepNames ? '' : ', names of leads blurred'})`);
 }
 
-main().catch((error) => fail(error instanceof Error ? error.message : String(error)));
+const isEntryPoint = process.argv[1] !== undefined && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
+if (isEntryPoint) {
+  main().catch((error) => {
+    process.stderr.write(`process-project-images: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.exit(1);
+  });
+}

@@ -66,7 +66,6 @@ async function grayMask(region, box, grow, softness) {
 }
 
 function median(values) {
-  if (values.length === 0) return 0;
   const sorted = Uint8Array.from(values).sort();
   return sorted[Math.floor(sorted.length / 2)];
 }
@@ -78,6 +77,7 @@ function backgroundColour(pixels, hardOutside, pixelCount) {
     if (hardOutside[index] > 8) continue;
     for (let channel = 0; channel < CHANNELS; channel += 1) samples[channel].push(pixels[index * CHANNELS + channel]);
   }
+  if (samples[0].length === 0) throw new Error('a blur region covers its whole patch: there is no background left to measure');
   return samples.map(median);
 }
 
