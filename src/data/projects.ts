@@ -166,7 +166,7 @@ export const projects: readonly Project[] = [
       [
         'Formulário do Travel IA para escolher destino, duração, estilo da viagem e o e-mail que recebe o roteiro',
         'E-mail com o roteiro de viagem dia a dia, com previsão do tempo e sugestões de manhã e tarde',
-        'Formulário do Travel IA na tela do celular, com o título Roteiro Inteligente e o campo de destino',
+        'Formulário do Travel IA na tela do celular, com o título do roteiro e o campo de destino',
       ],
     ),
   },

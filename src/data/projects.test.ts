@@ -61,7 +61,7 @@ describe('projects data', () => {
   });
 
   it('points every image at a file of the generated manifest', () => {
-    const keys = new Set(Object.keys(projectImageManifest).map((key) => `/projects/${key}-1600.webp`));
+    const keys = new Set(Object.entries(projectImageManifest).map(([key, entry]) => `/projects/${key}-${Math.max(...entry.widths)}.webp`));
     for (const project of projects) {
       for (const shot of project.shots) expect(keys.has(shot.image.src), `${project.slug}: ${shot.image.src}`).toBe(true);
     }
