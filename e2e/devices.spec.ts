@@ -112,6 +112,7 @@ for (const device of DEVICES) {
     });
 
     test('has no overflow, a clear header, no overlap with the form, 44px targets and working controls', async ({ page }) => {
+      test.slow(); // walks the whole page: 5s to 10s with nothing else running, and the default 30s is not enough under load
       await openHome(page);
       await nextFrames(page);
       const clearance = await headerClearance(page);
@@ -141,6 +142,7 @@ for (const device of DEVICES) {
     });
 
     test('has 44px targets in the accessibility panel, with the reset button it shows once an option is on', async ({ page }) => {
+      test.slow();
       await openHome(page);
       await page.getByRole('button', { name: A11Y_TRIGGER_NAME }).click();
       const panel = page.getByRole('dialog', { name: 'Opções de acessibilidade' });
@@ -164,6 +166,7 @@ test.describe(`the larger font at ${LARGE_FONT_PHONE.width}x${LARGE_FONT_PHONE.h
   test.use({ viewport: LARGE_FONT_PHONE, hasTouch: true, isMobile: true });
 
   test('has no horizontal scroll and nothing past the right edge', async ({ page }) => {
+    test.slow();
     await enableLargeFont(page);
     await openHome(page);
     await expect(page.locator('html')).toHaveClass(/a11y-font-large/);
@@ -196,6 +199,7 @@ for (const phone of SHORT_PHONES) {
       test.use({ viewport: phone, hasTouch: true, isMobile: true, deviceScaleFactor: 1, userAgent: TOUCH_AGENT });
 
       test('stays inside the window and its Texto maior switch can be reached and pressed', async ({ page }) => {
+        test.slow();
         if (isLarge) await enableLargeFont(page);
         await openHome(page);
         await page.getByRole('button', { name: A11Y_TRIGGER_NAME }).tap();
