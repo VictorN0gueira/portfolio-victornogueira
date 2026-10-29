@@ -138,7 +138,7 @@ export default function AccessibilityWidget() {
                   <li key={key}>
                     <button
                       onClick={() => toggle(key)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm transition-colors text-left
+                      className={`w-full min-h-11 flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm transition-colors text-left
                         ${active
                           ? 'bg-white/15 text-white'
                           : 'text-white/60 hover:bg-white/8 hover:text-white/90'
@@ -162,7 +162,7 @@ export default function AccessibilityWidget() {
               <div className="px-4 py-3 border-t border-white/10 shrink-0">
                 <button
                   onClick={reset}
-                  className="w-full text-xs text-white/50 hover:text-white/80 transition-colors text-center"
+                  className="w-full min-h-11 text-xs text-white/50 hover:text-white/80 transition-colors text-center"
                 >
                   ↺ Resetar tudo
                 </button>
