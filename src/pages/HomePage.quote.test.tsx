@@ -49,6 +49,11 @@ describe('HomePage quote hand over before the form has loaded', () => {
 
     await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1), { timeout: 20_000 });
     expect(scrollIntoView.mock.contexts[0]).toBe(document.getElementById('contato'));
-    expect((screen.getByLabelText('Mensagem') as HTMLTextAreaElement).value).toMatch(/^Olá, VN One! Usei a calculadora do site/);
+    // The form puts the message in its field from an effect that runs after it mounts, and the scroll (a mutation
+    // observer, so a microtask) can come first: the field is waited for, not read on the spot. A read on the spot
+    // failed once in a loaded run, with the field still empty.
+    await waitFor(() =>
+      expect((screen.getByLabelText('Mensagem') as HTMLTextAreaElement).value).toMatch(/^Olá, VN One! Usei a calculadora do site/),
+    );
   });
 });
