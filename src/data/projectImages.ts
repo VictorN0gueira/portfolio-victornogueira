@@ -11,6 +11,7 @@ export interface ProjectImageEntry {
 export const projectImageManifest: Readonly<Record<string, ProjectImageEntry>> = {
   'ai-playlist-maker/cover': { width: 1600, height: 759, widths: [800, 1600], hasShare: true },
   'ai-playlist-maker/tela-email': { width: 1600, height: 733, widths: [800, 1600], hasShare: false },
+  'ai-playlist-maker/tela-mobile': { width: 800, height: 1362, widths: [800], hasShare: false },
   'dashboard-consumo-crm/cover': { width: 1600, height: 760, widths: [800, 1600], hasShare: true },
   'dashboard-consumo-crm/fluxo-resumocliente': { width: 1600, height: 726, widths: [800, 1600], hasShare: false },
   'dashboard-consumo-crm/site2-resumocliente': { width: 1600, height: 759, widths: [800, 1600], hasShare: false },
@@ -37,6 +38,7 @@ export const projectImageManifest: Readonly<Record<string, ProjectImageEntry>> =
   'portal-link-in-bio/karlaalvares': { width: 1600, height: 760, widths: [800, 1600], hasShare: false },
   'travel-ia/cover': { width: 1600, height: 760, widths: [800, 1600], hasShare: true },
   'travel-ia/tela-email': { width: 1600, height: 726, widths: [800, 1600], hasShare: false },
+  'travel-ia/tela-mobile': { width: 800, height: 1362, widths: [800], hasShare: false },
   'troco/cover': { width: 1600, height: 760, widths: [800, 1600], hasShare: true },
   'troco/dashboard-troco': { width: 1600, height: 759, widths: [800, 1600], hasShare: false },
   'troco/investimentos-troco': { width: 1600, height: 760, widths: [800, 1600], hasShare: false },
