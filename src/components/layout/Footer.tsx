@@ -92,7 +92,8 @@ export function Footer() {
             </ul>
           </div>
 
-          <div>
+          {/* Two columns from 360px leave this one about 160px, which breaks the e-mail address in the middle until 420px. */}
+          <div className="min-[360px]:max-[419px]:col-span-2">
             <h2 className={COLUMN_TITLE}>Contato</h2>
             <ul className="mt-3">
               <li>

@@ -51,6 +51,16 @@ describe('Footer', () => {
       expect(grid.children).toHaveLength(4);
     });
 
+    // In two columns the contact one is about 160px wide at 375px, and the e-mail address broke in the middle of the word.
+    it('gives the contact column both columns from 360px to 419px, where the e-mail address would not fit in one', () => {
+      const footer = renderFooter();
+
+      expect(column(footer, 'Contato')).toHaveClass('min-[360px]:max-[419px]:col-span-2');
+      for (const title of ['Navegação', 'Serviços']) {
+        expect(column(footer, title).className).not.toContain('col-span');
+      }
+    });
+
     it('shows the logo for dark surfaces, loaded lazily, inside the home link', () => {
       const footer = renderFooter();
 
