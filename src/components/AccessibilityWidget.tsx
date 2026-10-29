@@ -118,7 +118,7 @@ export default function AccessibilityWidget() {
             style={{ willChange: 'transform, opacity', direction: 'ltr' }}
             role="dialog"
             aria-label="Opções de acessibilidade"
-            className="mr-2 w-[min(13rem,calc(100vw-3.5rem))] rounded-2xl border border-white/10 bg-zinc-950/98 md:bg-zinc-950/95 backdrop-blur-none md:backdrop-blur-xl shadow-2xl overflow-hidden max-h-[calc(100svh-8rem)] flex flex-col"
+            className="mr-2 w-[min(13rem,calc(100vw-3.5rem))] rounded-2xl border border-white/10 bg-zinc-950/98 md:bg-zinc-950/95 backdrop-blur-none md:backdrop-blur-xl shadow-2xl overflow-hidden max-h-[calc(100svh-14rem)] sm:max-h-[calc(100svh-8rem)] flex flex-col"
           >
             <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between shrink-0">
               <span className="text-xs font-semibold text-white/80 uppercase tracking-widest">

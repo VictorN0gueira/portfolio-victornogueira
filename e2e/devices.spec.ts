@@ -6,6 +6,7 @@ import {
   brokenWordsIn,
   enableLargeFont,
   measureOverflow,
+  measurePauseOverlaps,
   measureSmallTargets,
   nextFrames,
   openHome,
@@ -43,6 +44,7 @@ const DEVICES: readonly Device[] = [
   { name: 'large monitor', width: 2560, height: 1440, isTouch: false },
 ];
 
+const PANEL_READING_POSITION = 0.3;
 const FOOTER_TEXT = 'footer a, footer li';
 const A11Y_TRIGGER_NAME = 'Abrir opções de acessibilidade';
 // Every row sets all of these, so the results do not depend on the Playwright project (the mobile one is a Pixel 7 with
@@ -58,6 +60,16 @@ async function headerClearance(page: Page): Promise<number> {
   const heading = await page.getByRole('heading', { level: 1 }).boundingBox();
   if (!header || !heading) throw new Error('the header or the main heading has no box');
   return heading.y - (header.y + header.height);
+}
+
+/** Scrolls the hero panel to its reading position, where the tilt is gone and its boxes are at full size. */
+async function scrollPanelFlat(page: Page) {
+  await page.evaluate((fraction) => {
+    const panel = document.querySelector('[data-flow-window]') as HTMLElement;
+    window.scrollTo({ top: panel.getBoundingClientRect().top + window.scrollY - window.innerHeight * fraction, behavior: 'instant' });
+  }, PANEL_READING_POSITION);
+  await nextFrames(page);
+  await nextFrames(page);
 }
 
 /** The WhatsApp button and the Enviar button, with Enviar scrolled into view, and how many px of one lie on the other. */
@@ -103,6 +115,9 @@ for (const device of DEVICES) {
       await openHome(page);
       await nextFrames(page);
       const clearance = await headerClearance(page);
+      const tiltedOverlaps = await measurePauseOverlaps(page);
+      await scrollPanelFlat(page);
+      const pauseOverlaps = [...tiltedOverlaps, ...(await measurePauseOverlaps(page))];
 
       const small = new Map<string, string>();
       await walkPage(page, async () => {
@@ -117,6 +132,7 @@ for (const device of DEVICES) {
       expect.soft(overflow.documentExcess, 'scrollWidth past the viewport width').toBeLessThanOrEqual(OVERFLOW_ALLOWANCE_PX);
       expect.soft(overflow.elements, 'visible elements past the right edge').toEqual([]);
       expect.soft(clearance, 'gap between the header and the main heading at load').toBeGreaterThan(0);
+      expect.soft(pauseOverlaps, 'what the 52px pause button lies on (title bar text, controls of the panel)').toEqual([]);
       expect.soft(overlap, 'overlap area between the WhatsApp button and Enviar').toBe(0);
       expect.soft([...small.values()], `targets under ${MIN_TOUCH_PX}px`).toEqual([]);
       expect.soft(brokenFooterWords, 'footer words broken in the middle').toEqual([]);
@@ -159,3 +175,50 @@ test.describe(`the larger font at ${LARGE_FONT_PHONE.width}x${LARGE_FONT_PHONE.h
     expect.soft(overflow.elements, 'visible elements past the right edge').toEqual([]);
   });
 });
+
+// The panel of the accessibility button is anchored above the middle of a phone and was as tall as its list: on a short
+// phone its top went above the window and "Texto maior", the switch that turns the larger font off, was out of reach.
+const SHORT_PHONES = [
+  { width: 280, height: 653 },
+  { width: 320, height: 568 },
+  { width: 360, height: 640 },
+  { width: 375, height: 667 },
+  { width: 844, height: 390 },
+];
+const FONTS = [
+  { name: 'normal', isLarge: false },
+  { name: 'larger', isLarge: true },
+];
+
+for (const phone of SHORT_PHONES) {
+  for (const { name, isLarge } of FONTS) {
+    test.describe(`the accessibility panel at ${phone.width}x${phone.height} with the ${name} font`, () => {
+      test.use({ viewport: phone, hasTouch: true, isMobile: true, deviceScaleFactor: 1, userAgent: TOUCH_AGENT });
+
+      test('stays inside the window and its Texto maior switch can be reached and pressed', async ({ page }) => {
+        if (isLarge) await enableLargeFont(page);
+        await openHome(page);
+        await page.getByRole('button', { name: A11Y_TRIGGER_NAME }).tap();
+        const panel = page.getByRole('dialog', { name: 'Opções de acessibilidade' });
+        await expect(panel).toBeVisible();
+        await waitForStableBox(panel);
+
+        const box = await panel.boundingBox();
+        expect(box?.y ?? -1, 'panel top is inside the window').toBeGreaterThanOrEqual(0);
+        expect((box?.y ?? 0) + (box?.height ?? 0), 'panel bottom is inside the window').toBeLessThanOrEqual(phone.height);
+
+        const largeFont = panel.getByRole('button', { name: /Texto maior/ });
+        await largeFont.scrollIntoViewIfNeeded();
+        await expect(largeFont).toBeVisible();
+        await expect(largeFont).toHaveAttribute('aria-pressed', String(isLarge));
+        const optionBox = await largeFont.boundingBox();
+        expect(optionBox?.y ?? -1, 'the switch is inside the window').toBeGreaterThanOrEqual(0);
+        expect((optionBox?.y ?? 0) + (optionBox?.height ?? 0), 'the switch is inside the window').toBeLessThanOrEqual(phone.height);
+        expect(optionBox?.height ?? 0, 'the switch is a 44px target').toBeGreaterThanOrEqual(MIN_TOUCH_PX - TOUCH_ROUNDING_PX);
+
+        await largeFont.tap();
+        await expect(largeFont).toHaveAttribute('aria-pressed', String(!isLarge));
+      });
+    });
+  }
+}

@@ -49,6 +49,15 @@ describe('AccessibilityWidget', () => {
     expect(within(panel).getByRole('button', { name: /Resetar tudo/ })).toHaveClass('min-h-11');
   });
 
+  // On a short phone (320x568, 280x653, 360x640) the panel top went above the window and "Texto maior", the switch that
+  // turns the large font off, could not be reached. The panel is capped by the window height, and its list scrolls.
+  it('caps the panel by the height of the window, so it fits a short phone, and scrolls the list inside it', async () => {
+    const { panel } = await openPanel();
+
+    expect(panel).toHaveClass('max-h-[calc(100svh-14rem)]', 'sm:max-h-[calc(100svh-8rem)]', 'flex', 'flex-col', 'overflow-hidden');
+    expect(within(panel).getAllByRole('list')[0]).toHaveClass('overflow-y-auto');
+  });
+
   it('keeps the count badge inside the button, at its right edge and not outside it', async () => {
     const { user, panel } = await openPanel();
     await user.click(within(panel).getByRole('button', { name: /Sublinhar links/ }));

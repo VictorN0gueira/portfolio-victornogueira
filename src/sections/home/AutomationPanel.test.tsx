@@ -313,6 +313,8 @@ describe('AutomationPanel pause control', () => {
         '-my-3',
         '-ml-1',
         '-mr-3',
+        'max-[319px]:-mt-2',
+        'max-[319px]:-mb-4',
         'grid',
         'size-[3.25rem]',
         'shrink-0',

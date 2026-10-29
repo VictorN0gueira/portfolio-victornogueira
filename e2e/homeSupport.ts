@@ -137,6 +137,32 @@ export function waitForStableBox(target: Locator, frames = STEADY_FRAMES) {
   );
 }
 
+/**
+ * What the pause button of the hero panel lies on: the elements of the title bar that are not its ancestors (the three
+ * dots, the title, the status) and the controls of the body, by the area of the overlap of their boxes with the box
+ * the button has on the screen (the tilt counts). Empty when the 52px hit area touches nothing else.
+ */
+export function measurePauseOverlaps(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const button = document.querySelector('[data-flow-window] button[aria-label="Pausar animação"]');
+    if (!button) return ['no pause button'];
+    const own = button.getBoundingClientRect();
+    const bar = button.parentElement?.parentElement as Element;
+    const body = bar.nextElementSibling as Element;
+    const others = [
+      ...Array.from(bar.children).filter((child) => !child.contains(button)),
+      ...Array.from(body.querySelectorAll('button, a[href], [tabindex]')),
+    ];
+    return others.flatMap((element) => {
+      const rect = element.getBoundingClientRect();
+      const width = Math.min(own.right, rect.right) - Math.max(own.left, rect.left);
+      const height = Math.min(own.bottom, rect.bottom) - Math.max(own.top, rect.top);
+      const text = (element.textContent ?? '').trim().slice(0, 20) || element.tagName.toLowerCase();
+      return width > 0.5 && height > 0.5 ? [`${text} ${width.toFixed(1)}x${height.toFixed(1)}`] : [];
+    });
+  });
+}
+
 export interface OverflowReport {
   /** documentElement.scrollWidth minus the width the test asked for. */
   documentExcess: number;
