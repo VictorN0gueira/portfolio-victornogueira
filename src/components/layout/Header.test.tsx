@@ -133,9 +133,19 @@ describe('Header', () => {
     it('keeps 12px from both side edges, or the notch inset when it is larger, so a landscape notch never clips it', () => {
       const header = renderHeader();
 
-      expect(header).toHaveClass(
-        'w-[calc(100%-2*max(12px,env(safe-area-inset-left),env(safe-area-inset-right)))]',
-      );
+      const width = header.getAttribute('style') ?? '';
+
+      expect(width).toContain('max(12px, env(safe-area-inset-left), env(safe-area-inset-right))');
+      expect(width).toMatch(/width: calc\(100% - 2 \* max\(/);
+    });
+
+    it('takes the scrollbar a modal removes out of its width, and keeps the class that keeps it centred', () => {
+      const header = renderHeader();
+
+      // The viewport grows by the width of the bar and the class narrows the centring region by the same amount:
+      // without the term in the width, the header would grow by the width of the bar while a modal is open.
+      expect(header.getAttribute('style')).toContain('var(--removed-body-scroll-bar-size, 0px))');
+      expect(header).toHaveClass('right-scroll-bar-position');
     });
 
     it('transitions only max-width, translate and opacity', () => {

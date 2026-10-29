@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
+@import "./styles/skeleton.css";
 
 /* Legacy dark: utilities are intentionally inert until the old pages are rebuilt. */
 @custom-variant dark (&:where([data-vn-never-dark], [data-vn-never-dark] *));
@@ -108,42 +109,6 @@
 
 .a11y-font-large {
   font-size: 120% !important;
-}
-
-/* Text wraps into more lines with the larger font than the rem scale alone gives, most on a narrow screen. The skeletons
-   of the lazy home sections (HomePage) multiply their height by this, from the heights measured with the option on. */
-.a11y-font-large {
-  --vn-skeleton-scale: 1.12;
-}
-
-@media (min-width: 350px) {
-  .a11y-font-large {
-    --vn-skeleton-scale: 1.05;
-  }
-}
-
-@media (min-width: 500px) {
-  .a11y-font-large {
-    --vn-skeleton-scale: 1;
-  }
-}
-
-@media (min-width: 768px) {
-  .a11y-font-large {
-    --vn-skeleton-scale: 1.03;
-  }
-}
-
-@media (min-width: 1000px) {
-  .a11y-font-large {
-    --vn-skeleton-scale: 0.99;
-  }
-}
-
-@media (min-width: 1700px) {
-  .a11y-font-large {
-    --vn-skeleton-scale: 1.04;
-  }
 }
 
 .a11y-high-contrast {

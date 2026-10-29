@@ -113,7 +113,8 @@ test.describe('home sections', () => {
 async function delayChunks(page: Page, chunks: string[], delayMs: number): Promise<Map<string, number>> {
   const hits = new Map<string, number>(chunks.map((chunk) => [chunk, 0]));
   for (const chunk of chunks) {
-    await page.route(new RegExp(`/assets/${chunk}-[^/]+\.js$`), async (route) => {
+    // [.] and not an escaped dot: a backslash in a template literal is eaten before the regular expression sees it.
+    await page.route(new RegExp(`/assets/${chunk}-[^/]+[.]js$`), async (route) => {
       hits.set(chunk, (hits.get(chunk) ?? 0) + 1);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
       await route.continue();
@@ -133,6 +134,10 @@ function expectEveryChunkAnsweredLate(hits: Map<string, number>, chunks: string[
  * that is put back after the last late chunk, does not count as settled.
  */
 async function expectSettledAtAnchor(page: Page, id: string) {
+  // The run of frames is counted on the page: a new call (the ROI test makes two on one page) starts from zero.
+  await page.evaluate(() => {
+    delete (window as unknown as { __settledFrames?: number }).__settledFrames;
+  });
   await page.waitForFunction(
     ({ target, tolerance, frames }) => {
       const state = window as unknown as { __settledFrames?: number };
@@ -179,6 +184,53 @@ test.describe('home anchors', () => {
       await expectSettledAtAnchor(page, id);
     });
   }
+});
+
+test.describe('hash anchor motion', () => {
+  // How many scroll positions the page passes through on the way to #metodo, counting every frame. A glide has dozens;
+  // a jump has the one it lands on, and a correction after a late chunk adds one more.
+  const MAX_INTERMEDIATE_POSITIONS_WITH_REDUCED_MOTION = 2;
+
+  async function sampleScrollYWhileOpening(page: Page): Promise<number[]> {
+    await page.addInitScript(() => {
+      const seen = new Set<number>();
+      (window as unknown as { __scrollYSeen: Set<number> }).__scrollYSeen = seen;
+      const sample = () => {
+        seen.add(Math.round(window.scrollY));
+        requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await openHome(page, '/#metodo');
+    await expectSettledAtAnchor(page, 'metodo');
+    return page.evaluate(() => [...(window as unknown as { __scrollYSeen: Set<number> }).__scrollYSeen]);
+  }
+
+  test.describe('with a preference for reduced motion', () => {
+    test.use({ contextOptions: { reducedMotion: 'reduce' } });
+
+    test('jumps to #metodo, it does not glide', async ({ page }) => {
+      const positions = await sampleScrollYWhileOpening(page);
+      const final = Math.max(...positions);
+      const intermediate = positions.filter((position) => position !== 0 && position !== final);
+
+      expect(intermediate.length).toBeLessThanOrEqual(MAX_INTERMEDIATE_POSITIONS_WITH_REDUCED_MOTION);
+      expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe('auto');
+    });
+  });
+
+  test.describe('with no preference', () => {
+    test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+    // Not a count of frames: a loaded machine draws few of them, and a few samples would say nothing about a glide.
+    // The page glides because its CSS says so, and the hash scroll leaves the behavior to that CSS.
+    test('leaves the glide to the CSS, which is smooth', async ({ page }) => {
+      await openHome(page, '/#metodo');
+      await expectSettledAtAnchor(page, 'metodo');
+
+      expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe('smooth');
+    });
+  });
 });
 
 test.describe('home quote hand over', () => {

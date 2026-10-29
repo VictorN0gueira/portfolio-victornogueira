@@ -20,9 +20,11 @@ interface SectionSkeletonProps {
   heightClassName?: string;
 }
 
-// Neutral on a light and on a dark page alike, since the legacy pages are still dark until they are rebuilt.
+// The legacy pages (/sobre, /contato, /projetos) have the same cream body as the home, so the compact placeholder is
+// drawn for a light page: the label is gray-dark (7.4:1 on cream; gray-mid would be 3.1:1 at this size) and the
+// spinner, a graphic, is gray-mid (3.1:1).
 const SPINNER_CLASSES = 'size-10 rounded-full border-2 border-vn-gray-mid/40 border-t-vn-gray-mid motion-safe:animate-spin';
-const LABEL_CLASSES = 'font-mono text-xs font-medium uppercase tracking-[0.18em] text-vn-gray-mid';
+const LABEL_CLASSES = 'font-mono text-xs font-medium uppercase tracking-[0.18em] text-vn-gray-dark';
 
 /**
  * Placeholder of a lazy section. It is only a picture of loading, so it is hidden from assistive tech: the sections

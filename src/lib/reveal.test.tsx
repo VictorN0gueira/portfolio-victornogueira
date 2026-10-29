@@ -26,6 +26,14 @@ describe('SectionSkeleton as the compact placeholder of the legacy pages', () =>
     expect(root).toHaveClass('items-center', 'py-24');
     expect(root.className).not.toMatch(/bg-|min-h-/);
   });
+
+  it('draws its label dark enough for a cream page (gray-dark, 7.4:1), not gray-mid (3.1:1)', () => {
+    render(<SectionSkeleton />);
+    const label = screen.getByText('Carregando...');
+
+    expect(label).toHaveClass('text-vn-gray-dark');
+    expect(label.className).not.toContain('text-vn-gray-mid');
+  });
 });
 
 describe('SectionSkeleton in both looks', () => {

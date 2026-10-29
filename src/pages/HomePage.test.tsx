@@ -148,7 +148,7 @@ describe('HomePage quote hand over', () => {
     await waitFor(() => expect(messageField().value.startsWith(QUOTE_START)).toBe(true));
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
     expect(scrollIntoView.mock.contexts[0]).toBe(document.getElementById('contato'));
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+    expect(scrollIntoView).toHaveBeenCalledWith();
   });
 
   it('fills the same quote again after the visitor edited the field', async () => {

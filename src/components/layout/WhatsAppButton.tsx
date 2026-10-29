@@ -27,7 +27,7 @@ export function WhatsAppButton() {
         rel="noopener noreferrer"
         aria-label="Falar no WhatsApp"
         style={POSITION}
-        className={`fixed z-40 grid size-[52px] place-items-center rounded-full border border-vn-gray-dark bg-vn-black text-vn-white shadow-lg transition-transform duration-150 ease-out hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--color-vn-white),0_0_0_4px_var(--color-vn-ink)]`}
+        className="fixed z-40 grid size-[52px] place-items-center rounded-full border border-vn-gray-dark bg-vn-black text-vn-white shadow-lg transition-transform duration-150 ease-out hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--color-vn-white),0_0_0_4px_var(--color-vn-ink)]"
       >
         <span
           aria-hidden="true"

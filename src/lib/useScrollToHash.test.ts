@@ -34,14 +34,14 @@ describe('useScrollToHash', () => {
     document.body.innerHTML = '';
   });
 
-  it('scrolls smoothly to the element named by the hash', () => {
+  it('scrolls to the element named by the hash, leaving the behavior to the CSS of the page', () => {
     const scrollIntoView = mountTarget('x');
 
     renderHook(() => useScrollToHash(), { wrapper: routerAt('/#x') });
     vi.advanceTimersByTime(FRAME_MS);
 
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+    expect(scrollIntoView).toHaveBeenCalledWith();
   });
 
   it('keeps retrying and scrolls once the element mounts a few frames later', () => {
@@ -53,7 +53,7 @@ describe('useScrollToHash', () => {
     vi.advanceTimersByTime(2 * FRAME_MS);
 
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+    expect(scrollIntoView).toHaveBeenCalledWith();
   });
 
   it('still scrolls when the element mounts just inside the window', () => {
@@ -65,7 +65,7 @@ describe('useScrollToHash', () => {
     vi.advanceTimersByTime(2 * FRAME_MS);
 
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+    expect(scrollIntoView).toHaveBeenCalledWith();
   });
 
   it('waits for a target whose chunk takes longer than the old one second window', () => {
@@ -77,7 +77,7 @@ describe('useScrollToHash', () => {
     vi.advanceTimersByTime(2 * FRAME_MS);
 
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+    expect(scrollIntoView).toHaveBeenCalledWith();
   });
 
   it('stops scrolling retries after the element is found', () => {

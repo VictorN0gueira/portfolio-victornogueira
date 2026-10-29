@@ -62,7 +62,8 @@ function keepAligned(element: HTMLElement): () => void {
 }
 
 /**
- * Scrolls smoothly to the element with this id, even when it is not in the page yet (a lazy section is mounted by a
+ * Scrolls to the element with this id (smoothly unless the visitor asked for reduced motion, which the CSS of the page
+ * decides), even when it is not in the page yet (a lazy section is mounted by a
  * chunk that may arrive late), and then keeps it aligned while late content settles above it. The page has no scroll
  * anchoring in every browser, so the correction does not rely on it. It gives up looking for the element after
  * MOUNT_WINDOW_MS and stops correcting at the first wheel, touch, key or pointer input of the visitor, or after
@@ -77,7 +78,9 @@ export function scrollToIdWhenMounted(id: string): () => void {
     frame = 0;
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      // No behavior given: the page decides. Its scroll-behavior (index.css) is smooth only when the visitor has not
+      // asked for reduced motion, and a hard coded smooth here would glide anyway.
+      element.scrollIntoView();
       stopAligning = keepAligned(element);
     } else if (performance.now() - startedAt < MOUNT_WINDOW_MS) {
       frame = requestAnimationFrame(tryScroll);

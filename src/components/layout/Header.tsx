@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { MAIN_NAV, PRIMARY_CTA } from '../../data/navigation';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { KEEPS_PLACE_UNDER_SCROLL_LOCK } from '../../lib/scrollLock';
+import { KEEPS_PLACE_UNDER_SCROLL_LOCK, SCROLL_LOCK_BAR_SIZE } from '../../lib/scrollLock';
 import Button from '../ui/Button';
 import Logo from '../ui/Logo';
 import { isNavCurrent } from './isNavCurrent';
@@ -17,7 +17,14 @@ const FOCUS_RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus
 
 // Inline because it compares the notch inset with 12px: pt-safe would replace the offset instead.
 export const HEADER_TOP_OFFSET = 'max(12px, env(safe-area-inset-top))';
-const HEADER_OFFSET = { top: HEADER_TOP_OFFSET } as const;
+// The width is the window minus a gutter on each side, and minus the scrollbar a modal removes: that one widens the
+// viewport (the percentage) and the class of lib/scrollLock.ts narrows the region the header is centred in by the same
+// amount, so without this term the header would grow by the width of the bar while a modal is open.
+const HEADER_GUTTER = 'max(12px, env(safe-area-inset-left), env(safe-area-inset-right))';
+const HEADER_STYLE = {
+  top: HEADER_TOP_OFFSET,
+  width: `calc(100% - 2 * ${HEADER_GUTTER} - ${SCROLL_LOCK_BAR_SIZE})`,
+} as const;
 // What a page needs to start its content below the header, in rem so it follows a larger font like the header does.
 // The header is 44px controls (2.75rem), 0.375rem of padding above and below (py-1.5) and a 1px border on each side.
 export const HEADER_HEIGHT = 'calc(3.5rem + 2px)';
@@ -83,12 +90,12 @@ export function Header() {
   return (
     <header
       data-scrolled={isScrolled ? 'true' : undefined}
-      style={HEADER_OFFSET}
+      style={HEADER_STYLE}
       // max-width is the one layout property animated on the site. It is allowed here because the header is
       // a single fixed element and its inner flex row only re-centers, so no other box depends on its size.
       // Everything else moves with transform, translate and opacity only. The caps are in rem (68.75rem is
       // 1100px and 53.75rem is 860px at the normal font) so they grow with a11y-font-large, like the labels.
-      className={`${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed inset-x-0 z-50 mx-auto flex w-[calc(100%-2*max(12px,env(safe-area-inset-left),env(safe-area-inset-right)))] max-w-[68.75rem] items-center justify-between gap-2 rounded-full border border-vn-gray-light bg-vn-white/90 py-1.5 pr-1.5 pl-4 backdrop-blur-md transition-[max-width,translate,opacity] duration-500 ease-out data-[scrolled=true]:max-w-[53.75rem] min-[360px]:pl-5 [@media(max-height:480px)]:-translate-y-2 [@media(max-height:480px)]:py-0.5`}
+      className={`${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed inset-x-0 z-50 mx-auto flex max-w-[68.75rem] items-center justify-between gap-2 rounded-full border border-vn-gray-light bg-vn-white/90 py-1.5 pr-1.5 pl-4 backdrop-blur-md transition-[max-width,translate,opacity] duration-500 ease-out data-[scrolled=true]:max-w-[53.75rem] min-[360px]:pl-5 [@media(max-height:480px)]:-translate-y-2 [@media(max-height:480px)]:py-0.5`}
     >
       <Link
         to="/"

@@ -34,6 +34,7 @@ const SUCCESS_TITLE = 'Recebemos sua mensagem';
 const ERROR_TEXT = 'Não deu pra enviar. Tenta de novo ou fala direto pelo WhatsApp.';
 const MIN_TEXT_PX = 16;
 const MIN_TOUCH_PX = 44;
+const TOUCH_ROUNDING_PX = 0.01;
 const LARGE_FONT_RATIO = 1.2;
 
 function formOf(page: Page): Locator {
@@ -657,7 +658,8 @@ test.describe('contact form on small screens', () => {
     for (const [name, control] of Object.entries(controls)) {
       const box = await control.boundingBox();
       expect(box, name).not.toBeNull();
-      expect(box?.height ?? 0, name).toBeGreaterThanOrEqual(MIN_TOUCH_PX);
+      // A box of 44px can be measured as 43.99997 (floating point), which is not a smaller target.
+      expect(box?.height ?? 0, name).toBeGreaterThanOrEqual(MIN_TOUCH_PX - TOUCH_ROUNDING_PX);
     }
   });
 });

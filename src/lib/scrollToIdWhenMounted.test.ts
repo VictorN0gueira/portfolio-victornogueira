@@ -57,13 +57,13 @@ describe('scrollToIdWhenMounted', () => {
     document.body.innerHTML = '';
   });
 
-  it('scrolls at once, smoothly, when the element is already in the page', () => {
+  it('scrolls at once, leaving the behavior to the CSS of the page, when the element is already in the page', () => {
     const { scrollIntoView } = mountTarget('x');
 
     scrollToIdWhenMounted('x');
 
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+    expect(scrollIntoView).toHaveBeenCalledWith();
   });
 
   it('waits for an element whose chunk arrives after more than the old one second window, and scrolls once', () => {
