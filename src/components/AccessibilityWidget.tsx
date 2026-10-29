@@ -83,7 +83,10 @@ export default function AccessibilityWidget() {
   useEffect(() => {
     if (!open) return;
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      // The panel unmounts with the focus inside it: put the focus back on the button that opened it.
+      btnRef.current?.focus();
     }
     function handleClick(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -101,10 +104,15 @@ export default function AccessibilityWidget() {
   const activeCount = Object.values(state).filter(Boolean).length;
 
   return (
-    /* Mobile: ancorado no bottom para alcance do polegar; Desktop: centralizado na lateral */
+    /* Mobile: ancorado no bottom para alcance do polegar; Desktop: centralizado na lateral. Celular deitado (altura
+       abaixo de 30rem, 480px; o rem da media query e o do navegador, a fonte maior do site nao o move): centralizado
+       tambem, porque a 13rem do fundo a lista tinha 8px de altura. O painel fica do lado do botao do WhatsApp (que
+       esta no canto de baixo): a altura maxima deixa 16px em cima e a margem de baixo de 60px o sobe, de modo que a
+       borda de baixo para 76px acima do fim da janela, acima do botao do WhatsApp (16px de folga e 52px de altura).
+       Em px e nao em rem de proposito: com a fonte maior o rem cresce 20% e a lista ficaria menor que duas opcoes. */
     <div
       ref={panelRef}
-      className={`${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed right-0 bottom-52 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 z-[150] flex items-center`}
+      className={`${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed right-0 bottom-52 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 [@media(max-height:30rem)]:bottom-auto [@media(max-height:30rem)]:top-1/2 [@media(max-height:30rem)]:-translate-y-1/2 z-[150] flex items-center`}
       style={{ direction: 'rtl' }}
     >
       {/* Painel */}
@@ -118,7 +126,7 @@ export default function AccessibilityWidget() {
             style={{ willChange: 'transform, opacity', direction: 'ltr' }}
             role="dialog"
             aria-label="Opções de acessibilidade"
-            className="mr-2 w-[min(13rem,calc(100vw-3.5rem))] rounded-2xl border border-white/10 bg-zinc-950/98 md:bg-zinc-950/95 backdrop-blur-none md:backdrop-blur-xl shadow-2xl overflow-hidden max-h-[calc(100svh-14rem)] sm:max-h-[calc(100svh-8rem)] flex flex-col"
+            className="mr-2 w-[min(13rem,calc(100vw-3.5rem))] rounded-2xl border border-white/10 bg-zinc-950/98 md:bg-zinc-950/95 backdrop-blur-none md:backdrop-blur-xl shadow-2xl overflow-hidden max-h-[calc(100svh-14rem)] sm:max-h-[calc(100svh-8rem)] [@media(max-height:30rem)]:max-h-[calc(100svh-92px)] [@media(max-height:30rem)]:mb-[60px] flex flex-col"
           >
             <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between shrink-0">
               <span className="text-xs font-semibold text-white/80 uppercase tracking-widest">

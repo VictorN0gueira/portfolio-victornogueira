@@ -58,6 +58,34 @@ describe('AccessibilityWidget', () => {
     expect(within(panel).getAllByRole('list')[0]).toHaveClass('overflow-y-auto');
   });
 
+  // Escape from an option used to leave the focus on the body once the panel was gone.
+  it('gives the focus back to the trigger when Escape closes the panel from inside it', async () => {
+    const { user, panel } = await openPanel();
+    const option = within(panel).getAllByRole('button')[0];
+    option.focus();
+    expect(document.activeElement).toBe(option);
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: PANEL_NAME })).toBeNull());
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: TRIGGER_NAME }));
+  });
+
+  it('centres the panel on the window when it is short (a phone on its side) and keeps it above the WhatsApp button', async () => {
+    const { panel } = await openPanel();
+    const wrapper = panel.parentElement as HTMLElement;
+
+    expect(wrapper).toHaveClass(
+      '[@media(max-height:30rem)]:bottom-auto',
+      '[@media(max-height:30rem)]:top-1/2',
+      '[@media(max-height:30rem)]:-translate-y-1/2',
+    );
+    expect(panel).toHaveClass(
+      '[@media(max-height:30rem)]:max-h-[calc(100svh-92px)]',
+      '[@media(max-height:30rem)]:mb-[60px]',
+    );
+  });
+
   it('keeps the count badge inside the button, at its right edge and not outside it', async () => {
     const { user, panel } = await openPanel();
     await user.click(within(panel).getByRole('button', { name: /Sublinhar links/ }));
