@@ -37,7 +37,7 @@ const WORDMARK_FONT_SIZE = 'min(clamp(4.5rem, 22vw, 20rem), 33cqw)';
 
 const COLUMN_TITLE = 'font-mono text-xs lowercase tracking-[0.18em] text-vn-gray-mid';
 const LINK =
-  'inline-flex min-h-11 items-center text-sm text-vn-gray-light hover:text-vn-white [overflow-wrap:anywhere] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-white';
+  'inline-flex min-h-11 min-w-11 items-center text-sm text-vn-gray-light hover:text-vn-white [overflow-wrap:anywhere] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-white';
 
 /**
  * Black footer with the sitemap, the contact data and a giant "vn one" wordmark that unveils once when it

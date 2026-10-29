@@ -145,6 +145,20 @@ describe('Footer', () => {
         expect(link).toHaveClass('min-h-11');
       }
     });
+
+    it('makes every footer link at least 44px wide, so a short word like Blog is a full touch target', () => {
+      const footer = renderFooter();
+
+      const textLinks = within(footer)
+        .getAllByRole('link')
+        .filter((link) => !SOCIAL_LINKS.some((social) => social.label === link.getAttribute('aria-label')))
+        // The logo link is as wide as the logo; the words of the columns are the ones that can be narrower than a finger.
+        .filter((link) => link.getAttribute('aria-label') !== 'VN One, página inicial');
+      expect(textLinks.length).toBeGreaterThan(8);
+      for (const link of textLinks) {
+        expect(link).toHaveClass('min-w-11');
+      }
+    });
   });
 
   describe('bottom bar', () => {
