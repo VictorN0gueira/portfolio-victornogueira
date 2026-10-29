@@ -207,17 +207,20 @@ describe('AutomationPanel cycle', () => {
     expect(getCurrentStep()).toBeUndefined();
   });
 
-  it('pauses while the pointer is over the body and goes on when it leaves', () => {
+  // The owner asked for it: the panel does not stop when the mouse is over it.
+  it('keeps running while the pointer is over the body, and does not mark the window as paused', () => {
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
     advance(1);
 
     fireEvent.pointerEnter(getBody());
+    expect(getWindow()).not.toHaveAttribute('data-paused');
     advance(3);
-    expect(getDoneRows()).toHaveLength(1);
+    expect(getDoneRows()).toHaveLength(4);
 
     fireEvent.pointerLeave(getBody());
+    expect(getWindow()).not.toHaveAttribute('data-paused');
     advance(1);
-    expect(getDoneRows()).toHaveLength(2);
+    expect(getDoneRows()).toHaveLength(0);
   });
 
   it('pauses while the focus is inside the body and goes on when it leaves', () => {
@@ -235,7 +238,7 @@ describe('AutomationPanel cycle', () => {
     expect(getDoneRows()).toHaveLength(2);
   });
 
-  it('stays paused while one of the two holds is still on', () => {
+  it('stays paused while the focus holds it, whatever the pointer does', () => {
     stubOverflowingSteps();
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
     const steps = getStepsList();
@@ -392,20 +395,19 @@ describe('AutomationPanel pause control', () => {
     expect(getPauseButton()).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('also marks the window as paused while the pointer or the focus holds the body, and clears it when they let go', () => {
+  it('also marks the window as paused while the focus holds the body, and clears it when it lets go (the pointer never does)', () => {
     stubOverflowingSteps();
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
     fireEvent.pointerEnter(getBody());
-    expect(getWindow()).toHaveAttribute('data-paused', 'true');
-    fireEvent.pointerLeave(getBody());
     expect(getWindow()).not.toHaveAttribute('data-paused');
+    fireEvent.pointerLeave(getBody());
 
     act(() => getStepsList().focus());
     expect(getWindow()).toHaveAttribute('data-paused', 'true');
     act(() => getStepsList().blur());
     expect(getWindow()).not.toHaveAttribute('data-paused');
-    // A hold of the pointer or the focus is not the choice of the visitor: the button does not show it as pressed.
+    // A hold of the focus is not the choice of the visitor: the button does not show it as pressed.
     expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
   });
 
@@ -497,16 +499,10 @@ describe('AutomationPanel status', () => {
     expect(within(titleBar).queryByText('pausado')).not.toBeInTheDocument();
   });
 
-  // The status is the visitor's explicit choice only: a hold by the pointer or the focus ends by itself the
-  // moment they leave, and flashing "pausado" on every hover would be noise.
-  it('keeps "rodando" while only the pointer or the focus holds the cycle', () => {
+  // The status is the visitor's explicit choice only: a hold by the focus ends by itself the moment it leaves.
+  it('keeps "rodando" while only the focus holds the cycle', () => {
     stubOverflowingSteps();
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
-
-    fireEvent.pointerEnter(getBody());
-    expect(getWindow()).toHaveAttribute('data-paused', 'true');
-    expect(screen.getByText('rodando')).toBeInTheDocument();
-    fireEvent.pointerLeave(getBody());
 
     act(() => getStepsList().focus());
     expect(getWindow()).toHaveAttribute('data-paused', 'true');

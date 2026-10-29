@@ -64,22 +64,22 @@ interface FlowWindowProps {
  * The window itself, with the cycle.
  * Row k is done when the beat is past it: beat 0 has none done, beat 4 has all four, and the fifth beat starts over.
  * The running step is the beat modulo 4.
- * The cycle holds while the visitor paused it, the pointer is over the body or the focus is inside the body.
- * These are separate holds, so it resumes only when all of them are off.
+ * The cycle holds while the visitor paused it or the focus is inside the body (a keyboard user reading the steps).
+ * The pointer does not hold it: the panel keeps running while the mouse is over it, and the pause is the visitor's
+ * own toggle. These are separate holds, so it resumes only when both are off.
  * The title bar is not part of the body, so pressing the pause control never holds the cycle by itself.
  * The hook also holds it while the tab is hidden.
- * The window carries data-paused while any hold is on, and CSS stops the cable with it.
+ * The window carries data-paused while a hold is on, and CSS stops the cable with it.
  * Without motion nothing runs: every row is done, there is no pause control and no timer.
  * The status word in the title bar follows the visitor's own pause only: "pausado" after they press the toggle,
- * "rodando" otherwise. A hold by the pointer or the focus ends by itself when they leave, so it keeps "rodando".
+ * "rodando" otherwise. A hold by the focus ends by itself when it leaves, so it keeps "rodando".
  * The parent gives it key={task}, so a new task starts a new cycle.
  */
 function FlowWindow({ task, isUserPaused, onTogglePause }: FlowWindowProps) {
   const isMotionAllowed = useMotionAllowed();
-  const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const rows = heroFlows[task];
-  const isPaused = isMotionAllowed && (isUserPaused || isHovered || isFocused);
+  const isPaused = isMotionAllowed && (isUserPaused || isFocused);
   const { index } = useCycle(rows.length + 1, CYCLE_STEP_MS, { enabled: isMotionAllowed && !isPaused });
 
   const { status } = homeCopy.hero.panel;
@@ -104,8 +104,6 @@ function FlowWindow({ task, isUserPaused, onTogglePause }: FlowWindowProps) {
       >
         <div
           data-flow-body=""
-          onPointerEnter={() => setIsHovered(true)}
-          onPointerLeave={() => setIsHovered(false)}
           onFocus={() => setIsFocused(true)}
           onBlur={(event) => {
             if (!event.currentTarget.contains(event.relatedTarget)) setIsFocused(false);

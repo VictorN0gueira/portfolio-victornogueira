@@ -378,6 +378,22 @@ test.describe('hero pause control', () => {
     await expect.poll(() => doneCount(page)).toBe((paused + 1) % CYCLE_LENGTH);
   });
 
+  test('keeps running while the pointer is over the panel', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'this needs a pointer that hovers');
+
+    await openWithFrozenClock(page);
+    const before = await doneCount(page);
+    await page.getByRole('list', { name: ROWS_LIST_NAME }).hover();
+
+    await expect(page.locator('[data-flow-window]')).not.toHaveAttribute('data-paused', 'true');
+    await page.clock.runFor(ONE_BEAT_MS);
+    await flushRender(page);
+
+    await expect.poll(() => doneCount(page)).toBe((before + 1) % CYCLE_LENGTH);
+    await expect(page.locator('[data-flow-window]')).not.toHaveAttribute('data-paused', 'true');
+    await expect.poll(() => pulse(page).evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('running');
+  });
+
   test('keeps the pause when the pointer comes and goes', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'this needs a pointer that hovers');
 
