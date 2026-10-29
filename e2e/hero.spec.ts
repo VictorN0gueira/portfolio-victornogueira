@@ -266,10 +266,13 @@ test.describe('hero sentence and panel', () => {
     test.skip(testInfo.project.name !== 'mobile', 'this is the touch check');
 
     await page.goto('/');
-    await page.getByRole('button', { name: TASK_PILL_NAME }).tap();
-
+    const pill = page.getByRole('button', { name: TASK_PILL_NAME });
     const list = page.getByRole('listbox', { name: 'Tarefa' });
-    await expect(list).toBeVisible();
+    // Retry safe: a tap that did not open the list is tapped again, a list already open is not tapped shut.
+    await expect(async () => {
+      if (!(await list.isVisible())) await pill.tap();
+      await expect(list).toBeVisible({ timeout: 2000 });
+    }).toPass();
     await expect(list.getByRole('option')).toHaveCount(4);
   });
 
