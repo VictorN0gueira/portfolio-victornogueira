@@ -188,7 +188,7 @@ export default function AccessibilityWidget() {
         <Accessibility className="w-5 h-5" aria-hidden="true" />
         {activeCount > 0 && !open && (
           <span
-            className={`absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center
+            className={`absolute -top-1 right-0 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center
               ${isDark ? 'bg-zinc-950 text-white' : 'bg-white text-zinc-950 border border-zinc-200'}`}
             aria-hidden="true"
           >
