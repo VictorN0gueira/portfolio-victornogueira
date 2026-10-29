@@ -237,8 +237,12 @@ interface PauseButtonProps {
 
 /**
  * Pauses and resumes everything that moves in the panel (WCAG 2.2.2). It lives in the dark title bar: the shared
- * PauseToggle in its dark tone (a small icon button to the eye inside a 44px hit area, with a white focus ring that
+ * PauseToggle in its dark tone (a small icon button to the eye inside a hit area, with a white focus ring that
  * shows on that bar), pulled into the bar's padding. Its name stays "Pausar animação" and aria-pressed carries the state.
+ * The hit area is 52px, not 44: the panel is tilted with the scroll (rotateX up to 14deg and scale .94 from the top
+ * centre), which draws the button about 9% smaller on screen at the start, and 52px still comes to more than 44px then.
+ * The negative margins (12px above and below, 4px to the left, 12px to the right) keep the margin box of the old 44px
+ * button with 8px margins, so the title bar keeps its height and the icon button its place.
  */
 export function PauseButton({ isPaused, onToggle }: PauseButtonProps) {
   return (
@@ -247,7 +251,7 @@ export function PauseButton({ isPaused, onToggle }: PauseButtonProps) {
       label={homeCopy.hero.panel.pause}
       onToggle={onToggle}
       tone="dark"
-      className="-my-2 -mr-2"
+      className="-my-3 -ml-1 -mr-3 size-[3.25rem]"
     />
   );
 }

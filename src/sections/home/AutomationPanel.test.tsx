@@ -295,25 +295,26 @@ describe('AutomationPanel pause control', () => {
     expect(getPauseButton()).toHaveAttribute('type', 'button');
   });
 
-  it('has a 44px hit area, a visible focus ring that works on the dark bar, and is a small icon button to the eye', () => {
+  it('has a 52px hit area (44px is the least it may show when the panel tilts), a visible focus ring that works on the dark bar, and is a small icon button to the eye', () => {
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
-    expect(getPauseButton()).toHaveClass('size-11', 'focus-visible:outline-2', 'focus-visible:outline-vn-white');
+    expect(getPauseButton()).toHaveClass('size-[3.25rem]', 'focus-visible:outline-2', 'focus-visible:outline-vn-white');
     expect(getPauseButton().firstElementChild).toHaveClass('size-7', 'rounded-full');
   });
 
   // The button was moved onto the shared PauseToggle (dark tone) with no change of look: these are the exact classes it had.
-  it('keeps exactly the classes it had before it became the dark tone of the shared toggle', () => {
+  it('has exactly the classes of the dark tone of the shared toggle, with the 52px hit area and the margins that keep the title bar', () => {
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
     const classesOf = (element: Element | null) => Array.from(element?.classList ?? []).sort();
 
     expect(classesOf(getPauseButton())).toEqual(
       [
         'group',
-        '-my-2',
-        '-mr-2',
+        '-my-3',
+        '-ml-1',
+        '-mr-3',
         'grid',
-        'size-11',
+        'size-[3.25rem]',
         'shrink-0',
         'cursor-pointer',
         'place-items-center',
