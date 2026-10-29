@@ -9,7 +9,7 @@ import { useHorizontalOverflow } from '../../hooks/useHorizontalOverflow';
 
 /**
  * What the panel is doing. `running`: the cycle advances, so nothing in it is announced and the running step is
- * only drawn. `paused`: the visitor, the pointer or the focus holds it, so it is still and reads like a static
+ * only drawn. `paused`: the visitor or the focus holds it, so it is still and reads like a static
  * state. `static`: no motion at all, every row is done.
  */
 export type PanelMode = 'running' | 'paused' | 'static';
@@ -230,7 +230,7 @@ function FlowRowItem({ row, state, isDoneTextExposed }: FlowRowItemProps) {
 }
 
 interface PauseButtonProps {
-  /** The visitor's own pause. A hold by the pointer or the focus is not shown here. */
+  /** The visitor's own pause. A hold by the focus is not shown here. */
   isPaused: boolean;
   onToggle: () => void;
 }

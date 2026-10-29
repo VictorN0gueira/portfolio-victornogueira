@@ -396,8 +396,8 @@
 
 /*
  * Paused automation panel: the window carries data-paused="true" while the visitor paused it, or the focus is
- * inside its body (the pointer does not hold it), and the dash of the cable stops where it is. The animation itself stays on the pulse, so
- * leaving the pause continues from the same point.
+ * inside its body (the pointer does not hold it), and the dash of the cable stops where it is. The animation
+ * itself stays on the pulse, so leaving the pause continues from the same point.
  */
 [data-flow-window][data-paused="true"] .vn-cable-pulse {
   animation-play-state: paused;
