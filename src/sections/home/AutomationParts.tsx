@@ -241,10 +241,12 @@ interface PauseButtonProps {
  * shows on that bar), pulled into the bar's padding. Its name stays "Pausar animação" and aria-pressed carries the state.
  * The hit area is 52px, not 44: the panel is tilted with the scroll (rotateX up to 14deg and scale .94 from the top
  * centre), which draws the button about 9% smaller on screen at the start, and 52px still comes to more than 44px then.
- * The negative margins (12px above and below, 4px to the left, 12px to the right) keep the margin box of the old 44px
- * button with 8px margins, so the title bar keeps its height and the icon button its place. Below 320px the title wraps
- * and this button sits under the "automação ao vivo" line with 8px between them, so there it reaches 8px above and 16px
- * below (the same margin box): the hit area stays off the title line, and the 4px under the bar belong to the body.
+ * The negative margins (8px above, 16px below, 4px to the left, 12px to the right) give a margin box of 28px, the
+ * same as the old 44px button had with 8px margins, so the title bar keeps its height at every width. The button
+ * reaches 8px above its row, which is the gap between the rows of a wrapped title bar: where the title wraps (and it
+ * does at every phone width, with the larger font up to about 430px) the hit area never enters the title line, and
+ * the 4px it reaches under the bar belong to the body. The margins are not symmetric, so the disc is moved up by 4px to
+ * stay on the centre of the row, level with the status pill, at every width.
  */
 export function PauseButton({ isPaused, onToggle }: PauseButtonProps) {
   return (
@@ -253,7 +255,7 @@ export function PauseButton({ isPaused, onToggle }: PauseButtonProps) {
       label={homeCopy.hero.panel.pause}
       onToggle={onToggle}
       tone="dark"
-      className="-my-3 -ml-1 -mr-3 size-[3.25rem] max-[319px]:-mt-2 max-[319px]:-mb-4"
+      className="-mt-2 -mb-4 -ml-1 -mr-3 size-[3.25rem] [&>span]:-translate-y-1"
     />
   );
 }

@@ -310,11 +310,11 @@ describe('AutomationPanel pause control', () => {
     expect(classesOf(getPauseButton())).toEqual(
       [
         'group',
-        '-my-3',
+        '-mt-2',
+        '-mb-4',
         '-ml-1',
         '-mr-3',
-        'max-[319px]:-mt-2',
-        'max-[319px]:-mb-4',
+        '[&>span]:-translate-y-1',
         'grid',
         'size-[3.25rem]',
         'shrink-0',
