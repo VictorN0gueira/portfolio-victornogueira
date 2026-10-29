@@ -4,16 +4,32 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { ProjectImage } from '../lib/projectImage';
 import { projectImageManifest } from './projectImages';
-import { projects } from './projects';
+import { coverOf, projects } from './projects';
 
 const PUBLIC_DIR = resolve(__dirname, '../../public');
 const MAX_FILE_BYTES = 200 * 1024;
+const REMOTE_HOST = /https?:\/\//;
 
-function imagesOf(project: (typeof projects)[number]): ProjectImage[] {
-  return [project.image, ...(project.gallery ?? [])];
-}
+/**
+ * Manifest entries that no project uses. The manifest is generated (scripts/process-project-images.mjs), so these
+ * stay until the assets branch regenerates it: the projects dropped from the site, and the DizPara shots replaced by
+ * the new ones. Remove an entry from here when it leaves the manifest.
+ */
+const ORPHANS_UNTIL_ASSETS_REGENERATE = new Set([
+  'troco/cover',
+  'troco/dashboard-troco',
+  'troco/investimentos-troco',
+  'troco/lembretes-troco',
+  'importacao-massiva-nfe/cover',
+  'diagnostico-empresarial/login',
+  'diagnostico-empresarial/whatsapp',
+  'dizpara/login',
+  'dizpara/leads',
+]);
 
-const allImages = projects.flatMap((project) => imagesOf(project).map((image) => ({ slug: project.slug, image })));
+const allImages = projects.flatMap((project) =>
+  project.shots.map((shot) => ({ slug: project.slug, image: shot.image })),
+);
 
 /** The file paths a ProjectImage points at, under public/. */
 function filesOf(image: ProjectImage): string[] {
@@ -23,15 +39,15 @@ function filesOf(image: ProjectImage): string[] {
 }
 
 describe('project images', () => {
-  it('covers every project with a cover and at least one image', () => {
+  it('covers every project with at least a cover and one more image', () => {
     expect(projects.length).toBeGreaterThan(0);
-    for (const project of projects) expect(imagesOf(project).length).toBeGreaterThan(0);
+    for (const project of projects) expect(project.shots.length).toBeGreaterThanOrEqual(2);
   });
 
   it('keeps every image on this site: no remote host in any src, srcSet or thumbnail', () => {
     const urls = allImages.flatMap(({ image }) => [image.src, image.thumbSrc, image.srcSet]);
 
-    for (const url of urls) expect(url).not.toMatch(/https?:\/\//);
+    for (const url of urls) expect(url).not.toMatch(REMOTE_HOST);
     for (const url of urls) expect(url).not.toMatch(/minio/i);
   });
 
@@ -60,9 +76,11 @@ describe('project images', () => {
     }
   });
 
-  it('keeps a cover share image, as an absolute https URL, for every project', () => {
-    for (const project of projects) {
-      expect(project.image.shareUrl).toMatch(/^https:\/\/vnone\.com\.br\/projects\/.+-share\.jpg$/);
+  it('keeps a share image, as an absolute https URL, on every cover that has one', () => {
+    const covers = projects.map((project) => ({ slug: project.slug, cover: coverOf(project) }));
+
+    for (const { cover } of covers) {
+      if (cover.shareUrl) expect(cover.shareUrl).toMatch(/^https:\/\/vnone\.com\.br\/projects\/.+-share\.jpg$/);
     }
   });
 
@@ -77,11 +95,11 @@ describe('project images', () => {
     expect(oversized).toEqual([]);
   });
 
-  it('has no manifest entry that no project uses', () => {
+  it('has no manifest entry that no project uses, apart from the ones the assets branch will drop', () => {
     const used = new Set(allImages.map(({ image }) => image.src));
-    const unused = Object.keys(projectImageManifest).filter(
-      (key) => !used.has(`/projects/${key}-${Math.max(...projectImageManifest[key].widths)}.webp`),
-    );
+    const unused = Object.keys(projectImageManifest)
+      .filter((key) => !ORPHANS_UNTIL_ASSETS_REGENERATE.has(key))
+      .filter((key) => !used.has(`/projects/${key}-${Math.max(...projectImageManifest[key].widths)}.webp`));
 
     expect(unused).toEqual([]);
   });

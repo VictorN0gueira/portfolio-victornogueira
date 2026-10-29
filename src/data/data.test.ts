@@ -310,10 +310,7 @@ describe('projects', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('pins the reworded descriptions and category', () => {
-    expect(getProjectBySlug('troco')?.description).toBe(
-      'Gestão financeira via WhatsApp com automação e Supabase. Processamento automático de áudios e notas fiscais.',
-    );
+  it('pins the descriptions and category of the projects that keep their copy', () => {
     expect(getProjectBySlug('diagnostico-empresarial')?.description).toBe(
       'Sistema completo de captura de leads com WhatsApp integrado, formulário, pipeline visual (Kanban), qualificação por IA e gestão de oportunidades.',
     );
