@@ -53,15 +53,49 @@ export function findUnguardedSpecs(specs: Record<string, string>): string[] {
 
 // A spec that only LOOKS at the Enviar button (its box, for the overlap with the WhatsApp button) must never press it,
 // not directly and not by handing its locator to a helper, nor submit the form. Statements are read one by one:
-//  - a statement that names Enviar and does anything to it (click, tap, press, fill, a helper like press(...));
-//  - a name bound to Enviar (`const send = ...Enviar...`) that is used for anything but a look at it.
+//  - a statement that names Enviar (in any case) and does anything to it (click, tap, press, fill, a helper like
+//    press(...), an evaluate whose callback clicks, dispatches an event or submits);
+//  - a name bound to Enviar (`const send = ...Enviar...`) that is used for anything but a look at it;
+//  - anywhere in the file: a button[type=submit] and a press of Enter (on the keyboard or on a field), which submit the
+//    form without naming the button.
 // Known limit: a locator for Enviar built by a function of another file is not followed; for that reason the helpers
 // of homeSupport.ts are held to never name Enviar nor press a submit button (see findSubmitInHelpers).
-const ENVIAR = /Enviar/;
+const ENVIAR = /enviar/i;
 const DOES_SOMETHING =
   /\.(?:click|dblclick|tap|press|fill|type|check|setChecked|dispatchEvent|requestSubmit|submit|focus)\(|\b(?:press|click|tap|choose\w*)\(/;
 const A_LOOK = /^\.(?:boundingBox|evaluate|scrollIntoViewIfNeeded|isVisible|isEnabled|count|innerText|textContent)\(/;
-const BINDING = /\b(?:const|let|var)\s+(\w+)\s*=/;
+const ACTS_IN_THE_PAGE = /\b(?:click|dispatchEvent|requestSubmit|submit)\b/;
+const SUBMITS_WITHOUT_NAMING_THE_BUTTON = [String.raw`type=["']?submit`, String.raw`press\(\s*['"\x60]Enter`];
+const BINDING = /\b(?:const|let|var)\s+(\w+)\s*(?::[^=]+)?=/;
+// The one use of a record of controls that has Enviar among them: the loop that reads the height of each one.
+const KNOWN_READ = /Object\.entries\(\w+\)/;
+
+/** The text of the call that opens at `open` (the index of its "("), up to its matching ")". */
+function callText(source: string, open: number): string {
+  let depth = 0;
+  for (let index = open; index < source.length; index += 1) {
+    if (source[index] === '(') depth += 1;
+    if (source[index] === ')') depth -= 1;
+    if (depth === 0) return source.slice(open, index + 1);
+  }
+  return source.slice(open);
+}
+
+function isInlineEvaluateThatActs(statement: string): boolean {
+  const open = statement.indexOf('.evaluate(');
+  return open >= 0 && ACTS_IN_THE_PAGE.test(callText(statement, open + '.evaluate'.length));
+}
+
+/** True when this use of the name only looks at the button (a measure, `expect(name)`), or is the known read of the record. */
+function isLook(source: string, use: RegExpMatchArray, name: string): boolean {
+  const index = use.index ?? 0;
+  const rest = source.slice(index + name.length);
+  const before = source.slice(0, index);
+  if (KNOWN_READ.test(before.slice(-16) + name + rest.slice(0, 1))) return true;
+  if (/^\)/.test(rest) && /expect\(\s*$/.test(before)) return true;
+  if (!A_LOOK.test(rest)) return false;
+  return !rest.startsWith('.evaluate(') || !ACTS_IN_THE_PAGE.test(callText(rest, '.evaluate'.length));
+}
 
 export function findEnviarMisuse(source: string): string[] {
   const statements = source.split(';');
@@ -70,19 +104,21 @@ export function findEnviarMisuse(source: string): string[] {
 
   for (const statement of statements) {
     if (!ENVIAR.test(statement)) continue;
-    if (DOES_SOMETHING.test(statement)) misuse.push(statement.trim().slice(0, 80));
+    if (DOES_SOMETHING.test(statement) || isInlineEvaluateThatActs(statement)) misuse.push(statement.trim().slice(0, 80));
     const name = BINDING.exec(statement)?.[1];
     if (name) names.add(name);
   }
   for (const name of names) {
-    for (const statement of statements) {
-      if (BINDING.exec(statement)?.[1] === name && ENVIAR.test(statement)) continue;
-      for (const use of statement.matchAll(new RegExp(`(?<![A-Za-z0-9_$])${name}(?![A-Za-z0-9_$])`, 'g'))) {
-        const rest = statement.slice((use.index ?? 0) + name.length);
-        const isLook = A_LOOK.test(rest) || /^\)/.test(rest) && /expect\(\s*$/.test(statement.slice(0, use.index));
-        if (!isLook) misuse.push(`${name} used in: ${statement.trim().slice(0, 80)}`);
-      }
+    const declaration = statements.find((statement) => BINDING.exec(statement)?.[1] === name && ENVIAR.test(statement));
+    for (const use of source.matchAll(new RegExp(`(?<![A-Za-z0-9_$])${name}(?![A-Za-z0-9_$])`, 'g'))) {
+      const start = use.index ?? 0;
+      const sentence = source.slice(source.lastIndexOf(';', start) + 1, source.indexOf(';', start)).trim();
+      if (declaration !== undefined && declaration.trim() === sentence) continue;
+      if (!isLook(source, use, name)) misuse.push(`${name} used in: ${sentence.slice(0, 80)}`);
     }
+  }
+  for (const pattern of SUBMITS_WITHOUT_NAMING_THE_BUTTON) {
+    if (new RegExp(pattern).test(source)) misuse.push(`submits without naming the button: ${pattern}`);
   }
   return misuse;
 }
@@ -152,7 +188,7 @@ describe('the e2e specs that touch the lead channel', () => {
   });
 
   it('keep the home spec from pressing Enviar too (it measures the button and never presses it)', () => {
-    expect(findEnviarMisuse(readSpecs()['home.spec.ts']).filter((line) => !line.startsWith('controls used in'))).toEqual([]);
+    expect(findEnviarMisuse(readSpecs()['home.spec.ts'])).toEqual([]);
   });
 
   it('keep the shared helpers of the home specs from pressing a submit button or filling the form', () => {
@@ -252,6 +288,19 @@ describe('the hosts the network guard answers itself', () => {
 describe('findEnviarMisuse', () => {
   const declare = "const send = form.getByRole('button', { name: 'Enviar', exact: true });";
 
+  it('accepts the known read of a record of controls that has Enviar, and no more', () => {
+    const source = "const controls: Record<string, Locator> = { Enviar: form.getByRole('button', { name: 'Enviar' }) };\nfor (const [name, control] of Object.entries(controls)) { await control.boundingBox(); }";
+
+    expect(findEnviarMisuse(source)).toEqual([]);
+  });
+
+  it('accepts a measure of Enviar through evaluate that does not act', () => {
+    const source = `${declare}
+await send.evaluate((el) => el.scrollIntoView({ block: 'center' }));`;
+
+    expect(findEnviarMisuse(source)).toEqual([]);
+  });
+
   it('accepts a spec that only looks at the Enviar button', () => {
     const source = `${declare}
 await send.evaluate((el) => el.scrollIntoView());
@@ -278,6 +327,19 @@ const again = send;
 await again.click();`],
     ['a keyboard press on the locator', `${declare}
 await send.press('Enter');`],
+    ['a regular expression name in lower case', "await form.getByRole('button', { name: /enviar/i }).click();"],
+    ['the same through a constant', "const again = form.getByRole('button', { name: /enviar/i });\nawait again.click();"],
+    ['a lower case string name', "await form.getByRole('button', { name: 'enviar' }).click();"],
+    ['a submit button selector', "await form.locator('button[type=submit]').click();"],
+    ['a quoted submit button selector', `await form.locator('button[type="submit"]').tap();`],
+    ['Enter on the keyboard', "await page.keyboard.press('Enter');"],
+    ['Enter on a field', "await field.press(\"Enter\");"],
+    ['a click inside evaluate', `${declare}
+await send.evaluate((el) => el.click());`],
+    ['a dispatched event inside evaluate', `${declare}
+await send.evaluate((el) => { el.dispatchEvent(new Event('click')); });`],
+    ['a submit inside evaluate on an inline locator', "await form.getByRole('button', { name: 'Enviar' }).evaluate((el) => el.form.requestSubmit());"],
+    ['a click on a record of controls that has Enviar', "const controls = { Enviar: form.getByRole('button', { name: 'Enviar' }) };\nawait controls.Enviar.click();"],
   ])('flags %s', (_label, source) => {
     expect(findEnviarMisuse(source).length).toBeGreaterThan(0);
   });

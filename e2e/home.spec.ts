@@ -458,12 +458,13 @@ test.describe('hash anchors into the home', () => {
       return header && top !== undefined ? top - header.bottom : Number.NaN;
     }, id);
 
-  test('opens /#contato with the form in the window and its top under the header within 2 seconds of the form being in the page', async ({ page }) => {
-    // What the 2 seconds measure: the scroll to #contato cannot land before the form (the target, the last lazy chunk)
-    // is in the page, and the page then glides about 9000px by its own smooth scroll, which takes close to 2 seconds
-    // (measured: the target is first in the window at about 1.5s after the load event, and rests under the header at about
-    // 2.3s, with the chunks served locally). A budget counted from the load event would mostly time the network and the
-    // glide, so it starts when the form is attached: from then on the section must be in the window, clear of the header.
+  test('opens /#contato with the form in the window within 2 seconds of the form being in the page, and rests under the header', async ({ page }) => {
+    // What the 2 seconds cover: the section entering the window. The scroll to #contato cannot land before the form (the
+    // target, the last lazy chunk) is in the page, and the page then glides about 9000px by its own smooth scroll (the
+    // target is first in the window about 1.5s after the load event and rests about 2.3s after it, chunks served
+    // locally). A budget from the load event would mostly time the network and the glide, so it starts when the form is
+    // attached. The poll is true while the section is still travelling, so the arrival is asserted after it: the
+    // section settles at its anchor and its top is clear of the header.
     await page.goto('/#contato');
     await expect(page.locator('form[name="contact"]')).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
 
@@ -478,6 +479,9 @@ test.describe('hash anchors into the home', () => {
         { timeout: MAX_ARRIVAL_MS },
       )
       .toBe(true);
+
+    await expectSettledAtAnchor(page, 'contato');
+    expect(await clearance(page, 'contato')).toBeGreaterThanOrEqual(-SUBPIXEL_PX);
   });
 
   test('goes from /sobre to #metodo on the home when "Como funciona" is clicked in the header', async ({ page }) => {

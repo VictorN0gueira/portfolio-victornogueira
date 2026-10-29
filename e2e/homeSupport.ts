@@ -147,8 +147,8 @@ export interface OverflowReport {
 /**
  * The page against the width the viewport was set to. The configured width is used and not window.innerWidth: a
  * mobile browser widens the layout viewport to fit content that overflows, which would hide the very overflow sought.
- * What is left out, and nothing else: the intentional clippers (the marquee frame and any box that scrolls, such as the
- * step pills of the hero and the tab strip of the use cases) with everything inside them; the ring that grows around the
+ * What is left out, and nothing else: the intentional clippers (the marquee frame and the boxes marked scrollbar-hide,
+ * the step pills of the hero and the tab strip of the use cases) with everything inside them; the ring that grows around the
  * WhatsApp button once (fixed and aria-hidden, it cannot scroll the page); and aria-hidden decoration inside a box that
  * clips. Any other box that clips (the hero, the ROI panel, the cards) must hold its content: an element that is not
  * decoration and ends past the right edge of such a box is reported as cut.
@@ -167,8 +167,11 @@ export function measureOverflow(page: Page, width: number): Promise<OverflowRepo
       }
       return list;
     };
+    // Only boxes that are scrollers on purpose: the marquee frame and the ones marked scrollbar-hide (the step pills of
+    // the hero, the tab strip of the use cases). Another box with overflow auto or scroll is a clipper like any other:
+    // overflow-y auto makes overflow-x compute to auto, and cut text inside it must still be reported.
     const isIntentional = (clipper: Element) =>
-      ['auto', 'scroll'].includes(getComputedStyle(clipper).overflowX) || clipper.classList.contains('vn-marquee-frame');
+      clipper.classList.contains('vn-marquee-frame') || clipper.classList.contains('scrollbar-hide');
     const isWhatsAppRing = (element: Element) =>
       element.closest('aside[aria-label="Contato rápido"]') !== null && element.closest('[aria-hidden="true"]') !== null;
     const problemOf = (element: Element, rect: DOMRect): string | null => {
@@ -251,67 +254,99 @@ export interface AccentSection {
   hits: string[];
 }
 
+interface Border {
+  color: string;
+  width: number;
+  style: string;
+}
+
+/** What the page reports about one element that has the accent among its colours; the verdict is made in the test. */
+interface PaintRecord {
+  label: string;
+  /** Own text color, SVG fill and stroke and background. */
+  own: Record<string, string>;
+  borders: Border[];
+  /** The same inherited properties on the parent, to count an inherited color where it starts only. */
+  parent: Record<string, string>;
+  hasText: boolean;
+  isSvg: boolean;
+  pseudos: Array<{ name: string; background: string; borders: Border[] }>;
+}
+
+/** Page side: the sections of the main content with the visible elements whose colours mention the channels of the accent. */
+function collectPaint(page: Page): Promise<Array<{ name: string; records: PaintRecord[] }>> {
+  return page.evaluate((channels) => {
+    const sides = ['Top', 'Right', 'Bottom', 'Left'];
+    const bordersOf = (style: CSSStyleDeclaration): Border[] =>
+      sides.map((side) => {
+        const values = style as unknown as Record<string, string>;
+        return { color: values[`border${side}Color`], width: parseFloat(values[`border${side}Width`]), style: values[`border${side}Style`] };
+      });
+    const inherited = (style: CSSStyleDeclaration) => ({ color: style.color, fill: style.fill, stroke: style.stroke });
+    const mentions = (...values: string[]) => values.some((value) => value.replace(/\s+/g, '').includes(channels));
+    const recordOf = (element: Element): PaintRecord | null => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      if ((rect.width === 0 && rect.height === 0) || style.display === 'none' || style.visibility === 'hidden') return null;
+      const borders = bordersOf(style);
+      const pseudos = ['::before', '::after']
+        .map((name) => ({ name, style: getComputedStyle(element, name) }))
+        .filter((pseudo) => pseudo.style.content !== 'none')
+        .map((pseudo) => ({ name: pseudo.name, background: pseudo.style.backgroundColor, borders: bordersOf(pseudo.style) }));
+      const own = { ...inherited(style), background: style.backgroundColor };
+      const found =
+        mentions(...Object.values(own), ...borders.map((border) => border.color)) ||
+        pseudos.some((pseudo) => mentions(pseudo.background, ...pseudo.borders.map((border) => border.color)));
+      if (!found) return null;
+      const label = `${element.tagName.toLowerCase()} "${(element.textContent ?? '').trim().slice(0, 30)}"`;
+      const parent = element.parentElement ? inherited(getComputedStyle(element.parentElement)) : { color: '', fill: '', stroke: '' };
+      const hasText = (element.textContent ?? '').trim().length > 0 || element.querySelector('svg') !== null;
+      return { label, own, borders, parent, hasText, isSvg: element instanceof SVGElement, pseudos };
+    };
+    return Array.from(document.querySelectorAll('main section')).map((section, index) => {
+      const headingId = section.getAttribute('aria-labelledby');
+      const name = headingId ? (document.getElementById(headingId)?.textContent ?? '') : `section ${index}`;
+      const all = [section, ...Array.from(section.querySelectorAll('*'))];
+      return { name, records: all.map(recordOf).filter((record): record is PaintRecord => record !== null) };
+    });
+  }, ACCENT_RGB.replace(/rgb\(|\)|\s/g, ''));
+}
+
+/** True when the colour is the accent: its three channels, whatever the alpha (rgb, or rgba with an alpha above 0). */
+export function isAccentColor(value: string | undefined, accent = ACCENT_RGB): boolean {
+  const parse = (text: string) => /^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)(?:[\s,/]+([\d.]+%?))?\s*\)$/.exec(text);
+  const match = value ? parse(value) : null;
+  const target = parse(accent)?.slice(1, 4).join(',');
+  return match !== null && match.slice(1, 4).join(',') === target && (match[4] === undefined || parseFloat(match[4]) > 0);
+}
+
+/** Test side: the elements of a record that draw the accent themselves (an inherited color counts where it starts). */
+function accentHitsOf(record: PaintRecord): string[] {
+  const isBorder = (border: Border) => isAccentColor(border.color) && border.width > 0 && border.style !== 'none';
+  const paintsBox = (background: string, borders: Border[]) => isAccentColor(background) || borders.some(isBorder);
+  const { own, parent } = record;
+  const startsColor = isAccentColor(own.color) && !isAccentColor(parent.color) && record.hasText;
+  const startsFill = record.isSvg && isAccentColor(own.fill) && !isAccentColor(parent.fill);
+  const startsStroke = record.isSvg && isAccentColor(own.stroke) && !isAccentColor(parent.stroke);
+  const hits = paintsBox(own.background, record.borders) || startsColor || startsFill || startsStroke ? [record.label] : [];
+  const pseudoHits = record.pseudos
+    .filter((pseudo) => paintsBox(pseudo.background, pseudo.borders))
+    .map((pseudo) => record.label.replace(' "', `${pseudo.name} "`));
+  return [...hits, ...pseudoHits];
+}
+
 /**
  * For every section of the main content, the elements that draw the accent (#00E5A0) themselves. The accent is matched
  * by its three channels, whatever the alpha (rgb, or rgba with an alpha above 0), so a translucent accent counts too.
  * An element counts once when its own text color, background, border (a side with width and style), SVG fill or SVG
  * stroke is the accent, or when its ::before or ::after has the accent as background or border (a pseudo element
  * counts as an element of its own). Text color, fill and stroke are inherited, so they are counted where they start,
- * never again on the descendants. Gradients and shadows are not counted.
+ * never again on the descendants. Gradients and shadows are not counted. The page reports only the elements whose
+ * colours mention the three channels; the verdict (alpha, borders that draw, inheritance) is made here.
  */
-export function countAccentBySection(page: Page): Promise<AccentSection[]> {
-  return page.evaluate((accent) => {
-    const channels = (value: string) => /^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)(?:[\s,/]+([\d.]+%?))?\s*\)$/.exec(value);
-    const target = channels(accent)?.slice(1, 4).join(',');
-    const isAccent = (value: string | undefined) => {
-      const match = value ? channels(value) : null;
-      return match !== null && match.slice(1, 4).join(',') === target && (match[4] === undefined || parseFloat(match[4]) > 0);
-    };
-    const visible = (element: Element) => {
-      const rect = element.getBoundingClientRect();
-      const style = getComputedStyle(element);
-      return (rect.width > 0 || rect.height > 0) && style.display !== 'none' && style.visibility !== 'hidden';
-    };
-    const hasBorder = (style: CSSStyleDeclaration) =>
-      ['Top', 'Right', 'Bottom', 'Left'].some((side) => {
-        const values = style as unknown as Record<string, string>;
-        return (
-          isAccent(values[`border${side}Color`]) &&
-          parseFloat(values[`border${side}Width`]) > 0 &&
-          values[`border${side}Style`] !== 'none'
-        );
-      });
-    const paintsBox = (style: CSSStyleDeclaration) => isAccent(style.backgroundColor) || hasBorder(style);
-    const startsInherited = (element: Element, style: CSSStyleDeclaration) => {
-      const parent = element.parentElement ? getComputedStyle(element.parentElement) : null;
-      const hasText = (element.textContent ?? '').trim().length > 0 || element.querySelector('svg') !== null;
-      const isSvg = element instanceof SVGElement;
-      const textColor = isAccent(style.color) && !isAccent(parent?.color) && hasText;
-      const fill = isSvg && isAccent(style.fill) && !isAccent(parent?.fill);
-      const stroke = isSvg && isAccent(style.stroke) && !isAccent(parent?.stroke);
-      return textColor || fill || stroke;
-    };
-    const label = (element: Element, extra = '') =>
-      `${element.tagName.toLowerCase()}${extra} "${(element.textContent ?? '').trim().slice(0, 30)}"`;
-    const hitsIn = (section: Element) => {
-      const hits: string[] = [];
-      for (const element of [section, ...Array.from(section.querySelectorAll('*'))]) {
-        if (!visible(element)) continue;
-        const style = getComputedStyle(element);
-        if (paintsBox(style) || startsInherited(element, style)) hits.push(label(element));
-        for (const pseudo of ['::before', '::after']) {
-          const pseudoStyle = getComputedStyle(element, pseudo);
-          if (pseudoStyle.content !== 'none' && paintsBox(pseudoStyle)) hits.push(label(element, pseudo));
-        }
-      }
-      return hits;
-    };
-    return Array.from(document.querySelectorAll('main section')).map((section, index) => {
-      const headingId = section.getAttribute('aria-labelledby');
-      const name = headingId ? (document.getElementById(headingId)?.textContent ?? '') : `section ${index}`;
-      return { name, hits: hitsIn(section) };
-    });
-  }, ACCENT_RGB);
+export async function countAccentBySection(page: Page): Promise<AccentSection[]> {
+  const sections = await collectPaint(page);
+  return sections.map(({ name, records }) => ({ name, hits: records.flatMap(accentHitsOf) }));
 }
 
 /**
