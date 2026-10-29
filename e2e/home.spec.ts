@@ -1,11 +1,16 @@
 import type { Locator, Page } from '@playwright/test';
 import {
+  ACCENT_RGB,
   FINAL_HEADING,
+  HOURS_PILL_NAME,
   MIN_TOUCH_PX,
   PAGE_LOAD_TIMEOUT_MS,
+  ROI_HEADING,
   SECTION_HEADINGS,
   STATEMENT_HEADING,
   TOUCH_ROUNDING_PX,
+  choosePillOption,
+  countAccentBySection,
   enableLargeFont,
   nextFrames,
   openHome,
@@ -392,80 +397,27 @@ test.describe('hero hours', () => {
   test('moves the sentence from R$ 1.733 (10 hours) to R$ 6.933 (40 hours) and back, on the assembled home', async ({ page }) => {
     await openHome(page);
     const sentence = page.getByRole('heading', { level: 1 });
-    const choose = async (hours: string) => {
-      await page.getByRole('button', { name: /^Horas por semana/ }).click();
-      await page.getByRole('option', { name: hours }).click();
-    };
 
     // 10 hours is the starting choice; hero.spec.ts covers the hero alone, this goes through the full page.
     await expect(sentence).toContainText(/R\$\s1\.733/);
-    await choose('40 horas');
+    await choosePillOption(page, HOURS_PILL_NAME, '40 horas');
     await expect(sentence).toContainText(/R\$\s6\.933/);
-    await choose('10 horas');
+    await choosePillOption(page, HOURS_PILL_NAME, '10 horas');
     await expect(sentence).toContainText(/R\$\s1\.733/);
   });
 });
 
 test.describe('one accent per section', () => {
-  const ACCENT_RGB = 'rgb(0, 229, 160)';
   const MAX_ACCENT_PER_SECTION = 1;
-
-  /**
-   * For every section of the main content, the elements that draw #00E5A0 themselves. An element counts once when its
-   * own text color, background, border, SVG fill or SVG stroke is the accent, or when its ::before or ::after has the
-   * accent as background or border (a pseudo element counts as an element of its own). The inherited properties (text
-   * color, fill and stroke) are counted where they start, never again on the descendants that inherit them.
-   * Gradients and shadows are not counted. The WhatsApp button is an aside outside the sections and is not measured.
-   */
-  const accentBySection = (page: Page) =>
-    page.evaluate((accent) => {
-      const visible = (element: Element) => {
-        const rect = element.getBoundingClientRect();
-        const style = getComputedStyle(element);
-        return (rect.width > 0 || rect.height > 0) && style.display !== 'none' && style.visibility !== 'hidden';
-      };
-      const hasBorder = (style: CSSStyleDeclaration) =>
-        ['Top', 'Right', 'Bottom', 'Left'].some((side) => {
-          const values = style as unknown as Record<string, string>;
-          return (
-            values[`border${side}Color`] === accent &&
-            parseFloat(values[`border${side}Width`]) > 0 &&
-            values[`border${side}Style`] !== 'none'
-          );
-        });
-      const paintsBox = (style: CSSStyleDeclaration) => style.backgroundColor === accent || hasBorder(style);
-      const startsInherited = (element: Element, style: CSSStyleDeclaration) => {
-        const parent = element.parentElement ? getComputedStyle(element.parentElement) : null;
-        const hasText = (element.textContent ?? '').trim().length > 0 || element.querySelector('svg') !== null;
-        const isSvg = element instanceof SVGElement;
-        const textColor = style.color === accent && parent?.color !== accent && hasText;
-        const fill = isSvg && style.fill === accent && parent?.fill !== accent;
-        const stroke = isSvg && style.stroke === accent && parent?.stroke !== accent;
-        return textColor || fill || stroke;
-      };
-      const label = (element: Element, extra = '') =>
-        `${element.tagName.toLowerCase()}${extra} "${(element.textContent ?? '').trim().slice(0, 30)}"`;
-      return Array.from(document.querySelectorAll('main section')).map((section, index) => {
-        const hits: string[] = [];
-        for (const element of [section, ...Array.from(section.querySelectorAll('*'))]) {
-          if (!visible(element)) continue;
-          const style = getComputedStyle(element);
-          if (paintsBox(style) || startsInherited(element, style)) hits.push(label(element));
-          for (const pseudo of ['::before', '::after']) {
-            const pseudoStyle = getComputedStyle(element, pseudo);
-            if (pseudoStyle.content !== 'none' && paintsBox(pseudoStyle)) hits.push(label(element, pseudo));
-          }
-        }
-        const headingId = section.getAttribute('aria-labelledby');
-        const name = headingId ? (document.getElementById(headingId)?.textContent ?? '') : `section ${index}`;
-        return { name, hits };
-      });
-    }, ACCENT_RGB);
+  // The sections that are known to carry the accent, once each: the amount chip of the hero, the savings of the ROI
+  // panel and the block after the heading of the final call to action. They are the positive control: if the accent
+  // stops matching (the token moves to oklch, say), every count would be 0 and "at most one" would pass for nothing.
+  const SECTIONS_WITH_THE_ACCENT = ['section 0', ROI_HEADING, FINAL_HEADING];
 
   async function expectAtMostOneAccentEach(page: Page) {
     await openHome(page);
     await walkPage(page);
-    const sections = await accentBySection(page);
+    const sections = await countAccentBySection(page);
 
     // The count of each section goes to the report (annotations), so a section close to the limit is seen early.
     for (const { name, hits } of sections) test.info().annotations.push({ type: 'accent', description: `${name}: ${hits.length} ${hits.join(' | ')}` });
@@ -473,16 +425,21 @@ test.describe('one accent per section', () => {
     for (const { name, hits } of sections) {
       expect(hits.length, `${name}: ${hits.join(' | ')}`).toBeLessThanOrEqual(MAX_ACCENT_PER_SECTION);
     }
+    for (const name of SECTIONS_WITH_THE_ACCENT) {
+      const section = sections.find((candidate) => candidate.name === name);
+      expect(section?.hits.length, `${name} carries the accent exactly once (the check still sees ${ACCENT_RGB})`).toBe(1);
+    }
+    expect(sections.reduce((total, section) => total + section.hits.length, 0)).toBeGreaterThanOrEqual(SECTIONS_WITH_THE_ACCENT.length);
   }
 
-  test('draws #00E5A0 on at most one element in each section', async ({ page }) => {
+  test('draws #00E5A0 on at most one element in each section, and finds it where it is used', async ({ page }) => {
     await expectAtMostOneAccentEach(page);
   });
 
   test.describe('with a preference for reduced motion', () => {
     test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-    test('draws #00E5A0 on at most one element in each section', async ({ page }) => {
+    test('draws #00E5A0 on at most one element in each section, and finds it where it is used', async ({ page }) => {
       await expectAtMostOneAccentEach(page);
     });
   });
@@ -501,8 +458,14 @@ test.describe('hash anchors into the home', () => {
       return header && top !== undefined ? top - header.bottom : Number.NaN;
     }, id);
 
-  test('opens /#contato with the form in the window and its top under the header', async ({ page }) => {
-    await openHome(page, '/#contato');
+  test('opens /#contato with the form in the window and its top under the header within 2 seconds of the form being in the page', async ({ page }) => {
+    // What the 2 seconds measure: the scroll to #contato cannot land before the form (the target, the last lazy chunk)
+    // is in the page, and the page then glides about 9000px by its own smooth scroll, which takes close to 2 seconds
+    // (measured: the target is first in the window at about 1.5s after the load event, and rests under the header at about
+    // 2.3s, with the chunks served locally). A budget counted from the load event would mostly time the network and the
+    // glide, so it starts when the form is attached: from then on the section must be in the window, clear of the header.
+    await page.goto('/#contato');
+    await expect(page.locator('form[name="contact"]')).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
 
     await expect
       .poll(

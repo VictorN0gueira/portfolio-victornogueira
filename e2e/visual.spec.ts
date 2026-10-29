@@ -1,9 +1,18 @@
-import { measureOverflow, openHome, walkPage } from './homeSupport';
+import { devices } from '@playwright/test';
+import { measureOverflow, openHome, waitForSettledMotion, walkPage } from './homeSupport';
 import { expect, test } from './n8nGuard';
 
 // A full page capture of the home at ten sizes, to be looked at by a person (e2e/__shots__ is not committed). The spec
 // fails only on real errors: an error on the page, an error in the console, or content past the right edge. It never
 // compares pixels. The home mounts the real form, so the test comes from ./n8nGuard, and nothing here sends the form.
+//
+// What makes a capture whole and the same every time:
+//  - one project writes the files (the desktop one): both projects used to write the same name, and the mobile one
+//    (pixel ratio 2.625) left tiles of the page blank at 768px and up;
+//  - the pixel ratio is 1 for every size, so a tall page is one clean image;
+//  - the context asks for reduced motion, so the reveals, the stat counts and the hero panel are at their end state
+//    (the marquee and the panel are drawn in their static form); the shot waits until no finite animation is running,
+//    the text of the stats has stopped changing and the page height is steady, never for a fixed time.
 
 interface Capture {
   width: number;
@@ -24,12 +33,21 @@ const CAPTURES: readonly Capture[] = [
   { width: 844, height: 390, isTouch: true },
 ];
 const SHOTS_DIR = 'e2e/__shots__';
+const SHOT_PROJECT = 'desktop';
 
 for (const { width, height, isTouch } of CAPTURES) {
   test.describe(`${width}x${height}`, () => {
-    test.use({ viewport: { width, height }, hasTouch: isTouch, isMobile: isTouch });
+    test.use({
+      viewport: { width, height },
+      hasTouch: isTouch,
+      isMobile: isTouch,
+      deviceScaleFactor: 1,
+      userAgent: isTouch ? devices['Pixel 7'].userAgent : devices['Desktop Chrome'].userAgent,
+      contextOptions: { reducedMotion: 'reduce' },
+    });
 
-    test('is captured whole, with no error on the page, in the console or past the right edge', async ({ page }) => {
+    test('is captured whole, with no error on the page, in the console or past the right edge', async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== SHOT_PROJECT, `the captures are written by the ${SHOT_PROJECT} project only`);
       const pageErrors: string[] = [];
       const consoleErrors: string[] = [];
       page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -40,6 +58,7 @@ for (const { width, height, isTouch } of CAPTURES) {
       await openHome(page);
       await walkPage(page);
       await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+      await waitForSettledMotion(page);
       await page.screenshot({ fullPage: true, path: `${SHOTS_DIR}/home-${width}x${height}.png` });
       const overflow = await measureOverflow(page, width);
 

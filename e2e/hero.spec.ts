@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
+import { ACCENT_RGB, HOURS_PILL_NAME, choosePillOption as choose } from './homeSupport';
 import { expect, test } from './n8nGuard';
 
 const ROWS_LIST_NAME = 'Passos da automação';
-const HOURS_PILL_NAME = /^Horas por semana/;
 const TASK_PILL_NAME = /^Tarefa/;
 // The toggle keeps one name for good, and aria-pressed carries its state.
 const PAUSE_NAME = 'Pausar animação';
@@ -10,8 +10,6 @@ const ROW_COUNT = 4;
 const TASK_OPTIONS = ['atendimento no WhatsApp', 'emissão de notas', 'follow-up de vendas', 'planilha e WhatsApp'];
 const LONG_OPTION = 'atendimento no WhatsApp';
 const KICKER_TEXT = 'automação e IA para empresas';
-// The accent of the palette, as the browser serializes a computed color.
-const ACCENT_RGB = 'rgb(0, 229, 160)';
 const WHITE_RGB = 'rgb(255, 255, 255)';
 // Sub pixel rounding of boxes.
 const OVERFLOW_TOLERANCE_PX = 0;
@@ -82,11 +80,6 @@ async function flushRender(page: Page) {
 
 function pulse(page: Page) {
   return page.locator('[data-flow-window] .vn-cable-pulse').first();
-}
-
-async function choose(page: Page, pillName: RegExp, optionName: string) {
-  await page.getByRole('button', { name: pillName }).click();
-  await page.getByRole('option', { name: optionName }).click();
 }
 
 async function pageOverflow(page: Page): Promise<number> {

@@ -1,12 +1,15 @@
-import type { Page } from '@playwright/test';
+import { devices, type Page } from '@playwright/test';
 import {
+  HOURS_PILL_NAME,
   MIN_TOUCH_PX,
   TOUCH_ROUNDING_PX,
+  brokenWordsIn,
   enableLargeFont,
   measureOverflow,
   measureSmallTargets,
   nextFrames,
   openHome,
+  waitForStableBox,
   walkPage,
 } from './homeSupport';
 import { expect, test } from './n8nGuard';
@@ -40,7 +43,12 @@ const DEVICES: readonly Device[] = [
   { name: 'large monitor', width: 2560, height: 1440, isTouch: false },
 ];
 
-const HOURS_PILL_NAME = /^Horas por semana/;
+const FOOTER_TEXT = 'footer a, footer li';
+const A11Y_TRIGGER_NAME = 'Abrir opções de acessibilidade';
+// Every row sets all of these, so the results do not depend on the Playwright project (the mobile one is a Pixel 7 with
+// a pixel ratio of 2.625): a phone or tablet is a touch screen with a phone user agent, the rest has a desktop one.
+const TOUCH_AGENT = devices['Pixel 7'].userAgent;
+const DESKTOP_AGENT = devices['Desktop Chrome'].userAgent;
 const OVERFLOW_ALLOWANCE_PX = 0;
 const LARGE_FONT_PHONE = { width: 375, height: 667 };
 
@@ -87,6 +95,8 @@ for (const device of DEVICES) {
       viewport: { width: device.width, height: device.height },
       hasTouch: device.isTouch,
       isMobile: device.isTouch,
+      deviceScaleFactor: 1,
+      userAgent: device.isTouch ? TOUCH_AGENT : DESKTOP_AGENT,
     });
 
     test('has no overflow, a clear header, no overlap with the form, 44px targets and working controls', async ({ page }) => {
@@ -101,6 +111,7 @@ for (const device of DEVICES) {
         }
       });
       const overflow = await measureOverflow(page, device.width);
+      const brokenFooterWords = await brokenWordsIn(page, FOOTER_TEXT);
       const overlap = await whatsAppOverlapWithSend(page);
 
       expect.soft(overflow.documentExcess, 'scrollWidth past the viewport width').toBeLessThanOrEqual(OVERFLOW_ALLOWANCE_PX);
@@ -108,8 +119,27 @@ for (const device of DEVICES) {
       expect.soft(clearance, 'gap between the header and the main heading at load').toBeGreaterThan(0);
       expect.soft(overlap, 'overlap area between the WhatsApp button and Enviar').toBe(0);
       expect.soft([...small.values()], `targets under ${MIN_TOUCH_PX}px`).toEqual([]);
+      expect.soft(brokenFooterWords, 'footer words broken in the middle').toEqual([]);
 
       await useTheControls(page, device.isTouch);
+    });
+
+    test('has 44px targets in the accessibility panel, with the reset button it shows once an option is on', async ({ page }) => {
+      await openHome(page);
+      await page.getByRole('button', { name: A11Y_TRIGGER_NAME }).click();
+      const panel = page.getByRole('dialog', { name: 'Opções de acessibilidade' });
+      await expect(panel).toBeVisible();
+      // Sublinhar links turns the reset button on without changing any size (Texto maior would scale every row by 120%
+      // and hide a row that is 40px at the normal font).
+      await panel.getByRole('button', { name: /Sublinhar links/ }).click();
+      await expect(panel.getByRole('button', { name: /Resetar tudo/ })).toBeVisible();
+      await waitForStableBox(panel);
+
+      const small = (await measureSmallTargets(page, MIN_TOUCH_PX - TOUCH_ROUNDING_PX)).map(
+        (target) => `${target.element} ${target.width.toFixed(1)}x${target.height.toFixed(1)}`,
+      );
+
+      expect(small, `targets under ${MIN_TOUCH_PX}px with the panel open`).toEqual([]);
     });
   });
 }

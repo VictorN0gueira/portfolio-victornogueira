@@ -51,6 +51,55 @@ export function findUnguardedSpecs(specs: Record<string, string>): string[] {
     .map(([name]) => name);
 }
 
+// A spec that only LOOKS at the Enviar button (its box, for the overlap with the WhatsApp button) must never press it,
+// not directly and not by handing its locator to a helper, nor submit the form. Statements are read one by one:
+//  - a statement that names Enviar and does anything to it (click, tap, press, fill, a helper like press(...));
+//  - a name bound to Enviar (`const send = ...Enviar...`) that is used for anything but a look at it.
+// Known limit: a locator for Enviar built by a function of another file is not followed; for that reason the helpers
+// of homeSupport.ts are held to never name Enviar nor press a submit button (see findSubmitInHelpers).
+const ENVIAR = /Enviar/;
+const DOES_SOMETHING =
+  /\.(?:click|dblclick|tap|press|fill|type|check|setChecked|dispatchEvent|requestSubmit|submit|focus)\(|\b(?:press|click|tap|choose\w*)\(/;
+const A_LOOK = /^\.(?:boundingBox|evaluate|scrollIntoViewIfNeeded|isVisible|isEnabled|count|innerText|textContent)\(/;
+const BINDING = /\b(?:const|let|var)\s+(\w+)\s*=/;
+
+export function findEnviarMisuse(source: string): string[] {
+  const statements = source.split(';');
+  const misuse: string[] = [];
+  const names = new Set<string>();
+
+  for (const statement of statements) {
+    if (!ENVIAR.test(statement)) continue;
+    if (DOES_SOMETHING.test(statement)) misuse.push(statement.trim().slice(0, 80));
+    const name = BINDING.exec(statement)?.[1];
+    if (name) names.add(name);
+  }
+  for (const name of names) {
+    for (const statement of statements) {
+      if (BINDING.exec(statement)?.[1] === name && ENVIAR.test(statement)) continue;
+      for (const use of statement.matchAll(new RegExp(`(?<![A-Za-z0-9_$])${name}(?![A-Za-z0-9_$])`, 'g'))) {
+        const rest = statement.slice((use.index ?? 0) + name.length);
+        const isLook = A_LOOK.test(rest) || /^\)/.test(rest) && /expect\(\s*$/.test(statement.slice(0, use.index));
+        if (!isLook) misuse.push(`${name} used in: ${statement.trim().slice(0, 80)}`);
+      }
+    }
+  }
+  return misuse;
+}
+
+// The helpers shared by the specs (homeSupport.ts) can press only the choice pills of the hero (choosePillOption); they
+// never name Enviar, fill a field, press a submit button or submit the form.
+export function findSubmitInHelpers(source: string): string[] {
+  const withoutPillHelper = source.replace(/export async function choosePillOption[\s\S]*?\n}\n/, '');
+  const forbidden = [
+    /Enviar/,
+    /\.(?:fill|type|check|setChecked|press|requestSubmit|submit|dblclick)\(/,
+    /\.(?:click|tap)\(/,
+    /type=["']submit["']/,
+  ];
+  return forbidden.filter((pattern) => pattern.test(withoutPillHelper)).map(String);
+}
+
 /** Every spec of the e2e folder and its subfolders, by path relative to it. */
 function readSpecs(): Record<string, string> {
   if (!existsSync(E2E_DIR)) return {};
@@ -93,13 +142,23 @@ describe('the e2e specs that touch the lead channel', () => {
 
   // These two open the home through the helpers of homeSupport.ts, so the visit to it is not written in the spec: the
   // guard import is what protects them, and this pins it. They may look at the Enviar button (the WhatsApp button must
-  // not cover it) but never press it nor submit the form.
+  // not cover it) but never press it, by hand or through a helper, nor submit the form.
   it.each(['devices.spec.ts', 'visual.spec.ts'])('see the guard in %s, which opens the home and walks it', (name) => {
     const source = readSpecs()[name];
 
     expect(isGuarded(source)).toBe(true);
-    expect(source).not.toMatch(/\bsend\b[^;\n]*\.(?:click|tap|press|dispatchEvent)\(/);
+    expect(findEnviarMisuse(source)).toEqual([]);
     expect(source).not.toMatch(/\.fill\(|requestSubmit|\.submit\(/);
+  });
+
+  it('keep the home spec from pressing Enviar too (it measures the button and never presses it)', () => {
+    expect(findEnviarMisuse(readSpecs()['home.spec.ts']).filter((line) => !line.startsWith('controls used in'))).toEqual([]);
+  });
+
+  it('keep the shared helpers of the home specs from pressing a submit button or filling the form', () => {
+    const source = readFileSync(join(E2E_DIR, 'homeSupport.ts'), 'utf8');
+
+    expect(findSubmitInHelpers(source)).toEqual([]);
   });
 
   it('see the guard in the contact form spec', () => {
@@ -187,5 +246,59 @@ describe('the hosts the network guard answers itself', () => {
   it('are the union of the image hosts and the feed hosts, with none twice', () => {
     expect([...MOCKED_HOSTS].sort()).toEqual([...MOCKED_IMAGE_HOSTS, ...MOCKED_FEED_HOSTS].sort());
     expect(new Set(MOCKED_HOSTS).size).toBe(MOCKED_HOSTS.length);
+  });
+});
+
+describe('findEnviarMisuse', () => {
+  const declare = "const send = form.getByRole('button', { name: 'Enviar', exact: true });";
+
+  it('accepts a spec that only looks at the Enviar button', () => {
+    const source = `${declare}
+await send.evaluate((el) => el.scrollIntoView());
+const box = await send.boundingBox();
+await expect(send).toBeVisible();`;
+
+    expect(findEnviarMisuse(source)).toEqual([]);
+  });
+
+  // The mutations the reviewer asked for: each way of pressing Enviar that a plain look at `send.click(` would miss.
+  it.each([
+    ['a click', `${declare}
+await send.click();`],
+    ['a tap', `${declare}
+await send.tap();`],
+    ['the locator handed to a helper', `${declare}
+await press(send);`],
+    ['the locator handed to the pill helper of the specs', `${declare}
+await choosePillOption(page, send, 'x');`],
+    ['an inline press', "await form.getByRole('button', { name: 'Enviar' }).press('Enter');"],
+    ['a helper on an inline locator', "await press(form.getByRole('button', { name: 'Enviar' }));"],
+    ['a rename and a click', `${declare}
+const again = send;
+await again.click();`],
+    ['a keyboard press on the locator', `${declare}
+await send.press('Enter');`],
+  ])('flags %s', (_label, source) => {
+    expect(findEnviarMisuse(source).length).toBeGreaterThan(0);
+  });
+});
+
+describe('findSubmitInHelpers', () => {
+  const pillHelper = `export async function choosePillOption(page: Page) {
+  await page.getByRole("button").click();
+}
+`;
+
+  it('accepts a helper file whose only click is the pill helper', () => {
+    expect(findSubmitInHelpers(`${pillHelper}export const x = 1;`)).toEqual([]);
+  });
+
+  it.each([
+    ['a helper that names Enviar', `${pillHelper}export const send = (p) => p.getByRole('button', { name: 'Enviar' });`],
+    ['a helper that fills a field', `${pillHelper}export const f = (p) => p.getByLabel('Nome').fill('a');`],
+    ['a helper that clicks something else', `${pillHelper}export const c = (p) => p.getByRole('button').click();`],
+    ['a helper that submits the form', `${pillHelper}export const s = (p) => p.locator('form').requestSubmit();`],
+  ])('flags %s', (_label, source) => {
+    expect(findSubmitInHelpers(source).length).toBeGreaterThan(0);
   });
 });
