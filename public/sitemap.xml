@@ -31,19 +31,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://vnone.com.br/projetos/troco</loc>
-    <lastmod>2026-07-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://vnone.com.br/projetos/dashboard-consumo-crm</loc>
-    <lastmod>2026-07-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://vnone.com.br/projetos/importacao-massiva-nfe</loc>
     <lastmod>2026-07-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -57,6 +45,12 @@
   <url>
     <loc>https://vnone.com.br/projetos/dizpara</loc>
     <lastmod>2026-07-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://vnone.com.br/projetos/hub081</loc>
+    <lastmod>2026-10-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

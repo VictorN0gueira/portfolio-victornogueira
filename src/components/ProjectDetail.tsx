@@ -1,116 +1,96 @@
 import { motion } from 'motion/react';
-import { ArrowUpRight, ChevronRight } from 'lucide-react';
-import { Project } from '../data/projects';
-
-// The width a gallery image takes: 60% of the 1152px case on desktop, 85vw in the phone carousel.
-const DETAIL_IMAGE_SIZES = '(min-width: 1152px) 640px, (min-width: 768px) 55vw, 85vw';
+import type { Project } from '../data/projects';
+import { HeroGallery, StackedGallery } from './ProjectDetailGallery';
 
 interface ProjectDetailProps {
   project: Project;
 }
 
-/* Conteúdo do case como seção de página, layout herdado do antigo ProjectModal,
-   agora renderizado no fluxo normal (visível para SEO, deep-linkável) */
+const LABEL_CLASSES = 'text-zinc-400 font-bold uppercase tracking-widest text-[10px] mb-3';
+
+function Impact({ items }: { items: NonNullable<Project['impact']> }) {
+  return (
+    <div>
+      <p className={LABEL_CLASSES}>Resultados</p>
+      <div className="flex flex-wrap gap-3">
+        {items.map((metric) => (
+          <div key={metric.label} className="px-4 py-3 bg-white/5 rounded-2xl border border-white/10">
+            <p className="text-[9px] uppercase tracking-widest text-zinc-400 mb-1">{metric.label}</p>
+            <p className="text-white font-bold text-sm">{metric.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Features({ items }: { items: readonly string[] }) {
+  return (
+    <div>
+      <h2 className={LABEL_CLASSES}>O que faz</h2>
+      <ul className="space-y-3 list-none p-0 m-0">
+        {items.map((item) => (
+          <li key={item} className="flex gap-3 text-sm md:text-base font-light leading-relaxed text-zinc-300">
+            <span aria-hidden="true" className="mt-2.5 size-1.5 shrink-0 rounded-full bg-white/40" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Tags({ tags }: { tags: readonly string[] }) {
+  return (
+    <div>
+      <p className={LABEL_CLASSES}>Tecnologias principais</p>
+      <ul className="flex flex-wrap gap-2 list-none p-0 m-0">
+        {tags.map((tag) => (
+          <li key={tag} className="px-3 md:px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] md:text-xs text-zinc-300 font-medium">
+            {tag}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Heading({ project, large }: { project: Project; large: boolean }) {
+  const size = large ? 'text-4xl md:text-6xl' : 'text-2xl md:text-5xl';
+
+  return (
+    <div>
+      <p className="text-zinc-400 font-bold uppercase tracking-[0.3em] text-[10px] mb-2">{project.category}</p>
+      <h1 className={`${size} font-bold text-white mb-4 md:mb-6 font-display italic tracking-tight`}>{project.title}</h1>
+      <div className="w-12 h-1 bg-white/20 mb-5 rounded-full" />
+      {project.highlight && <p className="text-white text-lg md:text-2xl font-medium leading-snug mb-4">{project.highlight}</p>}
+      <p className="text-zinc-400 text-sm md:text-xl font-light leading-relaxed">{project.description}</p>
+    </div>
+  );
+}
+
+/* Conteúdo do case como seção de página, renderizado no fluxo normal (visível para SEO, deep-linkável).
+   Os projetos em destaque (DizPara, Hub081) ganham a galeria grande no topo e a lista do que fazem. */
 export default function ProjectDetail({ project }: ProjectDetailProps) {
-  const images = [project.image, ...(project.gallery || [])];
+  const isFeatured = Boolean(project.featured);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-      className="relative w-full max-w-6xl mx-auto bg-zinc-950 md:bg-zinc-900 rounded-3xl md:rounded-[2.5rem] flex flex-col md:flex-row shadow-2xl border border-white/10 overflow-hidden"
+      className={`relative w-full max-w-6xl mx-auto bg-zinc-950 md:bg-zinc-900 rounded-3xl md:rounded-[2.5rem] flex shadow-2xl border border-white/10 overflow-hidden ${isFeatured ? 'flex-col' : 'flex-col md:flex-row'}`}
     >
-      {/* Galeria de imagens */}
-      <div className="w-full md:w-[60%] shrink-0 bg-zinc-950 relative flex flex-col border-b md:border-b-0 md:border-r border-white/5 min-h-[50vw] md:min-h-[480px]">
-        <div
-          className="absolute inset-0 bg-cover bg-center blur-2xl opacity-20 scale-110 pointer-events-none"
-          style={{ backgroundImage: `url(${project.image.thumbSrc})` }}
-        />
-        <div className="relative z-10 flex md:flex-col overflow-x-auto md:overflow-visible snap-x snap-mandatory scrollbar-hide p-4 md:p-6 gap-4 md:gap-6 h-full">
-          {images.map((img, i) => (
-            <div
-              key={i}
-              className="w-[85vw] md:w-full shrink-0 snap-center flex items-center justify-center"
-            >
-              <img
-                src={img.src}
-                srcSet={img.srcSet}
-                sizes={DETAIL_IMAGE_SIZES}
-                width={img.width}
-                height={img.height}
-                alt={i === 0 ? `${project.title}, imagem principal` : `${project.title}, imagem ${i + 1}`}
-                className="w-full h-auto object-contain rounded-2xl shadow-2xl"
-                loading={i === 0 ? 'eager' : 'lazy'}
-                fetchPriority={i === 0 ? 'high' : 'auto'}
-                decoding="async"
-              />
-            </div>
-          ))}
-        </div>
-        {images.length > 1 && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/90 px-4 py-2 rounded-full border border-white/10 md:hidden pointer-events-none z-50" aria-hidden="true">
-            <motion.div animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-              <ChevronRight className="w-3 h-3 text-white" />
-            </motion.div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white whitespace-nowrap">Deslize para ver mais</span>
-          </div>
-        )}
-      </div>
+      {isFeatured ? <HeroGallery project={project} /> : <StackedGallery project={project} />}
 
-      {/* Conteúdo textual */}
-      <div className="flex-1 p-6 pb-10 md:p-16 flex flex-col bg-zinc-950 md:bg-zinc-900">
-        {project.type === 'client' && (
-          <span className="inline-block self-start px-3 py-1 bg-white/10 text-white/50 text-[9px] font-black uppercase tracking-[0.2em] rounded-full border border-white/10 mb-5">
-            Projeto p/ Cliente
-          </span>
-        )}
-        <p className="text-zinc-500 font-bold uppercase tracking-[0.3em] text-[10px] mb-2">{project.category}</p>
-        <h1 className="text-2xl md:text-5xl font-bold text-white mb-4 md:mb-6 font-display italic tracking-tight">{project.title}</h1>
-        <div className="w-12 h-1 bg-white/20 mb-5 rounded-full" />
-        <p className="text-zinc-400 text-sm md:text-xl font-light leading-relaxed mb-8">{project.description}</p>
-
-        <div className="space-y-6 md:space-y-8">
-          {project.impact && project.impact.length > 0 && (
-            <div>
-              <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mb-3">Resultados</p>
-              <div className="flex flex-wrap gap-3">
-                {project.impact.map((m) => (
-                  <div key={m.label} className="px-4 py-3 bg-white/5 rounded-2xl border border-white/10">
-                    <p className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">{m.label}</p>
-                    <p className="text-white font-bold text-sm">{m.value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mb-3">Tecnologias principais</p>
-            <div className="flex flex-wrap gap-2">
-              {project.tags.map((tag) => (
-                <span key={tag} className="px-3 md:px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] md:text-xs text-zinc-300 font-medium hover:bg-white/10 transition-colors">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {project.link === '#' ? (
-            <span className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full font-bold uppercase tracking-widest text-xs bg-zinc-800 text-zinc-500 cursor-default opacity-60">
-              Acesso Restrito
-            </span>
-          ) : (
-            <a
-              href={project.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-3 px-8 md:px-10 py-4 md:py-5 rounded-full font-bold uppercase tracking-widest text-xs bg-white text-black hover:bg-zinc-200 shadow-xl active:scale-95 transition-all"
-            >
-              Acessar Projeto
-              <ArrowUpRight className="w-4 h-4" />
-            </a>
-          )}
+      <div
+        className={`flex-1 p-6 pb-10 md:p-16 bg-zinc-950 md:bg-zinc-900 ${isFeatured ? 'grid gap-10 lg:grid-cols-2 lg:gap-16' : 'flex flex-col'}`}
+      >
+        <Heading project={project} large={isFeatured} />
+        <div className={`space-y-6 md:space-y-8 ${isFeatured ? '' : 'mt-8'}`}>
+          {project.features && <Features items={project.features} />}
+          {project.impact && project.impact.length > 0 && <Impact items={project.impact} />}
+          <Tags tags={project.tags} />
         </div>
       </div>
     </motion.div>

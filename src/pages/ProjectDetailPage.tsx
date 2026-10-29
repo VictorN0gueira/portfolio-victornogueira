@@ -1,10 +1,10 @@
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, ArrowUpRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import SEO from '../components/SEO';
 import NotFound from '../components/NotFound';
 import ProjectDetail from '../components/ProjectDetail';
-import { getProjectBySlug } from '../data/projects';
+import { coverOf, getProjectBySlug } from '../data/projects';
 
 export default function ProjectDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -25,8 +25,8 @@ export default function ProjectDetailPage() {
         title={project.title}
         description={project.description}
         path={`/projetos/${project.slug}`}
-        image={project.image.shareUrl}
-        imageAlt={`Screenshot do projeto ${project.title}`}
+        image={(project.shareImage ?? coverOf(project)).shareUrl}
+        imageAlt={project.shots[0].alt}
       />
       <div className="pt-28 md:pt-36 pb-24 px-4 md:px-12 bg-brand-white min-h-screen">
         <div className="max-w-6xl mx-auto">
@@ -57,14 +57,14 @@ export default function ProjectDetailPage() {
             className="mt-16 text-center"
           >
             <p className="text-zinc-500 text-lg font-light mb-6">
-              Quer um resultado assim no seu negócio?
+              Quer algo assim no seu negócio?
             </p>
             <Link
               to="/contato"
               className="group inline-flex items-center gap-3 bg-black text-white dark:bg-white dark:text-black px-10 py-5 rounded-full font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-2xl shadow-black/20 active:scale-95"
             >
               Vamos conversar
-              <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
             </Link>
           </motion.div>
         </div>

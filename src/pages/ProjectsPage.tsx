@@ -9,8 +9,8 @@ export default function ProjectsPage() {
   return (
     <>
       <SEO
-        title="Projetos e cases"
-        description="Cases reais de automação, IA e desenvolvimento web. Produtos próprios e projetos entregues para clientes, com resultados mensuráveis."
+        title="Projetos"
+        description="Sistemas de atendimento, automação e IA que a gente construiu: DizPara, Hub081, diagnóstico empresarial, dashboards de CRM e mais, com as telas de cada um."
         path="/projetos"
       />
       <div className="pt-16 md:pt-20">
