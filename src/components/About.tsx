@@ -1,7 +1,9 @@
 import { motion } from 'motion/react';
 import { Download, Workflow, BrainCircuit, Globe } from 'lucide-react';
+import { assetUrl } from '../lib/asset';
 
-const CV_URL = import.meta.env.VITE_CV_URL || "https://minio.vnone.com.br/api/v1/buckets/victornogueira/objects/download?preview=true&prefix=portfolio%2FCV%20-%20Jo%C3%A3o%20Victor%20-%20att.pdf&version_id=null";
+const CV_URL = assetUrl('/cv/cv-joao-victor-nogueira.pdf');
+const CV_FILE_NAME = 'CV-Joao-Victor-Nogueira.pdf';
 
 const specialties = [
   { id: '01', title: 'Automação de Processos', desc: 'Fluxos automáticos que eliminam retrabalho e escalam sem esforço manual', icon: Workflow, color: '#8B5CF6' },
@@ -52,6 +54,7 @@ export default function About() {
 
           <a 
             href={CV_URL}
+            download={CV_FILE_NAME}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white px-8 py-4 rounded-full font-bold uppercase tracking-widest text-xs hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black transition-all shadow-sm hover:shadow-xl"
