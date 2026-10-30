@@ -128,6 +128,9 @@ describe('ContactForm cap hint', () => {
     const line = visibleLine(2000)[0];
     expect(line).toHaveAttribute('aria-hidden', 'true');
     expect(line).toHaveClass('absolute');
+    // `absolute` only keeps the line out of the flow if its frame is the positioning parent (FieldFrame is `relative`).
+    expect(line.parentElement).toHaveClass('relative');
+    expect(line.parentElement).toContainElement(screen.getByLabelText('Mensagem'));
     expect(line).not.toHaveAttribute('role');
   });
 
