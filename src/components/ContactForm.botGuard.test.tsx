@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -9,6 +9,7 @@ import {
   submitButton,
   type User,
 } from '../test/contactForm';
+import { serviceOptions } from '../data/services';
 import { renderWithProviders } from '../test/render';
 import ContactForm from './ContactForm';
 
@@ -84,6 +85,26 @@ describe('the time trap in the rendered form', () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(await screen.findByRole('heading', { name: THANKS })).toBeInTheDocument();
+  });
+});
+
+describe('the Enter key in the rendered form', () => {
+  it('is not a gesture: autofill then Enter on a form that has been open a while is not held', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    renderWithProviders(<ContactForm />);
+    wait(60_000);
+
+    // No key and no pointer on the fields: change and click events only, like an autofill and a script would give.
+    fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Ana Lima' } });
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: TEST_EMAIL } });
+    fireEvent.change(screen.getByLabelText('Mensagem'), { target: { value: 'Quero automatizar notas fiscais' } });
+    fireEvent.click(screen.getByRole('button', { name: /selecione um serviço/i }));
+    fireEvent.click(await screen.findByRole('button', { name: serviceOptions[0] }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.keyDown(screen.getByLabelText('Nome'), { key: 'Enter' });
+    fireEvent.submit(document.querySelector('form[name="contact"]') as HTMLFormElement);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1), { timeout: 500 });
   });
 });
 

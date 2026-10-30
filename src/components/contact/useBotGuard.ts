@@ -40,5 +40,15 @@ export function useBotGuard() {
 
   const clearNotice = () => setNotice(undefined);
 
-  return { honeypot, setHoneypot, notice, markInteraction, judge, recordSent, clearNotice };
+  /**
+   * Enviar outra: everything starts over (the hidden field, the line of the cooldown, the clock of the first gesture)
+   * except `lastSentAt`, because the cooldown is about the send that worked, not about the form on the screen.
+   */
+  const resetGuard = () => {
+    setHoneypot('');
+    setNotice(undefined);
+    firstGestureAt.current = null;
+  };
+
+  return { honeypot, setHoneypot, notice, markInteraction, judge, recordSent, clearNotice, resetGuard };
 }

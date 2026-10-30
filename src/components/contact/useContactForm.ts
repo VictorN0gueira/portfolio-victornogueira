@@ -168,7 +168,7 @@ function useContactSender(method: ContactMethod, onSuccess: () => void) {
 export function useContactForm(initialMessage?: string, prefillNonce?: number) {
   const { setErrors, resetDraft, ...draft } = useContactDraft(initialMessage, prefillNonce);
   const { method, formData, servico } = draft;
-  const { judge, recordSent, clearNotice, ...guard } = useBotGuard();
+  const { judge, recordSent, clearNotice, resetGuard, ...guard } = useBotGuard();
   const { status, setStatus, sentMethod, send, succeedWithoutSending, isSending } = useContactSender(method, recordSent);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -196,7 +196,7 @@ export function useContactForm(initialMessage?: string, prefillNonce?: number) {
   const dismissError = () => setStatus('idle');
 
   const reset = () => {
-    clearNotice();
+    resetGuard();
     setStatus('idle');
     resetDraft();
   };

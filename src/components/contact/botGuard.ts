@@ -7,9 +7,11 @@
  *   (the thanks) while nothing leaves the browser, so it learns nothing and does not adapt. A person never fills it.
  * - Time trap: a form submitted less than MIN_FILL_MS after the visitor first touched it is not dropped. It is held:
  *   the form shows its normal Enviando state, waits the rest of the time (at most MIN_FILL_MS), and then sends the
- *   real request and shows the real answer. The clock starts at the first keyboard or pointer gesture on the fields
- *   (the mount, for a visitor with no gesture at all, such as autofill followed by Enter). A fast person only waits a
- *   moment; a bot that does not wait is still caught by the honeypot.
+ *   real request and shows the real answer. The clock starts at the first key or pointer gesture on the fields, and the
+ *   Enter key is not one (it is how a form is sent, so autofill followed by Enter on a form that has been open a while
+ *   is not held); with no gesture at all the clock starts at the mount. A fast person only waits a moment; a bot that
+ *   does not wait is still caught by the honeypot. A visitor who leaves during the wait does not lose the request: the
+ *   hold ends and the request goes out at once (see holdUnlessLeaving.ts).
  * - Cooldown: after a send that worked (never after an error), another send within COOLDOWN_MS is not made and the
  *   visitor is told so in a visible line, so a double click on Enviar outra or a script cannot flood the inbox.
  */
@@ -22,8 +24,8 @@ export const COOLDOWN_MS = 30_000;
 
 export const COOLDOWN_MESSAGE = 'Já recebemos a sua mensagem. Aguarde alguns segundos para enviar outra.';
 
-/** Name of the hidden input. Valid, boring and not one of the names a browser autofills. */
-export const HONEYPOT_NAME = 'ref_interna';
+/** Name of the hidden input: valid, and no word at all, so no browser or extension classifies it as a field to fill. */
+export const HONEYPOT_NAME = 'hp_7c';
 
 export type SubmitVerdict =
   /** Send the real request after `waitMs` (0 when the visitor already took their time). */

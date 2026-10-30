@@ -13,6 +13,7 @@ import {
 } from '../test/contactForm';
 import { renderWithProviders } from '../test/render';
 import ContactForm from './ContactForm';
+import { HONEYPOT_NAME } from './contact/botGuard';
 
 // The lead channel hardening, seen through the rendered form. Every request goes to a mock.
 
@@ -108,7 +109,7 @@ describe('the channel the thanks names', () => {
 });
 
 describe('the honeypot field', () => {
-  const honeypot = () => document.querySelector('input[name="ref_interna"]') as HTMLInputElement;
+  const honeypot = () => document.querySelector(`input[name="${HONEYPOT_NAME}"]`) as HTMLInputElement;
 
   it('is hidden from people and from assistive tech, and out of the tab order', () => {
     renderWithProviders(<ContactForm />);
@@ -118,6 +119,18 @@ describe('the honeypot field', () => {
     expect(honeypot().closest('.sr-only')).not.toBeNull();
     expect(honeypot()).toHaveAttribute('tabindex', '-1');
     expect(honeypot()).toHaveAttribute('autocomplete', 'off');
+    expect(honeypot()).not.toHaveAttribute('id');
+    expect(honeypot().closest('label')).toBeNull();
+  });
+
+  it('is as autofill proof as it can be: a name no browser fills and the flags of the password managers', () => {
+    renderWithProviders(<ContactForm />);
+
+    expect(HONEYPOT_NAME).toBe('hp_7c');
+    expect(honeypot()).toHaveAttribute('data-1p-ignore');
+    expect(honeypot()).toHaveAttribute('data-lpignore', 'true');
+    expect(honeypot()).toHaveAttribute('data-bwignore', 'true');
+    expect(honeypot()).toHaveAttribute('data-form-type', 'other');
     // Name, e-mail and message are the only text boxes a reader meets.
     expect(screen.getAllByRole('textbox')).toHaveLength(3);
   });
@@ -145,7 +158,7 @@ describe('the honeypot field', () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const body = readCall(fetchMock).init.body as string;
-    expect(body).not.toContain('ref_interna');
+    expect(body).not.toContain(HONEYPOT_NAME);
     expect(Object.keys(JSON.parse(body))).toEqual(['nome', 'email', 'servico', 'mensagem', 'timestamp']);
   });
 });

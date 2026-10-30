@@ -56,7 +56,14 @@ export function ContactFormFields({ form }: ContactFormFieldsProps) {
   const { formData, servico, errors, setField, chooseService } = form;
 
   return (
-    <div className="contents" onKeyDownCapture={form.markInteraction} onPointerDownCapture={form.markInteraction}>
+    <div
+      className="contents"
+      onKeyDownCapture={(event) => {
+        // Enter sends a form, so it is not the visitor starting to fill one (see botGuard.ts).
+        if (event.key !== 'Enter') form.markInteraction();
+      }}
+      onPointerDownCapture={form.markInteraction}
+    >
       <ContactInput field="nome" value={formData.nome} error={errors.nome} onChange={(value) => setField('nome', value)} />
       <ContactService value={servico} error={errors.servico} onChange={chooseService} />
       <ContactMethodField form={form} />

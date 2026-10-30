@@ -56,6 +56,60 @@ describe('the honeypot', () => {
   });
 });
 
+describe('Enviar outra starts the bot guard over, except for the cooldown', () => {
+  it('clears the honeypot, so a polluted hidden field does not drop every later real send', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const { result } = visitorWhoWaits(60_000);
+    act(() => result.current.setHoneypot('https://spam.example'));
+    await submitAndSettle(result);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.status).toBe('success');
+
+    act(() => result.current.reset());
+    expect(result.current.honeypot).toBe('');
+    fillValidEmailForm(result);
+    await submitAndSettle(result);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe('success');
+  });
+
+  it('restarts the clock of the first gesture, so the next form is held again if it is sent fast', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const { result } = visitorWhoWaits(60_000);
+    await submitAndSettle(result);
+    advance(COOLDOWN_MS);
+    act(() => result.current.reset());
+
+    act(() => result.current.markInteraction());
+    fillValidEmailForm(result);
+    let sent: Promise<void> = Promise.resolve();
+    act(() => {
+      sent = result.current.handleSubmit(SUBMIT_EVENT);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+      await sent;
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the cooldown, which is about the send that worked', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const { result } = visitorWhoWaits(60_000);
+    await submitAndSettle(result);
+    act(() => result.current.reset());
+    fillValidEmailForm(result);
+
+    await submitAndSettle(result);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.current.notice).toBe(COOLDOWN_MESSAGE);
+  });
+});
+
 describe('the time trap (it waits, it never drops a send)', () => {
   /** Presses Enviar and leaves the request pending in its wait: returns the promise of the submit. */
   function pressEnviar(result: ContactHookResult) {
@@ -169,7 +223,7 @@ describe('the time trap (it waits, it never drops a send)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('counts from the mount for a visitor with no gesture at all (autofill, then Enter)', async () => {
+  it('counts from the mount for a visitor with no key or pointer gesture on the fields (autofill, then Enter)', async () => {
     const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
     const hook = renderHook(() => useContactForm());
     fillValidEmailForm(hook.result);
