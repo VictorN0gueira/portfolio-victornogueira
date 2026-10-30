@@ -11,9 +11,14 @@ function useScramble(text: string) {
   const [active, setActive] = useState(false);
 
   useEffect(() => {
+    // Reduced motion: the title is shown as it is, with no scramble.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplay(text);
+      return;
+    }
     const timer = setTimeout(() => setActive(true), 400);
     return () => clearTimeout(timer);
-  }, []);
+  }, [text]);
 
   useEffect(() => {
     if (!active) return;
@@ -33,7 +38,11 @@ function useScramble(text: string) {
       );
 
       iteration += 0.4;
-      if (iteration >= text.length) clearInterval(interval);
+      if (iteration >= text.length) {
+        // The last tick above still had a scrambled letter: end on the real text.
+        setDisplay(text);
+        clearInterval(interval);
+      }
     }, 28);
 
     return () => clearInterval(interval);

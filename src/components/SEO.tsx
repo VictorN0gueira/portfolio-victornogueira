@@ -8,6 +8,9 @@ interface SEOProps {
   image?: string;
   /** Texto alternativo da imagem de compartilhamento. Padrão: o do banner do site */
   imageAlt?: string;
+  /** Tamanho da imagem própria, quando conhecido (as imagens de compartilhamento dos projetos têm 1200x630) */
+  imageWidth?: number;
+  imageHeight?: number;
   /** Bloqueia indexação (ex.: 404, slug inválido) */
   noindex?: boolean;
   /** Schemas JSON-LD específicos da página (ex.: FAQPage em /contato) */
@@ -51,6 +54,8 @@ export default function SEO({
   path = '/',
   image,
   imageAlt,
+  imageWidth,
+  imageHeight,
   noindex,
   jsonLd,
 }: SEOProps) {
@@ -61,30 +66,33 @@ export default function SEO({
   const pageImageAlt = imageAlt || SITE.ogImageAlt;
   // O banner padrão tem 1200x630. Uma imagem própria pode ter outro tamanho.
   const isDefaultImage = !image;
-  const isHome = path === '/';
+  // Uma página noindex (404, projeto removido) não declara canonical, og:url nem entidades da home.
+  const isHome = path === '/' && !noindex;
+  const imageWidthValue = isDefaultImage ? 1200 : imageWidth;
+  const imageHeightValue = isDefaultImage ? 630 : imageHeight;
 
   return (
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={pageDescription} />
-      <link rel="canonical" href={pageUrl} />
+      {!noindex && <link rel="canonical" href={pageUrl} />}
       {noindex && <meta name="robots" content="noindex, nofollow" />}
 
       {/* Open Graph */}
       <meta property="og:type" content="website" />
-      <meta property="og:url" content={pageUrl} />
+      {!noindex && <meta property="og:url" content={pageUrl} />}
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={pageDescription} />
       <meta property="og:image" content={pageImage} />
-      {isDefaultImage && <meta property="og:image:width" content="1200" />}
-      {isDefaultImage && <meta property="og:image:height" content="630" />}
+      {imageWidthValue && <meta property="og:image:width" content={String(imageWidthValue)} />}
+      {imageHeightValue && <meta property="og:image:height" content={String(imageHeightValue)} />}
       <meta property="og:image:alt" content={pageImageAlt} />
       <meta property="og:locale" content="pt_BR" />
       <meta property="og:site_name" content={SITE.name} />
 
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:url" content={pageUrl} />
+      {!noindex && <meta name="twitter:url" content={pageUrl} />}
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={pageDescription} />
       <meta name="twitter:image" content={pageImage} />
@@ -97,7 +105,7 @@ export default function SEO({
       {isHome && (
         <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
       )}
-      {jsonLd?.map((schema, i) => (
+      {!noindex && jsonLd?.map((schema, i) => (
         <script key={i} type="application/ld+json">{JSON.stringify(schema)}</script>
       ))}
     </Helmet>

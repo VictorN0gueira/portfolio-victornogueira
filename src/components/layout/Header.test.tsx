@@ -213,7 +213,7 @@ describe('Header', () => {
     });
 
     it('keeps Projetos current on a project page', () => {
-      renderHeader('/projetos/troco');
+      renderHeader('/projetos/dizpara');
 
       expect(within(desktopNav()).getByRole('link', { name: 'Projetos' })).toHaveAttribute('aria-current', 'page');
     });

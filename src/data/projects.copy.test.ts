@@ -1,43 +1,49 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { projects, type Project } from './projects';
-
-const DASHES = /[\u2013\u2014]/;
-const SLASH_SEPARATOR = / \/ /;
-const SALES_WORDS = /orquestrad|moderna|inteligente|revolucion|incr[ií]vel/i;
-
-/** Every sentence a visitor can read on the projects pages, plus the alt texts of the images. */
-function copyOf(project: Project): string[] {
-  return [
-    project.title,
-    project.category,
-    project.description,
-    project.highlight ?? '',
-    ...(project.features ?? []),
-    ...project.tags,
-    ...(project.impact ?? []).flatMap((item) => [item.label, item.value]),
-    ...project.shots.map((shot) => shot.alt),
-  ].filter((text) => text.length > 0);
-}
-
-function offendersOf(pattern: RegExp): string[] {
-  return projects.flatMap((project) =>
-    copyOf(project)
-      .filter((text) => pattern.test(text))
-      .map((text) => `${project.slug}: ${text}`),
-  );
-}
+import { DASH_RULE, FIRST_PERSON_RULE, NUMBER_RULE, SALES_RULE, SLASH_RULE, offenders, visibleCopy, withoutAllowedNumbers } from '../test/projectCopy';
 
 describe('projects copy', () => {
-  it('uses no em dash and no en dash anywhere in a project', () => {
-    expect(offendersOf(DASHES)).toEqual([]);
+  it('covers the data of every project and the sentences written in the components and pages', () => {
+    const wheres = new Set(visibleCopy().map(({ where }) => where));
+
+    expect(wheres.has('page')).toBe(true);
+    expect(wheres.size).toBe(8);
+    expect(visibleCopy().length).toBeGreaterThan(80);
   });
 
-  it('uses no " / " as a separator anywhere in a project', () => {
-    expect(offendersOf(SLASH_SEPARATOR)).toEqual([]);
+  it('uses no em dash, no en dash, no look-alike and no spaced hyphen anywhere', () => {
+    expect(offenders(DASH_RULE)).toEqual([]);
   });
 
-  it('keeps sales wording out of the copy', () => {
-    expect(offendersOf(SALES_WORDS)).toEqual([]);
+  it('uses no " / " as a separator', () => {
+    expect(offenders(SLASH_RULE)).toEqual([]);
+  });
+
+  it('keeps sales wording and claims of results out of the copy', () => {
+    expect(offenders(SALES_RULE)).toEqual([]);
+  });
+
+  it('speaks as "a gente", never in the first person singular', () => {
+    expect(offenders(FIRST_PERSON_RULE)).toEqual([]);
+  });
+
+  it('carries no number except the name Hub081 and what a screen prints', () => {
+    expect(offenders(NUMBER_RULE, withoutAllowedNumbers)).toEqual([]);
+  });
+
+  it.each([
+    ['a figure dash', 'Resultado \u2012 melhor'],
+    ['an em dash', 'A \u2014 B'],
+    ['a minus sign', 'A \u2212 B'],
+    ['a spaced hyphen', 'A - B'],
+    ['a double hyphen', 'A--B'],
+    ['a slash separator', 'Pedido / Delivery'],
+    ['a result in percent', '100% tempo real'],
+    ['a first person', 'Meu sistema'],
+    ['a sales phrase', 'automação de ponta'],
+  ])('the rules would catch %s', (_label, text) => {
+    const caught = [DASH_RULE, SLASH_RULE, SALES_RULE, FIRST_PERSON_RULE].some((rule) => rule.test(text));
+
+    expect(caught).toBe(true);
   });
 });

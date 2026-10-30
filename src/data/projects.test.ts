@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { projectImageManifest } from './projectImages';
-import { getProjectBySlug, projects } from './projects';
+import { coverOf, getProjectBySlug, projects, REMOVED_PROJECT_SLUGS } from './projects';
 
 const EXPECTED_ORDER = [
   'dizpara',
@@ -12,10 +12,11 @@ const EXPECTED_ORDER = [
   'ai-playlist-maker',
   'travel-ia',
 ];
-const REMOVED_SLUGS = ['troco', 'importacao-massiva-nfe'];
-const FULL_IMAGE_COUNT = 3;
+const SHOT_COUNT = 3;
+const MAX_ALT_LENGTH = 125;
 const REMOTE_OR_ACCESS = /https?:\/\/|www\.|dizpara\.com|vupt\.site|minio/i;
 const DASHES = /[\u2013\u2014]/;
+const REMOVED_FIELDS = ['link', 'type', 'impact', 'image', 'gallery', 'shareImage', 'id'];
 
 describe('projects data', () => {
   it('lists the seven projects of the owner, DizPara and Hub081 first', () => {
@@ -27,35 +28,25 @@ describe('projects data', () => {
     expect(projects.slice(0, 2).every((project) => project.featured)).toBe(true);
   });
 
-  it('keeps every slug unique and removes the projects the owner did not list', () => {
+  it('keeps every slug unique, and keeps the removed projects out of the list', () => {
     expect(new Set(projects.map((project) => project.slug)).size).toBe(projects.length);
-    for (const slug of REMOVED_SLUGS) expect(getProjectBySlug(slug)).toBeUndefined();
+    expect([...REMOVED_PROJECT_SLUGS]).toEqual(['troco', 'importacao-massiva-nfe']);
+    for (const slug of REMOVED_PROJECT_SLUGS) expect(getProjectBySlug(slug)).toBeUndefined();
   });
 
-  it('has no access link, no personal or client type and no remote host anywhere in a project', () => {
+  it('has no access link, no type, no result and no remote host anywhere in a project', () => {
     for (const project of projects) {
-      expect(Object.keys(project)).not.toContain('link');
-      expect(Object.keys(project)).not.toContain('type');
+      for (const field of REMOVED_FIELDS) expect(Object.keys(project), `${project.slug}.${field}`).not.toContain(field);
       // shareUrl is the one absolute address: the site's own JPEG for link previews.
       const withoutShare = JSON.stringify(project, (key, value: unknown) => (key === 'shareUrl' ? undefined : value));
       expect(withoutShare).not.toMatch(REMOTE_OR_ACCESS);
     }
   });
 
-  it('gives each project exactly three images, the cover first', () => {
-    for (const project of projects) expect(project.shots, project.slug).toHaveLength(FULL_IMAGE_COUNT);
-  });
-
-  it('gives the two featured projects a share image, made for link previews', () => {
-    for (const project of projects.filter((item) => item.featured)) {
-      expect(project.shareImage?.shareUrl, project.slug).toMatch(/^https:\/\/vnone\.com\.br\/projects\/.+\/cover-share\.jpg$/);
-    }
-  });
-
-  it('never gives a project more than three images, and never repeats one inside a project', () => {
+  it('gives each project exactly three images, the cover first, none repeated', () => {
     for (const project of projects) {
+      expect(project.shots, project.slug).toHaveLength(SHOT_COUNT);
       const sources = project.shots.map((shot) => shot.image.src);
-      expect(sources.length).toBeLessThanOrEqual(FULL_IMAGE_COUNT);
       expect(new Set(sources).size).toBe(sources.length);
     }
   });
@@ -67,10 +58,18 @@ describe('projects data', () => {
     }
   });
 
-  it('describes every image with a Portuguese alt text and no dash', () => {
+  it('shares the cover of every project: its first shot has the 1200 by 630 JPEG made for link previews', () => {
+    for (const project of projects) {
+      expect(coverOf(project).shareUrl, project.slug).toMatch(/^https:\/\/vnone\.com\.br\/projects\/.+-share\.jpg$/);
+      expect(project.shots.slice(1).every((shot) => shot.image.shareUrl === undefined)).toBe(true);
+    }
+  });
+
+  it('describes every image with a short Portuguese alt text and no dash', () => {
     for (const project of projects) {
       for (const shot of project.shots) {
         expect(shot.alt.length).toBeGreaterThan(20);
+        expect(shot.alt.length, shot.alt).toBeLessThanOrEqual(MAX_ALT_LENGTH);
         expect(shot.alt).not.toMatch(DASHES);
         expect(shot.alt).toMatch(/[a-z]{3,}/i);
       }
@@ -89,15 +88,14 @@ describe('projects data', () => {
     }
   });
 
-  it('states no result or number for Hub081', () => {
-    const hub = getProjectBySlug('hub081');
-
-    expect(hub?.impact).toBeUndefined();
-    const copy = [hub?.description, hub?.highlight, ...(hub?.features ?? []), ...(hub?.tags ?? [])].join(' ');
-    expect(copy).not.toMatch(/\d/);
-  });
-
   it('keeps the Proplast case on its existing slug', () => {
     expect(getProjectBySlug('dashboard-consumo-crm')?.title).toBe('Dashboard de Consumo CRM');
+  });
+
+  it('gives every project a category that starts with a capital letter and at least three tags', () => {
+    for (const project of projects) {
+      expect(project.category, project.slug).toMatch(/^\p{Lu}/u);
+      expect(project.tags.length).toBeGreaterThanOrEqual(3);
+    }
   });
 });

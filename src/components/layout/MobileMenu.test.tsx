@@ -93,7 +93,7 @@ describe('MobileMenu', () => {
   });
 
   it('marks the current page, also on a sub page, and never a hash item', async () => {
-    const user = renderMenu('/projetos/troco');
+    const user = renderMenu('/projetos/dizpara');
     const dialog = await openMenu(user);
 
     const current = within(dialog)

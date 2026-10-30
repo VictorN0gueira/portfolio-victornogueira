@@ -108,7 +108,7 @@ describe('SEO', () => {
   });
 
   describe('share image', () => {
-    const CUSTOM_IMAGE = 'https://vnone.com.br/projetos/troco.png';
+    const CUSTOM_IMAGE = 'https://vnone.com.br/projects/dizpara/lista-de-leads-share.jpg';
 
     it('declares 1200x630 for the default banner', () => {
       renderSeo();
@@ -127,6 +127,13 @@ describe('SEO', () => {
       expect(readMeta('property', 'og:image:height')).toBeNull();
     });
 
+    it('declares the size of a custom image when it is given', () => {
+      renderSeo({ image: CUSTOM_IMAGE, imageWidth: 1200, imageHeight: 630 });
+
+      expect(readMeta('property', 'og:image:width')).toBe('1200');
+      expect(readMeta('property', 'og:image:height')).toBe('630');
+    });
+
     it('describes the default banner in both alt tags', () => {
       renderSeo();
 
@@ -135,10 +142,10 @@ describe('SEO', () => {
     });
 
     it('uses imageAlt for both alt tags when it is given', () => {
-      renderSeo({ image: CUSTOM_IMAGE, imageAlt: 'Tela do projeto Troco' });
+      renderSeo({ image: CUSTOM_IMAGE, imageAlt: 'Tela do projeto DizPara' });
 
-      expect(readMeta('property', 'og:image:alt')).toBe('Tela do projeto Troco');
-      expect(readMeta('name', 'twitter:image:alt')).toBe('Tela do projeto Troco');
+      expect(readMeta('property', 'og:image:alt')).toBe('Tela do projeto DizPara');
+      expect(readMeta('name', 'twitter:image:alt')).toBe('Tela do projeto DizPara');
     });
   });
 
@@ -152,5 +159,29 @@ describe('SEO', () => {
     renderSeo();
 
     expect(document.head.innerHTML).not.toMatch(DASH_PATTERN);
+  });
+
+  describe('a page that must not be indexed', () => {
+    it('declares robots noindex and no canonical, no og:url and no twitter:url', () => {
+      renderSeo({ title: 'Projeto não encontrado', noindex: true });
+
+      expect(readMeta('name', 'robots')).toBe('noindex, nofollow');
+      expect(document.querySelector('link[rel="canonical"]')).toBeNull();
+      expect(readMeta('property', 'og:url')).toBeNull();
+      expect(readMeta('name', 'twitter:url')).toBeNull();
+    });
+
+    it('publishes no JSON-LD, not even the Organization and WebSite of the home route', () => {
+      renderSeo({ noindex: true, jsonLd: [{ '@type': 'BreadcrumbList' }] });
+
+      expect(readJsonLd()).toEqual([]);
+    });
+
+    it('still publishes the home JSON-LD and the canonical of an indexed home page', () => {
+      renderSeo();
+
+      expect(readJsonLd().map((schema) => schema['@type']).sort()).toEqual(['Organization', 'WebSite']);
+      expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://vnone.com.br/');
+    });
   });
 });

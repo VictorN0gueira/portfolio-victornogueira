@@ -1,14 +1,34 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import SEO from '../components/SEO';
 import NotFound from '../components/NotFound';
 import ProjectDetail from '../components/ProjectDetail';
-import { coverOf, getProjectBySlug } from '../data/projects';
+import { coverOf, getProjectBySlug, REMOVED_PROJECT_SLUGS, type Project } from '../data/projects';
+import { SITE } from '../lib/site';
+
+export const PROJECT_CTA_TEXT = 'Quer algo assim no seu negócio?';
+const SHARE_IMAGE_WIDTH = 1200;
+const SHARE_IMAGE_HEIGHT = 630;
+
+function breadcrumbSchema(project: Project): object {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE.url}/` },
+      { '@type': 'ListItem', position: 2, name: 'Projetos', item: `${SITE.url}/projetos` },
+      { '@type': 'ListItem', position: 3, name: project.title, item: `${SITE.url}/projetos/${project.slug}` },
+    ],
+  };
+}
 
 export default function ProjectDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const project = slug ? getProjectBySlug(slug) : undefined;
+
+  // The old addresses of the projects that left the list go to the list, instead of a dead end.
+  if (slug && REMOVED_PROJECT_SLUGS.includes(slug)) return <Navigate to="/projetos" replace />;
 
   if (!project) {
     return (
@@ -25,30 +45,31 @@ export default function ProjectDetailPage() {
         title={project.title}
         description={project.description}
         path={`/projetos/${project.slug}`}
-        image={(project.shareImage ?? coverOf(project)).shareUrl}
+        image={coverOf(project).shareUrl}
         imageAlt={project.shots[0].alt}
+        imageWidth={SHARE_IMAGE_WIDTH}
+        imageHeight={SHARE_IMAGE_HEIGHT}
+        jsonLd={[breadcrumbSchema(project)]}
       />
-      <div className="pt-28 md:pt-36 pb-24 px-4 md:px-12 bg-brand-white min-h-screen">
-        <div className="max-w-6xl mx-auto">
-          {/* Breadcrumb */}
+      <div className="min-h-screen bg-brand-white px-4 pb-24 pt-28 md:px-12 md:pt-36">
+        <div className="mx-auto max-w-6xl">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="mb-8"
+            className="mb-4"
           >
             <Link
               to="/projetos"
-              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 hover:text-black dark:hover:text-white transition-colors group"
+              className="group inline-flex min-h-11 items-center gap-2 py-3 pr-4 text-xs font-bold uppercase tracking-[0.2em] text-vn-gray-dark transition-colors hover:text-vn-ink"
             >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
               Todos os projetos
             </Link>
           </motion.div>
 
           <ProjectDetail project={project} />
 
-          {/* CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -56,15 +77,13 @@ export default function ProjectDetailPage() {
             transition={{ duration: 0.6 }}
             className="mt-16 text-center"
           >
-            <p className="text-zinc-500 text-lg font-light mb-6">
-              Quer algo assim no seu negócio?
-            </p>
+            <p className="mb-6 text-lg text-vn-gray-dark">{PROJECT_CTA_TEXT}</p>
             <Link
               to="/contato"
-              className="group inline-flex items-center gap-3 bg-black text-white dark:bg-white dark:text-black px-10 py-5 rounded-full font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-2xl shadow-black/20 active:scale-95"
+              className="group inline-flex items-center gap-3 rounded-full bg-black px-10 py-5 font-medium text-white shadow-2xl shadow-black/20 transition-all hover:bg-zinc-800 active:scale-95"
             >
               Vamos conversar
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
+              <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
             </Link>
           </motion.div>
         </div>

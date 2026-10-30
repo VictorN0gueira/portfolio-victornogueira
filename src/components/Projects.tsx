@@ -2,38 +2,33 @@ import { motion } from 'motion/react';
 import { projects } from '../data/projects';
 import FeaturedProjectCard from './FeaturedProjectCard';
 import ProjectCard from './ProjectCard';
+import { cardLayout } from './projectGrid';
 
 const featuredProjects = projects.filter((project) => project.featured);
 const regularProjects = projects.filter((project) => !project.featured);
 
-const GRID_COLUMNS = 3;
-const LAST_ROW_PAIR = 2;
-
-/* On the three column grid a last row of two cards would leave a hole: those two take half of the width each. */
-function columnSpan(index: number, total: number): string {
-  const isInLastPair = total % GRID_COLUMNS === LAST_ROW_PAIR && index >= total - LAST_ROW_PAIR;
-  return isInLastPair ? 'lg:col-span-3' : 'lg:col-span-2';
-}
+export const PROJECTS_TITLE = 'Projetos';
+export const PROJECTS_INTRO =
+  'Sistemas que a gente construiu, do atendimento no WhatsApp aos dashboards de vendas. Cada um com as telas e o que faz.';
 
 export default function Projects() {
   return (
-    <section id="projetos" aria-labelledby="projetos-titulo" className="py-24 md:py-32 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto">
+    <section id="projetos" aria-labelledby="projetos-titulo" className="mx-auto max-w-7xl px-4 py-24 sm:px-6 md:px-12 md:py-32">
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
+        initial={{ y: 30 }}
+        animate={{ y: 0 }}
         transition={{ duration: 0.8 }}
         className="mb-12 md:mb-20"
       >
-        <div className="max-w-2xl">
-          <h1 id="projetos-titulo" className="text-4xl md:text-6xl font-bold tracking-tight mb-6 font-display italic">Projetos</h1>
-          <p className="text-zinc-500 text-lg md:text-xl font-light">
-            Sistemas que a gente construiu, do <span className="text-black dark:text-white font-medium">atendimento no WhatsApp</span> aos dashboards de vendas. Cada um com as telas e o que faz.
-          </p>
+        <div className="max-w-2xl max-md:pr-14">
+          <h1 id="projetos-titulo" className="mb-6 font-display text-4xl font-bold italic tracking-tight text-vn-ink md:text-6xl">
+            {PROJECTS_TITLE}
+          </h1>
+          <p className="text-lg text-vn-gray-dark md:text-xl">{PROJECTS_INTRO}</p>
         </div>
       </motion.div>
 
-      <ul className="grid gap-6 md:gap-10 mb-16 md:mb-24 list-none p-0">
+      <ul role="list" className="mb-16 grid list-none gap-6 p-0 md:mb-24 md:gap-10">
         {featuredProjects.map((project, index) => (
           <li key={project.slug}>
             <FeaturedProjectCard project={project} priority={index === 0} />
@@ -41,12 +36,15 @@ export default function Projects() {
         ))}
       </ul>
 
-      <ul className="grid md:grid-cols-2 lg:grid-cols-6 gap-x-6 md:gap-x-8 lg:gap-x-10 gap-y-12 md:gap-y-16 list-none p-0">
-        {regularProjects.map((project, index) => (
-          <li key={project.slug} className={columnSpan(index, regularProjects.length)}>
-            <ProjectCard project={project} />
-          </li>
-        ))}
+      <ul role="list" className="grid list-none gap-x-6 gap-y-14 p-0 md:grid-cols-2 md:gap-x-8 md:gap-y-16 lg:grid-cols-6 lg:gap-x-10">
+        {regularProjects.map((project, index) => {
+          const { cellClassName, imageSizes } = cardLayout(index, regularProjects.length);
+          return (
+            <li key={project.slug} className={cellClassName}>
+              <ProjectCard project={project} imageSizes={imageSizes} />
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

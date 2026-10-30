@@ -4,18 +4,13 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { ProjectImage } from '../lib/projectImage';
 import { projectImageManifest } from './projectImages';
-import { coverOf, projects } from './projects';
+import { projects } from './projects';
 
 const PUBLIC_DIR = resolve(__dirname, '../../public');
 const MAX_FILE_BYTES = 200 * 1024;
 const REMOTE_HOST = /https?:\/\//;
 
-const allImages = projects.flatMap((project) =>
-  [...project.shots.map((shot) => shot.image), ...(project.shareImage ? [project.shareImage] : [])].map((image) => ({
-    slug: project.slug,
-    image,
-  })),
-);
+const allImages = projects.flatMap((project) => project.shots.map((shot) => ({ slug: project.slug, image: shot.image })));
 
 /** The file paths a ProjectImage points at, under public/. */
 function filesOf(image: ProjectImage): string[] {
@@ -25,11 +20,6 @@ function filesOf(image: ProjectImage): string[] {
 }
 
 describe('project images', () => {
-  it('covers every project with at least a cover and one more image', () => {
-    expect(projects.length).toBeGreaterThan(0);
-    for (const project of projects) expect(project.shots.length).toBeGreaterThanOrEqual(2);
-  });
-
   it('keeps every image on this site: no remote host in any src, srcSet or thumbnail', () => {
     const urls = allImages.flatMap(({ image }) => [image.src, image.thumbSrc, image.srcSet]);
 
@@ -59,14 +49,6 @@ describe('project images', () => {
       expect(Number.isInteger(image.width) && image.width > 0).toBe(true);
       expect(Number.isInteger(image.height) && image.height > 0).toBe(true);
       expect(image.srcSet).toMatch(/^(\S+ \d+w)(, \S+ \d+w)*$/);
-    }
-  });
-
-  it('keeps a share image, as an absolute https URL, on every cover that has one', () => {
-    const covers = projects.map((project) => ({ slug: project.slug, cover: coverOf(project) }));
-
-    for (const { cover } of covers) {
-      if (cover.shareUrl) expect(cover.shareUrl).toMatch(/^https:\/\/vnone\.com\.br\/projects\/.+-share\.jpg$/);
     }
   });
 

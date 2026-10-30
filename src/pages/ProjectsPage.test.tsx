@@ -1,14 +1,15 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { projects } from '../data/projects';
 import { renderWithProviders } from '../test/render';
-import ProjectsPage from './ProjectsPage';
+import ProjectsPage, { PROJECTS_PAGE_DESCRIPTION } from './ProjectsPage';
 
 const PAGE_TITLE = 'Projetos';
+const LAZY_LOAD_TIMEOUT_MS = 8000;
 
 async function renderPage(): Promise<HTMLElement> {
   renderWithProviders(<ProjectsPage />, { route: '/projetos' });
-  return screen.findByRole('region', { name: PAGE_TITLE });
+  return screen.findByRole('region', { name: PAGE_TITLE }, { timeout: LAZY_LOAD_TIMEOUT_MS });
 }
 
 describe('ProjectsPage', () => {
@@ -34,10 +35,45 @@ describe('ProjectsPage', () => {
   it('shows the two featured projects in their own list, apart from the five regular ones', async () => {
     const section = await renderPage();
 
-    const [featured, regular] = within(section).getAllByRole('list');
+    // The tags of a card are lists too: the two lists of projects are the ones that sit directly in the section.
+    const [featured, regular] = within(section)
+      .getAllByRole('list')
+      .filter((list) => list.parentElement === section);
 
-    expect(within(featured).getAllByRole('listitem')).toHaveLength(2);
-    expect(within(regular).getAllByRole('listitem')).toHaveLength(5);
+    expect(featured.querySelectorAll(':scope > li')).toHaveLength(2);
+    expect(regular.querySelectorAll(':scope > li')).toHaveLength(5);
+  });
+
+  it('goes h1 then h2 with no level skipped: one h1, and every project title is an h2', async () => {
+    const section = await renderPage();
+
+    const headings = within(section).getAllByRole('heading');
+
+    expect(headings.map((heading) => heading.tagName)).toEqual(['H1', ...projects.map(() => 'H2')]);
+    expect(headings.slice(1).map((heading) => heading.textContent)).toEqual(projects.map((project) => project.title));
+  });
+
+  it('names every card with its title and the visible "Ver detalhes", and no two names are alike', async () => {
+    const section = await renderPage();
+
+    const names = within(section)
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('aria-labelledby'))
+      .map((ids) => (ids ?? '').split(' ').map((id) => document.getElementById(id)?.textContent).join(' '));
+
+    expect(names).toEqual(projects.map((project) => `${project.title} Ver detalhes`));
+  });
+
+  it('loads only the first featured cover right away: eager and high priority, every other image lazy', async () => {
+    const section = await renderPage();
+
+    const images = within(section).getAllByRole('img', { hidden: true });
+    const eager = images.filter((image) => image.getAttribute('loading') === 'eager');
+
+    expect(eager).toHaveLength(1);
+    expect(eager[0]).toHaveAttribute('src', projects[0].shots[0].image.src);
+    expect(eager[0]).toHaveAttribute('fetchpriority', 'high');
+    expect(images.filter((image) => image.getAttribute('fetchpriority') === 'high')).toHaveLength(1);
   });
 
   it('has no link that leaves the site, no new tab and no access wording', async () => {
@@ -53,5 +89,14 @@ describe('ProjectsPage', () => {
 
     expect(within(section).queryByText(/Trocô/)).toBeNull();
     expect(within(section).queryByText(/Importação Massiva/)).toBeNull();
+  });
+
+  it('sets the head of the page: title, description, canonical and a share image of its own', async () => {
+    await renderPage();
+
+    await waitFor(() => expect(document.title).toBe('Projetos | VN One'));
+    expect(document.querySelector('meta[name="description"]')).toHaveAttribute('content', PROJECTS_PAGE_DESCRIPTION);
+    expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute('href', 'https://vnone.com.br/projetos');
+    expect(document.querySelector('meta[name="robots"]')).toBeNull();
   });
 });

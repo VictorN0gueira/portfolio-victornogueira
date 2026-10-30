@@ -310,16 +310,17 @@ describe('projects', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('pins the descriptions and category of the projects that keep their copy', () => {
+  it('pins the fact-only descriptions and categories of the projects', () => {
     expect(getProjectBySlug('diagnostico-empresarial')?.description).toBe(
-      'Sistema completo de captura de leads com WhatsApp integrado, formulário, pipeline visual (Kanban), qualificação por IA e gestão de oportunidades.',
+      'Página com um diagnóstico de 5 minutos para o dono da empresa e painel de leads com login, indicadores e funil.',
     );
     expect(getProjectBySlug('dizpara')?.description).toBe(
-      'Sistema de captura e disparo de leads via WhatsApp e E-mail, com automação e IA de qualificação automática de contatos.',
+      'Painel para captar leads no Google Maps, importar de CSV e do Google Sheets e disparar campanhas por e-mail e por WhatsApp.',
     );
-    expect(getProjectBySlug('ai-playlist-maker')?.description).toBe(
-      'Curadoria musical via API do Spotify. Crie playlists personalizadas baseadas em seu gosto e humor usando IA.',
+    expect(getProjectBySlug('hub081')?.description).toBe(
+      'Painel com as conversas do WhatsApp, contatos, agentes de IA, pipelines, propostas, produtos e financeiro.',
     );
+    expect(getProjectBySlug('ai-playlist-maker')?.category).toBe('Playlists com IA');
     expect(getProjectBySlug('travel-ia')?.category).toBe('Roteiro com IA');
   });
 });
