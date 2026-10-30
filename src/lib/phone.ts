@@ -121,6 +121,9 @@ function readTypedDigits(local: string): TypedNumber {
 function readFullDdd55PlusDigit(rest: string, digit: string): TypedNumber {
   const [first, second] = [rest[0], rest[1]];
   if (first === AMBIGUOUS_FIRST && second === MOBILE_NINE) return { local: '', hasTypedNine: false };
+  // "55 29 ...", "55 39 ..." e "55 59 ...": 29, 39 e 59 não são DDDs, então não há DDD digitado ali, e os mesmos dígitos são o
+  // DDD 92, 93 ou 95 com o 55 do país, ou um DDD 55 com um dígito a mais. Não se escolhe: o número é limpo, como no 49 e no 94.
+  if ('2345'.includes(first) && second === MOBILE_NINE && !BRAZILIAN_DDDS.has(first + second)) return { local: '', hasTypedNine: false };
   const looksLikeNineD = !'2345'.includes(first) || (!BRAZILIAN_DDDS.has(first + second) && '23459'.includes(second));
   const typed = looksLikeNineD ? `${COUNTRY_CODE}${MOBILE_NINE}${rest}${digit}` : `${COUNTRY_CODE}${rest}${digit}`;
   const countryCoded = readTypedDigits(dropTypedCountryCode(typed));

@@ -142,3 +142,54 @@ describe('N1: the country code typed digit by digit without a plus, for every re
     expect(typedDisplay('5581987654321')).toBe('+55 81 9 8765-4321');
   });
 });
+
+describe('O1: a nonexistent DDD with the country code typed digit by digit without a plus', () => {
+  const NONEXISTENT = Array.from({ length: 40 }, (_, index) => String(index + 20)).filter((code) => !EXISTING_DDDS.includes(code));
+  const PART_SAMPLE = PARTS.filter((_, index) => index % 4 === 0);
+
+  it('fixes the review repro: 55 39 99999-9999 is cleared at the 11th digit, never read as DDD 93', () => {
+    expect(typedDisplay('55399999999')).toBe(CLEARED);
+    expect(isRefused(typedDisplay('5539999999999'))).toBe(true);
+  });
+
+  it('never ends as an accepted number for a code from 20 to 59 that is no DDD, with the mobile 9', () => {
+    const accepted: string[] = [];
+    let cleared = 0;
+    for (const code of NONEXISTENT) {
+      for (const part of PART_SAMPLE) {
+        const typed = `55${code}9${part}`;
+        const after = typedDisplay(typed);
+        if (!isRefused(after)) accepted.push(`${typed}: ${after}`);
+        // 29, 39 and 59 read as DDD 92, 93 and 95 (the same text): the 11th digit clears them, as it does for 49 and 94.
+        if (['29', '39', '59'].includes(code) && typedDisplay(typed.slice(0, 11)) !== CLEARED) accepted.push(`${typed}: not cleared`);
+        if (typedDisplay(typed.slice(0, 11)) === CLEARED) cleared += 1;
+      }
+    }
+
+    expect(NONEXISTENT).toEqual(expect.arrayContaining(['29', '39', '59', '23', '25', '52']));
+    expect(accepted.slice(0, 20)).toEqual([]);
+    expect(cleared).toBeGreaterThanOrEqual(3 * PART_SAMPLE.length);
+  });
+
+  it('does not touch the real DDDs 2x to 5x written with the mobile 9 (49 is the F1 case, already cleared)', () => {
+    const wrong: string[] = [];
+    let exact = 0;
+    for (const ddd of EXISTING_DDDS.filter((code) => '2345'.includes(code[0]) && code !== '49')) {
+      for (const part of PART_SAMPLE) {
+        const after = typedDisplay(`55${ddd}9${part}`);
+        if (after === handBuiltDisplay(ddd, part)) exact += 1;
+        else wrong.push(`55${ddd}9${part}: ${after}`);
+      }
+    }
+
+    expect(wrong.slice(0, 20)).toEqual([]);
+    expect(exact).toBeGreaterThan(5_000);
+  });
+
+  it('is cleared the same way for the DDDs 29, 39 and 59 typed with spaces and a hyphen', () => {
+    for (const text of ['55 29 99999-9999', '55 39 99999-9999', '55 59 99999-9999', '55 39 98765-4321']) {
+      expect(isRefused(typedDisplay(text))).toBe(true);
+      expect(typedDisplay(text.replace(/\D/g, '').slice(0, 11))).toBe(CLEARED);
+    }
+  });
+});
