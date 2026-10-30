@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readCall, rejectUnexpectedFetch, stubFetch } from '../../test/contactForm';
-import { fillValidEmailForm, submitAndSettle } from '../../test/contactHook';
+import { EMAIL_WEBHOOK, readCall, rejectUnexpectedFetch, stubFetch } from '../../test/contactForm';
+import { SUBMIT_EVENT, fillValidEmailForm, submitAndSettle, type ContactHookResult } from '../../test/contactHook';
 import { COOLDOWN_MESSAGE } from './botGuard';
 import { useContactForm } from './useContactForm';
 
@@ -56,18 +56,90 @@ describe('the honeypot', () => {
   });
 });
 
-describe('the time trap', () => {
-  it('sends nothing and looks like a success when the submit comes under 2 seconds after the first gesture', async () => {
+describe('the time trap (it waits, it never drops a send)', () => {
+  /** Presses Enviar and leaves the request pending in its wait: returns the promise of the submit. */
+  function pressEnviar(result: ContactHookResult) {
+    let sent: Promise<void> = Promise.resolve();
+    act(() => {
+      sent = result.current.handleSubmit(SUBMIT_EVENT);
+    });
+    return sent;
+  }
+
+  it('shows Enviando and holds the request for the rest of the 2 seconds, then sends it once', async () => {
     const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
-    const { result } = visitorWhoWaits(FIRST_INTERACTION_WAIT_MS - 1);
+    const { result } = visitorWhoWaits(500);
 
-    await submitAndSettle(result);
-
+    const sent = pressEnviar(result);
+    expect(result.current.status).toBe('sending');
+    advance(1_499);
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.status).toBe('sending');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+      await sent;
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result.current.status).toBe('success');
   });
 
-  it('sends from 2 seconds on', async () => {
+  it('sends the same request as a visitor who did not have to wait, stamped when it leaves', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const { result } = visitorWhoWaits(0);
+
+    const sent = pressEnviar(result);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(FIRST_INTERACTION_WAIT_MS);
+      await sent;
+    });
+
+    const { url, init } = readCall(fetchMock);
+    expect(url).toBe(EMAIL_WEBHOOK);
+    expect(init.method).toBe('POST');
+    expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
+    expect(init.body).toBe(
+      `{"nome":"Ana Lima","email":"ana@example.com","servico":"Automação de processos","mensagem":"Quero automatizar notas fiscais","timestamp":"${new Date().toISOString()}"}`,
+    );
+  });
+
+  it('ignores a second Enviar while the first one is still waiting', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const { result } = visitorWhoWaits(0);
+
+    const sent = pressEnviar(result);
+    act(() => {
+      void result.current.handleSubmit(SUBMIT_EVENT);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(FIRST_INTERACTION_WAIT_MS);
+      await sent;
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a real error, not a fake success, when the held request fails, and the retry is not held back', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: false }));
+    const { result } = visitorWhoWaits(0);
+
+    const sent = pressEnviar(result);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(FIRST_INTERACTION_WAIT_MS);
+      await sent;
+    });
+    expect(result.current.status).toBe('error');
+    act(() => result.current.dismissError());
+    const retry = pressEnviar(result);
+    await act(async () => {
+      await retry;
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.current.notice).toBeUndefined();
+  });
+
+  it('sends at once from 2 seconds on, with no wait', async () => {
     const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
     const { result } = visitorWhoWaits(FIRST_INTERACTION_WAIT_MS);
 
@@ -87,9 +159,14 @@ describe('the time trap', () => {
     fillValidEmailForm(hook.result);
     advance(499);
 
-    await submitAndSettle(hook.result);
-
+    const sent = pressEnviar(hook.result);
     expect(fetchMock).not.toHaveBeenCalled();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+      await sent;
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('counts from the mount for a visitor with no gesture at all (autofill, then Enter)', async () => {

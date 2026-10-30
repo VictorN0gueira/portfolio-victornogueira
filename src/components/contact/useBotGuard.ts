@@ -29,7 +29,7 @@ export function useBotGuard() {
       lastSentAt: lastSentAt.current,
       now: Date.now(),
     });
-    setNotice(verdict === 'cooldown' ? COOLDOWN_MESSAGE : undefined);
+    setNotice(verdict.action === 'cooldown' ? COOLDOWN_MESSAGE : undefined);
     return verdict;
   };
 

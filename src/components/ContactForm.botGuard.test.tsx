@@ -42,7 +42,7 @@ async function fillTheForm(user: User) {
 }
 
 describe('the time trap in the rendered form', () => {
-  it('answers with the thanks and sends nothing when Enviar comes right after the typing', async () => {
+  it('shows Enviando, holds a fast Enviar for the rest of the 2 seconds, then really sends it', async () => {
     const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
     const user = userEvent.setup();
     renderWithProviders(<ContactForm />);
@@ -50,8 +50,24 @@ describe('the time trap in the rendered form', () => {
     await fillTheForm(user);
     await user.click(submitButton());
 
-    expect(await screen.findByRole('heading', { name: THANKS })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Enviando…' })).toBeDisabled();
     expect(fetchMock).not.toHaveBeenCalled();
+    // The clock of Date is frozen here, so the whole 2 seconds are the real wait of the form.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1), { timeout: 4_000 });
+    expect(await screen.findByRole('heading', { name: THANKS })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the real error, with the WhatsApp fallback, when the held request fails', async () => {
+    stubFetch(() => Promise.resolve({ ok: false }));
+    const user = userEvent.setup();
+    renderWithProviders(<ContactForm />);
+
+    await fillTheForm(user);
+    await user.click(submitButton());
+
+    expect(await screen.findByText(/não deu pra enviar/i, undefined, { timeout: 4_000 })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: THANKS })).not.toBeInTheDocument();
   });
 
   it('sends when two seconds have passed since the first key', async () => {

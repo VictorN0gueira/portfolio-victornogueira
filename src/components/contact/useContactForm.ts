@@ -122,10 +122,14 @@ function useContactSender(method: ContactMethod, onSuccess: () => void) {
   // A second submit while a request is out (a double tap, Enter then click) sends nothing.
   const isInFlight = useRef(false);
 
-  const send = async (fields: ContactFields) => {
+  /** `waitMs` is the rest of the time trap (see botGuard.ts): shown as Enviando, still one request at a time. */
+  const send = async (fields: ContactFields, waitMs: number) => {
     isInFlight.current = true;
     try {
       setStatus('sending');
+      if (waitMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+      }
       const outcome = await sendContact(fields, method);
       if (outcome === 'success') {
         onSuccess();
@@ -160,11 +164,11 @@ export function useContactForm(initialMessage?: string, prefillNonce?: number) {
 
     setErrors({});
     const verdict = judge();
-    if (verdict === 'bot') {
+    if (verdict.action === 'bot') {
       // Looks like a success and sends nothing: a bot gets no signal (see botGuard.ts).
       setStatus('success');
-    } else if (verdict === 'send') {
-      await send(fields);
+    } else if (verdict.action === 'send') {
+      await send(fields, verdict.waitMs);
     }
   };
 

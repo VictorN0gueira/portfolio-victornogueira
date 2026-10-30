@@ -1,21 +1,20 @@
 /**
  * The quiet defences of the contact form against bots and double sends. None of them adds a key to the payload and
  * none asks the visitor for anything: the form posts to the n8n webhooks, the only lead channel of the business,
- * and nothing is allowed to sit in front of them.
+ * and a real lead must never be lost to a defence.
  *
- * - Honeypot: a field no human sees. A bot that fills every input fills it too.
- * - Time trap: a form submitted less than MIN_FILL_MS after the visitor first touched it was not filled by a person.
- *   The clock starts at the first keyboard or pointer gesture on the fields (the mount, for a visitor with no gesture
- *   at all, such as autofill followed by Enter), so a visitor who simply arrives fast or reads for a while is never
- *   held back: only the time between the first gesture and Enviar counts.
- * - Cooldown: after a send that worked, another send waits COOLDOWN_MS, so a double click on Enviar outra or a
- *   script cannot flood the inbox.
- *
- * A bot caught by the honeypot or the time trap gets what a real send gives (the thanks), and nothing leaves the
- * browser, so it learns nothing and does not adapt.
+ * - Honeypot: a field no human sees. A bot that fills every input fills it too, and then gets what a real send gives
+ *   (the thanks) while nothing leaves the browser, so it learns nothing and does not adapt. A person never fills it.
+ * - Time trap: a form submitted less than MIN_FILL_MS after the visitor first touched it is not dropped. It is held:
+ *   the form shows its normal Enviando state, waits the rest of the time (at most MIN_FILL_MS), and then sends the
+ *   real request and shows the real answer. The clock starts at the first keyboard or pointer gesture on the fields
+ *   (the mount, for a visitor with no gesture at all, such as autofill followed by Enter). A fast person only waits a
+ *   moment; a bot that does not wait is still caught by the honeypot.
+ * - Cooldown: after a send that worked (never after an error), another send within COOLDOWN_MS is not made and the
+ *   visitor is told so in a visible line, so a double click on Enviar outra or a script cannot flood the inbox.
  */
 
-/** The shortest honest time between the first gesture on the form and Enviar. */
+/** The shortest honest time between the first gesture on the form and the request. A faster submit waits the rest. */
 export const MIN_FILL_MS = 2_000;
 
 /** How long after a successful send the next send is held. */
@@ -26,7 +25,13 @@ export const COOLDOWN_MESSAGE = 'Já recebemos a sua mensagem. Aguarde alguns se
 /** Name of the hidden input. Valid, boring and not one of the names a browser autofills. */
 export const HONEYPOT_NAME = 'ref_interna';
 
-export type SubmitVerdict = 'send' | 'bot' | 'cooldown';
+export type SubmitVerdict =
+  /** Send the real request after `waitMs` (0 when the visitor already took their time). */
+  | { action: 'send'; waitMs: number }
+  /** Honeypot filled: answer with the thanks and send nothing. */
+  | { action: 'bot' }
+  /** A send worked less than COOLDOWN_MS ago: send nothing and say so. */
+  | { action: 'cooldown' };
 
 export interface GuardClock {
   /** When the form mounted. */
@@ -41,11 +46,11 @@ export interface GuardClock {
 /** What to do with a submit that already passed validation. */
 export function judgeSubmit(honeypot: string, clock: GuardClock): SubmitVerdict {
   if (honeypot !== '') {
-    return 'bot';
+    return { action: 'bot' };
   }
   if (clock.lastSentAt !== null && clock.now - clock.lastSentAt < COOLDOWN_MS) {
-    return 'cooldown';
+    return { action: 'cooldown' };
   }
   const startedAt = clock.firstGestureAt ?? clock.mountedAt;
-  return clock.now - startedAt < MIN_FILL_MS ? 'bot' : 'send';
+  return { action: 'send', waitMs: Math.max(0, MIN_FILL_MS - (clock.now - startedAt)) };
 }
