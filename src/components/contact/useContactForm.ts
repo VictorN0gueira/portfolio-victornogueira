@@ -61,12 +61,18 @@ function usePrefill(
   prefillNonce: number | undefined,
   setFormData: Dispatch<SetStateAction<typeof EMPTY_FORM_DATA>>,
 ) {
+  // The last message the parent handed over: Enviar outra puts it back instead of leaving the field empty.
+  const lastPrefill = useRef('');
+
   // Pré-preenche a mensagem quando o usuário usa a calculadora de ROI
   useEffect(() => {
     if (initialMessage) {
+      lastPrefill.current = initialMessage;
       setFormData((prev) => ({ ...prev, mensagem: initialMessage }));
     }
   }, [initialMessage, prefillNonce, setFormData]);
+
+  return lastPrefill;
 }
 
 /**
@@ -80,7 +86,7 @@ function useContactDraft(initialMessage?: string, prefillNonce?: number) {
   const [errors, setErrors] = useState<ContactErrors>({});
   // Consentimento LGPD: obrigatório para enviar
   const [consent, setConsent] = useState(false);
-  usePrefill(initialMessage, prefillNonce, setFormData);
+  const lastPrefill = usePrefill(initialMessage, prefillNonce, setFormData);
 
   // Digitar num campo limpa só o erro daquele campo.
   const clearError = (field: keyof ContactFields) => {
@@ -100,7 +106,7 @@ function useContactDraft(initialMessage?: string, prefillNonce?: number) {
     setErrors({});
   };
   const resetDraft = () => {
-    setFormData(EMPTY_FORM_DATA);
+    setFormData({ ...EMPTY_FORM_DATA, mensagem: lastPrefill.current });
     setServico('');
     setConsent(false);
     setErrors({});

@@ -1,8 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
-import type { FormEvent } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { serviceOptions } from '../../data/services';
-import { EMAIL_WEBHOOK, TEST_EMAIL, readCall, rejectUnexpectedFetch, stubFetch } from '../../test/contactForm';
+import { EMAIL_WEBHOOK, readCall, rejectUnexpectedFetch, stubFetch } from '../../test/contactForm';
+import { SUBMIT_EVENT, fillValidEmailForm } from '../../test/contactHook';
 import { useContactForm } from './useContactForm';
 
 // Every test starts with a rejecting fetch: nothing here can reach the real n8n webhooks.
@@ -19,8 +18,6 @@ afterEach(() => {
   Object.defineProperty(AbortSignal, 'timeout', { value: NATIVE_TIMEOUT, configurable: true, writable: true });
 });
 
-const SUBMIT_EVENT = { preventDefault: () => {} } as unknown as FormEvent;
-
 /** A request that stays open until the test answers it. */
 function deferredFetch() {
   let answer: (value: { ok: boolean }) => void = () => {};
@@ -31,15 +28,6 @@ function deferredFetch() {
       }),
   );
   return { fetchMock, answer: (ok: boolean) => answer({ ok }) };
-}
-
-/** The e-mail form filled and with the consent given, one visitor action at a time. */
-function fillValidEmailForm(result: { current: ReturnType<typeof useContactForm> }) {
-  act(() => result.current.setField('nome', 'Ana Lima'));
-  act(() => result.current.chooseService(serviceOptions[0]));
-  act(() => result.current.setField('email', TEST_EMAIL));
-  act(() => result.current.setField('mensagem', 'Quero automatizar notas fiscais'));
-  act(() => result.current.setConsent(true));
 }
 
 describe('useContactForm setField', () => {
