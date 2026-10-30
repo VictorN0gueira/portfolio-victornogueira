@@ -4,11 +4,13 @@ import { EMPTY_FORM_DATA } from './useContactForm';
 
 // The number is the one thing of a lead that cannot be wrong: a number that passes the validation but is not the one the
 // visitor meant sends the lead to somebody else. The field is filled with "+55 " from the start and the formatter reads
-// the digits again after every change, so three things used to corrupt it: a selection that touches the prefix (the next
+// the digits again after every change, so four things used to corrupt it: a selection that touches the prefix (the next
 // digits land in front of the country code, or leave a stray "5" of it behind, and are read as the DDD), an
-// international number pasted behind the prefix (its own "+55" is read as the DDD), and the same text dropped on the
-// field. The guards below fix the input only: the formatter, the validation and the payload are the ones of lib/phone.ts
-// and lib/contact.ts, untouched.
+// international number pasted behind the prefix (its own "+55" is read as the DDD), the same text dropped on the
+// field, and a country code typed by hand ("+55 94 ...", whose digits the formatter alone could not tell from a DDD).
+// The guards below shape what reaches the field: the formatter (lib/phone.ts) and the validation (lib/contact.ts) read
+// the result, and the payload is built from it as always. A "+" typed in the empty field is remembered per input element
+// (a WeakMap, so nothing leaks), also after the visitor leaves the field and comes back, until any other key is typed.
 
 /** "+55 ": the part of the field that is always there. */
 const PHONE_PREFIX_LENGTH = EMPTY_FORM_DATA.whatsapp.length;

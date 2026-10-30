@@ -398,5 +398,28 @@ describe('a country code typed by hand', () => {
     expect(down('+', {})).toHaveBeenCalled();
     expect(down('5', {})).toHaveBeenCalled();
   });
+
+  it('ends the swallowing at any other key, even one that leaves the field empty (a letter, an arrow, Backspace, Tab)', () => {
+    const typedKey = (input: HTMLInputElement, name: string) => {
+      const preventDefault = vi.fn();
+      props.onKeyDown({ currentTarget: input, key: name, preventDefault } as unknown as KeyboardEvent<HTMLInputElement>);
+      return preventDefault;
+    };
+    for (const other of ['a', 'ArrowLeft', 'Backspace', 'Tab', 'Enter']) {
+      // Through beforeinput: a "+", the other key, then 55. The field is still empty, so only the reset can stop it.
+      const input = phoneInput(PREFIX);
+      key(input, '+');
+      if (other.length === 1) key(input, other);
+      else typedKey(input, other);
+      expect(key(input, '5')).not.toHaveBeenCalled();
+      expect(key(input, '5')).not.toHaveBeenCalled();
+
+      // The same from the key down of a physical keyboard.
+      const keyed = phoneInput(PREFIX);
+      typedKey(keyed, '+');
+      typedKey(keyed, other);
+      expect(typedKey(keyed, '5')).not.toHaveBeenCalled();
+    }
+  });
 });
 
