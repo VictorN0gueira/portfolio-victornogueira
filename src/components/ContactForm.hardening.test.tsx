@@ -148,6 +148,24 @@ describe('the honeypot field', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('still thanks a WhatsApp visitor for WhatsApp, not for e-mail, when the hidden field is filled', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const user = userEvent.setup();
+    renderWithProviders(<ContactForm initialMessage={QUOTE} />);
+
+    await user.click(screen.getByRole('button', { name: 'Por WhatsApp' }));
+    await user.type(await screen.findByLabelText('WhatsApp', undefined, { timeout: 3000 }), '81984451243');
+    await user.type(screen.getByLabelText('Nome'), 'Ana Lima');
+    await pickService(user);
+    await user.click(screen.getByRole('checkbox'));
+    await user.type(honeypot(), 'https://spam.example');
+    await user.click(submitButton());
+
+    expect(await screen.findByRole('heading', { name: 'Recebemos sua mensagem' })).toBeInTheDocument();
+    expect(screen.getByText('Obrigado! A gente responde pelo WhatsApp em breve.')).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('is not in the payload when the visitor sends a form normally', async () => {
     const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
     const user = userEvent.setup();

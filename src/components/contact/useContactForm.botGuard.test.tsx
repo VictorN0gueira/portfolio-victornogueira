@@ -46,6 +46,20 @@ describe('the honeypot', () => {
     expect(result.current.status).toBe('success');
   });
 
+  it.each(['email', 'whatsapp'] as const)('thanks the visitor for the %s channel they chose when the hidden field is filled', async (method) => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const { result } = visitorWhoWaits(60_000);
+    act(() => result.current.selectMethod(method));
+    act(() => result.current.setField('whatsapp', '+55 81 9 8445-1243'));
+    act(() => result.current.setHoneypot('https://spam.example'));
+
+    await submitAndSettle(result);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.status).toBe('success');
+    expect(result.current.sentMethod).toBe(method);
+  });
+
   it('is not a payload key: an empty honeypot sends the four fields and the timestamp as always', async () => {
     const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
     const { result } = visitorWhoWaits(FIRST_INTERACTION_WAIT_MS);

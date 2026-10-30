@@ -36,7 +36,8 @@ interface FieldFrameProps {
 /** The label, the control and the error message of one field. */
 function FieldFrame({ field, label, error, htmlFor, labelId, children }: FieldFrameProps) {
   return (
-    <div className="flex flex-col gap-2">
+    // `relative`: the cap hint of the field is positioned in the gap under it (see FieldCapHint).
+    <div className="relative flex flex-col gap-2">
       <label id={labelId} htmlFor={htmlFor} className={LABEL_CLASS}>
         {label}
       </label>
@@ -77,7 +78,7 @@ export function ContactInput({ field, value, error, onChange }: ContactInputProp
         maxLength={config.maxLength}
         {...extra}
       />
-      <FieldCapHint length={value.length} max={config.maxLength} />
+      <FieldCapHint id={`${id}-cap`} length={value.length} max={config.maxLength} />
     </FieldFrame>
   );
 }
@@ -107,7 +108,7 @@ export function ContactMessage({ value, error, onChange }: ContactMessageProps) 
         placeholder={placeholders.mensagem}
         enterKeyHint="enter"
       />
-      <FieldCapHint length={value.length} max={MESSAGE_MAX} />
+      <FieldCapHint id="contact-mensagem-cap" length={value.length} max={MESSAGE_MAX} />
     </FieldFrame>
   );
 }

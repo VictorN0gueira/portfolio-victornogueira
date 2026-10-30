@@ -13,7 +13,7 @@ export function useBotGuard() {
   const firstGestureAt = useRef<number | null>(null);
   const lastSentAt = useRef<number | null>(null);
 
-  /** The first keyboard or pointer gesture on the fields starts the time trap clock; later gestures change nothing. */
+  /** The first key other than Enter, or pointer gesture, on the fields starts the time trap clock; later gestures change nothing. */
   const markInteraction = () => {
     firstGestureAt.current ??= Date.now();
   };
