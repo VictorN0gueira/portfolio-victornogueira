@@ -8,6 +8,7 @@ import {
   type ContactMethod,
 } from '../../lib/contact';
 import { timeoutSignal } from '../../lib/timeoutSignal';
+import { holdUnlessLeaving } from './holdUnlessLeaving';
 import { useBotGuard } from './useBotGuard';
 
 /** How long a request may stay open before the form gives up and shows the WhatsApp fallback. */
@@ -39,6 +40,8 @@ async function sendContact(fields: ContactFields, method: ContactMethod): Promis
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
       signal: timeoutSignal(REQUEST_TIMEOUT_MS),
+      // The request survives the page going away (see holdUnlessLeaving). The body is far under the 64 KB limit of keepalive.
+      keepalive: true,
     });
 
     if (response.ok) {
@@ -116,19 +119,31 @@ function useContactDraft(initialMessage?: string, prefillNonce?: number) {
   return { method, formData, servico, errors, consent, setConsent, setField, chooseService, selectMethod, setErrors, resetDraft };
 }
 
-/** The status of the send and the send itself: one request at a time, and `onSuccess` runs when the webhook said yes. */
+/**
+ * The status of the send and the send itself: one request at a time, and `onSuccess` runs when the webhook said yes.
+ * `sentMethod` is the method of the last send, kept apart from the toggle: the thanks names the channel that was used,
+ * even when the visitor flips the toggle while Enviando is still showing.
+ */
 function useContactSender(method: ContactMethod, onSuccess: () => void) {
   const [status, setStatus] = useState<ContactStatus>('idle');
+  const [sentMethod, setSentMethod] = useState<ContactMethod>(method);
   // A second submit while a request is out (a double tap, Enter then click) sends nothing.
   const isInFlight = useRef(false);
+  // Ends the hold of the time trap now: the form is unmounted by a navigation, so the request goes out instead of dying.
+  const releaseHold = useRef<(() => void) | null>(null);
+  useEffect(() => () => releaseHold.current?.(), []);
 
   /** `waitMs` is the rest of the time trap (see botGuard.ts): shown as Enviando, still one request at a time. */
   const send = async (fields: ContactFields, waitMs: number) => {
     isInFlight.current = true;
+    setSentMethod(method);
     try {
       setStatus('sending');
       if (waitMs > 0) {
-        await new Promise((resolve) => setTimeout(resolve, waitMs));
+        const hold = holdUnlessLeaving(waitMs);
+        releaseHold.current = hold.release;
+        await hold.done;
+        releaseHold.current = null;
       }
       const outcome = await sendContact(fields, method);
       if (outcome === 'success') {
@@ -140,7 +155,13 @@ function useContactSender(method: ContactMethod, onSuccess: () => void) {
     }
   };
 
-  return { status, setStatus, send, isSending: () => isInFlight.current };
+  /** What a bot gets: the thanks, with nothing sent. */
+  const succeedWithoutSending = () => {
+    setSentMethod(method);
+    setStatus('success');
+  };
+
+  return { status, setStatus, sentMethod, send, succeedWithoutSending, isSending: () => isInFlight.current };
 }
 
 /** The state and the submit of the contact form (ContactForm renders it). */
@@ -148,7 +169,7 @@ export function useContactForm(initialMessage?: string, prefillNonce?: number) {
   const { setErrors, resetDraft, ...draft } = useContactDraft(initialMessage, prefillNonce);
   const { method, formData, servico } = draft;
   const { judge, recordSent, clearNotice, ...guard } = useBotGuard();
-  const { status, setStatus, send, isSending } = useContactSender(method, recordSent);
+  const { status, setStatus, sentMethod, send, succeedWithoutSending, isSending } = useContactSender(method, recordSent);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -166,7 +187,7 @@ export function useContactForm(initialMessage?: string, prefillNonce?: number) {
     const verdict = judge();
     if (verdict.action === 'bot') {
       // Looks like a success and sends nothing: a bot gets no signal (see botGuard.ts).
-      setStatus('success');
+      succeedWithoutSending();
     } else if (verdict.action === 'send') {
       await send(fields, verdict.waitMs);
     }
@@ -190,7 +211,7 @@ export function useContactForm(initialMessage?: string, prefillNonce?: number) {
     draft.chooseService(value);
   };
 
-  return { ...draft, ...guard, status, handleSubmit, dismissError, reset, setField, chooseService };
+  return { ...draft, ...guard, status, sentMethod, handleSubmit, dismissError, reset, setField, chooseService };
 }
 
 export type ContactFormState = ReturnType<typeof useContactForm>;

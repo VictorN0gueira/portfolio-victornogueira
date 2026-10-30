@@ -69,6 +69,8 @@ describe('the exact request the contact form sends', () => {
     expect(init.method).toBe('POST');
     expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
     expect(init.body).toBe(EMAIL_BODY);
+    // keepalive is an option of the request, never part of the body: the bytes above are what n8n reads.
+    expect(init.keepalive).toBe(true);
     expect(Object.keys(JSON.parse(init.body as string))).toEqual(['nome', 'email', 'servico', 'mensagem', 'timestamp']);
   });
 
@@ -89,6 +91,7 @@ describe('the exact request the contact form sends', () => {
     expect(init.method).toBe('POST');
     expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
     expect(init.body).toBe(WHATSAPP_BODY);
+    expect(init.keepalive).toBe(true);
     expect(Object.keys(JSON.parse(init.body as string))).toEqual(['nome', 'whatsapp', 'servico', 'mensagem', 'timestamp']);
   });
 });
