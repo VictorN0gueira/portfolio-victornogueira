@@ -1,4 +1,4 @@
-import { isCompleteLocalNumber, toEvolutionFormat, toLocalDigits } from './phone';
+import { BRAZILIAN_DDDS, isCompleteLocalNumber, toEvolutionFormat, toLocalDigits } from './phone';
 
 // Webhooks n8n de ativação. Disparam a notificação por email e WhatsApp para a VN One
 // e são o único caminho pelo qual um lead chega ao dono do negócio.
@@ -42,6 +42,7 @@ const CONTACT_ERRORS = {
   email: 'Esse e-mail parece incompleto',
   emailLongo: `E-mail muito longo (máximo ${EMAIL_MAX} caracteres).`,
   whatsapp: 'Coloca o número com DDD, por exemplo 81 99999-9999',
+  whatsappDdd: 'Esse DDD não existe, confere o número',
   mensagem: 'Escreve um pouco mais sobre o que você precisa',
   mensagemLonga: `Mensagem muito longa (máximo ${MESSAGE_MAX} caracteres).`,
   servico: 'Escolhe um serviço',
@@ -56,6 +57,13 @@ function nameError(nome: string): string | undefined {
 function emailError(email: string): string | undefined {
   if (email.length > EMAIL_MAX) return CONTACT_ERRORS.emailLongo;
   return EMAIL_PATTERN.test(email) ? undefined : CONTACT_ERRORS.email;
+}
+
+/** An incomplete number first (the example shows the shape), then a DDD that does not exist. */
+function whatsappError(whatsapp: string): string | undefined {
+  const local = toLocalDigits(whatsapp);
+  if (!isCompleteLocalNumber(local)) return CONTACT_ERRORS.whatsapp;
+  return BRAZILIAN_DDDS.has(local.substring(0, 2)) ? undefined : CONTACT_ERRORS.whatsappDdd;
 }
 
 function messageError(mensagem: string): string | undefined {
@@ -79,8 +87,9 @@ export function validateContact(f: ContactFields, method: ContactMethod): Contac
   if (email) {
     errors.email = email;
   }
-  if (method === 'whatsapp' && !isCompleteLocalNumber(toLocalDigits(f.whatsapp))) {
-    errors.whatsapp = CONTACT_ERRORS.whatsapp;
+  const whatsapp = method === 'whatsapp' ? whatsappError(f.whatsapp) : undefined;
+  if (whatsapp) {
+    errors.whatsapp = whatsapp;
   }
   const mensagem = messageError(f.mensagem.trim());
   if (mensagem) {

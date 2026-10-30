@@ -46,6 +46,7 @@ export const BRAZILIAN_DDDS: ReadonlySet<string> = new Set([
   '91', '92', '93', '94', '95', '96', '97', '98', '99',
 ]);
 
+const TRUNK_ZERO = '0';
 const COUNTRY_CODED_MIN_DIGITS = 12;
 // Depois de um 55 digitado, um terceiro dígito que nenhum número do DDD 55 tem: fixo começa com 2 a 5 e celular com 9.
 // Então o 55 é o código do país e o terceiro dígito já é o primeiro do DDD.
@@ -74,6 +75,14 @@ function dropTypedCountryCode(local: string): string {
   return isCountryCoded ? local.substring(COUNTRY_CODE.length) : local;
 }
 
+/**
+ * O zero de tronco ("0 81 98445-1243", 081...) não é parte do número: nenhum DDD começa com 0 e o campo o lia como o DDD 08.
+ * Sai digitado ou colado, do mesmo jeito. Um código de operadora depois do zero (015 11 ...) fica como o campo o lê.
+ */
+function dropTrunkZero(local: string): string {
+  return local.startsWith(TRUNK_ZERO) ? local.substring(TRUNK_ZERO.length) : local;
+}
+
 /** Tira o 9 do celular digitado depois do DDD (o campo o mostra sozinho, como palavra própria). */
 function readTypedDigits(local: string): TypedNumber {
   if (local.length > 2 && local[2] === MOBILE_NINE) {
@@ -100,7 +109,7 @@ function readFullDdd55PlusDigit(rest: string, digit: string): TypedNumber {
 function readLocalDigits(raw: string): TypedNumber {
   const shown = SHOWN_NINE.exec(raw);
   if (!shown) {
-    const local = toLocalDigits(raw);
+    const local = dropTrunkZero(toLocalDigits(raw));
     // Com o "+55" do campo na frente, o que vem depois pode ser um 55 digitado à mão (o código do país). Sem ele, o texto
     // inteiro é o número e o código do país, se havia um, já foi tirado por toLocalDigits.
     return readTypedDigits(raw.trimStart().startsWith(COUNTRY_PREFIX) ? dropTypedCountryCode(local) : local);

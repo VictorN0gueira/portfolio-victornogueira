@@ -1,8 +1,17 @@
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { formatWhatsappDisplay } from '../lib/phone';
 import { expectedDisplay, expectedEvolution } from '../test/phoneCorpus';
-import { WHATSAPP_WEBHOOK, openWhatsappForm, rejectUnexpectedFetch, sendWhatsappForm, stubFetch } from '../test/contactForm';
+import {
+  WHATSAPP_WEBHOOK,
+  openWhatsappForm,
+  pickService,
+  rejectUnexpectedFetch,
+  sendWhatsappForm,
+  stubFetch,
+  submitButton,
+} from '../test/contactForm';
 
 // The WhatsApp field typed key by key, through the real input handler, must end as the number pasted. A number whose eight
 // digit part starts with 9 (81 99999-9999, the example of the field itself) used to lose every 9 typed after the DDD.
@@ -91,4 +100,29 @@ describe('the WhatsApp field typed key by key', () => {
 
     expect(whatsapp).toHaveValue('+55 81 9 3222-1234');
   });
+
+  it('tells a visitor in Portuguese when the DDD does not exist, and sends nothing', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const { user, whatsapp } = await openWhatsappForm();
+    await user.type(whatsapp, '10984451243');
+    await user.type(screen.getByLabelText('Nome'), 'Ana Lima');
+    await pickService(user);
+    await user.type(screen.getByLabelText('Mensagem'), 'Quero automatizar notas fiscais');
+    await user.click(screen.getByRole('checkbox'));
+
+    await user.click(submitButton());
+
+    expect(await screen.findByText('Esse DDD não existe, confere o número')).toBeInTheDocument();
+    expect(whatsapp).toHaveAttribute('aria-invalid', 'true');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('drops a trunk zero typed in front of the DDD, so 081984451243 is the number 81 98445-1243', async () => {
+    const { user, whatsapp } = await openWhatsappForm();
+
+    await user.type(whatsapp, '081984451243');
+
+    expect(whatsapp).toHaveValue('+55 81 9 8445-1243');
+  });
 });
+
