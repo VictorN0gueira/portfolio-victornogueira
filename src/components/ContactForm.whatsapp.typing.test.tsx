@@ -124,5 +124,46 @@ describe('the WhatsApp field typed key by key', () => {
 
     expect(whatsapp).toHaveValue('+55 81 9 8445-1243');
   });
+
+  it.each([
+    ['+55 94 98765-4321', '+55 94 9 8765-4321', '559487654321'],
+    ['+55 49 98765-4321', '+55 49 9 8765-4321', '554987654321'],
+    ['+55 81 98445-1243', '+55 81 9 8445-1243', '558184451243'],
+    ['+55 55 99999-0000', '+55 55 9 9999-0000', '555599990000'],
+    ['+5511900000000', '+55 11 9 0000-0000', '551100000000'],
+  ])('reads %s typed by hand with its country code: %s, sent as %s', async (typed, shown, sent) => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const { user, whatsapp } = await openWhatsappForm();
+    await user.type(whatsapp, typed);
+    expect(whatsapp).toHaveValue(shown);
+
+    const { body } = await sendWhatsappForm(user, fetchMock);
+
+    expect(body.whatsapp).toBe(sent);
+  });
+
+  it('refuses a mistyped DDD that was typed with the country code, instead of sending another DDD', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const { user, whatsapp } = await openWhatsappForm();
+    await user.type(whatsapp, '+55 25 99184-4663');
+    expect(whatsapp).toHaveValue('+55 25 9 9184-4663');
+    await user.type(screen.getByLabelText('Nome'), 'Ana Lima');
+    await pickService(user);
+    await user.type(screen.getByLabelText('Mensagem'), 'Quero automatizar notas fiscais');
+    await user.click(screen.getByRole('checkbox'));
+
+    await user.click(submitButton());
+
+    expect(await screen.findByText('Esse DDD não existe, confere o número')).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps a 5 typed inside a number: only the 55 right after a plus is the country code', async () => {
+    const { user, whatsapp } = await openWhatsappForm();
+
+    await user.type(whatsapp, '8155555555');
+
+    expect(whatsapp).toHaveValue('+55 81 9 5555-5555');
+  });
 });
 

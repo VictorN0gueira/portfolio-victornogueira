@@ -1,4 +1,4 @@
-import type { ClipboardEvent, DragEvent, SyntheticEvent } from 'react';
+import type { ClipboardEvent, DragEvent, FormEvent, KeyboardEvent, SyntheticEvent } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { range } from '../../test/range';
 import { handleWhatsappDrop, handleWhatsappPaste, keepSelectionAfterPrefix, whatsappInputProps } from './whatsappInput';
@@ -315,3 +315,68 @@ describe('handleWhatsappDrop', () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith('+55 11 90000-0000');
   });
 });
+
+describe('a country code typed by hand', () => {
+  const props = whatsappInputProps(() => undefined);
+  const key = (input: HTMLInputElement, data: string | null) => {
+    const preventDefault = vi.fn();
+    props.onBeforeInput({ currentTarget: input, data, preventDefault } as unknown as FormEvent<HTMLInputElement>);
+    return preventDefault;
+  };
+
+  it('swallows the plus and both 5s typed into the empty field', () => {
+    const input = phoneInput(PREFIX);
+    expect(key(input, '+')).toHaveBeenCalled();
+    expect(key(input, '5')).toHaveBeenCalled();
+    expect(key(input, '5')).toHaveBeenCalled();
+    expect(key(input, '8')).not.toHaveBeenCalled();
+  });
+
+  it('swallows only two 5s: a third 5 is the DDD', () => {
+    const input = phoneInput(PREFIX);
+    key(input, '+');
+    key(input, '5');
+    key(input, '5');
+    expect(key(input, '5')).not.toHaveBeenCalled();
+  });
+
+  it('does nothing for a 5 without a plus, nor for a plus when the field already holds digits', () => {
+    expect(key(phoneInput(PREFIX), '5')).not.toHaveBeenCalled();
+    expect(key(phoneInput(`${PREFIX}11`), '+')).not.toHaveBeenCalled();
+  });
+
+  it('forgets a plus that was followed by anything else, and a 5 typed later in the number is kept', () => {
+    const input = phoneInput(PREFIX);
+    key(input, '+');
+    key(input, '8');
+    input.value = `${PREFIX}8`;
+    expect(key(input, '5')).not.toHaveBeenCalled();
+    const other = phoneInput(PREFIX);
+    key(other, '+');
+    other.value = `${PREFIX}81`;
+    expect(key(other, '5')).not.toHaveBeenCalled();
+  });
+
+  it('still guards the selection and tolerates an event with no data', () => {
+    const input = phoneInput();
+    input.setSelectionRange(2, 18);
+    expect(() => key(input, null)).not.toThrow();
+    expect(range(input)).toEqual([4, 18]);
+  });
+
+  it('does the same from the key down of a physical keyboard, and a swallowed key is not counted again by beforeinput', () => {
+    const input = phoneInput(PREFIX);
+    const down = (name: string) => {
+      const preventDefault = vi.fn();
+      props.onKeyDown({ currentTarget: input, key: name, preventDefault } as unknown as KeyboardEvent<HTMLInputElement>);
+      return preventDefault;
+    };
+    expect(down('+')).toHaveBeenCalled();
+    expect(down('5')).toHaveBeenCalled();
+    expect(down('Shift')).not.toHaveBeenCalled();
+    expect(down('Unidentified')).not.toHaveBeenCalled();
+    expect(down('5')).toHaveBeenCalled();
+    expect(down('8')).not.toHaveBeenCalled();
+  });
+});
+
