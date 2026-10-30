@@ -47,6 +47,9 @@ export const BRAZILIAN_DDDS: ReadonlySet<string> = new Set([
 ]);
 
 const TRUNK_ZERO = '0';
+// "49" e "94" com o código do país digitado à mão são os mesmos dígitos lidos de dois jeitos (DDD 49, ou DDD 94 com o 9 do
+// celular logo depois): o campo não escolhe, limpa o número e o visitante digita de novo (colado, ou com o + digitado, ele lê certo).
+const AMBIGUOUS_FIRST = '4';
 const COUNTRY_CODED_MIN_DIGITS = 12;
 // Depois de um 55 digitado, um terceiro dígito que nenhum número do DDD 55 tem: fixo começa com 2 a 5 e celular com 9 (depois
 // do DDD). O conjunto não tem o 0: "55 0xxx xxxx" continua sendo lido como DDD 55 mais o número, como sempre foi.
@@ -110,11 +113,14 @@ function readTypedDigits(local: string): TypedNumber {
  * código do país digitado que o campo já tinha lido como DDD 55 + número) ou "55 9d ..." (o 9 do DDD 9d lido como o 9 do
  * celular). Os dígitos mostrados são os mesmos nos três casos, então decide a estrutura: um primeiro dígito 1, 6, 7, 8 ou
  * 9 só pode vir de "55 9d" (um "55 1x" já teria virado DDD 1x); com 2 a 5, vale o DDD que existe (2x, 3x, 4x, 5x) e, se
- * ele não existir, o "9d" quando o dígito seguinte é de fixo (2 a 5) ou o 9 do celular. Sobra um caso ambíguo, o DDD 92 a
- * 95 digitado com o código do país cujo número também forma um DDD 2x a 5x; o número colado, com todos os dígitos, vale.
+ * ele não existir, o "9d" quando o dígito seguinte é de fixo (2 a 5) ou o 9 do celular. Um fixo do DDD 93 ou 95 pode formar
+ * um DDD 2x a 5x com os dígitos dele (93 2222-3333 vira DDD 32 e um dígito a menos: o campo mostra, e a validação recusa por
+ * faltar um dígito). O DDD 94 de celular é sempre o mesmo texto do DDD 49: nesse caso não se adivinha, o número é limpo.
+ * O número colado, com todos os dígitos e o código do país, vale sempre.
  */
 function readFullDdd55PlusDigit(rest: string, digit: string): TypedNumber {
   const [first, second] = [rest[0], rest[1]];
+  if (first === AMBIGUOUS_FIRST && second === MOBILE_NINE) return { local: '', hasTypedNine: false };
   const looksLikeNineD = !'2345'.includes(first) || (!BRAZILIAN_DDDS.has(first + second) && '23459'.includes(second));
   const typed = looksLikeNineD ? `${COUNTRY_CODE}${MOBILE_NINE}${rest}${digit}` : `${COUNTRY_CODE}${rest}${digit}`;
   return readTypedDigits(dropTypedCountryCode(typed));

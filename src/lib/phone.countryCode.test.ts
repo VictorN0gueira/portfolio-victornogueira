@@ -11,6 +11,7 @@ import {
   typedDisplay,
 } from '../test/phoneInputs';
 import { oracleFormat, oracleToEvolution } from '../test/phoneOracle';
+import { validateContact } from './contact';
 import { toEvolutionFormat } from './phone';
 
 // Hundreds of thousands of typed strings: the default 5 seconds is tight on a busy machine.
@@ -19,6 +20,8 @@ vi.setConfig({ testTimeout: 120_000 });
 // P2: the country code typed by hand ("55 81 98445-1243", "+55 81 98445-1243", 5581999998888) used to be read as the DDD
 // 55 while pasting it was read right. Typing and pasting the same text must end the same, with the number the text holds.
 
+const whatsappMessage = (whatsapp: string) =>
+  validateContact({ nome: 'Ana Lima', email: 'a@b.com', whatsapp, mensagem: 'Quero automatizar notas fiscais', servico: 'x' }, 'whatsapp').whatsapp;
 const countryShapes = NUMBER_SHAPES.filter((shape) => shape.name.includes('55 typed'));
 const localShapes = NUMBER_SHAPES.filter((shape) => !shape.name.includes('55 typed') && !shape.name.includes('trunk'));
 
@@ -41,7 +44,8 @@ const isReadAsCountryCodeNow = (ddd: string, part: string, shape: { hasMobileNin
   // A number pasted whole with its country code and no plus (twelve digits) says which 55 is which, so it is not in it.
   shape.name !== '55 typed, no nine';
 
-const AMBIGUOUS_DDDS = ['92', '93', '94', '95'];
+// 92 to 95: a landline can form a DDD 2x to 5x. 49 and 94: the same typed digits (see the F1 tests below).
+const AMBIGUOUS_DDDS = ['49', '92', '93', '94', '95'];
 const SURE_DDDS = EXISTING_DDDS.filter((ddd) => !AMBIGUOUS_DDDS.includes(ddd));
 
 describe('P2: a country code typed by hand is read like a pasted one', () => {
@@ -195,19 +199,36 @@ describe('F5: a landline of DDD 92 to 95 typed with the country code by hand', (
   });
 });
 
-describe('P2: the known limit, DDD 92 to 95 typed with the country code by hand', () => {
-  it('is read right when the digits do not also form a DDD 2x to 5x, and the pasted number is always right', () => {
-    const rows = AMBIGUOUS_DDDS.flatMap((ddd) => PARTS.flatMap((part) => countryShapes.map((shape) => ({ ddd, part, shape }))))
-      .filter(({ part, shape }) => isRealNumber(shape, part) && (shape.hasMobileNine || !part.startsWith('9')));
-    const wrongWhenTyped = rows.filter(({ ddd, part, shape }) => typedDisplay(shape.text(ddd, part)) !== handBuiltDisplay(ddd, part));
-    const wrongWhenPasted = rows.filter(({ ddd, part, shape }) => pastedDisplay(shape.text(ddd, part)) !== handBuiltDisplay(ddd, part));
+describe('F1 (formatter): a hand typed country code never silently sends a wrong DDD', () => {
+  const ok = { nome: 'Ana Lima', email: 'a@b.com', whatsapp: '', mensagem: 'Quero automatizar notas fiscais', servico: 'x' };
+  const isAccepted = (display: string) => validateContact({ ...ok, whatsapp: display }, 'whatsapp').whatsapp === undefined;
 
-    expect(wrongWhenPasted).toEqual([]);
-    expect(wrongWhenTyped.length).toBeGreaterThan(0);
-    // The share stays small: most of these numbers are read right.
-    expect(wrongWhenTyped.length / rows.length).toBeLessThan(0.5);
-    // DDD 94 with a mobile is the example: the same digits form DDD 49.
-    expect(typedDisplay('55949' + '99999999')).toContain('+55 49');
+  it('does not choose between DDD 49 and DDD 94 (the same digits read both ways): what is left is refused, never sent', () => {
+    for (const text of ['5594987654321', '55 94 98765-4321', '+55 94 98765-4321', '5549987654321', '55 49 98765-4321']) {
+      const display = typedDisplay(text);
+      expect(isAccepted(display)).toBe(false);
+      expect(whatsappMessage(display)).toBe('Coloca o número com DDD, por exemplo 81 99999-9999');
+    }
+  });
+
+  it('pasting the same numbers is right: the pasted text carries every digit and its country code', () => {
+    expect(pastedDisplay('+55 94 98765-4321')).toBe('+55 94 9 8765-4321');
+    expect(pastedDisplay('55 49 98765-4321')).toBe('+55 49 9 8765-4321');
+    expect(toEvolutionFormat(pastedDisplay('+55 94 98765-4321'))).toBe('559487654321');
+  });
+
+  it('sends no wrong DDD for any existing DDD, any part and any country coded shape: right, refused or cleared', () => {
+    const silentWrong: string[] = [];
+    for (const ddd of EXISTING_DDDS) {
+      for (const part of PARTS.filter((_, index) => index % 7 === 0)) {
+        for (const shape of countryShapes.filter((entry) => entry.hasMobileNine)) {
+          const text = shape.text(ddd, part);
+          const display = typedDisplay(text);
+          if (isAccepted(display) && toEvolutionFormat(display) !== handBuiltValue(ddd, part)) silentWrong.push(`${text} -> ${display}`);
+        }
+      }
+    }
+
+    expect(silentWrong.slice(0, 20)).toEqual([]);
   });
 });
-
