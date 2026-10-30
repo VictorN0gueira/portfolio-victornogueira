@@ -1,9 +1,12 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { rejectUnexpectedFetch } from '../test/contactForm';
 import { renderWithProviders } from '../test/render';
 import ContactForm from './ContactForm';
+
+// Typing 120 characters one by one is slow on a busy machine: the default 5 seconds is tight.
+vi.setConfig({ testTimeout: 20_000 });
 
 beforeEach(() => {
   rejectUnexpectedFetch();
