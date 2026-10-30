@@ -378,5 +378,25 @@ describe('a country code typed by hand', () => {
     expect(down('5')).toHaveBeenCalled();
     expect(down('8')).not.toHaveBeenCalled();
   });
+
+  it('leaves the browser shortcuts alone: Ctrl, Cmd or Alt with a plus or a 5 is not swallowed and starts nothing', () => {
+    const input = phoneInput(PREFIX);
+    const down = (name: string, modifiers: Partial<Record<'ctrlKey' | 'metaKey' | 'altKey', boolean>>) => {
+      const preventDefault = vi.fn();
+      props.onKeyDown({ currentTarget: input, key: name, ...modifiers, preventDefault } as unknown as KeyboardEvent<HTMLInputElement>);
+      return preventDefault;
+    };
+    // Zoom in (Ctrl +, Cmd +), then a Cmd or Ctrl 5 (switch tab): nothing is prevented...
+    expect(down('+', { ctrlKey: true })).not.toHaveBeenCalled();
+    expect(down('+', { metaKey: true })).not.toHaveBeenCalled();
+    expect(down('5', { ctrlKey: true })).not.toHaveBeenCalled();
+    expect(down('5', { metaKey: true })).not.toHaveBeenCalled();
+    expect(down('5', { altKey: true })).not.toHaveBeenCalled();
+    // ...and a shortcut plus does not start the swallowing of the two 5s that follow.
+    expect(down('5', {})).not.toHaveBeenCalled();
+    // A plain plus still does.
+    expect(down('+', {})).toHaveBeenCalled();
+    expect(down('5', {})).toHaveBeenCalled();
+  });
 });
 

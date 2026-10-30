@@ -123,7 +123,9 @@ export function whatsappInputProps(onChange: (text: string) => void) {
     onClick: keepSelectionAfterPrefix,
     onKeyDown: (event: SyntheticEvent<HTMLInputElement>) => {
       keepSelectionAfterPrefix(event);
-      const { key } = event as Partial<KeyboardEvent<HTMLInputElement>>;
+      const { key, ctrlKey, metaKey, altKey } = event as Partial<KeyboardEvent<HTMLInputElement>>;
+      // A shortcut (Ctrl +, Cmd +, Ctrl 5...) is the browser's, not text: it is never swallowed and starts nothing.
+      if (ctrlKey || metaKey || altKey) return;
       // A modifier, or the placeholder key of a phone keyboard, says nothing about the text: beforeinput carries it.
       if (key && KEYS_WITHOUT_TEXT.has(key)) return;
       swallowTypedCountryCode(event, key?.length === 1 ? key : undefined);
