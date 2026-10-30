@@ -1,0 +1,108 @@
+import { act, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  TEST_EMAIL,
+  pickService,
+  rejectUnexpectedFetch,
+  stubFetch,
+  submitButton,
+  type User,
+} from '../test/contactForm';
+import { renderWithProviders } from '../test/render';
+import ContactForm from './ContactForm';
+
+// The test setup turns the time trap and the cooldown off; the form here runs with the real ones.
+vi.mock('./contact/botGuard', async (importOriginal) => importOriginal());
+
+const FIXED_NOW = new Date('2026-10-29T12:00:00.000Z');
+const THANKS = 'Recebemos sua mensagem';
+const COOLDOWN_TEXT = 'Já recebemos a sua mensagem. Aguarde alguns segundos para enviar outra.';
+
+beforeEach(() => {
+  rejectUnexpectedFetch();
+  // Only the clock of Date.now(): the typing and the animations keep their real timers. The test moves the clock by hand.
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(FIXED_NOW);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+const wait = (ms: number) => act(() => void vi.setSystemTime(Date.now() + ms));
+
+async function fillTheForm(user: User) {
+  await user.type(screen.getByLabelText('Nome'), 'Ana Lima');
+  await pickService(user);
+  await user.type(screen.getByLabelText('E-mail'), TEST_EMAIL);
+  await user.type(screen.getByLabelText('Mensagem'), 'Quero automatizar notas fiscais');
+  await user.click(screen.getByRole('checkbox'));
+}
+
+describe('the time trap in the rendered form', () => {
+  it('answers with the thanks and sends nothing when Enviar comes right after the typing', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const user = userEvent.setup();
+    renderWithProviders(<ContactForm />);
+
+    await fillTheForm(user);
+    await user.click(submitButton());
+
+    expect(await screen.findByRole('heading', { name: THANKS })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('sends when two seconds have passed since the first key', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const user = userEvent.setup();
+    renderWithProviders(<ContactForm />);
+
+    await fillTheForm(user);
+    wait(2_000);
+    await user.click(submitButton());
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole('heading', { name: THANKS })).toBeInTheDocument();
+  });
+});
+
+describe('the cooldown in the rendered form', () => {
+  /** Sent once, Enviar outra, and the form filled again. */
+  async function sentOnceAndFilledAgain() {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const user = userEvent.setup();
+    renderWithProviders(<ContactForm />);
+    await fillTheForm(user);
+    wait(2_000);
+    await user.click(submitButton());
+    await user.click(await screen.findByRole('button', { name: 'Enviar outra' }));
+    await fillTheForm(user);
+    return { user, fetchMock };
+  }
+
+  it('shows the friendly line and sends nothing for a second send inside 30 seconds', async () => {
+    const { user, fetchMock } = await sentOnceAndFilledAgain();
+    wait(10_000);
+
+    await user.click(submitButton());
+
+    expect(await screen.findByText(COOLDOWN_TEXT)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(submitButton()).toBeEnabled();
+  });
+
+  it('lets Enviar outra and the typing through, and sends once the 30 seconds are over', async () => {
+    const { user, fetchMock } = await sentOnceAndFilledAgain();
+    await user.click(submitButton());
+    expect(await screen.findByText(COOLDOWN_TEXT)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Nome'), ' Souza');
+    expect(screen.queryByText(COOLDOWN_TEXT)).not.toBeInTheDocument();
+    wait(30_000);
+    await user.click(submitButton());
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+  });
+});

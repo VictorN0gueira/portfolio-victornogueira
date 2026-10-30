@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   TEST_EMAIL,
   pickService,
+  readCall,
   rejectUnexpectedFetch,
   stubFetch,
   submitButton,
@@ -74,5 +75,48 @@ describe('a request that never answers', () => {
     expect(screen.getByRole('link', { name: /fala direto pelo whatsapp/i })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Fechar' }));
     expect(submitButton()).toBeEnabled();
+  });
+});
+
+describe('the honeypot field', () => {
+  const honeypot = () => document.querySelector('input[name="ref_interna"]') as HTMLInputElement;
+
+  it('is hidden from people and from assistive tech, and out of the tab order', () => {
+    renderWithProviders(<ContactForm />);
+
+    expect(honeypot()).not.toBeNull();
+    expect(honeypot().closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(honeypot().closest('.sr-only')).not.toBeNull();
+    expect(honeypot()).toHaveAttribute('tabindex', '-1');
+    expect(honeypot()).toHaveAttribute('autocomplete', 'off');
+    // Name, e-mail and message are the only text boxes a reader meets.
+    expect(screen.getAllByRole('textbox')).toHaveLength(3);
+  });
+
+  it('keeps a form with the hidden field filled from sending, and still answers with the thanks', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const user = userEvent.setup();
+    renderWithProviders(<ContactForm initialMessage={QUOTE} />);
+
+    await fillAllButMessage(user);
+    await user.type(honeypot(), 'https://spam.example');
+    await user.click(submitButton());
+
+    expect(await screen.findByRole('heading', { name: 'Recebemos sua mensagem' })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('is not in the payload when the visitor sends a form normally', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const user = userEvent.setup();
+    renderWithProviders(<ContactForm initialMessage={QUOTE} />);
+
+    await fillAllButMessage(user);
+    await user.click(submitButton());
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const body = readCall(fetchMock).init.body as string;
+    expect(body).not.toContain('ref_interna');
+    expect(Object.keys(JSON.parse(body))).toEqual(['nome', 'email', 'servico', 'mensagem', 'timestamp']);
   });
 });

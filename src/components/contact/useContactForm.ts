@@ -8,6 +8,7 @@ import {
   type ContactMethod,
 } from '../../lib/contact';
 import { timeoutSignal } from '../../lib/timeoutSignal';
+import { useBotGuard } from './useBotGuard';
 
 /** How long a request may stay open before the form gives up and shows the WhatsApp fallback. */
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -115,46 +116,77 @@ function useContactDraft(initialMessage?: string, prefillNonce?: number) {
   return { method, formData, servico, errors, consent, setConsent, setField, chooseService, selectMethod, setErrors, resetDraft };
 }
 
-/** The state and the submit of the contact form (ContactForm renders it). */
-export function useContactForm(initialMessage?: string, prefillNonce?: number) {
-  const { setErrors, resetDraft, ...draft } = useContactDraft(initialMessage, prefillNonce);
+/** The status of the send and the send itself: one request at a time, and `onSuccess` runs when the webhook said yes. */
+function useContactSender(method: ContactMethod, onSuccess: () => void) {
   const [status, setStatus] = useState<ContactStatus>('idle');
-  const { method, formData, servico } = draft;
   // A second submit while a request is out (a double tap, Enter then click) sends nothing.
   const isInFlight = useRef(false);
 
+  const send = async (fields: ContactFields) => {
+    isInFlight.current = true;
+    try {
+      setStatus('sending');
+      const outcome = await sendContact(fields, method);
+      if (outcome === 'success') {
+        onSuccess();
+      }
+      setStatus(outcome);
+    } finally {
+      isInFlight.current = false;
+    }
+  };
+
+  return { status, setStatus, send, isSending: () => isInFlight.current };
+}
+
+/** The state and the submit of the contact form (ContactForm renders it). */
+export function useContactForm(initialMessage?: string, prefillNonce?: number) {
+  const { setErrors, resetDraft, ...draft } = useContactDraft(initialMessage, prefillNonce);
+  const { method, formData, servico } = draft;
+  const { judge, recordSent, clearNotice, ...guard } = useBotGuard();
+  const { status, setStatus, send, isSending } = useContactSender(method, recordSent);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (isInFlight.current) {
+    if (isSending()) {
       return;
     }
-
     const fields: ContactFields = { ...formData, servico };
     const newErrors = validateContact(fields, method);
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
     setErrors({});
-    isInFlight.current = true;
-    try {
-      setStatus('sending');
-      setStatus(await sendContact(fields, method));
-    } finally {
-      isInFlight.current = false;
+    const verdict = judge();
+    if (verdict === 'bot') {
+      // Looks like a success and sends nothing: a bot gets no signal (see botGuard.ts).
+      setStatus('success');
+    } else if (verdict === 'send') {
+      await send(fields);
     }
   };
 
   const dismissError = () => setStatus('idle');
 
   const reset = () => {
+    clearNotice();
     setStatus('idle');
     resetDraft();
   };
 
-  return { ...draft, status, handleSubmit, dismissError, reset };
+  // Editing the form takes the cooldown line away: the visitor is already doing something about it.
+  const setField = (field: Parameters<typeof draft.setField>[0], value: string) => {
+    clearNotice();
+    draft.setField(field, value);
+  };
+  const chooseService = (value: string) => {
+    clearNotice();
+    draft.chooseService(value);
+  };
+
+  return { ...draft, ...guard, status, handleSubmit, dismissError, reset, setField, chooseService };
 }
 
 export type ContactFormState = ReturnType<typeof useContactForm>;
