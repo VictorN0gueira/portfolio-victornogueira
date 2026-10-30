@@ -29,41 +29,62 @@ export type ContactPayload = {
 
 const NAME_MIN_LENGTH = 2;
 const MESSAGE_MIN_LENGTH = 10;
+/** Caps on what a visitor can send. The inputs stop typing at the same numbers (see ContactFieldControls). */
+export const NAME_MAX = 100;
 /** The longest e-mail address there is (RFC 5321). */
 export const EMAIL_MAX = 254;
+export const MESSAGE_MAX = 2000;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-/** The pattern only runs on a string that is already short enough, so a huge paste never reaches the regex. */
-function isValidEmail(email: string): boolean {
-  return email.length <= EMAIL_MAX && EMAIL_PATTERN.test(email);
-}
 
 const CONTACT_ERRORS = {
   nome: 'Conta pra gente seu nome',
+  nomeLongo: `Nome muito longo (máximo ${NAME_MAX} caracteres).`,
   email: 'Esse e-mail parece incompleto',
+  emailLongo: `E-mail muito longo (máximo ${EMAIL_MAX} caracteres).`,
   whatsapp: 'Coloca o número com DDD, por exemplo 81 99999-9999',
   mensagem: 'Escreve um pouco mais sobre o que você precisa',
+  mensagemLonga: `Mensagem muito longa (máximo ${MESSAGE_MAX} caracteres).`,
   servico: 'Escolhe um serviço',
 } as const;
+
+function nameError(nome: string): string | undefined {
+  if (nome.length < NAME_MIN_LENGTH) return CONTACT_ERRORS.nome;
+  return nome.length > NAME_MAX ? CONTACT_ERRORS.nomeLongo : undefined;
+}
+
+/** The length is checked first, so a huge paste never reaches the pattern. */
+function emailError(email: string): string | undefined {
+  if (email.length > EMAIL_MAX) return CONTACT_ERRORS.emailLongo;
+  return EMAIL_PATTERN.test(email) ? undefined : CONTACT_ERRORS.email;
+}
+
+function messageError(mensagem: string): string | undefined {
+  if (mensagem.length < MESSAGE_MIN_LENGTH) return CONTACT_ERRORS.mensagem;
+  return mensagem.length > MESSAGE_MAX ? CONTACT_ERRORS.mensagemLonga : undefined;
+}
 
 /**
  * Valida só os campos do método escolhido: `email` apenas no método email e
  * `whatsapp` apenas no método whatsapp. O serviço só precisa estar preenchido.
+ * Tamanhos são medidos no texto aparado, o mesmo que é enviado.
  */
 export function validateContact(f: ContactFields, method: ContactMethod): ContactErrors {
   const errors: ContactErrors = {};
 
-  if (f.nome.trim().length < NAME_MIN_LENGTH) {
-    errors.nome = CONTACT_ERRORS.nome;
+  const nome = nameError(f.nome.trim());
+  if (nome) {
+    errors.nome = nome;
   }
-  if (method === 'email' && !isValidEmail(f.email.trim())) {
-    errors.email = CONTACT_ERRORS.email;
+  const email = method === 'email' ? emailError(f.email.trim()) : undefined;
+  if (email) {
+    errors.email = email;
   }
   if (method === 'whatsapp' && !LOCAL_PHONE_LENGTHS.includes(toLocalDigits(f.whatsapp).length)) {
     errors.whatsapp = CONTACT_ERRORS.whatsapp;
   }
-  if (f.mensagem.trim().length < MESSAGE_MIN_LENGTH) {
-    errors.mensagem = CONTACT_ERRORS.mensagem;
+  const mensagem = messageError(f.mensagem.trim());
+  if (mensagem) {
+    errors.mensagem = mensagem;
   }
   if (!f.servico) {
     errors.servico = CONTACT_ERRORS.servico;

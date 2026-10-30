@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { serviceOptions } from '../../data/services';
-import type { ContactFields } from '../../lib/contact';
+import { EMAIL_MAX, MESSAGE_MAX, NAME_MAX, type ContactFields } from '../../lib/contact';
 import ServiceSelect from '../ServiceSelect';
 import { contactFormCopy } from './contactFormCopy';
 import { LABEL_CLASS } from './contactStyles';
@@ -14,10 +14,11 @@ const { labels, placeholders } = contactFormCopy;
 export const SERVICE_LABEL_ID = 'contact-servico-label';
 
 // Which browser autofill and which keyboard each text field asks for.
+// The WhatsApp field has no cap here: its own formatting (whatsappInput.ts) already bounds what it holds.
 const INPUT_CONFIG = {
-  nome: { type: 'text', autoComplete: 'name' },
-  email: { type: 'email', autoComplete: 'email' },
-  whatsapp: { type: 'tel', autoComplete: 'tel' },
+  nome: { type: 'text', autoComplete: 'name', maxLength: NAME_MAX },
+  email: { type: 'email', autoComplete: 'email', maxLength: EMAIL_MAX },
+  whatsapp: { type: 'tel', autoComplete: 'tel', maxLength: undefined },
 } as const;
 
 interface FieldFrameProps {
@@ -72,6 +73,7 @@ export function ContactInput({ field, value, error, onChange }: ContactInputProp
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholders[field]}
         autoComplete={config.autoComplete}
+        maxLength={config.maxLength}
         {...extra}
       />
     </FieldFrame>
@@ -97,6 +99,7 @@ export function ContactMessage({ value, error, onChange }: ContactMessageProps) 
         aria-required="true"
         {...fieldProps('mensagem', error, 'resize-none')}
         rows={4}
+        maxLength={MESSAGE_MAX}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholders.mensagem}
