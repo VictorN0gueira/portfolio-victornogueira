@@ -52,7 +52,7 @@ export function StackedGallery({ project }: { project: Project }) {
     <div
       role="group"
       aria-label={galleryLabel(project.title)}
-      className="relative flex w-full shrink-0 flex-col gap-4 border-b border-white/5 bg-zinc-950 p-4 md:w-[60%] md:gap-6 md:border-b-0 md:border-r md:p-6"
+      className="relative flex w-full shrink-0 flex-col gap-4 border-b border-white/5 bg-zinc-950 p-4 md:gap-6 md:p-6 lg:w-[60%] lg:border-b-0 lg:border-r"
     >
       <Backdrop project={project} blur="blur-2xl" />
       {project.shots.map((shot, index) => (

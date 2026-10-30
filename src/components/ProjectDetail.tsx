@@ -8,7 +8,10 @@ interface ProjectDetailProps {
   project: Project;
 }
 
-const LABEL_CLASSES = 'mb-3 text-xs font-bold uppercase tracking-widest text-zinc-400 max-md:pr-14';
+// The floating WhatsApp and accessibility buttons sit at the right edge of a phone: the text stays clear of them
+// (36 px under 360 px so the column stays wide enough, 56 px up to the tablet layout, none from md up).
+export const CLEAR_FLOATING_BUTTONS = 'pr-9 min-[360px]:pr-14 md:pr-0';
+const LABEL_CLASSES = `mb-3 text-xs font-bold uppercase tracking-widest text-zinc-400 ${CLEAR_FLOATING_BUTTONS}`;
 
 function Features({ items }: { items: readonly string[] }) {
   return (
@@ -16,7 +19,7 @@ function Features({ items }: { items: readonly string[] }) {
       <h2 id="projeto-faz" className={LABEL_CLASSES}>
         {FEATURES_LABEL}
       </h2>
-      <ul role="list" className="m-0 list-none space-y-3 p-0 max-md:pr-14">
+      <ul role="list" className={`m-0 list-none space-y-3 p-0 ${CLEAR_FLOATING_BUTTONS}`}>
         {items.map((item) => (
           <li key={item} className="flex gap-3 leading-relaxed text-zinc-300 md:text-base">
             <span aria-hidden="true" className="mt-2.5 size-1.5 shrink-0 rounded-full bg-white/40" />
@@ -34,7 +37,7 @@ function Tags({ tags }: { tags: readonly string[] }) {
       <h2 id="projeto-tecnologias" className={LABEL_CLASSES}>
         {TAGS_LABEL}
       </h2>
-      <ul role="list" className="m-0 flex list-none flex-wrap gap-2 p-0 max-md:pr-14">
+      <ul role="list" className={`m-0 flex list-none flex-wrap gap-2 p-0 ${CLEAR_FLOATING_BUTTONS}`}>
         {tags.map((tag) => (
           <li key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-zinc-300 md:px-4">
             {tag}
@@ -46,10 +49,10 @@ function Tags({ tags }: { tags: readonly string[] }) {
 }
 
 function Heading({ project, large }: { project: Project; large: boolean }) {
-  const size = large ? 'text-4xl md:text-6xl' : 'text-2xl md:text-5xl';
+  const size = large ? 'text-4xl md:text-6xl' : 'text-2xl md:text-4xl lg:text-5xl';
 
   return (
-    <div className="max-md:pr-14">
+    <div className={`min-w-0 break-words ${CLEAR_FLOATING_BUTTONS}`}>
       <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-zinc-400">{project.category}</p>
       <h1 className={`${size} mb-4 font-display font-bold italic tracking-tight text-white md:mb-6`}>
         <ProjectTitle title={project.title} />
@@ -65,8 +68,8 @@ function Heading({ project, large }: { project: Project; large: boolean }) {
    Os projetos em destaque (DizPara, Hub081) ganham a galeria grande no topo e a lista do que fazem. */
 export default function ProjectDetail({ project }: ProjectDetailProps) {
   const isFeatured = Boolean(project.featured);
-  const layout = isFeatured ? 'flex-col' : 'flex-col md:flex-row';
-  const textLayout = isFeatured ? 'grid gap-10 lg:grid-cols-2 lg:gap-16' : 'flex flex-col md:sticky md:top-28 md:self-start';
+  const layout = isFeatured ? 'flex-col' : 'flex-col lg:flex-row';
+  const textLayout = isFeatured ? 'grid min-w-0 gap-10 lg:grid-cols-2 lg:gap-16' : 'flex min-w-0 flex-col lg:sticky lg:top-28 lg:self-start';
 
   return (
     <motion.div
@@ -77,7 +80,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
     >
       {isFeatured ? <HeroGallery project={project} /> : <StackedGallery project={project} />}
 
-      <div className="flex-1 bg-zinc-950 p-6 pb-10 md:bg-zinc-900 md:p-16">
+      <div className="min-w-0 flex-1 bg-zinc-950 p-4 pb-8 min-[360px]:p-6 min-[360px]:pb-10 md:bg-zinc-900 md:p-10 xl:p-16">
         <div className={textLayout}>
           <Heading project={project} large={isFeatured} />
           <div className={`space-y-6 md:space-y-8 ${isFeatured ? '' : 'mt-8'}`}>
