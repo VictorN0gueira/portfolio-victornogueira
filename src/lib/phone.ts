@@ -30,14 +30,19 @@ export function formatWhatsappDisplay(raw: string): string {
   let local = toLocalDigits(raw);
 
   // Remove o 9 se o usuário digitou após o DDD (será adicionado automaticamente)
+  let hasTypedNine = false;
   if (local.length > 2 && local[2] === MOBILE_NINE) {
     local = local.substring(0, 2) + local.substring(3);
+    hasTypedNine = true;
   }
 
   // Limita a 10 dígitos (DDD 2 + número 8)
   local = local.slice(0, 10);
 
   if (local.length === 0) return '+55 ';
+  // DDD e o 9 digitados, ainda sem nenhum dígito do número: o 9 continua visível. Sem isso o 9 sumiria e o próximo 9
+  // digitado seria lido de novo como esse 9 (81 9 + 9xxx-xxxx perdia todos os 9 logo depois do DDD).
+  if (local.length === 2 && hasTypedNine) return `+55 ${local} ${MOBILE_NINE}`;
   if (local.length <= 2) return `+55 ${local}`;
   if (local.length <= 6) return `+55 ${local.slice(0, 2)} 9 ${local.slice(2)}`;
   return `+55 ${local.slice(0, 2)} 9 ${local.slice(2, 6)}-${local.slice(6, 10)}`;
