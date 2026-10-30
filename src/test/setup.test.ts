@@ -1,3 +1,4 @@
+import { getConfig } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 type MockTypes = { io: string; ro: string; matchMedia: string };
@@ -58,6 +59,36 @@ describe('jsdom global mocks', () => {
 
   it('are already installed in the first beforeAll', () => {
     expect(seenInBeforeAll).toEqual(ALL_FUNCTIONS);
+  });
+});
+
+const NETWORK_ERROR = 'Unexpected network call in a unit test';
+
+describe('the global fetch stub', () => {
+  it('rejects a call nobody stubbed, with a message that names the cause', async () => {
+    await expect(fetch('https://example.com/data')).rejects.toThrow(NETWORK_ERROR);
+  });
+
+  it('rejects a component style fetch that has no stub of its own', async () => {
+    const load = async () => (await fetch('/api/feed')).json();
+
+    await expect(load()).rejects.toThrow(NETWORK_ERROR);
+  });
+
+  it('can be replaced for one test with vi.stubGlobal', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true })));
+
+    await expect(fetch('/x')).resolves.toEqual({ ok: true });
+  });
+
+  it('is back for the next test after a replacement', async () => {
+    await expect(fetch('/x')).rejects.toThrow(NETWORK_ERROR);
+  });
+});
+
+describe('the Testing Library config', () => {
+  it('waits up to five seconds for findBy and waitFor', () => {
+    expect(getConfig().asyncUtilTimeout).toBe(5000);
   });
 });
 

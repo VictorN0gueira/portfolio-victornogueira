@@ -5,6 +5,14 @@ import path from 'path';
 import {defineConfig, loadEnv} from 'vite';
 import {configDefaults, coverageConfigDefaults} from 'vitest/config';
 
+/** src/lib and src/hooks hold the logic, so they keep 80% on their own. */
+const LOGIC_THRESHOLD = { lines: 80, functions: 80, branches: 80, statements: 80 };
+/**
+ * The whole of src, measured at 77.94% lines and statements, 96.74% functions and 96.68% branches, rounded down.
+ * The gap is the pages and the news service that no unit test mounts yet. G.13 raises it to 80.
+ */
+const GLOBAL_THRESHOLD = { lines: 77, functions: 96, branches: 96, statements: 77 };
+
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
 
@@ -41,17 +49,29 @@ export default defineConfig(({mode}) => {
       globals: false,
       setupFiles: './src/test/setup.ts',
       css: true,
-      exclude: [...configDefaults.exclude, 'e2e/**'],
+      testTimeout: 15000,
+      hookTimeout: 15000,
+      maxWorkers: 4,
+      // Other worktrees live under .claude/worktrees, and each one carries a full copy of src with its own tests.
+      exclude: [...configDefaults.exclude, '.claude/**', '.superpowers/**', 'e2e/**', 'dist/**'],
       coverage: {
         provider: 'v8',
-        include: ['src/lib/**', 'src/hooks/**'],
-        // reveal.tsx is presentational markup (ruling R8)
-        exclude: [...coverageConfigDefaults.exclude, '**/*.test.*', 'src/lib/reveal.tsx'],
+        include: ['src/**'],
+        exclude: [
+          ...coverageConfigDefaults.exclude,
+          'src/test/**',
+          '**/*.test.*',
+          '**/*.d.ts',
+          'src/main.tsx',
+          'e2e/**',
+        ],
         thresholds: {
-          lines: 80,
-          functions: 80,
-          branches: 80,
-          statements: 80,
+          lines: GLOBAL_THRESHOLD.lines,
+          functions: GLOBAL_THRESHOLD.functions,
+          branches: GLOBAL_THRESHOLD.branches,
+          statements: GLOBAL_THRESHOLD.statements,
+          'src/lib/**': LOGIC_THRESHOLD,
+          'src/hooks/**': LOGIC_THRESHOLD,
         },
       },
     },

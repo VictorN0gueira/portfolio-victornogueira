@@ -4,7 +4,7 @@ import { animate } from 'motion/react';
 import { describe, expect, it, vi } from 'vitest';
 import { RevealGroup } from '../../components/ui/Reveal';
 import { homeCopy } from '../../data/homeCopy';
-import type { HeroTaskId } from '../../data/heroFlows';
+import { heroTasks, type HeroTaskId } from '../../data/heroFlows';
 import { DEFAULT_HOURLY_RATE, SAVINGS_RATE, monthlySavings } from '../../lib/roi';
 import { triggerIntersection } from '../../test/intersection';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
@@ -27,18 +27,34 @@ const NBSP = String.fromCharCode(0x00a0);
 const INITIAL_RESULT = `R$${NBSP}1.733`;
 const TWENTY_HOURS_RESULT = `R$${NBSP}3.467`;
 const FORTY_HOURS_RESULT = `R$${NBSP}6.933`;
-const HOURS_TRIGGER = 'Horas por semana: 10 horas. Alterar';
-const TASK_TRIGGER = 'Tarefa: planilha e WhatsApp. Alterar';
-const FULL_SENTENCE =
-  'Sua equipe perde 10 horas por semana com planilha e WhatsApp. Automatizando, a gente devolve R$ 1.733 por mês.';
+const HOURS_TRIGGER = homeCopy.hero.aria.hoursPill('10 horas');
+const FIRST_TASK = heroTasks[0].label;
+const TASK_TRIGGER = homeCopy.hero.aria.taskPill(FIRST_TASK);
 const TWEEN_WAIT_MS = 3000;
 const QUIET_WINDOW_MS = 800;
 // A whole count takes 0.55s: waiting this long after it started is waiting past the end of any count.
 const PAST_A_COUNT_MS = 800;
 const FIVE_HOURS_RESULT = `R$${NBSP}867`;
-const TWENTY_HOURS_ESTIMATE = `Estimativa: ${TWENTY_HOURS_RESULT} por mês`;
-const FORTY_HOURS_ESTIMATE = `Estimativa: ${FORTY_HOURS_RESULT} por mês`;
-const FIVE_HOURS_ESTIMATE = `Estimativa: ${FIVE_HOURS_RESULT} por mês`;
+const TWENTY_HOURS_ESTIMATE = homeCopy.hero.aria.estimate(TWENTY_HOURS_RESULT);
+const FORTY_HOURS_ESTIMATE = homeCopy.hero.aria.estimate(FORTY_HOURS_RESULT);
+const FIVE_HOURS_ESTIMATE = homeCopy.hero.aria.estimate(FIVE_HOURS_RESULT);
+
+/**
+ * The sentence of the hero with its three slots filled, from the copy module. A piece of text that starts with
+ * punctuation glues to the one before it, like on the page. `spaceBeforePunctuation` keeps the space that the
+ * accessible name has between the task pill and the period.
+ */
+function sentenceWith(values: { hours: string; task: string; result: string }, spaceBeforePunctuation = false): string {
+  return homeCopy.hero.sentence
+    .map((part) => (typeof part === 'string' ? part : values[part.slot]))
+    .reduce((text, piece) => {
+      const glues = !spaceBeforePunctuation && /^[.,;:!?]/.test(piece);
+      return text ? `${text}${glues ? '' : ' '}${piece}` : piece;
+    }, '');
+}
+
+// toHaveTextContent compares against text whose spaces are normalized, so the non breaking space of the amount is one too.
+const FULL_SENTENCE = sentenceWith({ hours: '10 horas', task: FIRST_TASK, result: INITIAL_RESULT.replace(NBSP, ' ') });
 // Lets a mutation observer deliver its last records before a test reads them.
 const SETTLE_MS = 50;
 // The arrow waits for the sentence to finish (1.2s) and then draws for 0.8s.
@@ -146,7 +162,7 @@ describe('HeroSentence sentence', () => {
     renderHero();
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveAccessibleName(
-      `Sua equipe perde 10 horas por semana com planilha e WhatsApp . Automatizando, a gente devolve ${INITIAL_RESULT} por mês.`,
+      sentenceWith({ hours: '10 horas', task: FIRST_TASK, result: INITIAL_RESULT }, true),
     );
   });
 
@@ -156,7 +172,7 @@ describe('HeroSentence sentence', () => {
     await choose(user, HOURS_TRIGGER, '20 horas');
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveAccessibleName(
-      `Sua equipe perde 20 horas por semana com planilha e WhatsApp . Automatizando, a gente devolve ${TWENTY_HOURS_RESULT} por mês.`,
+      sentenceWith({ hours: '20 horas', task: FIRST_TASK, result: TWENTY_HOURS_RESULT }, true),
     );
   });
 
@@ -188,7 +204,7 @@ describe('HeroSentence sentence', () => {
     const heading = screen.getByRole('heading', { level: 1 });
     expect(heading.className).not.toMatch(/nowrap/);
     expect(heading.innerHTML).not.toMatch(/nowrap/);
-    expect(heading.textContent).toContain('Sua equipe perde ');
+    expect(heading.textContent).toContain(`${homeCopy.hero.sentence[0]} `);
     heading.querySelectorAll('[data-reveal-item]').forEach((item) => expect(item.className).toMatch(/inline-(block|flex)/));
     expect(screen.getByRole('button', { name: HOURS_TRIGGER })).toHaveClass('inline-flex');
     expect(screen.getByRole('button', { name: TASK_TRIGGER })).toHaveClass('inline-flex');
@@ -229,7 +245,7 @@ describe('HeroSentence sentence', () => {
 
     const heading = screen.getByRole('heading', { level: 1 });
     expect(heading).toHaveClass('lowercase', 'font-display');
-    expect(heading.textContent).toContain('Sua equipe perde');
+    expect(heading.textContent).toContain(String(homeCopy.hero.sentence[0]));
   });
 });
 
@@ -264,8 +280,8 @@ describe('HeroSentence result', () => {
 
     expect(getResult().textContent).toBe(TWENTY_HOURS_RESULT);
     expect(getVisualNumber()).toHaveAttribute('data-value', TWENTY_HOURS_RESULT);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('perde 20 horas por semana');
-    expect(screen.getByRole('button', { name: 'Horas por semana: 20 horas. Alterar' })).toHaveTextContent('20 horas');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(`${homeCopy.hero.sentence[0]} 20 horas ${homeCopy.hero.sentence[2]}`);
+    expect(screen.getByRole('button', { name: homeCopy.hero.aria.hoursPill('20 horas') })).toHaveTextContent('20 horas');
   });
 
   it('counts up to the new value through the numbers in between when motion is on', async () => {
@@ -320,7 +336,7 @@ describe('HeroSentence result', () => {
     await choose(user, HOURS_TRIGGER, '40 horas');
     const firstCount = spyOnLastCount();
 
-    await choose(user, 'Horas por semana: 40 horas. Alterar', '5 horas');
+    await choose(user, homeCopy.hero.aria.hoursPill('40 horas'), '5 horas');
     const secondCount = spyOnLastCount();
 
     expect(firstCount.stop).toHaveBeenCalled();
@@ -412,7 +428,7 @@ describe('HeroSentence live region', () => {
     const { user } = renderHero({ isMotionReduced: true });
 
     await choose(user, HOURS_TRIGGER, '40 horas');
-    await choose(user, 'Horas por semana: 40 horas. Alterar', '5 horas');
+    await choose(user, homeCopy.hero.aria.hoursPill('40 horas'), '5 horas');
 
     expect(getLiveRegion().textContent).toBe(FIVE_HOURS_ESTIMATE);
   });
@@ -434,7 +450,7 @@ describe('HeroSentence live region', () => {
     await choose(user, HOURS_TRIGGER, '20 horas');
     const watcher = watchTextChanges('[role="status"]');
 
-    await choose(user, 'Horas por semana: 20 horas. Alterar', '20 horas');
+    await choose(user, homeCopy.hero.aria.hoursPill('20 horas'), '20 horas');
     await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
     watcher.stop();
 
@@ -478,7 +494,7 @@ describe('HeroSentence pills', () => {
   it('lists the four tasks with the approved labels, the current one selected', async () => {
     const { user } = renderHero({ task: 'notas' });
 
-    await user.click(screen.getByRole('button', { name: 'Tarefa: emissão de notas. Alterar' }));
+    await user.click(screen.getByRole('button', { name: homeCopy.hero.aria.taskPill('emissão de notas') }));
 
     const list = await screen.findByRole('listbox', { name: homeCopy.hero.aria.taskList });
     expect(within(list).getAllByRole('option').map((option) => option.textContent)).toEqual([
@@ -506,7 +522,7 @@ describe('HeroSentence pills', () => {
     rerender(<HeroSentence task="follow-up" onTaskChange={onTaskChange} />);
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('com follow-up de vendas.');
-    expect(screen.getByRole('button', { name: 'Tarefa: follow-up de vendas. Alterar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: homeCopy.hero.aria.taskPill('follow-up de vendas') })).toBeInTheDocument();
   });
 
   it('does not change the result when the task changes, only the hours do', async () => {
@@ -522,7 +538,7 @@ describe('HeroSentence pills', () => {
 
     await choose(user, HOURS_TRIGGER, '20 horas');
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Horas por semana: 20 horas. Alterar' })).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole('button', { name: homeCopy.hero.aria.hoursPill('20 horas') })).toHaveFocus());
   });
 });
 

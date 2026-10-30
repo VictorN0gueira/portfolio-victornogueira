@@ -77,12 +77,12 @@ function advance(steps: number): void {
 }
 
 describe('AutomationPanel content', () => {
-  it('shows the window title, the status and the footnote exactly as approved', () => {
+  it('shows the window title, the status and the footnote of the copy module', () => {
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
-    expect(screen.getByText('automação ao vivo')).toBeInTheDocument();
-    expect(screen.getByText('rodando')).toBeInTheDocument();
-    expect(screen.getByText('Exemplo ilustrativo. O fluxo real sai do diagnóstico.')).toBeInTheDocument();
+    expect(screen.getByText(flowPanel.title)).toBeInTheDocument();
+    expect(screen.getByText(homeCopy.hero.panel.status.running)).toBeInTheDocument();
+    expect(screen.getByText(flowPanel.footnote)).toBeInTheDocument();
   });
 
   it('lists the four rows of the chosen task, in order, with their detail', () => {
@@ -131,7 +131,7 @@ describe('AutomationPanel semantics', () => {
   it('is a named group, with the title and the detail of every row always exposed', () => {
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
-    expect(getWindow()).toHaveAccessibleName('Exemplo de automação rodando');
+    expect(getWindow()).toHaveAccessibleName(homeCopy.hero.panel.label);
     getRows().forEach((row) => {
       const exposed = Array.from(row.querySelectorAll('p'));
       expect(exposed).toHaveLength(2);
@@ -287,13 +287,13 @@ describe('AutomationPanel pause control', () => {
     vi.useRealTimers();
   });
 
-  it('sits in the title bar next to the status, named "Pausar animação" and not pressed', () => {
+  it('sits in the title bar next to the status, named by the pause label of the copy module and not pressed', () => {
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
     const titleBar = screen.getByText(flowPanel.title).parentElement as HTMLElement;
     expect(titleBar.contains(getPauseButton())).toBe(true);
     expect(titleBar.contains(screen.getByText(panelCopy.status.running))).toBe(true);
-    expect(getPauseButton()).toHaveAccessibleName('Pausar animação');
+    expect(getPauseButton()).toHaveAccessibleName(homeCopy.hero.panel.pause);
     expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
     expect(getPauseButton()).toHaveAttribute('type', 'button');
   });
@@ -351,7 +351,7 @@ describe('AutomationPanel pause control', () => {
     fireEvent.click(getPauseButton());
 
     expect(getPauseButton()).toHaveAttribute('aria-pressed', 'true');
-    expect(getPauseButton()).toHaveAccessibleName('Pausar animação');
+    expect(getPauseButton()).toHaveAccessibleName(homeCopy.hero.panel.pause);
     expect(getWindow()).toHaveAttribute('data-paused', 'true');
     advance(4);
     expect(getDoneRows()).toHaveLength(1);
@@ -359,20 +359,20 @@ describe('AutomationPanel pause control', () => {
     fireEvent.click(getPauseButton());
 
     expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
-    expect(getPauseButton()).toHaveAccessibleName('Pausar animação');
+    expect(getPauseButton()).toHaveAccessibleName(homeCopy.hero.panel.pause);
     expect(getWindow()).not.toHaveAttribute('data-paused');
     advance(1);
     expect(getDoneRows()).toHaveLength(2);
   });
 
-  it('keeps one constant name, "Pausar animação", and carries the state in aria-pressed alone', () => {
+  it('keeps one constant name, the pause label, and carries the state in aria-pressed alone', () => {
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
-    expect(getPauseButton()).toHaveAccessibleName('Pausar animação');
+    expect(getPauseButton()).toHaveAccessibleName(homeCopy.hero.panel.pause);
     expect(getPauseButton()).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(getPauseButton());
 
-    expect(getPauseButton()).toHaveAccessibleName('Pausar animação');
+    expect(getPauseButton()).toHaveAccessibleName(homeCopy.hero.panel.pause);
     expect(getPauseButton()).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getAllByRole('button', { name: /animação$/ })).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Retomar animação' })).not.toBeInTheDocument();
@@ -480,8 +480,8 @@ describe('AutomationPanel status', () => {
   it('says "rodando" while it runs', () => {
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
-    expect(screen.getByText('rodando')).toBeInTheDocument();
-    expect(screen.queryByText('pausado')).not.toBeInTheDocument();
+    expect(screen.getByText(homeCopy.hero.panel.status.running)).toBeInTheDocument();
+    expect(screen.queryByText(homeCopy.hero.panel.status.paused)).not.toBeInTheDocument();
   });
 
   it('says "pausado" when the visitor paused it, and "rodando" again when they resume', () => {
@@ -490,13 +490,13 @@ describe('AutomationPanel status', () => {
 
     fireEvent.click(getPauseButton());
 
-    expect(within(titleBar).getByText('pausado')).toBeInTheDocument();
-    expect(within(titleBar).queryByText('rodando')).not.toBeInTheDocument();
+    expect(within(titleBar).getByText(homeCopy.hero.panel.status.paused)).toBeInTheDocument();
+    expect(within(titleBar).queryByText(homeCopy.hero.panel.status.running)).not.toBeInTheDocument();
 
     fireEvent.click(getPauseButton());
 
-    expect(within(titleBar).getByText('rodando')).toBeInTheDocument();
-    expect(within(titleBar).queryByText('pausado')).not.toBeInTheDocument();
+    expect(within(titleBar).getByText(homeCopy.hero.panel.status.running)).toBeInTheDocument();
+    expect(within(titleBar).queryByText(homeCopy.hero.panel.status.paused)).not.toBeInTheDocument();
   });
 
   // The status is the visitor's explicit choice only: a hold by the focus ends by itself the moment it leaves.
@@ -506,8 +506,8 @@ describe('AutomationPanel status', () => {
 
     act(() => getStepsList().focus());
     expect(getWindow()).toHaveAttribute('data-paused', 'true');
-    expect(screen.getByText('rodando')).toBeInTheDocument();
-    expect(screen.queryByText('pausado')).not.toBeInTheDocument();
+    expect(screen.getByText(homeCopy.hero.panel.status.running)).toBeInTheDocument();
+    expect(screen.queryByText(homeCopy.hero.panel.status.paused)).not.toBeInTheDocument();
   });
 
   it('keeps "pausado" when the pointer comes and goes, and when the task changes', () => {
@@ -516,18 +516,18 @@ describe('AutomationPanel status', () => {
 
     fireEvent.pointerEnter(getBody());
     fireEvent.pointerLeave(getBody());
-    expect(screen.getByText('pausado')).toBeInTheDocument();
+    expect(screen.getByText(homeCopy.hero.panel.status.paused)).toBeInTheDocument();
 
     rerender(<AutomationPanel task="notas" />);
-    expect(screen.getByText('pausado')).toBeInTheDocument();
+    expect(screen.getByText(homeCopy.hero.panel.status.paused)).toBeInTheDocument();
   });
 
   it('says "rodando" without motion, where there is no pause control', () => {
     stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
     renderWithProviders(<AutomationPanel task="planilha-whatsapp" />);
 
-    expect(screen.getByText('rodando')).toBeInTheDocument();
-    expect(screen.queryByText('pausado')).not.toBeInTheDocument();
+    expect(screen.getByText(homeCopy.hero.panel.status.running)).toBeInTheDocument();
+    expect(screen.queryByText(homeCopy.hero.panel.status.paused)).not.toBeInTheDocument();
   });
 });
 

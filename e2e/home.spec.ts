@@ -5,13 +5,17 @@ import {
   HOURS_PILL_NAME,
   MIN_TOUCH_PX,
   PAGE_LOAD_TIMEOUT_MS,
+  QUOTE_BUTTON,
+  QUOTE_START,
   ROI_HEADING,
   SECTION_HEADINGS,
+  SERVICE_PLACEHOLDER,
   STATEMENT_HEADING,
   TOUCH_ROUNDING_PX,
   choosePillOption,
   countAccentBySection,
   enableLargeFont,
+  menuButton,
   nextFrames,
   openHome,
   walkPage,
@@ -22,8 +26,6 @@ import { N8N_WEBHOOK_PATTERN, expect, fulfillOk, n8nRoute, test } from './n8nGua
 // hand over of the ROI quote to the form. Every test goes through the guard of ./n8nGuard (the home mounts the real
 // form, so nothing may reach n8n), and none sends the form.
 
-const QUOTE_BUTTON = 'Quero automatizar esse processo';
-const QUOTE_START = 'Olá, VN One! Usei a calculadora do site';
 const OVERFLOW_WIDTHS = [320, 768, 1024, 1440];
 const SMALLEST_PHONE = { width: 280, height: 653 };
 const DESKTOP_1440 = { width: 1440, height: 900 };
@@ -379,7 +381,7 @@ test.describe('final call to action fit (M11)', () => {
       'Por e-mail': panel.getByRole('button', { name: 'Por e-mail' }),
       'Por WhatsApp': panel.getByRole('button', { name: 'Por WhatsApp' }),
       Nome: form.getByLabel('Nome', { exact: true }),
-      Serviço: form.getByRole('button', { name: 'Selecione um serviço' }),
+      Serviço: form.getByRole('button', { name: SERVICE_PLACEHOLDER }),
       'E-mail': email,
       Mensagem: form.getByLabel('Mensagem', { exact: true }),
       Enviar: form.getByRole('button', { name: 'Enviar', exact: true }),
@@ -447,7 +449,6 @@ test.describe('one accent per section', () => {
 
 test.describe('hash anchors into the home', () => {
   const MAX_ARRIVAL_MS = 2000;
-  const MENU_BUTTON = 'Abrir menu';
   const DESKTOP_NAV_MIN_WIDTH = 1024;
 
   /** Where the section is against the bottom of the header: positive when the header leaves it free. */
@@ -491,7 +492,7 @@ test.describe('hash anchors into the home', () => {
     if (isDesktop) {
       await page.getByRole('navigation', { name: 'Navegação principal' }).getByRole('link', { name: 'Como funciona' }).click();
     } else {
-      await page.getByRole('button', { name: MENU_BUTTON }).click();
+      await menuButton(page).click();
       await page.getByRole('dialog', { name: 'Menu de navegação' }).getByRole('link', { name: 'Como funciona' }).click();
     }
 

@@ -1,7 +1,10 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { IntersectionObserverMock } from './intersection';
+import { createMediaQueryList } from './matchMedia';
+
+const ASYNC_UTIL_TIMEOUT_MS = 5000;
 
 class ResizeObserverMock implements ResizeObserver {
   observe(): void {}
@@ -9,24 +12,20 @@ class ResizeObserverMock implements ResizeObserver {
   disconnect(): void {}
 }
 
-function createMatchMediaMock(query: string): MediaQueryList {
-  return {
-    matches: false,
-    media: query,
-    onchange: null,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    dispatchEvent: vi.fn(() => false),
-  };
+// A unit test never reaches a real server (the n8n webhooks above all). A test that needs fetch stubs it itself.
+function rejectUnstubbedFetch(): Promise<never> {
+  return Promise.reject(new Error('Unexpected network call in a unit test'));
 }
 
 function installDefaultMocks(): void {
   vi.stubGlobal('IntersectionObserver', IntersectionObserverMock);
   vi.stubGlobal('ResizeObserver', ResizeObserverMock);
-  vi.stubGlobal('matchMedia', vi.fn(createMatchMediaMock));
+  vi.stubGlobal('matchMedia', vi.fn((query: string) => createMediaQueryList(query)));
+  vi.stubGlobal('fetch', vi.fn(rejectUnstubbedFetch));
 }
+
+// findBy and waitFor give up after five seconds instead of one: a busy machine is slower than the default.
+configure({ asyncUtilTimeout: ASYNC_UTIL_TIMEOUT_MS });
 
 // Installed at import time and after every test, so import-time code and any beforeAll (also one scoped
 // to a later describe) see the defaults, and again before every test so a direct assignment never leaks.

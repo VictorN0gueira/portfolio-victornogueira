@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { menuButton } from './homeSupport';
 import { expect, test } from './n8nGuard';
 
 const MAIN_NAV_NAME = 'Navegação principal';
@@ -71,7 +72,7 @@ test.describe('header by breakpoint', () => {
     test('shows the menu button and hides the desktop nav', async ({ page }) => {
       await page.goto('/');
 
-      await expect(page.getByRole('button', { name: 'Abrir menu' })).toBeVisible();
+      await expect(menuButton(page)).toBeVisible();
       await expect(mainNav(page)).toBeHidden();
     });
   });
@@ -83,7 +84,7 @@ test.describe('header by breakpoint', () => {
       await page.goto('/');
 
       await expect(mainNav(page)).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Abrir menu' })).toBeHidden();
+      await expect(menuButton(page)).toBeHidden();
     });
   });
 });
@@ -133,8 +134,7 @@ test.describe('mobile menu', () => {
     test.skip(testInfo.project.name !== 'mobile', 'the menu button only exists below 1024px');
 
     await page.goto('/');
-    const menuButton = page.getByRole('button', { name: 'Abrir menu' });
-    await menuButton.click();
+    await menuButton(page).click();
 
     const dialog = page.getByRole('dialog', { name: MENU_DIALOG_NAME });
     await expect(dialog).toBeVisible();
@@ -148,14 +148,14 @@ test.describe('mobile menu', () => {
     await page.keyboard.press('Escape');
 
     await expect(dialog).toBeHidden();
-    await expect(page.getByRole('button', { name: 'Abrir menu' })).toBeFocused();
+    await expect(menuButton(page)).toBeFocused();
   });
 
   test('closes after a link navigates to another page', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile', 'the menu button only exists below 1024px');
 
     await page.goto('/');
-    await page.getByRole('button', { name: 'Abrir menu' }).click();
+    await menuButton(page).click();
     const dialog = page.getByRole('dialog', { name: MENU_DIALOG_NAME });
 
     await dialog.getByRole('link', { name: 'Sobre' }).click();
@@ -171,7 +171,7 @@ test.describe('mobile menu drawer width', () => {
 
     test('fills the whole screen, with no strip of page beside it', async ({ page }) => {
       await page.goto('/');
-      await page.getByRole('button', { name: 'Abrir menu' }).click();
+      await menuButton(page).click();
 
       const dialog = page.getByRole('dialog', { name: MENU_DIALOG_NAME });
       await expect(dialog).toBeVisible();
@@ -185,7 +185,7 @@ test.describe('mobile menu drawer width', () => {
 
     test('is 24rem wide and docked to the right edge', async ({ page }) => {
       await page.goto('/');
-      await page.getByRole('button', { name: 'Abrir menu' }).click();
+      await menuButton(page).click();
 
       const dialog = page.getByRole('dialog', { name: MENU_DIALOG_NAME });
       await expect(dialog).toBeVisible();
@@ -338,7 +338,7 @@ test.describe('blog route', () => {
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
     await expect(mainNav(page)).toHaveCount(0);
     await expect(page.getByRole('link', { name: SKIP_LINK_NAME })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Abrir menu' })).toHaveCount(0);
+    await expect(menuButton(page)).toHaveCount(0);
   });
 
   // The blog and the site have different layouts, so going back is a layout swap and SiteLayout never sees

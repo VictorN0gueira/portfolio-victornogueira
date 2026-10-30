@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { menuButton } from './homeSupport';
 import { expect, test } from './n8nGuard';
 
 // What a Radix modal does to the page with CLASSIC scrollbars (the kind that takes room): it removes the scrollbar and
@@ -167,7 +168,7 @@ for (const { width, scrollY } of MENU_CASES) {
       await expectScrollbarTakesRoom(page);
       const before = await snapshot(page);
 
-      await page.getByRole('button', { name: 'Abrir menu' }).click();
+      await menuButton(page).click();
       const dialog = page.getByRole('dialog', { name: MENU_DIALOG_NAME });
       await expect(dialog).toBeVisible();
       // The panel slides in: wait for its right edge to settle on the edge of the viewport.
