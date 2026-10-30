@@ -7,10 +7,9 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "vite --port=3000 --host=0.0.0.0",
+    "dev": "vite --port=3000",
     "build": "vite build",
     "preview": "vite preview",
-    "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "lint:eslint": "eslint .",
     "test": "vitest run",
@@ -18,6 +17,9 @@
     "coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "og": "node scripts/generate-og-banner.mjs",
+    "headers": "node scripts/generate-security-headers.mjs",
+    "headers:check": "node scripts/generate-security-headers.mjs --check",
+    "budget": "node scripts/check-bundle-budget.mjs",
     "lcp": "node scripts/measure-lcp.mjs",
     "measure:skeletons": "node scripts/measure-skeletons.mjs"
   },

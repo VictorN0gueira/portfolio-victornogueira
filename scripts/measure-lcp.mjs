@@ -1,6 +1,8 @@
 /**
  * Measures the Largest Contentful Paint of a built page in Chromium, with a PerformanceObserver.
  *
+ * Only a page on this machine is accepted, and requests to any other origin are aborted.
+ *
  * Usage (not part of CI):
  *   npm run build
  *   npx vite preview --port 4173 --strictPort      # in another terminal
@@ -20,6 +22,7 @@
  * ms, which is why it reports the median of several runs. The cpu4x+slow4g profile is the harshest one.
  */
 import { chromium } from 'playwright';
+import { abortForeignOrigins, assertLocalPage } from './local-page.mjs';
 
 const DEFAULT_URL = 'http://localhost:4173/';
 const DEFAULT_RUNS = 3;
@@ -52,6 +55,7 @@ function parseArguments(argv) {
   const runsFlag = flags.find((flag) => flag.startsWith('--runs='));
   const runs = runsFlag ? Number(runsFlag.slice('--runs='.length)) : DEFAULT_RUNS;
   if (!Number.isInteger(runs) || runs < 1) throw new Error(`--runs needs a whole number of 1 or more, got "${runsFlag}"`);
+  assertLocalPage(url);
   return { url, runs };
 }
 
@@ -97,6 +101,8 @@ async function measureOnce(browser, url, viewport, profile) {
     deviceScaleFactor: viewport.isMobile ? 2 : 1,
   });
   try {
+    // Nothing but the page's own origin: no third party host is reached and the lead webhooks never are.
+    await context.route('**/*', abortForeignOrigins(url));
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
     if (profile.cpu > 1) await client.send('Emulation.setCPUThrottlingRate', { rate: profile.cpu });

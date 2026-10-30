@@ -139,7 +139,7 @@ const STYLES = `
 `;
 
 function buildHtml() {
-  const logo = toDataUrl('public/brand/vn-one-logo-chrome.png', 'image/png');
+  const logo = toDataUrl('scripts/assets/vn-one-logo-chrome.png', 'image/png');
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">

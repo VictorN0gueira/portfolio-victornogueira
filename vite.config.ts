@@ -1,9 +1,10 @@
 /// <reference types="vitest/config" />
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
-import {defineConfig, loadEnv} from 'vite';
+import {defineConfig, type Plugin} from 'vite';
 import {configDefaults, coverageConfigDefaults} from 'vitest/config';
+import {manualChunks} from './config/manualChunks.mjs';
+import {SECURITY_HEADERS, injectCspMeta} from './config/securityHeaders.mjs';
 
 /** src/lib and src/hooks hold the logic, so they keep 80% on their own. */
 const LOGIC_THRESHOLD = { lines: 80, functions: 80, branches: 80, statements: 80 };
@@ -13,36 +14,32 @@ const LOGIC_THRESHOLD = { lines: 80, functions: 80, branches: 80, statements: 80
  */
 const GLOBAL_THRESHOLD = { lines: 77, functions: 96, branches: 96, statements: 77 };
 
-export default defineConfig(({mode}) => {
-  const env = loadEnv(mode, '.', '');
+const IS_PAGES_BUILD = process.env.GITHUB_PAGES === 'true';
 
+/**
+ * GitHub Pages cannot send response headers, so its build carries the policy as a meta tag (without frame-ancestors,
+ * which only works as a header). The Docker image sends the real headers from nginx/security-headers.conf.
+ */
+function pagesCspMeta(): Plugin {
   return {
-    base: process.env.GITHUB_PAGES === 'true' ? '/portfolio-victornogueira/' : '/',
-    plugins: [react(), tailwindcss()],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      // Força a injeção da variável ignorando o comportamento padrão do import.meta.env no Vite
-      'import.meta.env.VITE_GNEWS_API_KEY': JSON.stringify(env.VITE_GNEWS_API_KEY || process.env.VITE_GNEWS_API_KEY || ''),
-    },
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
-      },
-    },
+    name: 'pages-csp-meta',
+    transformIndexHtml: (html) => injectCspMeta(html),
+  };
+}
+
+export default defineConfig(({command}) => {
+  return {
+    base: IS_PAGES_BUILD ? '/portfolio-victornogueira/' : '/',
+    plugins: [react(), tailwindcss(), ...(IS_PAGES_BUILD && command === 'build' ? [pagesCspMeta()] : [])],
     build: {
       rollupOptions: {
-        output: {
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'motion-vendor': ['motion']
-          }
-        }
-      }
+        output: {manualChunks},
+      },
     },
-    server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify: file watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
+    // `vite preview` is what every Playwright run serves, so the specs run under the same policy as production.
+    // The dev server stays without a CSP: Vite's own client and HMR need inline scripts and a websocket.
+    preview: {
+      headers: SECURITY_HEADERS,
     },
     test: {
       environment: 'jsdom',

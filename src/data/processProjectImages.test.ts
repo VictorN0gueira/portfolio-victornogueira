@@ -17,6 +17,7 @@ import {
 import { UndoFailedError, backupDirOf, publishRun } from '../../scripts/project-images-publish.mjs';
 import { UsageScanError, findUsedKeys, findUsedKeysInFile, stringLiterals } from '../../scripts/project-images-usage.mjs';
 import { projects } from './projects';
+import type { ManifestEntry } from '../../scripts/project-images-manifest.mjs';
 import { mergeEntries, parseManifest, readManifestEntries, renderManifest, writeFileAtomic } from '../../scripts/project-images-manifest.mjs';
 import { regionsFor } from '../../scripts/project-blur-regions.mjs';
 import { regionBounds } from '../../scripts/blur-regions.mjs';
@@ -61,7 +62,7 @@ function options(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function seedOutput(slug: string, files: string[], entries: object[]): void {
+function seedOutput(slug: string, files: string[], entries: ManifestEntry[]): void {
   const folder = join(workDir, 'output', slug);
   mkdirSync(folder, { recursive: true });
   for (const file of files) writeFileSync(join(folder, file), 'old');
@@ -280,6 +281,7 @@ describe('running the pipeline', () => {
     await run(options());
     const output = await sharp(readFileSync(join(workDir, 'output', 'hub081', 'conversas-1600.webp'))).greyscale().raw().toBuffer({ resolveWithObject: true });
     const photo = regionsFor('hub081/conversas').find((region: { shape: string }) => region.shape === 'circle');
+    if (!photo) throw new Error('hub081/conversas lost its circular contact photo region');
     const bounds = regionBounds(photo);
     const scale = 1600 / 1919;
     const middle = Math.round((bounds.top + bounds.height / 2) * scale) * output.info.width + Math.round((bounds.left + bounds.width / 2) * scale);

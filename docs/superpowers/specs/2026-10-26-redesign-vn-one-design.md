@@ -95,7 +95,11 @@ Manter React 19, Vite, Tailwind v4, `motion/react`, react-router 7 e `react-helm
 
 ```
 src/
-  styles/tokens.css            ← @theme com os tokens VN One (importado no index.css)
+  styles/tokens.css            ← @theme, fontes, paleta e variáveis dos tokens VN One
+  styles/motion.css            ← keyframes e utilitários de movimento
+  styles/components.css        ← estilos compartilhados de componentes (os três são importados no index.css;
+                                 a divisão do tokens.css atual nesses três arquivos chega no lote F do plano de correções, item F.10,
+                                 e até lá o index.css importa só tokens.css e skeleton.css)
   components/ui/               ← Button (cva), Container, Section, Kicker, Heading, Pill,
                                  SpotlightCard, Marquee, Reveal (+ RevealGroup c/ stagger),
                                  CountUp, WindowFrame, Accordion (<details> nativo),
@@ -216,7 +220,7 @@ Cada linha diz qual referência inspira qual técnica. Copiamos a técnica, nunc
   - FAQ e CtaBand.
 - **/sobre:**
   - a VN One (o que é e como trabalha);
-  - Victor como fundador, com foto em moldura, gerada em AVIF e WebP (2 tamanhos) a partir de `public/victor-photo.jpg` (982×1024), porque o `.webp` atual tem só 288×300;
+  - Victor como fundador, com foto em moldura, gerada em AVIF e WebP (2 tamanhos) a partir de `scripts/assets/victor-photo.jpg` (982×1024, fora de `public/` para não ir no build), porque o `.webp` atual tem só 288×300;
   - o Método em escada;
   - as ferramentas num marquee ou grade (de `Skills.tsx`);
   - CtaBand.
@@ -321,7 +325,16 @@ Cada pendência tem um plano B, então nada trava o build. O PR abre como **draf
 - **Roteiro do filme**: escolher entre os 3 que vou propor. Até lá, o botão rola até o Método.
 - **Ilustrações**: aprovar os conceitos. Até lá, as seções vão sem ilustração.
 - **Copy**: revisar o texto de cada página no chat.
-- **Limpeza opcional**: `public/projects/screenshots/` (2,9 MB sem uso) e as dependências mortas (`express`, `dotenv`, `tsx`). O `victor-photo.jpg` fica, porque é a fonte da foto do Sobre.
+- **Limpeza** (feita no lote A do plano de correções): `public/projects/screenshots/` (2,9 MB sem uso) e as dependências mortas (`express`, `dotenv`, `tsx`) saíram. O `victor-photo.jpg` fica como fonte da foto do Sobre, agora em `scripts/assets/`, fora do build.
+
+## Checklist técnico do Plano 3
+
+O que as páginas antigas ainda carregam, para sair junto com elas quando forem reconstruídas:
+
+- **CSS legado** (Q-25): `.roi-slider*` e as variáveis `--roi-slider-*` (só o `ROICalculator.tsx`), os keyframes `glitch-1` e `glitch-2` (só o `NotFound.tsx`, com cores fora da paleta) e `.custom-scrollbar` (só o `ServiceSelect`).
+- **Funções com mais de 50 linhas** (Q-33): `BlogPage` 310, `ROICalculator` 204, `LgpdPage` 198, `ServicesPage` 140, `PrivacyPage` 108, `Skills` 101, `ProjectDetail` 100, `About` 88 e `newsService.fetchFromDevTo` 68.
+- **`text-[10px]`** (Q-26): 30 usos, todos nas páginas antigas (`BlogPage`, `ProjectDetail`, `ServicesPage`, `LgpdPage`). Usar a escala de texto dos tokens.
+- **`newsService`** (Q-35d): seis blocos `catch` vazios, de propósito, para a cadeia de fontes do blog. Listar a causa em vez de engolir, ou manter com o comentário.
 
 ## Fora do escopo
 

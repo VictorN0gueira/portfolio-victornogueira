@@ -1,4 +1,4 @@
-// Generates the optimized VN One brand assets in public/brand/ from the
+// Generates the optimized VN One brand assets in public/brand/ (and the banner source in scripts/assets/) from the
 // original logo PNGs. The source folder is passed as the first argument so no
 // machine specific path lives in the repo:
 //
@@ -27,6 +27,8 @@ const APPLE_TOUCH_SIZE = 180;
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = join(repoRoot, 'public', 'brand');
+// The chrome PNG only feeds scripts/generate-og-banner.mjs; it never ships, so it lives next to the scripts.
+const bannerSourceDir = join(repoRoot, 'scripts', 'assets');
 
 function fail(message) {
   process.stderr.write(`build-brand-assets: ${message}\n`);
@@ -66,13 +68,13 @@ async function trimmedPng(file) {
   return sharp(file).trim().png().toBuffer();
 }
 
-async function writeResized(buffer, file, height, format) {
+async function writeResized(buffer, file, height, format, targetDir = outDir) {
   const pipeline = sharp(buffer).resize({ height });
   const encoded =
     format === 'webp'
       ? pipeline.webp({ quality: WEBP_QUALITY, alphaQuality: 100 })
       : pipeline.png({ compressionLevel: 9 });
-  const info = await encoded.toFile(join(outDir, file));
+  const info = await encoded.toFile(join(targetDir, file));
   log(`${file}: ${info.width}x${info.height} (${info.size} bytes)`);
 }
 
@@ -95,12 +97,13 @@ async function writeIcon(buffer, file, size, paddingRatio) {
 async function main() {
   const sources = resolveSources(process.argv[2]);
   mkdirSync(outDir, { recursive: true });
+  mkdirSync(bannerSourceDir, { recursive: true });
 
   const [chrome, dark] = await Promise.all([trimmedPng(sources.chrome), trimmedPng(sources.dark)]);
 
   await writeResized(chrome, 'vn-one-logo-chrome.webp', WEBP_HEIGHT, 'webp');
   await writeResized(dark, 'vn-one-logo-dark.webp', WEBP_HEIGHT, 'webp');
-  await writeResized(chrome, 'vn-one-logo-chrome.png', BANNER_PNG_HEIGHT, 'png');
+  await writeResized(chrome, 'vn-one-logo-chrome.png', BANNER_PNG_HEIGHT, 'png', bannerSourceDir);
   await writeIcon(chrome, 'favicon-32.png', FAVICON_SIZE, FAVICON_PADDING_RATIO);
   await writeIcon(chrome, 'apple-touch-icon.png', APPLE_TOUCH_SIZE, APPLE_TOUCH_PADDING_RATIO);
 }
