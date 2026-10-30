@@ -7,6 +7,10 @@ import {
   type ContactFields,
   type ContactMethod,
 } from '../../lib/contact';
+import { timeoutSignal } from '../../lib/timeoutSignal';
+
+/** How long a request may stay open before the form gives up and shows the WhatsApp fallback. */
+const REQUEST_TIMEOUT_MS = 15_000;
 
 export type ContactStatus = 'idle' | 'sending' | 'success' | 'error';
 
@@ -33,6 +37,7 @@ async function sendContact(fields: ContactFields, method: ContactMethod): Promis
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      signal: timeoutSignal(REQUEST_TIMEOUT_MS),
     });
 
     if (response.ok) {

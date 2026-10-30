@@ -10,9 +10,13 @@ beforeEach(() => {
   rejectUnexpectedFetch();
 });
 
+const NATIVE_TIMEOUT = AbortSignal.timeout;
+
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  Object.defineProperty(AbortSignal, 'timeout', { value: NATIVE_TIMEOUT, configurable: true, writable: true });
 });
 
 const SUBMIT_EVENT = { preventDefault: () => {} } as unknown as FormEvent;
@@ -101,5 +105,79 @@ describe('useContactForm double submit', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.current.status).toBe('success');
+  });
+});
+
+/** A request that only ends when the signal it was given aborts: with no signal it never ends at all. */
+function fetchThatEndsOnAbort() {
+  const fetchMock = vi.fn(
+    (_url: string, init: RequestInit) =>
+      new Promise<never>((_resolve, reject) => {
+        init.signal?.addEventListener('abort', () => reject(new DOMException('The operation timed out.', 'TimeoutError')));
+      }),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+describe('useContactForm request timeout', () => {
+  it('hands the request a signal made by AbortSignal.timeout(15000)', async () => {
+    const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+    const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
+    const { result } = renderHook(() => useContactForm());
+    fillValidEmailForm(result);
+
+    await act(async () => {
+      await result.current.handleSubmit(SUBMIT_EVENT);
+    });
+
+    expect(timeoutSpy).toHaveBeenCalledWith(15_000);
+    expect(readCall(fetchMock).init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('moves to the error state when the signal aborts, and the form can be used again', async () => {
+    const controller = new AbortController();
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+    const fetchMock = fetchThatEndsOnAbort();
+    const { result } = renderHook(() => useContactForm());
+    fillValidEmailForm(result);
+
+    let sent: Promise<void> = Promise.resolve();
+    act(() => {
+      sent = result.current.handleSubmit(SUBMIT_EVENT);
+    });
+    expect(result.current.status).toBe('sending');
+    await act(async () => {
+      controller.abort();
+      await sent;
+    });
+
+    expect(result.current.status).toBe('error');
+    act(() => result.current.dismissError());
+    expect(result.current.status).toBe('idle');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('times the request out after 15 seconds where AbortSignal.timeout does not exist', async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(AbortSignal, 'timeout', { value: undefined, configurable: true, writable: true });
+    fetchThatEndsOnAbort();
+    const { result } = renderHook(() => useContactForm());
+    fillValidEmailForm(result);
+
+    let sent: Promise<void> = Promise.resolve();
+    act(() => {
+      sent = result.current.handleSubmit(SUBMIT_EVENT);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(14_999);
+    });
+    expect(result.current.status).toBe('sending');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+      await sent;
+    });
+
+    expect(result.current.status).toBe('error');
   });
 });
