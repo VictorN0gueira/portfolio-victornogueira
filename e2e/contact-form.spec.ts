@@ -607,7 +607,10 @@ test.describe('contact form validation and failures', () => {
 // The sizes are asserted on both projects: a desktop window can be narrowed, and a phone is the case that matters.
 test.describe('contact form on small screens', () => {
   function textControls(form: Locator): Locator {
-    return form.locator('input[type="text"], input[type="email"], textarea, button[aria-haspopup="listbox"]');
+    // The honeypot (tabindex -1, in an aria-hidden wrapper) is an input no visitor meets: it is not a control to measure.
+    return form.locator(
+      'input[type="text"]:not([tabindex="-1"]), input[type="email"], textarea, button[aria-haspopup="listbox"]',
+    );
   }
 
   async function fontSizes(controls: Locator): Promise<number[]> {
