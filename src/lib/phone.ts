@@ -124,13 +124,14 @@ function readFullDdd55PlusDigit(rest: string, digit: string): TypedNumber {
   const looksLikeNineD = !'2345'.includes(first) || (!BRAZILIAN_DDDS.has(first + second) && '23459'.includes(second));
   const typed = looksLikeNineD ? `${COUNTRY_CODE}${MOBILE_NINE}${rest}${digit}` : `${COUNTRY_CODE}${rest}${digit}`;
   const countryCoded = readTypedDigits(dropTypedCountryCode(typed));
-  // Um número do DDD 55 que já estava completo não vira outro número com um dígito a mais (ou posto no último grupo): se o
-  // código do país o transformasse em um número completo de outro DDD, o formulário o aceitaria e o lead iria para um telefone
-  // que o visitante não digitou. Nesse caso vale o DDD 55 de antes, o dígito a mais é ignorado e os dígitos ficam.
-  return isCompleteExistingNumber(countryCoded.local) ? { local: COUNTRY_CODE + rest, hasTypedNine: true } : countryCoded;
+  // Um nÃºmero do DDD 55 que jÃ¡ estava completo nÃ£o vira outro nÃºmero com um dÃ­gito a mais (ou posto no Ãºltimo grupo): se o
+  // cÃ³digo do paÃ­s o transformasse em um nÃºmero completo de outro DDD, o formulÃ¡rio o aceitaria e o lead iria para um telefone
+  // que o visitante nÃ£o digitou. Os mesmos dÃ­gitos podem ser um DDD 55 com um dÃ­gito sobrando ou um 55 digitado Ã  mÃ£o sem o
+  // "+" (55 91 ...): nÃ£o se escolhe nem se ignora o dÃ­gito em silÃªncio, o nÃºmero Ã© limpo e o visitante digita de novo.
+  return isCompleteExistingNumber(countryCoded.local) ? { local: '', hasTypedNine: false } : countryCoded;
 }
 
-/** O campo mostra o 9, então 10 dígitos sem ele formam um número completo; vale só se o DDD existe. */
+/** O campo mostra o 9, entÃ£o 10 dÃ­gitos sem ele formam um nÃºmero completo; vale sÃ³ se o DDD existe. */
 function isCompleteExistingNumber(local: string): boolean {
   return local.length >= LOCAL_PHONE_LENGTHS[0] && BRAZILIAN_DDDS.has(local.substring(0, 2));
 }
