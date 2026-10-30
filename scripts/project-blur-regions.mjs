@@ -122,7 +122,7 @@ export const BLUR_SOURCES = Object.freeze({
   // The photo of a person in the collection carousel (the arrow buttons stay).
   'portal-link-in-bio/karlaalvares': {
     sizes: [{ width: 1920, height: 912 }],
-    regions: [panel(903, 531, 150, 218, 34, 6)],
+    regions: [panel(903, 537, 150, 206, 30, 10)],
     nameRegions: [],
   },
 });

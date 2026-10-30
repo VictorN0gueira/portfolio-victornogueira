@@ -14,6 +14,7 @@ import {
   shareNameFor,
   widthsFor,
 } from '../../scripts/process-project-images.mjs';
+import { publishRun } from '../../scripts/project-images-publish.mjs';
 import { mergeEntries, parseManifest, readManifestEntries, renderManifest, writeFileAtomic } from '../../scripts/project-images-manifest.mjs';
 import { regionsFor } from '../../scripts/project-blur-regions.mjs';
 import { regionBounds } from '../../scripts/blur-regions.mjs';
@@ -295,5 +296,69 @@ describe('running the pipeline', () => {
     expect(readdirSync(previewDir)).toEqual(['travel-ia-cover-regions.png']);
     expect(existsSync(join(workDir, 'output'))).toBe(false);
     expect(existsSync(join(workDir, 'manifest.ts'))).toBe(false);
+  });
+});
+
+describe('publishing a run', () => {
+  function stage(slug: string, files: Record<string, string>): string {
+    const stagingDir = join(workDir, 'output', '.staging');
+    mkdirSync(join(stagingDir, slug), { recursive: true });
+    for (const [name, content] of Object.entries(files)) writeFileSync(join(stagingDir, slug, name), content);
+    return stagingDir;
+  }
+
+  it('puts every file back, and leaves the manifest as it was, when the last step fails', () => {
+    mkdirSync(join(workDir, 'output', 'travel-ia'), { recursive: true });
+    writeFileSync(join(workDir, 'output', 'travel-ia', 'cover-800.webp'), 'old cover');
+    writeFileSync(join(workDir, 'output', 'travel-ia', 'stale-800.webp'), 'old stale');
+    const stagingDir = stage('travel-ia', { 'cover-800.webp': 'new cover', 'extra-800.webp': 'new extra' });
+    // A non empty folder where the manifest should go makes the final rename fail.
+    const manifestFile = join(workDir, 'manifest-folder');
+    mkdirSync(manifestFile);
+    writeFileSync(join(manifestFile, 'inside.txt'), 'x');
+
+    expect(() =>
+      publishRun({ stagingDir, outputDir: join(workDir, 'output'), slugs: new Set(['travel-ia']), clean: true, manifestFile, manifestText: 'new manifest' }),
+    ).toThrow();
+
+    expect(readFileSync(join(workDir, 'output', 'travel-ia', 'cover-800.webp'), 'utf8')).toBe('old cover');
+    expect(readFileSync(join(workDir, 'output', 'travel-ia', 'stale-800.webp'), 'utf8')).toBe('old stale');
+    expect(existsSync(join(workDir, 'output', 'travel-ia', 'extra-800.webp'))).toBe(false);
+    expect(readdirSync(workDir).filter((name) => name.endsWith('.tmp'))).toEqual([]);
+  });
+
+  it('writes the manifest last: after the images, never before', () => {
+    const stagingDir = stage('travel-ia', { 'cover-800.webp': 'new cover' });
+    const manifestFile = join(workDir, 'manifest.ts');
+    writeFileSync(manifestFile, 'old manifest');
+
+    publishRun({ stagingDir, outputDir: join(workDir, 'output'), slugs: new Set(['travel-ia']), clean: false, manifestFile, manifestText: 'new manifest' });
+
+    expect(readFileSync(manifestFile, 'utf8')).toBe('new manifest');
+    expect(readFileSync(join(workDir, 'output', 'travel-ia', 'cover-800.webp'), 'utf8')).toBe('new cover');
+  });
+
+  it('removes a leftover .staging of an interrupted run at the start of the next run', async () => {
+    mkdirSync(join(workDir, 'output', '.staging', 'hub081'), { recursive: true });
+    writeFileSync(join(workDir, 'output', '.staging', 'hub081', 'conversas-800.webp'), 'unblurred leftover');
+    await writeOriginal(options().inputDir, 'travel-ia', 'cover.png');
+
+    await run(options());
+
+    expect(existsSync(join(workDir, 'output', '.staging'))).toBe(false);
+    expect(existsSync(join(workDir, 'output', 'hub081'))).toBe(false);
+  });
+
+  it('refuses --clean when it would drop an image that projects.ts still shows, unless --force-clean is given', async () => {
+    const projectsFile = join(workDir, 'projects.ts');
+    writeFileSync(projectsFile, "shot('travel-ia/stale', 'x')");
+    seedOutput('travel-ia', ['stale-800.webp', 'cover-800.webp'], [{ ...ENTRY, key: 'travel-ia/stale' }, ENTRY]);
+    await writeOriginal(options().inputDir, 'travel-ia', 'cover.png');
+
+    await expect(run(options({ clean: true, projectsFile }))).rejects.toThrow(/still uses/);
+    expect(existsSync(join(workDir, 'output', 'travel-ia', 'stale-800.webp'))).toBe(true);
+
+    const result = await run(options({ clean: true, forceClean: true, projectsFile }));
+    expect(result.removed).toEqual(['travel-ia/stale-800.webp']);
   });
 });

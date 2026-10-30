@@ -18,3 +18,6 @@ supabase/.temp/
 test-results/
 playwright-report/
 e2e/__shots__/
+
+# Image pipeline staging (an interrupted run could leave blurred files here)
+public/projects/.staging/

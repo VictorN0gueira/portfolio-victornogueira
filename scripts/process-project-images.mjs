@@ -2,7 +2,7 @@
 // folder, writes optimized WebP files into the output folder and generates the manifest the site reads.
 // It never fetches anything: the originals are put in the input folder by hand and never enter the repo.
 //
-//   node scripts/process-project-images.mjs <input folder> <output folder> [--manifest=<file>] [--clean] [--keep-names] [--preview=<folder>]
+//   node scripts/process-project-images.mjs <input folder> <output folder> [--manifest=<file>] [--clean [--force-clean]] [--keep-names] [--preview=<folder>]
 //
 // Input layout:   <input>/<project-slug>/<name>.png   (lower case kebab-case, .png .jpg .jpeg in any case)
 // Output layout:  <output>/<project-slug>/<name>-<width>.webp  (800 and 1600 wide, never upscaled)
@@ -22,18 +22,22 @@
 // Safety: nothing in the output folder is touched until every image has been processed into a staging folder.
 // Without --clean the run only adds or replaces the images it was given and merges them into the existing
 // manifest. --clean also removes, for the projects present in the input only, the files and manifest entries
-// that the run did not write. The input folder may not overlap the output folder or live inside the repo.
+// that the run did not write; it refuses to drop an image that src/data/projects.ts still shows unless
+// --force-clean is given. The publish step (scripts/project-images-publish.mjs) is undoable: the manifest is
+// written to a temporary file first, replaced and removed files are kept in a backup until everything worked,
+// the manifest is renamed last, and a failure puts every file back. The input folder may not overlap the output folder or live inside the repo.
 //
 // Typical call (the output folder is public/projects):
 //   node scripts/process-project-images.mjs "<folder with the originals>" public/projects
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { applyBlurRegions } from './blur-regions.mjs';
 import { cropsFor } from './project-crops.mjs';
 import { BLUR_DEFAULTS, blurKey, blurProblem, regionsFor } from './project-blur-regions.mjs';
-import { mergeEntries, readManifestEntries, renderManifest, writeFileAtomic } from './project-images-manifest.mjs';
+import { mergeEntries, readManifestEntries, renderManifest } from './project-images-manifest.mjs';
+import { publishRun } from './project-images-publish.mjs';
 import { drawPreview } from './project-images-preview.mjs';
 
 export const WIDTHS = [800, 1600];
@@ -61,6 +65,7 @@ const STAGING_FOLDER = '.staging';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_MANIFEST = join(repoRoot, 'src', 'data', 'projectImages.ts');
+const PROJECTS_FILE = join(repoRoot, 'src', 'data', 'projects.ts');
 
 export class PipelineError extends Error {}
 
@@ -80,11 +85,11 @@ export function shareNameFor(slug) {
 export function parseArguments(argv) {
   const flags = argv.filter((argument) => argument.startsWith('--'));
   const positional = argv.filter((argument) => !argument.startsWith('--'));
-  const known = ['--clean', '--keep-names'];
+  const known = ['--clean', '--force-clean', '--keep-names'];
   const unknown = flags.filter((flag) => !known.includes(flag) && !flag.startsWith('--manifest=') && !flag.startsWith('--preview='));
   if (unknown.length > 0) fail(`unknown option ${unknown.join(', ')}`);
   if (positional.length !== 2) {
-    fail('usage: node scripts/process-project-images.mjs <input folder> <output folder> [--manifest=<file>] [--clean] [--keep-names] [--preview=<folder>]');
+    fail('usage: node scripts/process-project-images.mjs <input folder> <output folder> [--manifest=<file>] [--clean [--force-clean]] [--keep-names] [--preview=<folder>]');
   }
   const valueOf = (name) => flags.find((flag) => flag.startsWith(`${name}=`))?.slice(name.length + 1);
   const manifest = valueOf('--manifest');
@@ -95,6 +100,7 @@ export function parseArguments(argv) {
     manifestFile: manifest ? resolve(manifest) : DEFAULT_MANIFEST,
     previewDir: preview ? resolve(preview) : null,
     clean: flags.includes('--clean'),
+    forceClean: flags.includes('--force-clean'),
     keepNames: flags.includes('--keep-names'),
   };
 }
@@ -226,26 +232,6 @@ async function processImage(slug, image, stagingFolder) {
   return { key: `${slug}/${name}`, width: widest.width, height: widest.height, widths: sizes.map((size) => size.width), hasShare, sizes };
 }
 
-/** Moves the staged files of every project into the output folder; with clean, drops the files of those projects it did not write. */
-function publishStaged(stagingDir, outputDir, slugs, clean) {
-  const removed = [];
-  for (const slug of slugs) {
-    const staged = join(stagingDir, slug);
-    const target = join(outputDir, slug);
-    mkdirSync(target, { recursive: true });
-    const written = new Set(readdirSync(staged));
-    if (clean) {
-      for (const existing of readdirSync(target)) {
-        if (written.has(existing)) continue;
-        rmSync(join(target, existing), { recursive: true, force: true });
-        removed.push(`${slug}/${existing}`);
-      }
-    }
-    for (const file of written) renameSync(join(staged, file), join(target, file));
-  }
-  return removed;
-}
-
 async function writePreviews(originals, previewDir, keepNames) {
   mkdirSync(previewDir, { recursive: true });
   for (const original of originals) {
@@ -256,9 +242,19 @@ async function writePreviews(originals, previewDir, keepNames) {
   }
 }
 
+/** A clean run must not drop an image that src/data/projects.ts still shows: the next build would throw. */
+function checkDroppedKeysAreUnused(before, after, projectsFile) {
+  const kept = new Set(after.map((entry) => entry.key));
+  const dropped = before.map((entry) => entry.key).filter((key) => !kept.has(key));
+  if (dropped.length === 0 || !existsSync(projectsFile)) return;
+  const source = readFileSync(projectsFile, 'utf8');
+  const stillUsed = dropped.filter((key) => source.includes(`'${key}'`));
+  if (stillUsed.length > 0) fail(`--clean would drop ${stillUsed.join(', ')}, which ${basename(projectsFile)} still uses (add --force-clean to do it anyway)`);
+}
+
 /** Runs the whole pipeline. Returns { entries, removed }; throws PipelineError on any refusal. */
 export async function run(options) {
-  const { inputDir, outputDir, manifestFile, previewDir, clean, keepNames } = options;
+  const { inputDir, outputDir, manifestFile, previewDir, clean, keepNames, forceClean = false, projectsFile = PROJECTS_FILE } = options;
   if (!isFolder(inputDir)) fail(`input folder not found: ${inputDir}`);
   checkFolders(inputDir, outputDir);
   const originals = listOriginals(inputDir);
@@ -283,9 +279,8 @@ export async function run(options) {
       }
     }
     const entries = mergeEntries(existingEntries, fresh, clean ? slugs : new Set());
-    const removed = publishStaged(stagingDir, outputDir, slugs, clean);
-    mkdirSync(dirname(manifestFile), { recursive: true });
-    writeFileAtomic(manifestFile, renderManifest(entries));
+    if (clean && !forceClean) checkDroppedKeysAreUnused(existingEntries, entries, projectsFile);
+    const removed = publishRun({ stagingDir, outputDir, slugs, clean, manifestFile, manifestText: renderManifest(entries) });
     return { entries, removed, written: fresh.length };
   } finally {
     rmSync(stagingDir, { recursive: true, force: true });
