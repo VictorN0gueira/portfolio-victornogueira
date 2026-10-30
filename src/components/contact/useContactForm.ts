@@ -1,4 +1,4 @@
-import { useEffect, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import {
   WEBHOOKS,
   buildContactPayload,
@@ -109,9 +109,14 @@ export function useContactForm(initialMessage?: string, prefillNonce?: number) {
   const { setErrors, resetDraft, ...draft } = useContactDraft(initialMessage, prefillNonce);
   const [status, setStatus] = useState<ContactStatus>('idle');
   const { method, formData, servico } = draft;
+  // A second submit while a request is out (a double tap, Enter then click) sends nothing.
+  const isInFlight = useRef(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isInFlight.current) {
+      return;
+    }
 
     const fields: ContactFields = { ...formData, servico };
     const newErrors = validateContact(fields, method);
@@ -122,8 +127,13 @@ export function useContactForm(initialMessage?: string, prefillNonce?: number) {
     }
 
     setErrors({});
-    setStatus('sending');
-    setStatus(await sendContact(fields, method));
+    isInFlight.current = true;
+    try {
+      setStatus('sending');
+      setStatus(await sendContact(fields, method));
+    } finally {
+      isInFlight.current = false;
+    }
   };
 
   const dismissError = () => setStatus('idle');
