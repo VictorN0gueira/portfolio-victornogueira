@@ -9,8 +9,8 @@ interface ProjectDetailProps {
 }
 
 // The floating WhatsApp and accessibility buttons sit at the right edge of a phone: the text stays clear of them
-// (36 px under 360 px so the column stays wide enough, 56 px up to the tablet layout, none from md up).
-export const CLEAR_FLOATING_BUTTONS = 'pr-9 min-[360px]:pr-14 md:pr-0';
+// (48 px up to 320 px, where the page and the panel are tighter, 36 px under 360 px, 56 px up to the tablet layout, none from md up).
+export const CLEAR_FLOATING_BUTTONS = 'pr-12 min-[321px]:pr-9 min-[360px]:pr-14 md:pr-0';
 const LABEL_CLASSES = `mb-3 text-xs font-bold uppercase tracking-widest text-zinc-400 ${CLEAR_FLOATING_BUTTONS}`;
 
 function Features({ items }: { items: readonly string[] }) {
@@ -21,7 +21,7 @@ function Features({ items }: { items: readonly string[] }) {
       </h2>
       <ul role="list" className={`m-0 list-none space-y-3 p-0 ${CLEAR_FLOATING_BUTTONS}`}>
         {items.map((item) => (
-          <li key={item} className="flex gap-3 leading-relaxed text-zinc-300 md:text-base">
+          <li key={item} className="flex gap-1.5 leading-relaxed text-zinc-300 min-[321px]:gap-3 md:text-base">
             <span aria-hidden="true" className="mt-2.5 size-1.5 shrink-0 rounded-full bg-white/40" />
             {item}
           </li>
@@ -80,7 +80,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
     >
       {isFeatured ? <HeroGallery project={project} /> : <StackedGallery project={project} />}
 
-      <div className="min-w-0 flex-1 bg-zinc-950 p-4 pb-8 min-[360px]:p-6 min-[360px]:pb-10 md:bg-zinc-900 md:p-10 xl:p-16">
+      <div className="min-w-0 flex-1 bg-zinc-950 p-3 pb-8 min-[321px]:p-4 min-[360px]:p-6 min-[360px]:pb-10 md:bg-zinc-900 md:p-10 xl:p-16">
         <div className={textLayout}>
           <Heading project={project} large={isFeatured} />
           <div className={`space-y-6 md:space-y-8 ${isFeatured ? '' : 'mt-8'}`}>

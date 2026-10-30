@@ -36,13 +36,14 @@ describe('the layout classes that keep a case page from being cut', () => {
 
     const column = screen.getByRole('heading', { level: 1 }).closest('[class*="flex-1"]') as HTMLElement;
 
-    expect(column.className).toContain('p-4');
+    expect(column.className).toContain('p-3');
+    expect(column.className).toContain('min-[321px]:p-4');
     expect(column.className).toContain('md:p-10');
     expect(column.className).not.toContain('md:p-16');
   });
 
-  it('keeps text clear of the floating buttons on a phone: 36 px under 360, 56 px up to the tablet layout, none from md', () => {
-    expect(CLEAR_FLOATING_BUTTONS).toBe('pr-9 min-[360px]:pr-14 md:pr-0');
+  it('keeps text clear of the floating buttons on a phone: 48 px up to 320, 36 px under 360, 56 px up to the tablet layout, none from md', () => {
+    expect(CLEAR_FLOATING_BUTTONS).toBe('pr-12 min-[321px]:pr-9 min-[360px]:pr-14 md:pr-0');
     renderWithProviders(<ProjectDetail project={getProjectBySlug('hub081')!} />);
 
     expect(screen.getByRole('heading', { level: 1 }).parentElement?.className).toContain(CLEAR_FLOATING_BUTTONS);
