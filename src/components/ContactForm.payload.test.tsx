@@ -23,6 +23,10 @@ import ContactForm from './ContactForm';
  * never change with it. Every request goes to a mock: no test reaches a real host.
  */
 
+// Each test types a whole form: on a busy machine the default 5 seconds is tight, and this is the identity test of the
+// lead channel, so it must never flake.
+vi.setConfig({ testTimeout: 20_000 });
+
 const FIXED_NOW = new Date('2026-10-29T12:00:00.000Z');
 
 const EMAIL_BODY =

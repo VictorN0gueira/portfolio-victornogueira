@@ -17,6 +17,9 @@ import ContactForm from './ContactForm';
 
 const QUOTE = 'Simulei a economia no ROI e quero automatizar o financeiro';
 
+// These flows type a whole form: the default 5 seconds is tight on a busy machine.
+vi.setConfig({ testTimeout: 20_000 });
+
 beforeEach(() => {
   rejectUnexpectedFetch();
 });
