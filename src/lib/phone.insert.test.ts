@@ -10,6 +10,7 @@ vi.setConfig({ testTimeout: 120_000 });
 
 const SHOWN_NINE_AT = 7; // "+55 81 9 ...": the 9 is the character at index 7.
 const FIRST_CARET = 4; // just after "+55 "
+const LAST_GROUP_CARET = 14; // just after the hyphen of "+55 DD 9 NNNN-NNNN"
 
 /** The display that digits give, written by hand (not through the formatter): DDD, the field's 9, the number, ten digits at most. */
 function displayOfDigits(digits: string): string {
@@ -24,8 +25,7 @@ function numberIndexOfCaret(display: string, caret: number): number {
   return caret > SHOWN_NINE_AT ? digitsBefore - 1 : digitsBefore;
 }
 
-// DDD 55 is the one DDD that can also be read as the country code: its edits have their own test (F3).
-const numbers = EXISTING_DDDS.filter((ddd) => ddd !== '55').flatMap((ddd) =>
+const numbers = EXISTING_DDDS.flatMap((ddd) =>
   PARTS.filter((_, index) => index % 6 === 0).map((part) => ({ ddd, part, display: typedDisplay(`${ddd}9${part}`) })),
 );
 
@@ -44,6 +44,8 @@ describe('F2: a digit typed at any caret place of a complete number lands in the
     const wrong: string[] = [];
     for (const { ddd, part, display } of numbers) {
       for (let caret = FIRST_CARET; caret <= display.length; caret += 1) {
+        // DDD 55 can also be the country code: a digit put into the last group of its number is a known limit (phone.ddd55.test.ts).
+        if (ddd === '55' && caret >= LAST_GROUP_CARET) continue;
         const index = numberIndexOfCaret(display, caret);
         for (const digit of '0123456789') {
           if (isOtherReading(index, digit, ddd)) continue;

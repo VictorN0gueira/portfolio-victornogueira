@@ -57,6 +57,8 @@ const NOT_A_DDD_55_NUMBER_START: ReadonlySet<string> = new Set(['1', '6', '7', '
 // Um dígito digitado entre o espaço e esse 9 ("+55 81 49 ...") é o primeiro dígito do número: o grupo 2. É um só, porque se
 // digita uma tecla por vez; um 9 colado depois de vários dígitos ("+55 11 999999989") não é o 9 mostrado.
 const SHOWN_NINE = /^\+55 (\d{0,3}) (\d?)9(?= |$)/;
+// O 9 mostrado apagado de um número do DDD 55: "+55 55  8002" (dois espaços). Não há código do país nenhum nisso.
+const SHOWN_NINE_DELETED = /^\+55 (\d{2})  (\d[\d-]*)$/;
 // O número completo do DDD 55 com mais um dígito digitado no fim: "+55 55 9 NNNN-NNNN" + d.
 const FULL_DDD_55_PLUS_DIGIT = /^\+55 55 9 (\d{4})-(\d{4})(\d)$/;
 
@@ -110,7 +112,21 @@ function readFullDdd55PlusDigit(rest: string, digit: string): TypedNumber {
   return readTypedDigits(dropTypedCountryCode(typed));
 }
 
+/**
+ * Um valor que já é um número mostrado pelo campo ("+55 DD " e pelo menos seis dígitos depois do prefixo): o DDD 55 ali é o
+ * DDD, não um código do país digitado. Um código do país digitado à mão aparece nos primeiros dígitos ("+55 55 8"), antes
+ * de o campo ter mostrado número nenhum.
+ */
+const DISPLAY_AFTER_PREFIX = /^\+55 \d{2} /;
+const LONG_DISPLAY_MIN_DIGITS = 6;
+function isLongDisplay(raw: string): boolean {
+  return DISPLAY_AFTER_PREFIX.test(raw) && onlyDigits(raw).length - COUNTRY_CODE.length >= LONG_DISPLAY_MIN_DIGITS;
+}
+
 function readLocalDigits(raw: string): TypedNumber {
+  const deleted = SHOWN_NINE_DELETED.exec(raw);
+  if (deleted) return readTypedDigits(deleted[1] + onlyDigits(deleted[2]));
+
   const match = SHOWN_NINE.exec(raw);
   // Um dígito antes do 9 só vale depois de um DDD inteiro: "+55 0 19 9 ..." (um número colado com o zero de tronco) não é isso.
   const shown = match && (match[2] === '' || match[1].length === 2) ? match : null;
@@ -118,7 +134,8 @@ function readLocalDigits(raw: string): TypedNumber {
     const local = dropTrunkZero(toLocalDigits(raw));
     // Com o "+55" do campo na frente, o que vem depois pode ser um 55 digitado à mão (o código do país). Sem ele, o texto
     // inteiro é o número e o código do país, se havia um, já foi tirado por toLocalDigits.
-    return readTypedDigits(raw.trimStart().startsWith(COUNTRY_PREFIX) ? dropTypedCountryCode(local) : local);
+    const mayHaveTypedCountryCode = raw.trimStart().startsWith(COUNTRY_PREFIX) && !isLongDisplay(raw);
+    return readTypedDigits(mayHaveTypedCountryCode ? dropTypedCountryCode(local) : local);
   }
 
   const extra = FULL_DDD_55_PLUS_DIGIT.exec(raw);
