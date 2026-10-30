@@ -37,7 +37,8 @@ import { applyBlurRegions } from './blur-regions.mjs';
 import { cropsFor } from './project-crops.mjs';
 import { BLUR_DEFAULTS, blurKey, blurProblem, regionsFor } from './project-blur-regions.mjs';
 import { mergeEntries, readManifestEntries, renderManifest } from './project-images-manifest.mjs';
-import { publishRun } from './project-images-publish.mjs';
+import { backupDirOf, backupLeftoverMessage, publishRun } from './project-images-publish.mjs';
+import { UsageScanError, findUsedKeysInFile } from './project-images-usage.mjs';
 import { drawPreview } from './project-images-preview.mjs';
 
 export const WIDTHS = [800, 1600];
@@ -246,9 +247,15 @@ async function writePreviews(originals, previewDir, keepNames) {
 function checkDroppedKeysAreUnused(before, after, projectsFile) {
   const kept = new Set(after.map((entry) => entry.key));
   const dropped = before.map((entry) => entry.key).filter((key) => !kept.has(key));
-  if (dropped.length === 0 || !existsSync(projectsFile)) return;
-  const source = readFileSync(projectsFile, 'utf8');
-  const stillUsed = dropped.filter((key) => source.includes(`'${key}'`));
+  if (dropped.length === 0) return;
+  let stillUsed;
+  try {
+    stillUsed = findUsedKeysInFile(projectsFile, dropped);
+  } catch (error) {
+    if (!(error instanceof UsageScanError)) throw error;
+    // Fail closed: when the usage cannot be told, nothing is dropped.
+    fail(`--clean cannot tell which images ${basename(projectsFile)} uses (${error.message}); add --force-clean to drop them anyway`);
+  }
   if (stillUsed.length > 0) fail(`--clean would drop ${stillUsed.join(', ')}, which ${basename(projectsFile)} still uses (add --force-clean to do it anyway)`);
 }
 
@@ -263,6 +270,8 @@ export async function run(options) {
     await writePreviews(originals, previewDir, keepNames);
     return { entries: [], removed: [] };
   }
+  // A backup left by a run that could not undo itself is the only copy of the old files: never start over it.
+  if (existsSync(backupDirOf(outputDir))) fail(backupLeftoverMessage(backupDirOf(outputDir)));
   const slugs = new Set(originals.map((original) => original.slug));
   // Read first: a manifest that cannot be read stops the run before any image is processed.
   const existingEntries = readManifestEntries(manifestFile);

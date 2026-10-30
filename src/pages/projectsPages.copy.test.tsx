@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { getProjectBySlug } from '../data/projects';
 import { DASH_RULE, FIRST_PERSON_RULE, NUMBER_RULE, SALES_RULE, SLASH_RULE, withoutAllowedNumbers } from '../test/projectCopy';
 import { renderWithProviders } from '../test/render';
 import ProjectDetailPage from './ProjectDetailPage';
@@ -8,6 +9,8 @@ import ProjectsPage from './ProjectsPage';
 
 const TEST_TIMEOUT_MS = 20_000;
 const LAZY_LOAD_TIMEOUT_MS = 8000;
+const MIN_TEXT_LENGTH = 200;
+const CASE_SLUGS = ['dizpara', 'portal-link-in-bio'];
 
 /** What a visitor or a screen reader gets from a rendered page: the text, the accessible names and the image descriptions. */
 function readableText(rendered: HTMLElement): string {
@@ -28,19 +31,30 @@ describe('the rendered projects pages follow the copy rules', { timeout: TEST_TI
     await screen.findByRole('region', { name: 'Projetos' }, { timeout: LAZY_LOAD_TIMEOUT_MS });
     const listText = readableText(list.container);
     list.unmount();
-    const cases = ['dizpara', 'portal-link-in-bio'].map((slug) => {
+    const cases = CASE_SLUGS.map((slug) => {
       const { container, unmount } = renderWithProviders(
         <Routes>
           <Route path="/projetos/:slug" element={<ProjectDetailPage />} />
         </Routes>,
         { route: `/projetos/${slug}` },
       );
+      // The page has really rendered: its own h1 is there before anything is scanned.
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(getProjectBySlug(slug)?.title);
       const text = readableText(container);
       unmount();
       return [`case ${slug}`, text] as [string, string];
     });
     return [['list', listText], ...cases];
   }
+
+  it('scans real pages: each one rendered its title and gives a long text to the rules', async () => {
+    const scanned = await pages();
+
+    expect(scanned.map(([name]) => name)).toEqual(['list', ...CASE_SLUGS.map((slug) => `case ${slug}`)]);
+    for (const [name, text] of scanned) expect(text.length, name).toBeGreaterThan(MIN_TEXT_LENGTH);
+    expect(scanned[0][1]).toContain('Projetos');
+    CASE_SLUGS.forEach((slug, index) => expect(scanned[index + 1][1]).toContain(getProjectBySlug(slug)?.title));
+  });
 
   it.each([
     ['dashes and look-alikes', DASH_RULE],

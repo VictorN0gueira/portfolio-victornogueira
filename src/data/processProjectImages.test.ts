@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import sharp from 'sharp';
@@ -14,7 +14,9 @@ import {
   shareNameFor,
   widthsFor,
 } from '../../scripts/process-project-images.mjs';
-import { publishRun } from '../../scripts/project-images-publish.mjs';
+import { UndoFailedError, backupDirOf, publishRun } from '../../scripts/project-images-publish.mjs';
+import { UsageScanError, findUsedKeys, findUsedKeysInFile, stringLiterals } from '../../scripts/project-images-usage.mjs';
+import { projects } from './projects';
 import { mergeEntries, parseManifest, readManifestEntries, renderManifest, writeFileAtomic } from '../../scripts/project-images-manifest.mjs';
 import { regionsFor } from '../../scripts/project-blur-regions.mjs';
 import { regionBounds } from '../../scripts/blur-regions.mjs';
@@ -327,15 +329,94 @@ describe('publishing a run', () => {
     expect(readdirSync(workDir).filter((name) => name.endsWith('.tmp'))).toEqual([]);
   });
 
-  it('writes the manifest last: after the images, never before', () => {
-    const stagingDir = stage('travel-ia', { 'cover-800.webp': 'new cover' });
+  /** A rename that records every call, and throws for the ones the test picks. */
+  function spyOps(failWhen: (from: string, to: string) => boolean = () => false) {
+    const calls: Array<[string, string]> = [];
+    const ops = {
+      rename: (from: string, to: string) => {
+        calls.push([from, to]);
+        if (failWhen(from, to)) throw new Error('injected rename failure');
+        renameSync(from, to);
+      },
+      remove: (path: string) => rmSync(path, { recursive: true, force: true }),
+    };
+    return { ops, calls };
+  }
+
+  function seedTravel(): { stagingDir: string; manifestFile: string } {
+    mkdirSync(join(workDir, 'output', 'travel-ia'), { recursive: true });
+    writeFileSync(join(workDir, 'output', 'travel-ia', 'cover-800.webp'), 'old cover');
+    writeFileSync(join(workDir, 'output', 'travel-ia', 'stale-800.webp'), 'old stale');
     const manifestFile = join(workDir, 'manifest.ts');
     writeFileSync(manifestFile, 'old manifest');
+    return { stagingDir: stage('travel-ia', { 'cover-800.webp': 'new cover', 'extra-800.webp': 'new extra' }), manifestFile };
+  }
 
-    publishRun({ stagingDir, outputDir: join(workDir, 'output'), slugs: new Set(['travel-ia']), clean: false, manifestFile, manifestText: 'new manifest' });
+  function publish(stagingDir: string, manifestFile: string, ops: ReturnType<typeof spyOps>['ops']) {
+    return publishRun({ stagingDir, outputDir: join(workDir, 'output'), slugs: new Set(['travel-ia']), clean: true, manifestFile, manifestText: 'new manifest', ops });
+  }
 
+  it('renames the manifest only after every image is in place', () => {
+    const { stagingDir, manifestFile } = seedTravel();
+    const { ops, calls } = spyOps();
+
+    publish(stagingDir, manifestFile, ops);
+
+    const manifestStep = calls.findIndex(([, to]) => to === manifestFile);
+    const lastImageStep = calls.reduce((last, [, to], index) => (to.includes(join('output', 'travel-ia')) ? index : last), -1);
+    expect(manifestStep).toBe(calls.length - 1);
+    expect(lastImageStep).toBeGreaterThanOrEqual(0);
+    expect(manifestStep).toBeGreaterThan(lastImageStep);
     expect(readFileSync(manifestFile, 'utf8')).toBe('new manifest');
     expect(readFileSync(join(workDir, 'output', 'travel-ia', 'cover-800.webp'), 'utf8')).toBe('new cover');
+    expect(existsSync(backupDirOf(join(workDir, 'output')))).toBe(false);
+  });
+
+  it('restores every image byte for byte and keeps the old manifest when the final manifest rename fails', () => {
+    const { stagingDir, manifestFile } = seedTravel();
+    const { ops } = spyOps((_from, to) => to === manifestFile);
+
+    expect(() => publish(stagingDir, manifestFile, ops)).toThrow(/injected rename failure/);
+
+    expect(readFileSync(join(workDir, 'output', 'travel-ia', 'cover-800.webp'), 'utf8')).toBe('old cover');
+    expect(readFileSync(join(workDir, 'output', 'travel-ia', 'stale-800.webp'), 'utf8')).toBe('old stale');
+    expect(existsSync(join(workDir, 'output', 'travel-ia', 'extra-800.webp'))).toBe(false);
+    expect(readFileSync(manifestFile, 'utf8')).toBe('old manifest');
+    expect(readdirSync(workDir).filter((name) => name.endsWith('.tmp'))).toEqual([]);
+    expect(existsSync(backupDirOf(join(workDir, 'output')))).toBe(false);
+  });
+
+  it('keeps the backup, names it and says how to recover, when the undo itself fails', () => {
+    const { stagingDir, manifestFile } = seedTravel();
+    // The manifest rename fails, and so does every move back out of the backup.
+    const { ops } = spyOps((from, to) => to === manifestFile || from.includes('.backup'));
+
+    let error: unknown;
+    try {
+      publish(stagingDir, manifestFile, ops);
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(UndoFailedError);
+    expect((error as Error).message).toContain(backupDirOf(join(workDir, 'output')));
+    expect((error as Error).message).toMatch(/by hand/);
+    const backup = backupDirOf(join(workDir, 'output'));
+    expect(readFileSync(join(backup, 'travel-ia', 'cover-800.webp'), 'utf8')).toBe('old cover');
+    expect(readFileSync(join(backup, 'travel-ia', 'stale-800.webp.dropped'), 'utf8')).toBe('old stale');
+    expect(readdirSync(workDir).filter((name) => name.endsWith('.tmp'))).toEqual([]);
+  });
+
+  it('refuses to start a run while a backup of an earlier failed run exists, and touches nothing', async () => {
+    const backup = backupDirOf(join(workDir, 'output'));
+    mkdirSync(join(backup, 'travel-ia'), { recursive: true });
+    writeFileSync(join(backup, 'travel-ia', 'cover-800.webp'), 'the only copy');
+    await writeOriginal(options().inputDir, 'travel-ia', 'cover.png');
+
+    await expect(run(options())).rejects.toThrow(/earlier run failed/);
+
+    expect(readFileSync(join(backup, 'travel-ia', 'cover-800.webp'), 'utf8')).toBe('the only copy');
+    expect(existsSync(join(workDir, 'manifest.ts'))).toBe(false);
   });
 
   it('removes a leftover .staging of an interrupted run at the start of the next run', async () => {
@@ -360,5 +441,55 @@ describe('publishing a run', () => {
 
     const result = await run(options({ clean: true, forceClean: true, projectsFile }));
     expect(result.removed).toEqual(['travel-ia/stale-800.webp']);
+  });
+});
+
+describe('the usage scan that guards --clean', () => {
+  const KEYS = ['travel-ia/cover', 'dizpara/lista-de-leads'];
+
+  it.each([
+    ['single quotes', "shot('travel-ia/cover', 'x')"],
+    ['double quotes', 'shot("travel-ia/cover", "x")'],
+    ['backticks without a placeholder', 'shot(`travel-ia/cover`, `x`)'],
+    ['a comment', "// was 'travel-ia/cover'"],
+  ])('sees a key written with %s as used', (_label, source) => {
+    expect(findUsedKeys(source, KEYS)).toEqual(['travel-ia/cover']);
+  });
+
+  it('does not see a key that only looks alike', () => {
+    expect(findUsedKeys("shot('travel-ia/cover-2', 'x')", KEYS)).toEqual([]);
+  });
+
+  it.each([
+    ['a template with a placeholder', 'shot(`travel-ia/${name}`, `x`)'],
+    ['literals joined with +', "shot('travel-ia/' + 'cover', 'x')"],
+  ])('refuses a source that builds a key at run time: %s', (_label, source) => {
+    expect(() => findUsedKeys(source, KEYS)).toThrow(UsageScanError);
+  });
+
+  it('refuses a file that does not exist', () => {
+    expect(() => findUsedKeysInFile(join(workDir, 'missing.ts'), KEYS)).toThrow(/does not exist/);
+  });
+
+  it('reads literals of any quote style, with escapes', () => {
+    expect([...stringLiterals(`const a = 'it\\'s'; const b = "x"; const c = \`y\`;`)].sort()).toEqual(["it\\'s", 'x', 'y']);
+  });
+
+  it('canary: sees every image the real src/data/projects.ts shows as used', () => {
+    const keysShown = projects.flatMap((project) => project.shots.map((shot) => /^\/projects\/(.+)-\d+\.webp$/.exec(shot.image.src)?.[1] as string));
+    const real = resolve(REPO_ROOT, 'src', 'data', 'projects.ts');
+
+    expect(keysShown).toHaveLength(21);
+    expect(findUsedKeysInFile(real, keysShown).sort()).toEqual([...keysShown].sort());
+  });
+
+  it('refuses --clean, with exit code semantics of a PipelineError, when the projects file cannot be scanned', async () => {
+    const projectsFile = join(workDir, 'projects.ts');
+    writeFileSync(projectsFile, 'shot(`travel-ia/${name}`, `x`)');
+    seedOutput('travel-ia', ['stale-800.webp', 'cover-800.webp'], [{ ...ENTRY, key: 'travel-ia/stale' }, ENTRY]);
+    await writeOriginal(options().inputDir, 'travel-ia', 'cover.png');
+
+    await expect(run(options({ clean: true, projectsFile }))).rejects.toThrow(/cannot tell which images/);
+    expect(existsSync(join(workDir, 'output', 'travel-ia', 'stale-800.webp'))).toBe(true);
   });
 });

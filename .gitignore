@@ -21,3 +21,4 @@ e2e/__shots__/
 
 # Image pipeline staging (an interrupted run could leave blurred files here)
 public/projects/.staging/
+public/projects/.backup/
