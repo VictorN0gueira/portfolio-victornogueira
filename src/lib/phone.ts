@@ -2,6 +2,8 @@ const COUNTRY_CODE = '55';
 const COUNTRY_PREFIX = '+55';
 const MOBILE_NINE = '9';
 export const LOCAL_PHONE_LENGTHS: readonly number[] = Object.freeze([10, 11]);
+/** DDD, o 9 e oito dígitos. */
+const MOBILE_LOCAL_LENGTH = 11;
 
 /**
  * Dígitos locais (DDD + número), sem o código do país.
@@ -19,6 +21,16 @@ export function toLocalDigits(raw: string): string {
   const hasCountryPrefix = raw.trimStart().startsWith(COUNTRY_PREFIX);
   const looksLikeLocalNumber = LOCAL_PHONE_LENGTHS.includes(digits.length);
   return hasCountryPrefix || !looksLikeLocalNumber ? digits.substring(COUNTRY_CODE.length) : digits;
+}
+
+/**
+ * O número local está completo? Dez ou onze dígitos, e um de dez dígitos com o 9 como terceiro dígito não conta: o campo
+ * sempre mostra o 9 do celular, então "DD 9 + 7 dígitos" é um número com um dígito a menos (ou um celular antigo de oito
+ * dígitos), nunca um número completo. Um fixo vem como DD + 8 dígitos, mostrado com o 9 que o campo coloca (11 dígitos).
+ */
+export function isCompleteLocalNumber(local: string): boolean {
+  if (!LOCAL_PHONE_LENGTHS.includes(local.length)) return false;
+  return local.length === MOBILE_LOCAL_LENGTH || local[2] !== MOBILE_NINE;
 }
 
 /**

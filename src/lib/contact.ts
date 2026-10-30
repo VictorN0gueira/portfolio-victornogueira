@@ -1,4 +1,4 @@
-import { LOCAL_PHONE_LENGTHS, toEvolutionFormat, toLocalDigits } from './phone';
+import { isCompleteLocalNumber, toEvolutionFormat, toLocalDigits } from './phone';
 
 // Webhooks n8n de ativação. Disparam a notificação por email e WhatsApp para a VN One
 // e são o único caminho pelo qual um lead chega ao dono do negócio.
@@ -79,7 +79,7 @@ export function validateContact(f: ContactFields, method: ContactMethod): Contac
   if (email) {
     errors.email = email;
   }
-  if (method === 'whatsapp' && !LOCAL_PHONE_LENGTHS.includes(toLocalDigits(f.whatsapp).length)) {
+  if (method === 'whatsapp' && !isCompleteLocalNumber(toLocalDigits(f.whatsapp))) {
     errors.whatsapp = CONTACT_ERRORS.whatsapp;
   }
   const mensagem = messageError(f.mensagem.trim());
