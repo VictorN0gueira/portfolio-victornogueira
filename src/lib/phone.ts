@@ -54,7 +54,9 @@ const NOT_A_DDD_55_NUMBER_START: ReadonlySet<string> = new Set(['1', '6', '7', '
 // O 9 que o campo coloca aparece como palavra própria: "+55 DD 9 ...". Quem lê o valor sabe qual 9 é esse. O que vem antes
 // dele costuma ser o DDD (2 dígitos), mas uma edição no meio do DDD deixa 0, 1 ou 3: apagar ou inserir um dígito do DDD não
 // pode empurrar esse 9 para dentro do DDD nem para dentro do número.
-const SHOWN_NINE = /^\+55 (\d{0,3}) 9(?= |$)/;
+// Um dígito digitado entre o espaço e esse 9 ("+55 81 49 ...") é o primeiro dígito do número: o grupo 2. É um só, porque se
+// digita uma tecla por vez; um 9 colado depois de vários dígitos ("+55 11 999999989") não é o 9 mostrado.
+const SHOWN_NINE = /^\+55 (\d{0,3}) (\d?)9(?= |$)/;
 // O número completo do DDD 55 com mais um dígito digitado no fim: "+55 55 9 NNNN-NNNN" + d.
 const FULL_DDD_55_PLUS_DIGIT = /^\+55 55 9 (\d{4})-(\d{4})(\d)$/;
 
@@ -109,7 +111,9 @@ function readFullDdd55PlusDigit(rest: string, digit: string): TypedNumber {
 }
 
 function readLocalDigits(raw: string): TypedNumber {
-  const shown = SHOWN_NINE.exec(raw);
+  const match = SHOWN_NINE.exec(raw);
+  // Um dígito antes do 9 só vale depois de um DDD inteiro: "+55 0 19 9 ..." (um número colado com o zero de tronco) não é isso.
+  const shown = match && (match[2] === '' || match[1].length === 2) ? match : null;
   if (!shown) {
     const local = dropTrunkZero(toLocalDigits(raw));
     // Com o "+55" do campo na frente, o que vem depois pode ser um 55 digitado à mão (o código do país). Sem ele, o texto
@@ -121,7 +125,7 @@ function readLocalDigits(raw: string): TypedNumber {
   if (extra) return readFullDdd55PlusDigit(extra[1] + extra[2], extra[3]);
 
   // O 9 mostrado já foi lido: os dígitos depois dele são do número, e o terceiro deles não é mais um terceiro dígito digitado.
-  return { local: shown[1] + onlyDigits(raw.slice(shown[0].length)), hasTypedNine: true };
+  return { local: shown[1] + shown[2] + onlyDigits(raw.slice(shown[0].length)), hasTypedNine: true };
 }
 
 /**
