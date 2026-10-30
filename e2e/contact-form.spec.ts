@@ -125,6 +125,27 @@ test.describe('contact form webhooks', () => {
     await testInfo.attach('whatsapp-payload.json', { body: JSON.stringify(call, null, 2), contentType: 'application/json' });
   });
 
+  test('keeps every 9 when a mobile number whose local part starts with 9 is typed key by key', async ({ page, network }) => {
+    await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
+    const form = await openForm(page);
+
+    await useWhatsapp(page, form);
+    await fillCommon(form);
+    const whatsapp = form.getByLabel('WhatsApp', { exact: true });
+    await whatsapp.click({ position: { x: 2, y: 20 } });
+    // 81 99999-8888: the 9 after the DDD is the field's own example shape, and the digits after it are 9s as well.
+    await whatsapp.pressSequentially('81999998888');
+    await expect(whatsapp).toHaveValue('+55 81 9 9999-8888');
+    await form.getByRole('checkbox').check();
+    await submit(form).click();
+
+    await expect(page.getByRole('heading', { level: 4, name: SUCCESS_TITLE })).toBeVisible();
+    expect(network.calls).toHaveLength(1);
+    const [call] = network.calls;
+    expect(new URL(call.url).pathname).toBe(WHATSAPP_PATH);
+    expect(call.payload.whatsapp).toBe('558199998888');
+  });
+
   test('starts over with Enviar outra', async ({ page, network }) => {
     await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
     const form = await openForm(page);
@@ -607,7 +628,10 @@ test.describe('contact form validation and failures', () => {
 // The sizes are asserted on both projects: a desktop window can be narrowed, and a phone is the case that matters.
 test.describe('contact form on small screens', () => {
   function textControls(form: Locator): Locator {
-    return form.locator('input[type="text"], input[type="email"], textarea, button[aria-haspopup="listbox"]');
+    // The honeypot (tabindex -1, in an aria-hidden wrapper) is an input no visitor meets: it is not a control to measure.
+    return form.locator(
+      'input[type="text"]:not([tabindex="-1"]), input[type="email"], textarea, button[aria-haspopup="listbox"]',
+    );
   }
 
   async function fontSizes(controls: Locator): Promise<number[]> {

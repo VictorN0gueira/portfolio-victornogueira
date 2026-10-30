@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { formatWhatsappDisplay } from '../../lib/phone';
 import { ContactInput, ContactMessage, ContactService } from './ContactFieldControls';
+import ContactHoneypot from './ContactHoneypot';
+import FieldError from './FieldError';
 import type { ContactFormState } from './useContactForm';
 
 const SWAP_MOTION = {
@@ -8,6 +10,9 @@ const SWAP_MOTION = {
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -10 },
 } as const;
+
+/** Id of the cooldown line, the same way a field error has one. */
+const NOTICE_ID = 'contact-notice';
 
 interface ContactFormFieldsProps {
   form: ContactFormState;
@@ -42,12 +47,23 @@ function ContactMethodField({ form }: ContactFormFieldsProps) {
   );
 }
 
-/** Nome, serviço, the contact field of the method and the message, in that order. */
+/**
+ * Nome, serviço, the contact field of the method and the message, in that order, then the cooldown line and the
+ * honeypot. The wrapper takes no space (display contents) and listens for the first keyboard or pointer gesture, which
+ * starts the clock of the time trap (see botGuard.ts).
+ */
 export function ContactFormFields({ form }: ContactFormFieldsProps) {
   const { formData, servico, errors, setField, chooseService } = form;
 
   return (
-    <>
+    <div
+      className="contents"
+      onKeyDownCapture={(event) => {
+        // Enter sends a form, so it is not the visitor starting to fill one (see botGuard.ts).
+        if (event.key !== 'Enter') form.markInteraction();
+      }}
+      onPointerDownCapture={form.markInteraction}
+    >
       <ContactInput field="nome" value={formData.nome} error={errors.nome} onChange={(value) => setField('nome', value)} />
       <ContactService value={servico} error={errors.servico} onChange={chooseService} />
       <ContactMethodField form={form} />
@@ -56,7 +72,9 @@ export function ContactFormFields({ form }: ContactFormFieldsProps) {
         error={errors.mensagem}
         onChange={(value) => setField('mensagem', value)}
       />
-    </>
+      <FieldError id={NOTICE_ID} message={form.notice} />
+      <ContactHoneypot value={form.honeypot} onChange={form.setHoneypot} />
+    </div>
   );
 }
 

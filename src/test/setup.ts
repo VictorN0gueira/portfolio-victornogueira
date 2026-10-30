@@ -6,6 +6,14 @@ import { createMediaQueryList } from './matchMedia';
 
 const ASYNC_UTIL_TIMEOUT_MS = 5000;
 
+// The time trap and the cooldown of the contact form (see botGuard.ts) would make every test that fills the form and
+// submits at once wait 2 seconds or hit the cooldown, so they are off in all tests; the honeypot stays on. The tests of the guard itself take the
+// real module back with: vi.mock('./botGuard', async (importOriginal) => importOriginal());
+vi.mock('../components/contact/botGuard', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../components/contact/botGuard')>()),
+  judgeSubmit: (honeypot: string) => (honeypot === '' ? { action: 'send', waitMs: 0 } : { action: 'bot' }),
+}));
+
 class ResizeObserverMock implements ResizeObserver {
   observe(): void {}
   unobserve(): void {}

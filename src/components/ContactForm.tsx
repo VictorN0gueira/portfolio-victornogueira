@@ -25,9 +25,9 @@ export default function ContactForm({ initialMessage, prefillNonce }: ContactFor
   return (
     <>
       <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
-        {isSent ? `${title}. ${text(form.method)}` : ''}
+        {isSent ? `${title}. ${text(form.sentMethod)}` : ''}
       </p>
-      {isSent ? <ContactSuccess method={form.method} onReset={form.reset} /> : <ContactPanel form={form} />}
+      {isSent ? <ContactSuccess method={form.sentMethod} onReset={form.reset} /> : <ContactPanel form={form} />}
     </>
   );
 }
