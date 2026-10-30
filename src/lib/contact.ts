@@ -29,7 +29,14 @@ export type ContactPayload = {
 
 const NAME_MIN_LENGTH = 2;
 const MESSAGE_MIN_LENGTH = 10;
+/** The longest e-mail address there is (RFC 5321). */
+export const EMAIL_MAX = 254;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/** The pattern only runs on a string that is already short enough, so a huge paste never reaches the regex. */
+function isValidEmail(email: string): boolean {
+  return email.length <= EMAIL_MAX && EMAIL_PATTERN.test(email);
+}
 
 const CONTACT_ERRORS = {
   nome: 'Conta pra gente seu nome',
@@ -49,7 +56,7 @@ export function validateContact(f: ContactFields, method: ContactMethod): Contac
   if (f.nome.trim().length < NAME_MIN_LENGTH) {
     errors.nome = CONTACT_ERRORS.nome;
   }
-  if (method === 'email' && !EMAIL_PATTERN.test(f.email.trim())) {
+  if (method === 'email' && !isValidEmail(f.email.trim())) {
     errors.email = CONTACT_ERRORS.email;
   }
   if (method === 'whatsapp' && !LOCAL_PHONE_LENGTHS.includes(toLocalDigits(f.whatsapp).length)) {
