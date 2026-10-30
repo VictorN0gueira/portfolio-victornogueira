@@ -36,6 +36,8 @@ describe('the WhatsApp field typed key by key', () => {
         for (const digits of [`${ddd}9${part}`, `${ddd}${part}`]) {
           // A ten digit number whose part starts with 9 reads that 9 as the mobile 9: the one ambiguity, left to the pure test.
           if (digits.length === 10 && part.startsWith('9')) continue;
+          // DDD 55 then eight digits starting 0, 1, 6, 7 or 8 is no real number: the typed 55 is read as the country code (P2).
+          if (digits.length === 10 && ddd === '55' && '01678'.includes(part[0])) continue;
           await clearField(user, whatsapp);
           await user.type(whatsapp, digits);
           const typed = whatsapp.value;

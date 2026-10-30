@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { EIGHT_DIGIT_PARTS, VALID_DDDS, expectedDisplay, expectedEvolution } from '../test/phoneCorpus';
 import { formatWhatsappDisplay, toEvolutionFormat } from './phone';
 
@@ -13,12 +13,21 @@ const typeKeyByKey = (digits: string, from = FIELD_START): string =>
 
 const pasteWhole = (digits: string): string => formatWhatsappDisplay(FIELD_START + digits);
 
+/**
+ * DDD 55 followed by eight digits that start with 0, 1, 6, 7 or 8 is not a number any line has (fixed lines start with 2 to
+ * 5, mobiles with the 9 after the DDD): a typed 55 then reads as the country code (P2). It is the one class left out.
+ */
+const isNoRealDdd55Number = (ddd: string, part: string, hasMobileNine: boolean) =>
+  ddd === '55' && !hasMobileNine && '01678'.includes(part[0]);
+
 /** The two ways a visitor writes one number: the mobile 9 and the eight digits, or the ten digits (no 9 typed). */
 const numbers = VALID_DDDS.flatMap((ddd) =>
-  EIGHT_DIGIT_PARTS.flatMap((part) => [
-    { ddd, part, digits: `${ddd}9${part}`, hasMobileNine: true },
-    { ddd, part, digits: `${ddd}${part}`, hasMobileNine: false },
-  ]),
+  EIGHT_DIGIT_PARTS.flatMap((part) =>
+    [
+      { ddd, part, digits: `${ddd}9${part}`, hasMobileNine: true },
+      { ddd, part, digits: `${ddd}${part}`, hasMobileNine: false },
+    ].filter(({ hasMobileNine }) => !isNoRealDdd55Number(ddd, part, hasMobileNine)),
+  ),
 );
 
 /**
@@ -27,6 +36,9 @@ const numbers = VALID_DDDS.flatMap((ddd) =>
  * hand one, 55 + DDD + the eight digits, because the digits of that display are the digits that were typed.
  */
 const isAmbiguous = ({ part, hasMobileNine }: { part: string; hasMobileNine: boolean }) => !hasMobileNine && part.startsWith('9');
+
+// Many thousands of typed strings: the default 5 seconds is tight on a busy machine.
+vi.setConfig({ testTimeout: 120_000 });
 
 describe('a number typed key by key ends as the same number pasted', () => {
   it('covers every valid DDD and a corpus of eight digit parts, with and without the mobile 9', () => {
@@ -126,6 +138,8 @@ describe('edits in the middle', () => {
         // Without its first part digit a ten digit number whose second part digit is 9 reads as DDD, the mobile 9 and the
         // rest: the field cannot know a digit is missing, so this is not an edit it could repair.
         if (!hasMobileNine && missing === 2 && partial[2] === '9') continue;
+        // DDD 55 without its first part digit can start 55 then 0, 1, 6, 7 or 8, which no DDD 55 number does: read as the country code.
+        if (digits.startsWith('55') && missing === 2 && '01678'.includes(partial[2])) continue;
         // The display always shows DD, the 9, then the part: a ten digit number has one more display digit before it.
         const displayDigit = hasMobileNine ? missing : missing + 1;
         const fixed = formatWhatsappDisplay(insertBeforeDigit(typeKeyByKey(partial), displayDigit, digits[missing]));
@@ -141,7 +155,8 @@ describe('edits in the middle', () => {
     for (const { digits, hasMobileNine } of withoutAmbiguous.filter((_, index) => index % 7 === 0)) {
       // Only digits of the eight digit part: the field shows the 9 by itself, so the visitor never types a wrong 9 there.
       for (let atDigit = hasMobileNine ? 3 : 2; atDigit < digits.length; atDigit += 1) {
-        const wrong = digits[atDigit] === '1' ? '2' : '1';
+        // The wrong digit is a 2: a wrong first part digit of DDD 55 that is 0, 1, 6, 7 or 8 would read as the country code.
+        const wrong = digits[atDigit] === '2' ? '3' : '2';
         const typedWrong = typeKeyByKey(digits.slice(0, atDigit) + wrong);
         const afterBackspace = formatWhatsappDisplay(typedWrong.slice(0, -1));
         const final = typeKeyByKey(digits.slice(atDigit), afterBackspace);

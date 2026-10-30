@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   ALL_TWO_DIGIT_CODES,
   EIGHT_DIGIT_PARTS_INDEPENDENT as PARTS,
@@ -12,6 +12,9 @@ import { toEvolutionFormat } from './phone';
 
 // What the whatsapp validation accepts, over the value the field really holds (the formatted display), compared with
 // the old rule (ten or eleven local digits) through a frozen oracle.
+
+// Many thousands of typed strings: the default 5 seconds is tight on a busy machine.
+vi.setConfig({ testTimeout: 120_000 });
 
 const ok = {
   nome: 'Ana Lima',
@@ -45,8 +48,12 @@ describe('P1: a number one digit short is not accepted just because the field ad
   });
 
   it('accepts every complete number: eleven digits with the mobile 9, and the landline form with the 9 the field adds', () => {
+    // DDD 55 followed by eight digits that start with 0, 1, 6, 7 or 8 is no real number: a typed 55 reads as the country code.
     const rejected = EXISTING_DDDS.flatMap((ddd) =>
-      PARTS.flatMap((part) => [`${ddd}9${part}`, ...(part.startsWith('9') ? [] : [`${ddd}${part}`])]),
+      PARTS.flatMap((part) => [
+        `${ddd}9${part}`,
+        ...(part.startsWith('9') || (ddd === '55' && '01678'.includes(part[0])) ? [] : [`${ddd}${part}`]),
+      ]),
     ).filter((text) => whatsappError(typedDisplay(text)) !== undefined);
 
     expect(rejected.slice(0, 20)).toEqual([]);

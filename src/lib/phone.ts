@@ -33,23 +33,95 @@ export function isCompleteLocalNumber(local: string): boolean {
   return local.length === MOBILE_LOCAL_LENGTH || local[2] !== MOBILE_NINE;
 }
 
+/** DDDs em uso no Brasil (ANATEL). */
+export const BRAZILIAN_DDDS: ReadonlySet<string> = new Set([
+  '11', '12', '13', '14', '15', '16', '17', '18', '19',
+  '21', '22', '24', '27', '28',
+  '31', '32', '33', '34', '35', '37', '38',
+  '41', '42', '43', '44', '45', '46', '47', '48', '49',
+  '51', '53', '54', '55',
+  '61', '62', '63', '64', '65', '66', '67', '68', '69',
+  '71', '73', '74', '75', '77', '79',
+  '81', '82', '83', '84', '85', '86', '87', '88', '89',
+  '91', '92', '93', '94', '95', '96', '97', '98', '99',
+]);
+
+const COUNTRY_CODED_MIN_DIGITS = 12;
+// Depois de um 55 digitado, um terceiro dígito que nenhum número do DDD 55 tem: fixo começa com 2 a 5 e celular com 9.
+// Então o 55 é o código do país e o terceiro dígito já é o primeiro do DDD.
+const NOT_A_DDD_55_NUMBER_START: ReadonlySet<string> = new Set(['1', '6', '7', '8']);
+// O 9 que o campo coloca aparece como palavra própria: "+55 DD 9 ...". Quem lê o valor sabe qual 9 é esse.
+const SHOWN_NINE = /^\+55 (\d{2}) 9(?= |$)/;
+// O número completo do DDD 55 com mais um dígito digitado no fim: "+55 55 9 NNNN-NNNN" + d.
+const FULL_DDD_55_PLUS_DIGIT = /^\+55 55 9 (\d{4})-(\d{4})(\d)$/;
+
+const onlyDigits = (text: string): string => text.replace(/\D/g, '');
+
+type TypedNumber = { local: string; hasTypedNine: boolean };
+
+/**
+ * Um 55 digitado à mão é o código do país, como quando o número é colado (R61 a R76): com 12 dígitos ou mais, com 11 e o
+ * terceiro não sendo o 9 do celular, ou quando o terceiro dígito nenhum número do DDD 55 poderia ter. O DDD 55 (Rio
+ * Grande do Sul) fica inteiro: 55 + 8 dígitos de fixo (2 a 5) ou 55 9 + 8 dígitos de celular.
+ */
+function dropTypedCountryCode(local: string): string {
+  if (!local.startsWith(COUNTRY_CODE) || local.length <= COUNTRY_CODE.length) return local;
+  const third = local[2];
+  const isCountryCoded =
+    local.length >= COUNTRY_CODED_MIN_DIGITS ||
+    (local.length === MOBILE_LOCAL_LENGTH && third !== MOBILE_NINE) ||
+    NOT_A_DDD_55_NUMBER_START.has(third);
+  return isCountryCoded ? local.substring(COUNTRY_CODE.length) : local;
+}
+
+/** Tira o 9 do celular digitado depois do DDD (o campo o mostra sozinho, como palavra própria). */
+function readTypedDigits(local: string): TypedNumber {
+  if (local.length > 2 && local[2] === MOBILE_NINE) {
+    return { local: local.substring(0, 2) + local.substring(3), hasTypedNine: true };
+  }
+  return { local, hasTypedNine: false };
+}
+
+/**
+ * O número completo do DDD 55 mais um dígito digitado no fim pode ser um engano (um dígito a mais), "55 8x ..." (um
+ * código do país digitado que o campo já tinha lido como DDD 55 + número) ou "55 9d ..." (o 9 do DDD 9d lido como o 9 do
+ * celular). Os dígitos mostrados são os mesmos nos três casos, então decide a estrutura: um primeiro dígito 1, 6, 7, 8 ou
+ * 9 só pode vir de "55 9d" (um "55 1x" já teria virado DDD 1x); com 2 a 5, vale o DDD que existe (2x, 3x, 4x, 5x) e, se
+ * ele não existir, o "9d" quando o dígito seguinte é de fixo (2 a 5) ou o 9 do celular. Sobra um caso ambíguo, o DDD 92 a
+ * 95 digitado com o código do país cujo número também forma um DDD 2x a 5x; o número colado, com todos os dígitos, vale.
+ */
+function readFullDdd55PlusDigit(rest: string, digit: string): TypedNumber {
+  const [first, second] = [rest[0], rest[1]];
+  const looksLikeNineD = !'2345'.includes(first) || (!BRAZILIAN_DDDS.has(first + second) && '23459'.includes(second));
+  const typed = looksLikeNineD ? `${COUNTRY_CODE}${MOBILE_NINE}${rest}${digit}` : `${COUNTRY_CODE}${rest}${digit}`;
+  return readTypedDigits(dropTypedCountryCode(typed));
+}
+
+function readLocalDigits(raw: string): TypedNumber {
+  const shown = SHOWN_NINE.exec(raw);
+  if (!shown) {
+    const local = toLocalDigits(raw);
+    // Com o "+55" do campo na frente, o que vem depois pode ser um 55 digitado à mão (o código do país). Sem ele, o texto
+    // inteiro é o número e o código do país, se havia um, já foi tirado por toLocalDigits.
+    return readTypedDigits(raw.trimStart().startsWith(COUNTRY_PREFIX) ? dropTypedCountryCode(local) : local);
+  }
+
+  const extra = FULL_DDD_55_PLUS_DIGIT.exec(raw);
+  if (extra) return readFullDdd55PlusDigit(extra[1] + extra[2], extra[3]);
+
+  // O 9 mostrado já foi lido: os dígitos depois dele são do número, e o terceiro deles não é mais um terceiro dígito digitado.
+  return { local: shown[1] + onlyDigits(raw.slice(shown[0].length)), hasTypedNine: true };
+}
+
 /**
  * Formata para exibição: +55 DD 9 NNNN-NNNN
  * O +55 e o 9 são inseridos automaticamente. Usuário digita apenas DDD + 8 dígitos.
  */
 export function formatWhatsappDisplay(raw: string): string {
-  // Remove o 55 inicial se for o código do país
-  let local = toLocalDigits(raw);
-
-  // Remove o 9 se o usuário digitou após o DDD (será adicionado automaticamente)
-  let hasTypedNine = false;
-  if (local.length > 2 && local[2] === MOBILE_NINE) {
-    local = local.substring(0, 2) + local.substring(3);
-    hasTypedNine = true;
-  }
+  const { hasTypedNine, local: typed } = readLocalDigits(raw);
 
   // Limita a 10 dígitos (DDD 2 + número 8)
-  local = local.slice(0, 10);
+  const local = typed.slice(0, 10);
 
   if (local.length === 0) return '+55 ';
   // DDD e o 9 digitados, ainda sem nenhum dígito do número: o 9 continua visível. Sem isso o 9 sumiria e o próximo 9
