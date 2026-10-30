@@ -27,6 +27,8 @@ import ContactForm from './ContactForm';
 // The legal line, copied character by character from the form as it was before the redesign.
 const ORIGINAL_CONSENT_TEXT =
   'Li e concordo com a Política de Privacidade e autorizo o uso dos meus dados para retorno do contato.';
+// The hidden hint is part of the link name (jsdom trims the space before it, a browser keeps it).
+const POLICY_LINK_NAME = /^Política de Privacidade ?\(abre em nova aba\)$/;
 const ERROR_TEXT = 'Não deu pra enviar. Tenta de novo ou fala direto pelo WhatsApp.';
 const SERVICE_TRIGGER_NAME = /selecione um serviço/i;
 
@@ -192,19 +194,22 @@ describe('ContactForm consent', () => {
     renderWithProviders(<ContactForm />);
     const label = screen.getByRole('checkbox').closest('label') as HTMLElement;
 
-    expect(label.textContent).toBe(ORIGINAL_CONSENT_TEXT);
+    // The new tab hint is visually hidden (sr-only); the sentence a visitor reads is the original one.
+    const copy = label.cloneNode(true) as HTMLElement;
+    copy.querySelectorAll('.sr-only').forEach((hidden) => hidden.remove());
+    expect(copy.textContent).toBe(ORIGINAL_CONSENT_TEXT);
   });
 
   it('keeps the link to the privacy policy inside the consent text', () => {
     renderWithProviders(<ContactForm />);
     const label = screen.getByRole('checkbox').closest('label') as HTMLElement;
 
-    expect(within(label).getByRole('link', { name: 'Política de Privacidade' })).toHaveAttribute('href', '/privacidade');
+    expect(within(label).getByRole('link', { name: POLICY_LINK_NAME })).toHaveAttribute('href', '/privacidade');
   });
 
   it('gives the policy link the white focus ring, since the default one is dark on the black', () => {
     renderWithProviders(<ContactForm />);
-    const link = screen.getByRole('link', { name: 'Política de Privacidade' });
+    const link = screen.getByRole('link', { name: POLICY_LINK_NAME });
 
     expect(link).toHaveClass('underline', 'text-vn-white', 'focus-visible:outline-2', 'focus-visible:outline-vn-white');
   });

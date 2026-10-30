@@ -23,8 +23,10 @@ export function ContactConsent({ checked, onChange }: ContactConsentProps) {
       />
       <span className="text-sm leading-relaxed text-vn-gray-light group-hover:text-vn-white">
         Li e concordo com a{' '}
-        <Link to="/privacidade" className={LINK_CLASS}>
+        {/* Opens in a new tab so reading the policy never costs the visitor what they typed. */}
+        <Link to="/privacidade" target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
           Política de Privacidade
+          <span className="sr-only"> (abre em nova aba)</span>
         </Link>{' '}
         e autorizo o uso dos meus dados para retorno do contato.
       </span>
