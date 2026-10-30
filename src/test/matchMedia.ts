@@ -13,6 +13,35 @@ export interface MatchMediaStub {
   listenerCount: (query: string) => number;
 }
 
+type ListenerFunction = (type: string, listener: ChangeListener) => void;
+
+interface MediaQueryListBehavior {
+  /** Read each time `matches` is read, so a later flip is seen. Defaults to never matching. */
+  isMatching?: () => boolean;
+  addEventListener?: ListenerFunction;
+  removeEventListener?: ListenerFunction;
+}
+
+/**
+ * The one MediaQueryList look alike of the unit tests. src/test/setup.ts installs it for every query with the
+ * defaults (no match, inert listeners), and stubMatchMedia below gives it a state and real listeners.
+ */
+export function createMediaQueryList(query: string, behavior: MediaQueryListBehavior = {}): MediaQueryList {
+  const { isMatching = () => false, addEventListener = vi.fn(), removeEventListener = vi.fn() } = behavior;
+  return {
+    get matches() {
+      return isMatching();
+    },
+    media: query,
+    onchange: null,
+    addEventListener,
+    removeEventListener,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(() => false),
+  } as MediaQueryList;
+}
+
 /**
  * Replaces window.matchMedia with a controllable stub. Only the queries given as true match;
  * every other query answers false, so a test never reads as reduced motion by accident.
@@ -31,19 +60,18 @@ export function stubMatchMedia(initial: Record<string, boolean> = {}): MatchMedi
   };
 
   const removeEventListener = vi.fn();
-  const matchMedia = vi.fn((query: string) => ({
-    get matches() {
-      return state.get(query) ?? false;
-    },
-    media: query,
-    addEventListener: (type: string, listener: ChangeListener) => {
-      if (type === 'change') listenersFor(query).add(listener);
-    },
-    removeEventListener: (type: string, listener: ChangeListener) => {
-      removeEventListener(type, listener);
-      if (type === 'change') listenersFor(query).delete(listener);
-    },
-  }));
+  const matchMedia = vi.fn((query: string) =>
+    createMediaQueryList(query, {
+      isMatching: () => state.get(query) ?? false,
+      addEventListener: (type, listener) => {
+        if (type === 'change') listenersFor(query).add(listener);
+      },
+      removeEventListener: (type, listener) => {
+        removeEventListener(type, listener);
+        if (type === 'change') listenersFor(query).delete(listener);
+      },
+    }),
+  );
   vi.stubGlobal('matchMedia', matchMedia);
 
   return {

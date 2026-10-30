@@ -11,6 +11,12 @@ interface AllProvidersProps {
   route?: string;
 }
 
+export interface RenderWithProvidersOptions {
+  route?: string;
+  /** Wraps the tree in StrictMode, so effects run twice on mount like in development. Off by default. */
+  strict?: boolean;
+}
+
 /**
  * The providers the real app mounts in main.tsx, in a form tests can reuse.
  * Pass it as the `wrapper` of `renderHook`, or use `renderWithProviders` for components.
@@ -25,13 +31,9 @@ export function AllProviders({ children, route = DEFAULT_ROUTE }: AllProvidersPr
   );
 }
 
-export function renderWithProviders(
-  ui: ReactElement,
-  options: { route?: string } = {},
-): RenderResult {
+export function renderWithProviders(ui: ReactElement, options: RenderWithProvidersOptions = {}): RenderResult {
   const route = options.route ?? DEFAULT_ROUTE;
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <AllProviders route={route}>{children}</AllProviders>
-  );
-  return render(ui, { wrapper: Wrapper });
+  const Wrapper = ({ children }: { children: ReactNode }) => <AllProviders route={route}>{children}</AllProviders>;
+  // StrictMode must be the outermost element: nested inside the wrapper it does not run the effects twice.
+  return render(ui, { wrapper: Wrapper, reactStrictMode: options.strict ?? false });
 }
