@@ -83,10 +83,17 @@ function dropTypedCountryCode(local: string): string {
 
 /**
  * O zero de tronco ("0 81 98445-1243", 081...) não é parte do número: nenhum DDD começa com 0 e o campo o lia como o DDD 08.
- * Sai digitado ou colado, do mesmo jeito. Um código de operadora depois do zero (015 11 ...) fica como o campo o lê.
+ * Sai digitado ou colado, do mesmo jeito. Colado inteiro, um código de operadora de dois dígitos depois do zero
+ * ("015 81 98445-1243") também sai: depois do zero, DDD e número têm 10 ou 11 dígitos, então 12 ou 13 só podem ser o código
+ * da operadora mais o número. Digitado tecla por tecla o campo só vê um dígito novo por vez e o zero já saiu na primeira
+ * tecla, então o código da operadora digitado é lido como DDD (limite conhecido, ver os testes).
  */
+const CARRIER_CODE_LENGTH = 2;
+const WITH_CARRIER_CODE_LENGTHS: readonly number[] = [12, 13];
 function dropTrunkZero(local: string): string {
-  return local.startsWith(TRUNK_ZERO) ? local.substring(TRUNK_ZERO.length) : local;
+  if (!local.startsWith(TRUNK_ZERO)) return local;
+  const withoutZero = local.substring(TRUNK_ZERO.length);
+  return WITH_CARRIER_CODE_LENGTHS.includes(withoutZero.length) ? withoutZero.substring(CARRIER_CODE_LENGTH) : withoutZero;
 }
 
 /** Tira o 9 do celular digitado depois do DDD (o campo o mostra sozinho, como palavra própria). */

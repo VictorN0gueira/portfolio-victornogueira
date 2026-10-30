@@ -75,11 +75,7 @@ describe('P3: a trunk zero is dropped, typed and pasted', () => {
     expect(typedDisplay('1099999999')).toBe('+55 10 9 9999-999');
   });
 
-  it('reads a carrier code after the zero (015 11 98445-1243) the same typed and pasted: a known limit, the display shows it', () => {
-    // 0 + carrier code + DDD + number is nobody's way of writing a number in a form: the zero goes, the rest is read as is.
-    expect(typedDisplay('015 11 98445-1243')).toBe(pastedDisplay('015 11 98445-1243'));
-    expect(typedDisplay('015 11 98445-1243')).toBe('+55 15 9 1198-4451');
-  });
+  // The carrier code after the zero has its own file (phone.carrier.test.ts).
 });
 
 describe('P3: a DDD that does not exist is refused', () => {
