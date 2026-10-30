@@ -120,7 +120,7 @@ describe('P3: a DDD that does not exist is refused', () => {
   });
 
   it('uses no dash and no slash in the new message', () => {
-    expect(NO_SUCH_DDD).not.toMatch(/[–—/-]/u);
+    expect(NO_SUCH_DDD).not.toMatch(/[\u2013\u2014/-]/u);
   });
 });
 

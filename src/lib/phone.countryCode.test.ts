@@ -180,6 +180,21 @@ describe('P2: the one reading that changed on purpose', () => {
   });
 });
 
+describe('F5: a landline of DDD 92 to 95 typed with the country code by hand', () => {
+  it('is read right when the digits after the DDD do not form a DDD 2x to 5x of their own', () => {
+    for (const [typed, sent] of [
+      ['+55 92 3333-4444', '559233334444'],
+      ['+55 92 5555-4444', '559255554444'],
+      ['+55 95 2222-3333', '559522223333'],
+      ['55 92 3333-4444', '559233334444'],
+      ['55 95 2222-3333', '559522223333'],
+    ]) {
+      expect(toEvolutionFormat(typedDisplay(typed))).toBe(sent);
+      expect(typedDisplay(typed)).toBe(pastedDisplay(typed));
+    }
+  });
+});
+
 describe('P2: the known limit, DDD 92 to 95 typed with the country code by hand', () => {
   it('is read right when the digits do not also form a DDD 2x to 5x, and the pasted number is always right', () => {
     const rows = AMBIGUOUS_DDDS.flatMap((ddd) => PARTS.flatMap((part) => countryShapes.map((shape) => ({ ddd, part, shape }))))

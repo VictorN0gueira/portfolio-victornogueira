@@ -53,7 +53,7 @@ describe('contact length caps', () => {
 
   it('uses no long dash and no slash in the new messages', () => {
     for (const message of [NAME_TOO_LONG, EMAIL_TOO_LONG, MESSAGE_TOO_LONG]) {
-      expect(message).not.toMatch(/[–—/]/u);
+      expect(message).not.toMatch(/[\u2013\u2014/]/u);
     }
   });
 });

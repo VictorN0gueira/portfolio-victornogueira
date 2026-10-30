@@ -87,7 +87,7 @@ describe('ContactForm cap hint', () => {
     expect(before).toHaveTextContent(text(2000));
     expect(visibleLine(2000)).toHaveLength(1);
     expect(visibleLine(2000)[0]).toBeVisible();
-    expect(before.textContent).not.toMatch(/[–—/]/u);
+    expect(before.textContent).not.toMatch(/[\u2013\u2014/]/u);
   });
 
   it('empties the same live region when the text gets shorter again, and the visible line goes', async () => {

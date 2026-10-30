@@ -48,7 +48,8 @@ export const BRAZILIAN_DDDS: ReadonlySet<string> = new Set([
 
 const TRUNK_ZERO = '0';
 const COUNTRY_CODED_MIN_DIGITS = 12;
-// Depois de um 55 digitado, um terceiro dígito que nenhum número do DDD 55 tem: fixo começa com 2 a 5 e celular com 9.
+// Depois de um 55 digitado, um terceiro dígito que nenhum número do DDD 55 tem: fixo começa com 2 a 5 e celular com 9 (depois
+// do DDD). O conjunto não tem o 0: "55 0xxx xxxx" continua sendo lido como DDD 55 mais o número, como sempre foi.
 // Então o 55 é o código do país e o terceiro dígito já é o primeiro do DDD.
 const NOT_A_DDD_55_NUMBER_START: ReadonlySet<string> = new Set(['1', '6', '7', '8']);
 // O 9 que o campo coloca aparece como palavra própria: "+55 DD 9 ...". Quem lê o valor sabe qual 9 é esse. O que vem antes
