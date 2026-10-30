@@ -17,4 +17,6 @@ supabase/.temp/
 # Playwright
 test-results/
 playwright-report/
+# One build folder per E2E_PORT (see playwright.config.ts)
+dist-e2e-*/
 e2e/__shots__/

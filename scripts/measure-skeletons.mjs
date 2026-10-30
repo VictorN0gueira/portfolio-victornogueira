@@ -24,7 +24,9 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 
-const DEFAULT_URL = 'http://localhost:4173/';
+// SKELETON_PORT picks the preview this script opens when no URL is given, so two worktrees can measure at once.
+const DEFAULT_SKELETON_PORT = 4191;
+const DEFAULT_URL = `http://localhost:${process.env.SKELETON_PORT ?? DEFAULT_SKELETON_PORT}/`;
 const DEV_SERVER_PORT = '3000';
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
 const OUTPUT = resolve(import.meta.dirname, '../src/styles/skeleton.css');
