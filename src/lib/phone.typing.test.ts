@@ -22,8 +22,9 @@ const numbers = VALID_DDDS.flatMap((ddd) =>
 );
 
 /**
- * A ten digit number whose eight digit part starts with 9 is the one real ambiguity: its first 9 is read as the mobile 9
- * (the field has always read it so). It must still type and paste the same, but its value is not the by hand one.
+ * A ten digit number whose eight digit part starts with 9 (no mobile 9 typed) reads its first 9 as the mobile 9, as the
+ * field always did, so the DISPLAY is one digit short (+55 81 9 9998-888 for 8199998888). The value sent is still the by
+ * hand one, 55 + DDD + the eight digits, because the digits of that display are the digits that were typed.
  */
 const isAmbiguous = ({ part, hasMobileNine }: { part: string; hasMobileNine: boolean }) => !hasMobileNine && part.startsWith('9');
 
@@ -48,13 +49,26 @@ describe('a number typed key by key ends as the same number pasted', () => {
     expect(wrong.slice(0, 20)).toEqual([]);
   });
 
-  it('sends 55, the DDD and the eight digits for the number that was typed', () => {
+  it('sends 55, the DDD and the eight digits for the number that was typed, the one-digit-short display included', () => {
     const wrong = numbers
-      .filter((entry) => !isAmbiguous(entry))
       .filter(({ ddd, part, digits }) => toEvolutionFormat(typeKeyByKey(digits)) !== expectedEvolution(ddd, part))
       .map(({ digits }) => digits);
 
     expect(wrong.slice(0, 20)).toEqual([]);
+  });
+
+  it('shows one digit less but sends the right value for a ten digit number whose part starts with 9', () => {
+    expect(typeKeyByKey('8199998888')).toBe('+55 81 9 9998-888');
+    expect(toEvolutionFormat(typeKeyByKey('8199998888'))).toBe('558199998888');
+    const ambiguous = numbers.filter(isAmbiguous);
+    expect(ambiguous.length).toBeGreaterThan(1_000);
+    expect(ambiguous.filter(({ digits }) => typeKeyByKey(digits) !== pasteWhole(digits))).toEqual([]);
+  });
+
+  it('shows +55 DD 9 after the DDD and the typed 9, before any digit of the number', () => {
+    expect(typeKeyByKey('819')).toBe('+55 81 9');
+    expect(typeKeyByKey('8')).toBe('+55 8');
+    expect(typeKeyByKey('81')).toBe('+55 81');
   });
 
   it('keeps the example of the field itself: 81 99999-9999', () => {
