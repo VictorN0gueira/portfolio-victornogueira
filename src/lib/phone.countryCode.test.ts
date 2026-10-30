@@ -44,8 +44,10 @@ const isReadAsCountryCodeNow = (ddd: string, part: string, shape: { hasMobileNin
   // A number pasted whole with its country code and no plus (twelve digits) says which 55 is which, so it is not in it.
   shape.name !== '55 typed, no nine';
 
-// 92 to 95: a landline can form a DDD 2x to 5x. 49 and 94: the same typed digits (see the F1 tests below).
-const AMBIGUOUS_DDDS = ['49', '92', '93', '94', '95'];
+// 49 and 91 to 99 typed with the country code and no plus: "55 9d ..." is the same text as a complete DDD 55 number plus one
+// more digit, and the DDD 55 number (the reading before the batch) wins (N1, see phone.ddd55.extra.test.ts): a pasted text
+// and a "+55" typed (swallowed by the field) are right. 49 and 94 are the F1 case below.
+const AMBIGUOUS_DDDS = ['49', '91', '92', '93', '94', '95', '96', '97', '98', '99'];
 const SURE_DDDS = EXISTING_DDDS.filter((ddd) => !AMBIGUOUS_DDDS.includes(ddd));
 
 describe('P2: a country code typed by hand is read like a pasted one', () => {
@@ -185,7 +187,7 @@ describe('P2: the one reading that changed on purpose', () => {
 });
 
 describe('F5: a landline of DDD 92 to 95 typed with the country code by hand', () => {
-  it('is read right when the digits after the DDD do not form a DDD 2x to 5x of their own', () => {
+  it('is read right when pasted, and keeps the DDD 55 reading when typed digit by digit without a plus (N1)', () => {
     for (const [typed, sent] of [
       ['+55 92 3333-4444', '559233334444'],
       ['+55 92 5555-4444', '559255554444'],
@@ -193,9 +195,10 @@ describe('F5: a landline of DDD 92 to 95 typed with the country code by hand', (
       ['55 92 3333-4444', '559233334444'],
       ['55 95 2222-3333', '559522223333'],
     ]) {
-      expect(toEvolutionFormat(typedDisplay(typed))).toBe(sent);
-      expect(typedDisplay(typed)).toBe(pastedDisplay(typed));
+      expect(toEvolutionFormat(pastedDisplay(typed))).toBe(sent);
     }
+    // Typed, the 12th digit of "55 92 3333 4444" is one more digit on the complete DDD 55 number 55 9 2333-3444.
+    expect(typedDisplay('559233334444')).toBe('+55 55 9 2333-3444');
   });
 });
 

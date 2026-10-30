@@ -73,8 +73,8 @@ describe('F3: DDD 55 edits', () => {
 
   it('KNOWN LIMIT: a digit put into the last group of a complete number looks like typing one more digit', () => {
     // "+55 55 9 4259-9272" with a 4 put after the hyphen is the same text as the number typed to its end plus a digit: a
-    // stateless formatter cannot tell them apart. Measured: the outcome is a valid looking number only when the reading
-    // is a country code followed by a complete DDD number; it is shown on the screen, and never a number the field refuses.
+    // stateless formatter cannot tell them apart. N1: a reading as a country code that would leave a complete number of
+    // another DDD is never taken (phone.ddd55.extra.test.ts); what is left is shown and refused, never another DDD 55 number.
     const changed: string[] = [];
     const silentWrong: string[] = [];
     for (const { part, display } of numbers) {
