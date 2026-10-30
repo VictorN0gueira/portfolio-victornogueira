@@ -22,6 +22,8 @@ export const contactFormCopy = {
     whatsapp: '+55 81 99999-9999',
     mensagem: 'Conta rapidinho o que você precisa',
   },
+  // Shown under a field that has reached its cap (see FieldCapHint).
+  capHint: (max: number) => `Máximo de ${max} caracteres.`,
   submit: 'Enviar',
   sending: 'Enviando…',
   success: {

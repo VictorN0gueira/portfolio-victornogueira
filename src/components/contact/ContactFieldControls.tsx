@@ -4,6 +4,7 @@ import { EMAIL_MAX, MESSAGE_MAX, NAME_MAX, type ContactFields } from '../../lib/
 import ServiceSelect from '../ServiceSelect';
 import { contactFormCopy } from './contactFormCopy';
 import { LABEL_CLASS } from './contactStyles';
+import FieldCapHint from './FieldCapHint';
 import FieldError from './FieldError';
 import { errorId, fieldProps } from './fieldProps';
 import { whatsappInputProps } from './whatsappInput';
@@ -76,6 +77,7 @@ export function ContactInput({ field, value, error, onChange }: ContactInputProp
         maxLength={config.maxLength}
         {...extra}
       />
+      <FieldCapHint length={value.length} max={config.maxLength} />
     </FieldFrame>
   );
 }
@@ -105,6 +107,7 @@ export function ContactMessage({ value, error, onChange }: ContactMessageProps) 
         placeholder={placeholders.mensagem}
         enterKeyHint="enter"
       />
+      <FieldCapHint length={value.length} max={MESSAGE_MAX} />
     </FieldFrame>
   );
 }
