@@ -5,59 +5,66 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { rejectUnexpectedFetch } from '../../test/contactForm';
 import { renderWithProviders } from '../../test/render';
 import ContactForm from '../ContactForm';
+import Footer from '../layout/Footer';
 import ContactConsent from './ContactConsent';
 
 // The legal line, copied character by character from the form as it was before the redesign. It is legal text.
 const LEGAL_SENTENCE =
   'Li e concordo com a Política de Privacidade e autorizo o uso dos meus dados para retorno do contato.';
-const NEW_TAB_HINT = ' (abre em nova aba)';
+const NEW_TAB_HINT = 'Abre em nova aba';
 
 beforeEach(() => {
   rejectUnexpectedFetch();
 });
 
-// jsdom's name computation trims the leading space of the hidden span; a browser keeps it, so the space is optional here.
-const POLICY_LINK_NAME = /^Política de Privacidade ?\(abre em nova aba\)$/;
-const policyLink = () => screen.getByRole('link', { name: POLICY_LINK_NAME });
-
-/** What a sighted visitor reads: the text of the label without what is visually hidden. */
-function visibleText(element: HTMLElement): string {
-  const copy = element.cloneNode(true) as HTMLElement;
-  copy.querySelectorAll('.sr-only').forEach((hidden) => hidden.remove());
-  return copy.textContent ?? '';
-}
+const policyLink = () => screen.getByRole('link', { name: 'Política de Privacidade' });
+const consentLabel = () => screen.getByRole('checkbox').closest('label') as HTMLElement;
 
 describe('ContactConsent privacy link', () => {
-  it('opens the policy in a new tab and says so to a screen reader', () => {
+  it('opens the policy in a new tab', () => {
     renderWithProviders(<ContactConsent checked={false} onChange={() => {}} />);
 
     const link = policyLink();
     expect(link).toHaveAttribute('href', '/privacidade');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    const hint = within(link).getByText(NEW_TAB_HINT.trim());
-    expect(hint).toHaveClass('sr-only');
-    expect(hint.textContent).toBe(NEW_TAB_HINT);
   });
 
-  it('keeps the visible legal sentence exactly as it was, character by character', () => {
+  it('says so to a screen reader with a description outside the legal sentence, and keeps the name the visible text', () => {
     renderWithProviders(<ContactConsent checked={false} onChange={() => {}} />);
-    const label = screen.getByRole('checkbox').closest('label') as HTMLElement;
 
-    expect(visibleText(label)).toBe(LEGAL_SENTENCE);
-    expect([...visibleText(label)].map((char) => char.codePointAt(0))).toEqual(
+    const link = policyLink();
+    expect(link).toHaveAccessibleName('Política de Privacidade');
+    expect(link).toHaveAccessibleDescription(NEW_TAB_HINT);
+    const hint = document.getElementById(link.getAttribute('aria-describedby') as string) as HTMLElement;
+    expect(hint).toHaveClass('sr-only');
+    expect(consentLabel().contains(hint)).toBe(false);
+  });
+
+  it('keeps the legal sentence, as selected and copied, character by character', () => {
+    renderWithProviders(<ContactConsent checked={false} onChange={() => {}} />);
+
+    // No stripping of hidden parts: the text of the whole label is the legal sentence and nothing else.
+    expect(consentLabel().textContent).toBe(LEGAL_SENTENCE);
+    expect([...(consentLabel().textContent as string)].map((char) => char.codePointAt(0))).toEqual(
       [...LEGAL_SENTENCE].map((char) => char.codePointAt(0)),
     );
   });
 
-  it('keeps the router basename in the address', () => {
-    render(
-      <MemoryRouter basename="/portfolio-victornogueira" initialEntries={['/portfolio-victornogueira/']}>
+  it('is the same address as the privacy link of the footer, in the router the app mounts (no basename)', () => {
+    // main.tsx mounts a plain BrowserRouter, so there is no basename even in the Pages build: every internal Link,
+    // this one and the footer's, resolves the same way.
+    renderWithProviders(
+      <>
         <ContactConsent checked={false} onChange={() => {}} />
-      </MemoryRouter>,
+        <Footer />
+      </>,
     );
 
-    expect(policyLink()).toHaveAttribute('href', '/portfolio-victornogueira/privacidade');
+    const inConsent = within(consentLabel()).getByRole('link', { name: 'Política de Privacidade' });
+    const inFooter = within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Política de Privacidade' });
+    expect(inConsent.getAttribute('href')).toBe(inFooter.getAttribute('href'));
+    expect(inConsent.getAttribute('href')).toBe('/privacidade');
   });
 
   it('does not leave the page, so what the visitor typed is not lost', async () => {
