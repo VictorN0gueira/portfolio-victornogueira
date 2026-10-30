@@ -1,18 +1,26 @@
 import { screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { projects } from '../data/projects';
 import { renderWithProviders } from '../test/render';
-import ProjectsPage, { PROJECTS_PAGE_DESCRIPTION } from './ProjectsPage';
+import { PROJECTS_PAGE_DESCRIPTION } from '../components/projectLabels';
+import ProjectsPage from './ProjectsPage';
 
 const PAGE_TITLE = 'Projetos';
 const LAZY_LOAD_TIMEOUT_MS = 8000;
+// Above the wait of findByRole, so a slow machine fails on the wait with its message, never on the test timeout.
+const TEST_TIMEOUT_MS = 20_000;
 
 async function renderPage(): Promise<HTMLElement> {
   renderWithProviders(<ProjectsPage />, { route: '/projetos' });
   return screen.findByRole('region', { name: PAGE_TITLE }, { timeout: LAZY_LOAD_TIMEOUT_MS });
 }
 
-describe('ProjectsPage', () => {
+describe('ProjectsPage', { timeout: TEST_TIMEOUT_MS }, () => {
+  // The page loads its list lazily: load it once, so each test only waits for the render.
+  beforeAll(async () => {
+    await import('../components/Projects');
+  });
+
   it('has no tabs and no split between own products and client cases', async () => {
     const section = await renderPage();
 

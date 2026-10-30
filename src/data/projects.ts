@@ -141,7 +141,7 @@ export const projects: readonly Project[] = [
     shots: [
       shot('travel-ia/cover', 'Formulário do Travel IA, para escolher destino, duração, estilo da viagem e o e-mail que recebe o roteiro'),
       shot('travel-ia/tela-email', 'E-mail com o roteiro de viagem dia a dia, com previsão do tempo e sugestões de manhã e tarde'),
-      shot('travel-ia/tela-mobile', 'Cabeçalho do Travel IA no celular, com o título do roteiro e a chamada para planejar a viagem'),
+      shot('travel-ia/tela-mobile', 'Cabeçalho do Travel IA no celular, com o ícone de clima, o título em duas linhas e o texto de apresentação'),
     ],
   },
 ];

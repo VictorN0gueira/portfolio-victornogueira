@@ -3,13 +3,11 @@ import { projects } from '../data/projects';
 import FeaturedProjectCard from './FeaturedProjectCard';
 import ProjectCard from './ProjectCard';
 import { cardLayout } from './projectGrid';
+import { PROJECTS_INTRO, PROJECTS_TITLE } from './projectLabels';
 
 const featuredProjects = projects.filter((project) => project.featured);
 const regularProjects = projects.filter((project) => !project.featured);
 
-export const PROJECTS_TITLE = 'Projetos';
-export const PROJECTS_INTRO =
-  'Sistemas que a gente construiu, do atendimento no WhatsApp aos dashboards de vendas. Cada um com as telas e o que faz.';
 
 export default function Projects() {
   return (

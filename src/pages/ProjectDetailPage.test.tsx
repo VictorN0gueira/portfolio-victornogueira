@@ -3,7 +3,8 @@ import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { coverOf, projects, REMOVED_PROJECT_SLUGS } from '../data/projects';
 import { renderWithProviders } from '../test/render';
-import ProjectDetailPage, { PROJECT_CTA_TEXT } from './ProjectDetailPage';
+import { PROJECT_CTA_TEXT } from '../components/projectLabels';
+import ProjectDetailPage from './ProjectDetailPage';
 
 function renderAt(route: string) {
   return renderWithProviders(

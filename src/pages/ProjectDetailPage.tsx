@@ -4,10 +4,10 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import SEO from '../components/SEO';
 import NotFound from '../components/NotFound';
 import ProjectDetail from '../components/ProjectDetail';
+import { BACK_LABEL, BREADCRUMB_HOME, CONTACT_LABEL, NOT_FOUND_TITLE, PROJECT_CTA_TEXT, PROJECTS_TITLE } from '../components/projectLabels';
 import { coverOf, getProjectBySlug, REMOVED_PROJECT_SLUGS, type Project } from '../data/projects';
 import { SITE } from '../lib/site';
 
-export const PROJECT_CTA_TEXT = 'Quer algo assim no seu negócio?';
 const SHARE_IMAGE_WIDTH = 1200;
 const SHARE_IMAGE_HEIGHT = 630;
 
@@ -16,8 +16,8 @@ function breadcrumbSchema(project: Project): object {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Início', item: `${SITE.url}/` },
-      { '@type': 'ListItem', position: 2, name: 'Projetos', item: `${SITE.url}/projetos` },
+      { '@type': 'ListItem', position: 1, name: BREADCRUMB_HOME, item: `${SITE.url}/` },
+      { '@type': 'ListItem', position: 2, name: PROJECTS_TITLE, item: `${SITE.url}/projetos` },
       { '@type': 'ListItem', position: 3, name: project.title, item: `${SITE.url}/projetos/${project.slug}` },
     ],
   };
@@ -33,7 +33,7 @@ export default function ProjectDetailPage() {
   if (!project) {
     return (
       <>
-        <SEO title="Projeto não encontrado" noindex />
+        <SEO title={NOT_FOUND_TITLE} noindex />
         <NotFound />
       </>
     );
@@ -63,8 +63,8 @@ export default function ProjectDetailPage() {
               to="/projetos"
               className="group inline-flex min-h-11 items-center gap-2 py-3 pr-4 text-xs font-bold uppercase tracking-[0.2em] text-vn-gray-dark transition-colors hover:text-vn-ink"
             >
-              <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
-              Todos os projetos
+              <ArrowLeft className="size-4 motion-safe:transition-transform motion-safe:group-hover:-translate-x-1" aria-hidden="true" />
+              {BACK_LABEL}
             </Link>
           </motion.div>
 
@@ -75,15 +75,15 @@ export default function ProjectDetailPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="mt-16 text-center"
+            className="mt-16 text-center max-md:pr-14"
           >
             <p className="mb-6 text-lg text-vn-gray-dark">{PROJECT_CTA_TEXT}</p>
             <Link
               to="/contato"
-              className="group inline-flex items-center gap-3 rounded-full bg-black px-10 py-5 font-medium text-white shadow-2xl shadow-black/20 transition-all hover:bg-zinc-800 active:scale-95"
+              className="group inline-flex items-center gap-3 rounded-full bg-black px-10 py-5 font-medium text-white shadow-2xl shadow-black/20 transition-colors hover:bg-zinc-800 motion-safe:active:scale-95"
             >
-              Vamos conversar
-              <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+              {CONTACT_LABEL}
+              <ArrowRight className="size-5 motion-safe:transition-transform motion-safe:group-hover:translate-x-1" aria-hidden="true" />
             </Link>
           </motion.div>
         </div>

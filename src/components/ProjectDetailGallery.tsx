@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Project, ProjectShot } from '../data/projects';
 import { coverOf } from '../data/projects';
+import { galleryLabel } from './projectLabels';
 import ProjectShotImage from './ProjectShotImage';
 
 // The width a gallery image takes: 60% of the 1152px case on desktop, the window minus the paddings below that.
@@ -50,7 +51,7 @@ export function StackedGallery({ project }: { project: Project }) {
   return (
     <div
       role="group"
-      aria-label={`Telas de ${project.title}`}
+      aria-label={galleryLabel(project.title)}
       className="relative flex w-full shrink-0 flex-col gap-4 border-b border-white/5 bg-zinc-950 p-4 md:w-[60%] md:gap-6 md:border-b-0 md:border-r md:p-6"
     >
       <Backdrop project={project} blur="blur-2xl" />
@@ -70,7 +71,7 @@ export function HeroGallery({ project }: { project: Project }) {
   return (
     <div
       role="group"
-      aria-label={`Telas de ${project.title}`}
+      aria-label={galleryLabel(project.title)}
       className="relative border-b border-white/5 bg-zinc-950 p-4 md:p-8 lg:p-10"
     >
       <Backdrop project={project} blur="blur-3xl" />

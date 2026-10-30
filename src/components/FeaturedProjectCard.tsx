@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import type { Project } from '../data/projects';
+import { CARD_CTA_TEXT } from './projectLabels';
 import ProjectShotImage from './ProjectShotImage';
 
 // The cover takes a bit more than half of the 1280px page on desktop, the full window width on a phone.
@@ -43,7 +44,7 @@ export default function FeaturedProjectCard({ project, priority = false }: Featu
           ))}
         </ul>
         <span className="inline-flex min-h-11 items-center gap-3 self-start rounded-full bg-white px-6 py-3 text-xs font-bold uppercase tracking-widest text-black transition-colors group-hover:bg-zinc-200">
-          <span id={ctaId}>Ver detalhes</span>
+          <span id={ctaId}>{CARD_CTA_TEXT}</span>
           <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:translate-x-1" aria-hidden="true" />
         </span>
       </div>

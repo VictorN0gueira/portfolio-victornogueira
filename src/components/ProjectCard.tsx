@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import type { Project } from '../data/projects';
+import { CARD_CTA_TEXT } from './projectLabels';
 import ProjectShotImage from './ProjectShotImage';
+import ProjectTitle from './ProjectTitle';
 
 interface ProjectCardProps {
   project: Project;
@@ -18,7 +20,7 @@ export default function ProjectCard({ project, imageSizes }: ProjectCardProps) {
     <Link
       to={`/projetos/${project.slug}`}
       aria-labelledby={`${titleId} ${ctaId}`}
-      className="group block rounded-3xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vn-ink"
+      className="group flex h-full flex-col rounded-3xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vn-ink"
     >
       <div className="mb-6 aspect-[2.1/1] overflow-hidden rounded-3xl bg-zinc-900 shadow-sm transition-shadow duration-500 group-hover:shadow-2xl group-hover:shadow-black/10 motion-safe:transition-transform motion-safe:group-hover:-translate-y-2">
         <ProjectShotImage
@@ -28,10 +30,10 @@ export default function ProjectCard({ project, imageSizes }: ProjectCardProps) {
         />
       </div>
 
-      <div className="min-w-0 px-1 max-md:pr-14 md:px-2">
+      <div className="flex min-w-0 flex-1 flex-col px-1 max-md:pr-14 md:px-2">
         <p className="mb-2 text-xs font-bold uppercase tracking-widest text-vn-gray-dark">{project.category}</p>
         <h2 id={titleId} className="mb-3 font-display text-xl font-bold italic text-vn-ink md:text-2xl">
-          {project.title}
+          <ProjectTitle title={project.title} />
         </h2>
         <p className="mb-4 max-w-md leading-relaxed text-vn-gray-dark">{project.description}</p>
         <ul role="list" className="mb-5 flex list-none flex-wrap gap-2 p-0">
@@ -41,8 +43,8 @@ export default function ProjectCard({ project, imageSizes }: ProjectCardProps) {
             </li>
           ))}
         </ul>
-        <span className="inline-flex min-h-11 items-center gap-2 text-sm font-bold uppercase tracking-widest text-vn-ink">
-          <span id={ctaId}>Ver detalhes</span>
+        <span className="mt-auto inline-flex min-h-11 items-center gap-2 self-start text-sm font-bold uppercase tracking-widest text-vn-ink">
+          <span id={ctaId}>{CARD_CTA_TEXT}</span>
           <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:translate-x-1" aria-hidden="true" />
         </span>
       </div>
