@@ -82,7 +82,7 @@ function useContactDraft(initialMessage?: string, prefillNonce?: number) {
     setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
   };
   const setField = (field: TextField, value: string) => {
-    setFormData({ ...formData, [field]: value });
+    setFormData((prev) => ({ ...prev, [field]: value }));
     clearError(field);
   };
   const chooseService = (value: string) => {
