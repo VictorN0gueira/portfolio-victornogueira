@@ -62,6 +62,26 @@ async function headerClearance(page: Page): Promise<number> {
   return heading.y - (header.y + header.height);
 }
 
+/**
+ * The option list has room for two options, and the panel does not lie over the centre of the trigger nor of the WhatsApp
+ * button (`box` is the box of the panel).
+ */
+async function expectPanelClearsControls(page: Page, panel: Locator, box: { x: number; y: number; width: number; height: number } | null) {
+  const listBox = await panel.getByRole('list').first().boundingBox();
+  expect(listBox?.height ?? 0, 'the option list has room for two options').toBeGreaterThanOrEqual(MIN_LIST_HEIGHT_PX);
+  for (const [label, locator] of [
+    ['the trigger', page.getByRole('button', { name: A11Y_TRIGGER_NAME })],
+    ['the WhatsApp button', page.getByRole('complementary', { name: 'Contato rápido' }).getByRole('link')],
+  ] as const) {
+    const target = await locator.boundingBox();
+    expect(target, label).not.toBeNull();
+    const cx = (target?.x ?? 0) + (target?.width ?? 0) / 2;
+    const cy = (target?.y ?? 0) + (target?.height ?? 0) / 2;
+    const covered = box !== null && cx >= box.x && cx <= box.x + box.width && cy >= box.y && cy <= box.y + box.height;
+    expect(covered, `the panel does not cover the centre of ${label}`).toBe(false);
+  }
+}
+
 const POINTS_ACROSS = [0.2, 0.5, 0.8];
 
 /**
@@ -270,19 +290,7 @@ for (const phone of SHORT_PHONES) {
         expect(box?.y ?? -1, 'panel top is inside the window').toBeGreaterThanOrEqual(0);
         expect((box?.y ?? 0) + (box?.height ?? 0), 'panel bottom is inside the window').toBeLessThanOrEqual(phone.height);
 
-        const listBox = await panel.getByRole('list').first().boundingBox();
-        expect(listBox?.height ?? 0, 'the option list has room for two options').toBeGreaterThanOrEqual(MIN_LIST_HEIGHT_PX);
-        for (const [label, locator] of [
-          ['the trigger', page.getByRole('button', { name: A11Y_TRIGGER_NAME })],
-          ['the WhatsApp button', page.getByRole('complementary', { name: 'Contato rápido' }).getByRole('link')],
-        ] as const) {
-          const target = await locator.boundingBox();
-          expect(target, label).not.toBeNull();
-          const cx = (target?.x ?? 0) + (target?.width ?? 0) / 2;
-          const cy = (target?.y ?? 0) + (target?.height ?? 0) / 2;
-          const covered = box !== null && cx >= box.x && cx <= box.x + box.width && cy >= box.y && cy <= box.y + box.height;
-          expect(covered, `the panel does not cover the centre of ${label}`).toBe(false);
-        }
+        await expectPanelClearsControls(page, panel, box);
 
         await expectPointerReachesControls(page, panel);
 
