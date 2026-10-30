@@ -2,6 +2,7 @@ import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  EMAIL_WEBHOOK,
   TEST_EMAIL,
   pickService,
   readCall,
@@ -78,6 +79,31 @@ describe('a request that never answers', () => {
     expect(screen.getByRole('link', { name: /fala direto pelo whatsapp/i })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Fechar' }));
     expect(submitButton()).toBeEnabled();
+  });
+});
+
+describe('the channel the thanks names', () => {
+  it('is the one the lead was sent through, even if the visitor flips the toggle while Enviando shows', async () => {
+    let answer: (value: { ok: boolean }) => void = () => {};
+    const fetchMock = stubFetch(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve as (value: { ok: boolean }) => void;
+        }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<ContactForm initialMessage={QUOTE} />);
+
+    await fillAllButMessage(user);
+    await user.click(submitButton());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(readCall(fetchMock).url).toBe(EMAIL_WEBHOOK);
+    await user.click(screen.getByRole('button', { name: 'Por WhatsApp' }));
+    await act(async () => answer({ ok: true }));
+
+    expect(await screen.findByRole('heading', { name: 'Recebemos sua mensagem' })).toBeInTheDocument();
+    expect(screen.getByText('Obrigado! A gente responde pelo e-mail em breve.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('A gente responde pelo e-mail em breve.');
   });
 });
 
