@@ -86,6 +86,17 @@ describe('AccessibilityWidget', () => {
     );
   });
 
+  // On a phone on its side the panel's 60px bottom margin is a transparent strip that lay over the WhatsApp button
+  // (elementFromPoint at its centre returned the wrapper, so it could not be tapped while the panel was open): the
+  // wrapper takes no pointer events and only the panel and the trigger do.
+  it('lets the pointer through the wrapper, and takes it only on the panel and on the trigger', async () => {
+    const { panel } = await openPanel();
+
+    expect(panel.parentElement).toHaveClass('pointer-events-none');
+    expect(panel).toHaveClass('pointer-events-auto');
+    expect(screen.getByRole('button', { name: TRIGGER_NAME })).toHaveClass('pointer-events-auto');
+  });
+
   it('keeps the count badge inside the button, at its right edge and not outside it', async () => {
     const { user, panel } = await openPanel();
     await user.click(within(panel).getByRole('button', { name: /Sublinhar links/ }));

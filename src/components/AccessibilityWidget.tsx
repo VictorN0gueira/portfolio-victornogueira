@@ -109,10 +109,12 @@ export default function AccessibilityWidget() {
        tambem, porque a 13rem do fundo a lista tinha 8px de altura. O painel fica do lado do botao do WhatsApp (que
        esta no canto de baixo): a altura maxima deixa 16px em cima e a margem de baixo de 60px o sobe, de modo que a
        borda de baixo para 76px acima do fim da janela, acima do botao do WhatsApp (16px de folga e 52px de altura).
-       Em px e nao em rem de proposito: com a fonte maior o rem cresce 20% e a lista ficaria menor que duas opcoes. */
+       Em px e nao em rem de proposito: com a fonte maior o rem cresce 20% e a lista ficaria menor que duas opcoes.
+       A margem de 60px e uma faixa transparente da caixa: o wrapper nao recebe ponteiro (pointer-events-none) e so o
+       painel e o botao recebem (pointer-events-auto), para a faixa nao cobrir o botao do WhatsApp. */
     <div
       ref={panelRef}
-      className={`${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed right-0 bottom-52 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 [@media(max-height:30rem)]:bottom-auto [@media(max-height:30rem)]:top-1/2 [@media(max-height:30rem)]:-translate-y-1/2 z-[150] flex items-center`}
+      className={`${KEEPS_PLACE_UNDER_SCROLL_LOCK} pointer-events-none fixed right-0 bottom-52 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 [@media(max-height:30rem)]:bottom-auto [@media(max-height:30rem)]:top-1/2 [@media(max-height:30rem)]:-translate-y-1/2 z-[150] flex items-center`}
       style={{ direction: 'rtl' }}
     >
       {/* Painel */}
@@ -126,7 +128,7 @@ export default function AccessibilityWidget() {
             style={{ willChange: 'transform, opacity', direction: 'ltr' }}
             role="dialog"
             aria-label="Opções de acessibilidade"
-            className="mr-2 w-[min(13rem,calc(100vw-3.5rem))] rounded-2xl border border-white/10 bg-zinc-950/98 md:bg-zinc-950/95 backdrop-blur-none md:backdrop-blur-xl shadow-2xl overflow-hidden max-h-[calc(100svh-14rem)] sm:max-h-[calc(100svh-8rem)] [@media(max-height:30rem)]:max-h-[calc(100svh-92px)] [@media(max-height:30rem)]:mb-[60px] flex flex-col"
+            className="pointer-events-auto mr-2 w-[min(13rem,calc(100vw-3.5rem))] rounded-2xl border border-white/10 bg-zinc-950/98 md:bg-zinc-950/95 backdrop-blur-none md:backdrop-blur-xl shadow-2xl overflow-hidden max-h-[calc(100svh-14rem)] sm:max-h-[calc(100svh-8rem)] [@media(max-height:30rem)]:max-h-[calc(100svh-92px)] [@media(max-height:30rem)]:mb-[60px] flex flex-col"
           >
             <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between shrink-0">
               <span className="text-xs font-semibold text-white/80 uppercase tracking-widest">
@@ -187,7 +189,7 @@ export default function AccessibilityWidget() {
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label="Abrir opções de acessibilidade"
-        className={`relative flex items-center justify-center w-11 h-11 rounded-l-xl shadow-lg transition-colors duration-300
+        className={`pointer-events-auto relative flex items-center justify-center w-11 h-11 rounded-l-xl shadow-lg transition-colors duration-300
           ${isDark
             ? 'bg-white text-zinc-950'
             : 'bg-zinc-950 text-white border border-zinc-200'

@@ -1,4 +1,4 @@
-import { devices, type Page } from '@playwright/test';
+import { devices, type Locator, type Page } from '@playwright/test';
 import {
   HOURS_PILL_NAME,
   MIN_TOUCH_PX,
@@ -62,6 +62,70 @@ async function headerClearance(page: Page): Promise<number> {
   return heading.y - (header.y + header.height);
 }
 
+/**
+ * The option list has room for two options, and the panel does not lie over the centre of the trigger nor of the WhatsApp
+ * button (`box` is the box of the panel).
+ */
+async function expectPanelClearsControls(page: Page, panel: Locator, box: { x: number; y: number; width: number; height: number } | null) {
+  const listBox = await panel.getByRole('list').first().boundingBox();
+  expect(listBox?.height ?? 0, 'the option list has room for two options').toBeGreaterThanOrEqual(MIN_LIST_HEIGHT_PX);
+  for (const [label, locator] of [
+    ['the trigger', page.getByRole('button', { name: A11Y_TRIGGER_NAME })],
+    ['the WhatsApp button', page.getByRole('complementary', { name: 'Contato rápido' }).getByRole('link')],
+  ] as const) {
+    const target = await locator.boundingBox();
+    expect(target, label).not.toBeNull();
+    const cx = (target?.x ?? 0) + (target?.width ?? 0) / 2;
+    const cy = (target?.y ?? 0) + (target?.height ?? 0) / 2;
+    const covered = box !== null && cx >= box.x && cx <= box.x + box.width && cy >= box.y && cy <= box.y + box.height;
+    expect(covered, `the panel does not cover the centre of ${label}`).toBe(false);
+  }
+}
+
+const POINTS_ACROSS = [0.2, 0.5, 0.8];
+
+/**
+ * With the panel open: at the centre and at sample points of the WhatsApp button the element on top is the WhatsApp
+ * link (nothing invisible lies over it), and the trigger and every control of the panel are on top at their centres.
+ */
+async function expectPointerReachesControls(page: Page, panel: Locator) {
+  const link = page.getByRole('complementary', { name: 'Contato rápido' }).getByRole('link');
+  const box = await link.boundingBox();
+  expect(box).not.toBeNull();
+  const points = POINTS_ACROSS.flatMap((fx) => POINTS_ACROSS.map((fy) => [(box?.x ?? 0) + (box?.width ?? 0) * fx, (box?.y ?? 0) + (box?.height ?? 0) * fy]));
+  const hits = await page.evaluate((samples) => samples.map(([x, y]) => document.elementFromPoint(x, y)?.closest('a')?.getAttribute('aria-label') ?? null), points);
+  expect(hits, 'the WhatsApp link is the element at its centre and at the sample points of its box').toEqual(points.map(() => 'Falar no WhatsApp'));
+
+  const controls = [page.getByRole('button', { name: A11Y_TRIGGER_NAME }), ...(await panel.getByRole('button').all())];
+  for (const control of controls) {
+    await control.scrollIntoViewIfNeeded();
+    const target = await control.boundingBox();
+    const onTop = await control.evaluate(
+      (element, [x, y]) => element.contains(document.elementFromPoint(x, y)),
+      [(target?.x ?? 0) + (target?.width ?? 0) / 2, (target?.y ?? 0) + (target?.height ?? 0) / 2],
+    );
+    expect(onTop, `a control of the accessibility widget is on top at its centre`).toBe(true);
+  }
+}
+
+/**
+ * With the panel open, a real click on the WhatsApp link reaches it (Playwright's own hit test fails when something lies
+ * over the link). The click is cancelled on the page, so the request to wa.me, which the network guard would block, is
+ * not made. The click also closes the panel (a press outside it), which is why this comes last.
+ */
+async function expectWhatsAppClickWithPanelOpen(page: Page) {
+  const link = page.getByRole('complementary', { name: 'Contato rápido' }).getByRole('link');
+  await link.evaluate((element) => {
+    (window as unknown as { __whatsAppClicks: number }).__whatsAppClicks = 0;
+    element.addEventListener('click', (event) => {
+      event.preventDefault();
+      (window as unknown as { __whatsAppClicks: number }).__whatsAppClicks += 1;
+    });
+  });
+  await link.click();
+  expect(await page.evaluate(() => (window as unknown as { __whatsAppClicks: number }).__whatsAppClicks)).toBe(1);
+}
+
 /** Scrolls the hero panel to its reading position, where the tilt is gone and its boxes are at full size. */
 async function scrollPanelFlat(page: Page) {
   await page.evaluate((fraction) => {
@@ -90,8 +154,13 @@ async function useTheControls(page: Page, isTouch: boolean) {
   const press = (locator: ReturnType<Page['locator']>) => (isTouch ? locator.tap() : locator.click());
 
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-  await press(page.getByRole('button', { name: HOURS_PILL_NAME }));
-  await expect(page.getByRole('listbox')).toBeVisible();
+  const pill = page.getByRole('button', { name: HOURS_PILL_NAME });
+  const list = page.getByRole('listbox');
+  // Retry safe: a press that did not open the list is repeated, a list already open is not pressed shut.
+  await expect(async () => {
+    if (!(await list.isVisible())) await press(pill);
+    await expect(list).toBeVisible({ timeout: 2000 });
+  }).toPass();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('listbox')).toHaveCount(0);
 
@@ -221,19 +290,9 @@ for (const phone of SHORT_PHONES) {
         expect(box?.y ?? -1, 'panel top is inside the window').toBeGreaterThanOrEqual(0);
         expect((box?.y ?? 0) + (box?.height ?? 0), 'panel bottom is inside the window').toBeLessThanOrEqual(phone.height);
 
-        const listBox = await panel.getByRole('list').first().boundingBox();
-        expect(listBox?.height ?? 0, 'the option list has room for two options').toBeGreaterThanOrEqual(MIN_LIST_HEIGHT_PX);
-        for (const [label, locator] of [
-          ['the trigger', page.getByRole('button', { name: A11Y_TRIGGER_NAME })],
-          ['the WhatsApp button', page.getByRole('complementary', { name: 'Contato rápido' }).getByRole('link')],
-        ] as const) {
-          const target = await locator.boundingBox();
-          expect(target, label).not.toBeNull();
-          const cx = (target?.x ?? 0) + (target?.width ?? 0) / 2;
-          const cy = (target?.y ?? 0) + (target?.height ?? 0) / 2;
-          const covered = box !== null && cx >= box.x && cx <= box.x + box.width && cy >= box.y && cy <= box.y + box.height;
-          expect(covered, `the panel does not cover the centre of ${label}`).toBe(false);
-        }
+        await expectPanelClearsControls(page, panel, box);
+
+        await expectPointerReachesControls(page, panel);
 
         const largeFont = panel.getByRole('button', { name: /Texto maior/ });
         await largeFont.scrollIntoViewIfNeeded();
@@ -252,6 +311,12 @@ for (const phone of SHORT_PHONES) {
         await page.keyboard.press('Escape');
         await expect(panel).toHaveCount(0);
         await expect(page.getByRole('button', { name: A11Y_TRIGGER_NAME })).toBeFocused();
+
+        // Open again: the WhatsApp button can be clicked while the panel is open.
+        await page.getByRole('button', { name: A11Y_TRIGGER_NAME }).tap();
+        await expect(panel).toBeVisible();
+        await waitForStableBox(panel);
+        await expectWhatsAppClickWithPanelOpen(page);
       });
     });
   }

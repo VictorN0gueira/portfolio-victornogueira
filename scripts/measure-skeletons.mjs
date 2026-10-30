@@ -16,8 +16,9 @@
  * twice the tolerance of each other and holds the middle of them.
  *
  * Offline safe: it only opens the page you give it, which has to be on this machine (localhost, 127.0.0.1) and not on
- * port 3000, the port of the dev server. Every request to any other host is aborted, except the client logos
- * (minio.vnone.com.br), which are answered with a one pixel image. The form is never touched, so nothing is sent to n8n.
+ * port 3000, the port of the dev server. Every request to any other host is aborted: the client logos and the project
+ * images are self-hosted (/clients and /projects), so they are measured as the real images. The form is never touched,
+ * so nothing is sent to n8n.
  */
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -44,11 +45,6 @@ const FONTS = [
 // Frames in a row with the same page height: the layout has stopped moving.
 const STEADY_FRAMES = 30;
 const LOAD_TIMEOUT_MS = 30_000;
-const PIXEL_PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-  'base64',
-);
-const IMAGE_HOST = 'minio.vnone.com.br';
 
 function parseArguments(argv) {
   const flags = argv.filter((argument) => argument.startsWith('--'));
@@ -75,7 +71,6 @@ async function measureAt(browser, url, width, isLarge) {
     await page.route('**/*', (route) => {
       const target = new URL(route.request().url());
       if (target.origin === origin) return route.continue();
-      if (target.host === IMAGE_HOST) return route.fulfill({ status: 200, contentType: 'image/png', body: PIXEL_PNG });
       return route.abort();
     });
     await page.goto(url);
