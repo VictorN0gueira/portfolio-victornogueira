@@ -5,7 +5,7 @@
 export const N8N_HOST = 'n8n.vnone.com.br';
 
 /** Hosts the pages load images from. The guard answers them with a one pixel PNG, so they are never really requested. */
-export const MOCKED_IMAGE_HOSTS: readonly string[] = ['minio.vnone.com.br', 'images.unsplash.com'];
+export const MOCKED_IMAGE_HOSTS: readonly string[] = ['images.unsplash.com'];
 
 /** The article feeds the blog reads (the last one is its edge function). The guard answers them with an empty list. */
 export const MOCKED_FEED_HOSTS: readonly string[] = ['dev.to', 'www.tabnews.com.br', 'qpcwoioflaxiasmcdfbd.supabase.co'];

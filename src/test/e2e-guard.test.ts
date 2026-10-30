@@ -283,6 +283,12 @@ describe('the hosts the network guard answers itself', () => {
     expect([...MOCKED_HOSTS].sort()).toEqual([...MOCKED_IMAGE_HOSTS, ...MOCKED_FEED_HOSTS].sort());
     expect(new Set(MOCKED_HOSTS).size).toBe(MOCKED_HOSTS.length);
   });
+
+  it('hold the hosts the pages still load from and no more: the self hosted minio is gone', () => {
+    expect([...MOCKED_IMAGE_HOSTS]).toEqual(['images.unsplash.com']);
+    expect([...MOCKED_FEED_HOSTS]).toEqual(['dev.to', 'www.tabnews.com.br', 'qpcwoioflaxiasmcdfbd.supabase.co']);
+    expect(MOCKED_HOSTS.some((host) => host.includes('minio'))).toBe(false);
+  });
 });
 
 describe('findEnviarMisuse', () => {
