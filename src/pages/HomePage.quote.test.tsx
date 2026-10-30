@@ -1,6 +1,9 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { contactFormCopy } from '../components/contact/contactFormCopy';
+import { homeCopy } from '../data/homeCopy';
+import { DEFAULT_HOURLY_RATE, buildQuoteMessage } from '../lib/roi';
 import { rejectUnexpectedFetch } from '../test/contactForm';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
@@ -8,6 +11,9 @@ import HomePage from './HomePage';
 
 // One test in this file, on purpose: React.lazy keeps what it loaded inside the module, so the chunk of the form is
 // held back (by the gate below) only for the first load of it, and Vitest gives every file its own modules.
+// The words the quote opens with, up to the numbers. They come from the builder, so a new wording is one change.
+const QUOTE_START = buildQuoteMessage({ hoursPerWeek: 1, teamMultiplier: 1, hourlyRate: DEFAULT_HOURLY_RATE }).split(':')[0];
+
 const gate = vi.hoisted(() => {
   let release: () => void = () => {};
   const opened = new Promise<void>((resolve) => {
@@ -39,7 +45,7 @@ describe('HomePage quote hand over before the form has loaded', () => {
   it('scrolls to the form once its chunk arrives, and fills the message then', async () => {
     const user = userEvent.setup();
     renderWithProviders(<HomePage />);
-    const quote = await screen.findByRole('button', { name: 'Quero automatizar esse processo' }, { timeout: 20_000 });
+    const quote = await screen.findByRole('button', { name: homeCopy.roi.cta }, { timeout: 20_000 });
     expect(document.getElementById('contato')).toBeNull();
 
     await user.click(quote);
@@ -53,7 +59,7 @@ describe('HomePage quote hand over before the form has loaded', () => {
     // observer, so a microtask) can come first: the field is waited for, not read on the spot. A read on the spot
     // failed once in a loaded run, with the field still empty.
     await waitFor(() =>
-      expect((screen.getByLabelText('Mensagem') as HTMLTextAreaElement).value).toMatch(/^Olá, VN One! Usei a calculadora do site/),
+      expect((screen.getByLabelText(contactFormCopy.labels.mensagem) as HTMLTextAreaElement).value.startsWith(QUOTE_START)).toBe(true),
     );
   });
 });

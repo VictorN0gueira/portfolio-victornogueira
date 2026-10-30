@@ -50,6 +50,12 @@ export const homeCopy = {
       estimate: (amount: string) => `Estimativa: ${amount} por mês`,
     },
   },
+  // Os textos da seção da frase de resultado (os quatro números estão em data/stats.ts). `heading` é o h2 da seção.
+  statement: {
+    kicker: 'resultado',
+    heading: 'O trabalho repetitivo vai para os fluxos. A equipe fica com o resto.',
+    sub: 'Números dos projetos que a gente já entregou.',
+  },
   // Os textos das abas de casos de uso (o conteúdo de cada aba está em data/useCases.ts). `pause` é o nome fixo do
   // botão que para a troca automática: o estado vai em aria-pressed, o nome não muda.
   useCases: {

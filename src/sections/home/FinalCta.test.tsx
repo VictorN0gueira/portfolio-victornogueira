@@ -1,6 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { homeCopy } from '../../data/homeCopy';
 import { whatsappUrl } from '../../lib/constants';
 import { findAccentElements } from '../../test/accent';
 import { expectNoConsoleOutput } from '../../test/consoleGuard';
@@ -8,9 +9,9 @@ import { SWAP_WAIT, findWhatsappField, rejectUnexpectedFetch, stubFetch, submitE
 import { renderWithProviders } from '../../test/render';
 import { FinalCta } from './FinalCta';
 
-const HEADING = 'Qual processo a gente automatiza primeiro?';
-const LINK_NAME = 'Chamar no WhatsApp';
-const LINK_MESSAGE = 'Olá! Quero automatizar um processo da minha empresa.';
+const HEADING = homeCopy.finalCta.heading;
+const LINK_NAME = homeCopy.finalCta.cta;
+const LINK_MESSAGE = homeCopy.finalCta.message;
 
 expectNoConsoleOutput();
 

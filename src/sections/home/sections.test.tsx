@@ -1,5 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { homeCopy } from '../../data/homeCopy';
 import { integrations } from '../../data/integrations';
 import { stats } from '../../data/stats';
 import { findAccentElements } from '../../test/accent';
@@ -169,7 +170,7 @@ describe('StatementStats with motion off', () => {
     const headings = screen.getAllByRole('heading', { level: 2 });
 
     expect(headings).toHaveLength(1);
-    expect(headings[0]).toHaveTextContent('O trabalho repetitivo vai para os fluxos. A equipe fica com o resto.');
+    expect(headings[0]).toHaveTextContent(homeCopy.statement.heading);
   });
 
   it('shows the label and the description of every stat', () => {
@@ -184,14 +185,14 @@ describe('StatementStats with motion off', () => {
   it('shows the kicker and the sub line', () => {
     renderWithProviders(<StatementStats />);
 
-    expect(screen.getByText('resultado')).toBeInTheDocument();
-    expect(screen.getByText('Números dos projetos que a gente já entregou.')).toBeInTheDocument();
+    expect(screen.getByText(homeCopy.statement.kicker)).toBeInTheDocument();
+    expect(screen.getByText(homeCopy.statement.sub)).toBeInTheDocument();
   });
 
   it('is named by its heading', () => {
     renderWithProviders(<StatementStats />);
 
-    expect(screen.getByRole('region', { name: /O trabalho repetitivo vai para os fluxos/ })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: homeCopy.statement.heading })).toBeInTheDocument();
   });
 
   it('lays the cards out in 1 column, 2 from sm and 4 from lg', () => {

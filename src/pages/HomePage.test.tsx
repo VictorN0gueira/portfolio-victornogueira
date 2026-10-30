@@ -1,7 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { contactFormCopy } from '../components/contact/contactFormCopy';
 import { faqs } from '../data/faqs';
+import { homeCopy } from '../data/homeCopy';
+import { DEFAULT_HOURLY_RATE, buildQuoteMessage } from '../lib/roi';
 import { SITE } from '../lib/site';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
 import { rejectUnexpectedFetch } from '../test/contactForm';
@@ -10,20 +13,21 @@ import { renderWithProviders } from '../test/render';
 import HomePage from './HomePage';
 
 const LAZY_WAIT = { timeout: 20_000 } as const;
-const FINAL_HEADING = 'Qual processo a gente automatiza primeiro?';
-const QUOTE_BUTTON = 'Quero automatizar esse processo';
-const QUOTE_START = 'Olá, VN One! Usei a calculadora do site';
+const FINAL_HEADING = homeCopy.finalCta.heading;
+const QUOTE_BUTTON = homeCopy.roi.cta;
+// The words the quote opens with, up to the numbers. They come from the builder, so a new wording is one change.
+const QUOTE_START = buildQuoteMessage({ hoursPerWeek: 1, teamMultiplier: 1, hourlyRate: DEFAULT_HOURLY_RATE }).split(':')[0];
 const OLD_SECTION_TEXTS = ['Cases em Destaque', 'Vamos criar', 'Respondo em até'];
 
 // The h2 of every section after the hero, in the order the page shows them. The statement of the second section
 // is read from the page, since it is a long sentence that lives in the section.
 const SECTION_HEADINGS = [
-  'Comece pelo processo que mais pesa na rotina',
-  'Três jeitos de tirar trabalho manual da sua frente',
-  'Do primeiro papo ao fluxo rodando',
-  'Quanto o trabalho manual custa por ano',
-  'Quem já automatizou com a gente',
-  'Perguntas que a gente sempre ouve',
+  homeCopy.useCases.heading,
+  homeCopy.services.heading,
+  homeCopy.method.heading,
+  homeCopy.roi.heading,
+  homeCopy.testimonials.heading,
+  homeCopy.faq.heading,
   FINAL_HEADING,
 ];
 
@@ -54,7 +58,7 @@ async function renderHome(route = '/') {
   return view;
 }
 
-const messageField = () => screen.getByLabelText('Mensagem') as HTMLTextAreaElement;
+const messageField = () => screen.getByLabelText(contactFormCopy.labels.mensagem) as HTMLTextAreaElement;
 
 describe('HomePage structure', () => {
   it('shows the hero first and then the sections in the order of the brief', async () => {
@@ -63,7 +67,7 @@ describe('HomePage structure', () => {
     const h2s = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
     // The statement of the second section is the first h2: it is not one of the named ones.
     expect(h2s.slice(1)).toEqual(SECTION_HEADINGS);
-    expect(h2s[0]).toMatch(/^O trabalho repetitivo/);
+    expect(h2s[0]).toBe(homeCopy.statement.heading);
 
     const h1 = screen.getByRole('heading', { level: 1 });
     const first = screen.getAllByRole('heading', { level: 2 })[0];
@@ -101,7 +105,7 @@ describe('HomePage structure', () => {
     const { container } = await renderHome();
 
     expect(container.querySelector('#metodo')).toBe(screen.getByRole('region', { name: 'Do primeiro papo ao fluxo rodando' }));
-    expect(container.querySelector('#clientes')).toBe(screen.getByRole('region', { name: 'Quem já automatizou com a gente' }));
+    expect(container.querySelector('#clientes')).toBe(screen.getByRole('region', { name: homeCopy.testimonials.heading }));
   });
 });
 
@@ -209,6 +213,6 @@ describe('HomePage anchors', () => {
     const final = screen.getByRole('region', { name: FINAL_HEADING });
 
     expect(within(final).getByRole('button', { name: 'Enviar' })).toBeInTheDocument();
-    expect(within(final).getByRole('link', { name: 'Chamar no WhatsApp' })).toBeInTheDocument();
+    expect(within(final).getByRole('link', { name: homeCopy.finalCta.cta })).toBeInTheDocument();
   });
 });

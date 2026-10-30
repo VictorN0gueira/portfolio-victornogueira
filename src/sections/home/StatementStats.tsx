@@ -6,11 +6,10 @@ import { Kicker } from '../../components/ui/Kicker';
 import { RevealGroup, RevealItem } from '../../components/ui/Reveal';
 import { Section } from '../../components/ui/Section';
 import { SpotlightCard } from '../../components/ui/SpotlightCard';
+import { homeCopy } from '../../data/homeCopy';
 import { stats } from '../../data/stats';
 
-const KICKER = 'resultado';
-const STATEMENT = 'O trabalho repetitivo vai para os fluxos. A equipe fica com o resto.';
-const SUB = 'Números dos projetos que a gente já entregou.';
+const { kicker: KICKER, heading: STATEMENT, sub: SUB } = homeCopy.statement;
 
 const GRID_CLASSES = 'mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 md:mt-14 md:gap-5 lg:grid-cols-4';
 const CARD_CLASSES =

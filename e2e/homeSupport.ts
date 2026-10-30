@@ -1,4 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
+import { contactFormCopy } from '../src/components/contact/contactFormCopy';
+import { homeCopy } from '../src/data/homeCopy';
+import { DEFAULT_HOURLY_RATE, buildQuoteMessage } from '../src/lib/roi';
 import { expect } from './n8nGuard';
 
 // What the specs that open the whole home share: how it is opened, how it is walked from top to bottom (so every lazy
@@ -6,18 +9,29 @@ import { expect } from './n8nGuard';
 // that use it take their `test` from ./n8nGuard, because the home mounts the real contact form (see
 // src/test/e2e-guard.test.ts). Nothing in this file presses a submit button or fills a field of the form.
 
-export const STATEMENT_HEADING = 'O trabalho repetitivo vai para os fluxos. A equipe fica com o resto.';
-export const FINAL_HEADING = 'Qual processo a gente automatiza primeiro?';
-export const ROI_HEADING = 'Quanto o trabalho manual custa por ano';
+// The copy the specs look for is read from the copy modules, so a new wording is one change in the module.
+export const STATEMENT_HEADING = homeCopy.statement.heading;
+export const FINAL_HEADING = homeCopy.finalCta.heading;
+export const ROI_HEADING = homeCopy.roi.heading;
 export const SECTION_HEADINGS = [
-  'Comece pelo processo que mais pesa na rotina',
-  'Três jeitos de tirar trabalho manual da sua frente',
-  'Do primeiro papo ao fluxo rodando',
+  homeCopy.useCases.heading,
+  homeCopy.services.heading,
+  homeCopy.method.heading,
   ROI_HEADING,
-  'Quem já automatizou com a gente',
-  'Perguntas que a gente sempre ouve',
+  homeCopy.testimonials.heading,
+  homeCopy.faq.heading,
   FINAL_HEADING,
 ];
+export const QUOTE_BUTTON = homeCopy.roi.cta;
+// The words the quote opens with, up to the numbers: they come from the builder of the message.
+export const QUOTE_START = buildQuoteMessage({ hoursPerWeek: 1, teamMultiplier: 1, hourlyRate: DEFAULT_HOURLY_RATE }).split(':')[0];
+export const SERVICE_PLACEHOLDER = contactFormCopy.placeholders.servico;
+
+/**
+ * The button that opens the mobile menu. It is named "Abrir menu" today and may be renamed "Menu", so the specs
+ * ask for either name. Once the menu is open the same button reads "Fechar menu", which does not match.
+ */
+export const menuButton = (page: Page) => page.getByRole('button', { name: /^(?:Abrir menu|Menu)$/ });
 export const MIN_TOUCH_PX = 44;
 // A box of 44px can be measured as 43.99997 (floating point), which is not a smaller target.
 export const TOUCH_ROUNDING_PX = 0.01;
