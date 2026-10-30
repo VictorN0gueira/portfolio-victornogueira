@@ -34,6 +34,15 @@ describe('F3: DDD 55 edits', () => {
     expect(formatWhatsappDisplay('+55 55  8002-1234')).toBe('+55 55 9 8002-1234');
   });
 
+  it('keeps a short number too, and the threshold where a typed country code stops being possible', () => {
+    expect(formatWhatsappDisplay('+55 55  80')).toBe('+55 55 9 80');
+    // A country code typed by hand shows in the first digits: "55 8" and "55 81 9" are still read as 55 then the DDD.
+    expect(formatWhatsappDisplay('+55 55 8')).toBe('+55 8');
+    expect(formatWhatsappDisplay('+55 55 81 9')).toBe('+55 81 9');
+    // From six digits after the prefix the text is a display the field made: DDD 55.
+    expect(formatWhatsappDisplay('+55 55 81 98')).toBe('+55 55 9 8198');
+  });
+
   it('keeps the digits when the shown 9 is deleted from any DDD 55 number', () => {
     const wrong = numbers
       .map(({ part, display }) => ({ part, after: formatWhatsappDisplay(`${display.slice(0, SHOWN_NINE_AT)}${display.slice(SHOWN_NINE_AT + 1)}`) }))
