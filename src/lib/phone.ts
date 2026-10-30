@@ -51,8 +51,10 @@ const COUNTRY_CODED_MIN_DIGITS = 12;
 // Depois de um 55 digitado, um terceiro dígito que nenhum número do DDD 55 tem: fixo começa com 2 a 5 e celular com 9.
 // Então o 55 é o código do país e o terceiro dígito já é o primeiro do DDD.
 const NOT_A_DDD_55_NUMBER_START: ReadonlySet<string> = new Set(['1', '6', '7', '8']);
-// O 9 que o campo coloca aparece como palavra própria: "+55 DD 9 ...". Quem lê o valor sabe qual 9 é esse.
-const SHOWN_NINE = /^\+55 (\d{2}) 9(?= |$)/;
+// O 9 que o campo coloca aparece como palavra própria: "+55 DD 9 ...". Quem lê o valor sabe qual 9 é esse. O que vem antes
+// dele costuma ser o DDD (2 dígitos), mas uma edição no meio do DDD deixa 0, 1 ou 3: apagar ou inserir um dígito do DDD não
+// pode empurrar esse 9 para dentro do DDD nem para dentro do número.
+const SHOWN_NINE = /^\+55 (\d{0,3}) 9(?= |$)/;
 // O número completo do DDD 55 com mais um dígito digitado no fim: "+55 55 9 NNNN-NNNN" + d.
 const FULL_DDD_55_PLUS_DIGIT = /^\+55 55 9 (\d{4})-(\d{4})(\d)$/;
 
