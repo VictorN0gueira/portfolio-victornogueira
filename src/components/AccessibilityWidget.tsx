@@ -15,7 +15,7 @@ import { useBackdropIsDark } from './useBackdropIsDark';
 // The wrapper takes no pointer (pointer-events-none): the 60px bottom margin of the panel on a short window is a
 // transparent strip of this box and would cover the WhatsApp button. Only the panel and the trigger take it.
 const WRAPPER_CLASSES =
-  `${KEEPS_PLACE_UNDER_SCROLL_LOCK} pointer-events-none fixed right-0 bottom-[calc(max(16px,env(safe-area-inset-bottom))+64px)] z-[150] flex flex-row-reverse items-end sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:items-center [@media(max-height:30rem)]:bottom-auto [@media(max-height:30rem)]:top-1/2 [@media(max-height:30rem)]:-translate-y-1/2 [@media(max-height:30rem)]:items-center`;
+  `${KEEPS_PLACE_UNDER_SCROLL_LOCK} pointer-events-none fixed right-0 bottom-[calc(max(16px,env(safe-area-inset-bottom))+96px)] z-[150] flex flex-row-reverse items-end sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:items-center [@media(max-height:30rem)]:bottom-auto [@media(max-height:30rem)]:top-1/2 [@media(max-height:30rem)]:-translate-y-1/2 [@media(max-height:30rem)]:items-center`;
 
 interface Dismissal {
   onPointerDown: () => void;

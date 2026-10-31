@@ -12,6 +12,8 @@ const MARQUEE_PAUSE_NAME = 'Pausar faixa de integrações';
 const TABS_PAUSE_NAME = 'Pausar troca automática';
 const TOUCH_AGENT = devices['Pixel 7'].userAgent;
 const MIN_GAP_PX = 8;
+// The owner asked for the trigger to sit clearly above the WhatsApp button (it was 12 px, too tight): about 44 px now.
+const MAX_GAP_PX = 56;
 
 interface Box {
   x: number;
@@ -184,7 +186,8 @@ for (const width of [320, 390]) {
         const whatsApp = await boxOf(whatsAppLink(page));
         expect(overlapArea(widgetBox, whatsApp), 'trigger and WhatsApp button').toBe(0);
         expect(whatsApp.y - (widgetBox.y + widgetBox.height), 'gap between the trigger and the WhatsApp button').toBeGreaterThanOrEqual(MIN_GAP_PX);
-        expect(whatsApp.y - (widgetBox.y + widgetBox.height), 'the trigger is right above the WhatsApp button').toBeLessThanOrEqual(2 * MIN_GAP_PX);
+        expect(whatsApp.y - (widgetBox.y + widgetBox.height), 'the trigger is above the WhatsApp button, with room between them').toBeLessThanOrEqual(MAX_GAP_PX);
+        expect(whatsApp.y - (widgetBox.y + widgetBox.height), 'room between the trigger and the WhatsApp button').toBeGreaterThanOrEqual(3 * MIN_GAP_PX);
         if (isOpen) {
           const panel = await boxOf(page.getByRole('dialog', { name: PANEL_NAME }));
           expect(overlapArea(panel, whatsApp), 'panel and WhatsApp button').toBe(0);

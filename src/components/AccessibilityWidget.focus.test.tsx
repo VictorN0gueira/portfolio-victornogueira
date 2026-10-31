@@ -277,7 +277,7 @@ describe('AccessibilityWidget stacking with the WhatsApp button (contract 3, X:M
     const { panel } = await openPanel();
     const wrapper = panel.parentElement as HTMLElement;
 
-    expect(wrapper).toHaveClass('bottom-[calc(max(16px,env(safe-area-inset-bottom))+64px)]');
+    expect(wrapper).toHaveClass('bottom-[calc(max(16px,env(safe-area-inset-bottom))+96px)]');
     expect(wrapper).toHaveClass('items-end', 'sm:items-center');
   });
 
