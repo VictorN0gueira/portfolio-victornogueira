@@ -1,13 +1,13 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { contactFormCopy } from '../components/contact/contactFormCopy';
 import { homeCopy } from '../data/homeCopy';
 import { shellCopy } from '../data/shellCopy';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
-import { rejectUnexpectedFetch } from '../test/contactForm';
+import { messageField, rejectUnexpectedFetch } from '../test/contactForm';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
+import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../test/scroll';
 import HomePage from './HomePage';
 
 // Every call of scrollToIdWhenMounted is recorded with the function that cancels it, so the tests can see when the
@@ -36,14 +36,13 @@ beforeEach(() => {
   stubMatchMedia();
   rejectUnexpectedFetch();
   loops.cancels.length = 0;
-  Object.defineProperty(Element.prototype, 'scrollIntoView', { value: vi.fn(), configurable: true, writable: true });
+  stubScrollIntoViewEverywhere();
 });
 
 afterEach(() => {
-  Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+  removeScrollIntoViewStub();
 });
 
-const messageField = () => screen.getByLabelText(contactFormCopy.labels.mensagem) as HTMLTextAreaElement;
 
 async function renderWithQuoteButton() {
   const user = userEvent.setup();

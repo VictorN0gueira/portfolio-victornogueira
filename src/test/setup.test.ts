@@ -93,9 +93,10 @@ describe('the Testing Library config', () => {
 });
 
 // Each pair below is order dependent on purpose: the first test overrides, the second one checks
-// what the next test sees. describe.sequential keeps the pair in order, and the checking test
-// skips itself when run alone (for example with -t), so it can never pass vacuously.
-describe.sequential('isolation between tests', () => {
+// what the next test sees. concurrent: false keeps the pair in order even if the config ever turns concurrency on
+// (vitest 5 removed the describe.sequential shorthand and the sequential option), and the checking test skips itself
+// when run alone (for example with -t), so it can never pass vacuously.
+describe('isolation between tests', { concurrent: false }, () => {
   let stubbedMatchMedia = false;
   let assignedMatchMedia = false;
   let stubbedProbe = false;

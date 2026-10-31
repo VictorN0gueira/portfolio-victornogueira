@@ -8,6 +8,7 @@ import { findAccentElements } from '../../test/accent';
 import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { renderWithProviders } from '../../test/render';
 import { FaqSection } from './FaqSection';
+import { itemOf } from '../../test/revealItem';
 
 const HEADING = 'Perguntas que a gente sempre ouve';
 const LINK_NAME = 'Falar no WhatsApp';
@@ -16,7 +17,6 @@ const LINK_MESSAGE = 'Olá! Tenho uma dúvida sobre automação.';
 expectNoConsoleOutput();
 
 const linkEl = (): HTMLAnchorElement => screen.getByRole('link', { name: LINK_NAME }) as HTMLAnchorElement;
-const itemOf = (element: HTMLElement): HTMLElement => element.closest('[data-reveal-item]') as HTMLElement;
 
 describe('FaqSection copy and structure', () => {
   it('is a white section named by its only h2', () => {

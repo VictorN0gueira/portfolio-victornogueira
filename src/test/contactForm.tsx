@@ -2,6 +2,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, vi } from 'vitest';
 import ContactForm from '../components/ContactForm';
+import { contactFormCopy } from '../components/contact/contactFormCopy';
 import { serviceOptions } from '../data/services';
 import { renderWithProviders } from './render';
 
@@ -39,6 +40,13 @@ export const SWAP_WAIT = { timeout: 3000 } as const;
 export const findWhatsappField = () => screen.findByLabelText('WhatsApp', undefined, SWAP_WAIT);
 
 export const submitButton = () => screen.getByRole('button', { name: 'Enviar' });
+
+/** A button of the method toggle ("Por e-mail", "Por WhatsApp"). */
+export const togglePill = (name: string) => screen.getByRole('button', { name });
+
+/** The one textarea of the form, where a quote from the simulator lands. */
+export const messageField = () => screen.getByLabelText(contactFormCopy.labels.mensagem) as HTMLTextAreaElement;
+
 // The trigger is named by its label and its own text ("Serviço de interesse Escolhe um serviço").
 export const serviceTrigger = () => screen.getByRole('button', { name: /escolhe um serviço/i });
 

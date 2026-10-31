@@ -100,7 +100,7 @@ export function ServicesCards() {
           <div className={GRID_CLASSES}>
             {featuredServices.map((service, position) => (
               <RevealItem
-                key={service.nome}
+                key={service.slug}
                 className={cn(
                   'flex md:mb-5',
                   SUBGRID_CLASSES,

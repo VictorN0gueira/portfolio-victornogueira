@@ -8,6 +8,7 @@ import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { SWAP_WAIT, findWhatsappField, rejectUnexpectedFetch, stubFetch, submitEmailForm } from '../../test/contactForm';
 import { renderWithProviders } from '../../test/render';
 import { FinalCta } from './FinalCta';
+import { itemOf } from '../../test/revealItem';
 
 const HEADING = homeCopy.finalCta.heading;
 const LINK_NAME = homeCopy.finalCta.cta;
@@ -20,7 +21,6 @@ beforeEach(() => {
 });
 
 const sectionOf = (container: HTMLElement): HTMLElement => container.querySelector('section') as HTMLElement;
-const itemOf = (element: HTMLElement): HTMLElement => element.closest('[data-reveal-item]') as HTMLElement;
 
 describe('FinalCta copy and structure', () => {
   it('is the black section with the id contato, named by its only h2', () => {

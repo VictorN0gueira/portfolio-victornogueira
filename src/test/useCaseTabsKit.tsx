@@ -8,7 +8,6 @@ import { renderWithProviders } from './render';
 
 /** The same constant the component rotates by, so no test repeats the number. */
 export { ROTATE_MS };
-export const A11Y_STORAGE_KEY = 'a11y-preferences';
 export const TAB_NAMES = ['Atendimento', 'Comercial', 'Financeiro', 'Operações'] as const;
 export const { useCases: copy } = homeCopy;
 

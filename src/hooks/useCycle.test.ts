@@ -1,13 +1,9 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCycle } from './useCycle';
+import { setVisibility } from '../test/visibility';
 
 const INTERVAL_MS = 1000;
-
-function setVisibility(state: DocumentVisibilityState): void {
-  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
-  document.dispatchEvent(new Event('visibilitychange'));
-}
 
 describe('useCycle', () => {
   beforeEach(() => {

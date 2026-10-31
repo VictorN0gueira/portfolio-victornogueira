@@ -6,8 +6,8 @@ import { triggerIntersection } from '../../test/intersection';
 import { renderWithProviders } from '../../test/render';
 import { useAccessibility } from '../../contexts/AccessibilityContext';
 import { RevealGroup, RevealItem } from './Reveal';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
-const A11Y_STORAGE_KEY = 'a11y-preferences';
 const REVEALED_TIMEOUT_MS = 3000;
 const MOTION_BACK_ON_WINDOW_MS = 1000;
 

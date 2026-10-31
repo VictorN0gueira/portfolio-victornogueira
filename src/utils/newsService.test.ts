@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as newsService from './newsService';
 import { safeHttpUrl, safeImageUrl } from './newsSanitize';
 import { detectCategory, getNewsArticles, getTimeAgo, type NewsArticle } from './newsService';
+import { jsonResponse, stubPublicFeeds } from '../test/news';
 
 const CACHE_KEY = 'blog_news_cache';
 const EDGE_HOST = 'qpcwoioflaxiasmcdfbd.supabase.co';
@@ -20,10 +21,6 @@ function article(overrides: Record<string, unknown> = {}): Record<string, unknow
     language: 'pt',
     ...overrides,
   };
-}
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 }
 
 /** Answers the edge function with `edgeBody` and every other host with a failure, and records every address asked for. */
@@ -227,19 +224,6 @@ function devToItem(overrides: Record<string, unknown> = {}): Record<string, unkn
 
 function tabNewsItem(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return { slug: 's1', title: 'IA no trabalho', source_url: 'javascript:alert(1)', published_at: '2026-10-02T10:00:00Z', owner_username: 'ana', tabcoins: 3, ...overrides };
-}
-
-/** The edge function is down; dev.to and TabNews answer with `devTo` and `tabNews` (any other host fails). */
-function stubPublicFeeds(devTo: unknown, tabNews: unknown) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      const address = String(input);
-      if (address.includes('dev.to')) return jsonResponse(devTo);
-      if (address.includes('tabnews')) return jsonResponse(tabNews);
-      return jsonResponse({}, 503);
-    }),
-  );
 }
 
 describe('getNewsArticles from the public feeds', () => {

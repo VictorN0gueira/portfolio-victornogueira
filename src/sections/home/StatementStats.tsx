@@ -47,8 +47,8 @@ export function StatementStats() {
           <div data-slot="illustration" />
           {/* Its own group: on one column the cards sit far below the heading, so they reveal when the grid is in view. */}
           <RevealGroup className={GRID_CLASSES}>
-            {stats.map(({ value, label, description }) => (
-              <RevealItem key={value} className="flex">
+            {stats.map(({ id, value, label, description }) => (
+              <RevealItem key={id} className="flex">
                 <SpotlightCard as="div" className={CARD_CLASSES}>
                   <div className="@container">
                     <CountUp value={value} className={NUMBER_CLASSES} />

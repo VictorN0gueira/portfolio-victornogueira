@@ -7,11 +7,13 @@ import {
   NUMBER_SHAPES,
   handBuiltDisplay,
   handBuiltValue,
+  isRealNumber,
+  isRefused,
   pastedDisplay,
   typedDisplay,
+  whatsappError,
 } from '../test/phoneInputs';
 import { oracleFormat, oracleToEvolution } from '../test/phoneOracle';
-import { validateContact } from './contact';
 import { toEvolutionFormat } from './phone';
 
 // Hundreds of thousands of typed strings: the default 5 seconds is tight on a busy machine.
@@ -20,13 +22,8 @@ vi.setConfig({ testTimeout: 120_000 });
 // P2: the country code typed by hand ("55 81 98445-1243", "+55 81 98445-1243", 5581999998888) used to be read as the DDD
 // 55 while pasting it was read right. Typing and pasting the same text must end the same, with the number the text holds.
 
-const whatsappMessage = (whatsapp: string) =>
-  validateContact({ nome: 'Ana Lima', email: 'a@b.com', whatsapp, mensagem: 'Quero automatizar notas fiscais', servico: 'x' }, 'whatsapp').whatsapp;
 const countryShapes = NUMBER_SHAPES.filter((shape) => shape.name.includes('55 typed'));
 const localShapes = NUMBER_SHAPES.filter((shape) => !shape.name.includes('55 typed') && !shape.name.includes('trunk'));
-
-/** A fixed line starts with 2 to 5: the shapes with no mobile 9 are only real numbers for such a part. */
-const isRealNumber = (shape: { hasMobileNine: boolean }, part: string) => shape.hasMobileNine || '2345'.includes(part[0]);
 
 /**
  * The DDDs 92 to 95 typed with the country code by hand can be read as the DDD 2x to 5x that the same digits form after a
@@ -204,14 +201,13 @@ describe('F5: a landline of DDD 92 to 95 typed with the country code by hand', (
 });
 
 describe('F1 (formatter): a hand typed country code never silently sends a wrong DDD', () => {
-  const ok = { nome: 'Ana Lima', email: 'a@b.com', whatsapp: '', mensagem: 'Quero automatizar notas fiscais', servico: 'x' };
-  const isAccepted = (display: string) => validateContact({ ...ok, whatsapp: display }, 'whatsapp').whatsapp === undefined;
+  const isAccepted = (display: string) => !isRefused(display);
 
   it('does not choose between DDD 49 and DDD 94 (the same digits read both ways): what is left is refused, never sent', () => {
     for (const text of ['5594987654321', '55 94 98765-4321', '+55 94 98765-4321', '5549987654321', '55 49 98765-4321']) {
       const display = typedDisplay(text);
       expect(isAccepted(display)).toBe(false);
-      expect(whatsappMessage(display)).toBe('Coloca o número com DDD, por exemplo 81 99999-9999');
+      expect(whatsappError(display)).toBe('Coloca o número com DDD, por exemplo 81 99999-9999');
     }
   });
 

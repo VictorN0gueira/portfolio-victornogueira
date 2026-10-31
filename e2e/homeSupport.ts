@@ -52,10 +52,16 @@ export async function openHome(page: Page, path = '/') {
   }
 }
 
+/**
+ * The localStorage key of the accessibility preferences. It is typed once here for every spec (the context cannot be
+ * imported by this project); src/test/a11yStorageKey.test.ts checks that it is the context's key.
+ */
+export const A11Y_STORAGE_KEY = 'a11y-preferences';
+
 export async function enableLargeFont(page: Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('a11y-preferences', JSON.stringify({ fontSize: true }));
-  });
+  await page.addInitScript((key) => {
+    localStorage.setItem(key, JSON.stringify({ fontSize: true }));
+  }, A11Y_STORAGE_KEY);
 }
 
 /** Opens a choice pill (the hours or the task of the hero) and picks one option of its list. */

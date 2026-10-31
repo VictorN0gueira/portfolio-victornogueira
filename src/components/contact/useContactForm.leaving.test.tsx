@@ -23,7 +23,7 @@ afterEach(() => {
   if (NATIVE_VISIBILITY) Object.defineProperty(Document.prototype, 'visibilityState', NATIVE_VISIBILITY);
 });
 
-function setVisibility(state: 'hidden' | 'visible') {
+function setVisibilityInAct(state: 'hidden' | 'visible') {
   Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
   act(() => {
     document.dispatchEvent(new Event('visibilitychange'));
@@ -66,7 +66,7 @@ describe('leaving during the hold of the time trap', () => {
     const { result, sent } = fastVisitorPressedEnviar();
     expect(fetchMock).not.toHaveBeenCalled();
 
-    setVisibility('hidden');
+    setVisibilityInAct('hidden');
     await settle(sent);
 
     expectOneRealRequest(fetchMock, result);
@@ -77,7 +77,7 @@ describe('leaving during the hold of the time trap', () => {
     const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
     const { sent } = fastVisitorPressedEnviar();
 
-    setVisibility('visible');
+    setVisibilityInAct('visible');
 
     expect(fetchMock).not.toHaveBeenCalled();
     await act(async () => {
@@ -119,7 +119,7 @@ describe('leaving during the hold of the time trap', () => {
       await sent;
     });
 
-    setVisibility('hidden');
+    setVisibilityInAct('hidden');
     act(() => {
       window.dispatchEvent(new Event('pagehide'));
     });
@@ -138,7 +138,7 @@ describe('leaving during the hold of the time trap', () => {
       await hook.result.current.handleSubmit(SUBMIT_EVENT);
     });
 
-    setVisibility('hidden');
+    setVisibilityInAct('hidden');
     act(() => {
       window.dispatchEvent(new Event('pagehide'));
     });
@@ -152,7 +152,7 @@ describe('the request keeps the bytes it always had', () => {
   it('has the same body with and without the hold, and keepalive is an option of the request, not of the body', async () => {
     const fetchMock = stubFetch(() => Promise.resolve({ ok: true }));
     const { result, sent } = fastVisitorPressedEnviar();
-    setVisibility('hidden');
+    setVisibilityInAct('hidden');
     await settle(sent);
 
     const { init } = readCall(fetchMock);

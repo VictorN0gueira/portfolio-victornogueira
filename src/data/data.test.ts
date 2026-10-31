@@ -39,6 +39,14 @@ describe('stats', () => {
     }
   });
 
+  // R:M25: the React key is the id, so a copy edit that repeats a number or a label cannot clash two cards.
+  it('gives every stat a unique id made of lowercase words and hyphens, none of them the displayed number', () => {
+    const ids = stats.map((stat) => (stat as { id?: string }).id);
+    expect(ids.every((id) => typeof id === 'string' && /^[a-z]+(?:-[a-z]+)*$/.test(id))).toBe(true);
+    expect(new Set(ids).size).toBe(stats.length);
+    expect(ids).not.toContain(stats[0].value);
+  });
+
   it('does not promise uptime: no "24 horas" in any stat', () => {
     expect(stats.flatMap((stat) => [stat.label, stat.description]).join(' ')).not.toMatch(/24 horas/);
   });
@@ -328,6 +336,12 @@ describe('services', () => {
 });
 
 describe('faqs', () => {
+  it('gives every question a unique id made of lowercase words and hyphens (the React key of the accordion)', () => {
+    const ids = faqs.map((faq) => (faq as { id?: string }).id);
+    expect(ids.every((id) => typeof id === 'string' && /^[a-z]+(?:-[a-z]+)*$/.test(id))).toBe(true);
+    expect(new Set(ids).size).toBe(faqs.length);
+  });
+
   it('speaks as a team, never in the first person singular', () => {
     const FIRST_PERSON = /\b(eu|me|meu|minha|mim|estou|construo)\b/i;
     const offenders = faqs.filter((faq) => FIRST_PERSON.test(faq.answer)).map((faq) => faq.question);

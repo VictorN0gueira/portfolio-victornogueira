@@ -2,6 +2,8 @@ import { Plus } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export interface AccordionItem {
+  /** Stable React key of the item: never shown, so a copy edit of the question cannot clash two items. */
+  id: string;
   question: string;
   answer: string;
 }
@@ -32,7 +34,7 @@ export function Accordion({ items, name, defaultOpenIndex = 0, className }: Acco
   return (
     <div className={cn('border-t border-current/15', className)}>
       {items.map((item, index) => (
-        <details key={item.question} name={name} open={index === defaultOpenIndex} className="vn-accordion border-b border-current/15">
+        <details key={item.id} name={name} open={index === defaultOpenIndex} className="vn-accordion border-b border-current/15">
           <summary className={SUMMARY_CLASS}>
             <span className="min-w-0 break-words">{item.question}</span>
             <Plus aria-hidden="true" className="vn-accordion-icon size-5 shrink-0" />

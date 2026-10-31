@@ -8,7 +8,6 @@ import { renderWithProviders } from './render';
 import { RoiSimulator } from '../sections/home/RoiSimulator';
 
 export const NBSP = String.fromCharCode(0x00a0);
-export const A11Y_STORAGE_KEY = 'a11y-preferences';
 export const SLIDER_NAME = 'Horas por semana em tarefas repetitivas';
 const TEAM_NAME = 'Quantas pessoas fazem isso';
 const RATE_NAME = 'Valor da hora (R$)';

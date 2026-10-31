@@ -1,6 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
-import { EIGHT_DIGIT_PARTS_INDEPENDENT as PARTS, EXISTING_DDDS, handBuiltDisplay, typedDisplay } from '../test/phoneInputs';
-import { validateContact } from './contact';
+import {
+  EIGHT_DIGIT_PARTS_INDEPENDENT as PARTS,
+  EXISTING_DDDS,
+  FIRST_CARET,
+  SHOWN_NINE_AT,
+  displayOfDigits,
+  handBuiltDisplay,
+  isRefused,
+  numberIndexOfCaret,
+  typedDisplay,
+} from '../test/phoneInputs';
 import { formatWhatsappDisplay } from './phone';
 
 vi.setConfig({ testTimeout: 120_000 });
@@ -10,23 +19,7 @@ vi.setConfig({ testTimeout: 120_000 });
 // the form accepted and sent. Whatever the visitor does to a complete DDD 55 number, the field must clear the number or leave
 // one the form refuses (the visitor retypes): a complete number that differs from the typed digits is never sent.
 
-const FIRST_CARET = 4;
-const SHOWN_NINE_AT = 7;
 const ALL_DIGITS = '0123456789';
-
-const ok = { nome: 'Ana Lima', email: 'a@b.com', whatsapp: '', mensagem: 'Quero automatizar notas fiscais', servico: 'x' };
-const isRefused = (display: string) => validateContact({ ...ok, whatsapp: display }, 'whatsapp').whatsapp !== undefined;
-
-function displayOfDigits(digits: string): string {
-  const kept = digits.slice(0, 10);
-  const number = kept.slice(2);
-  return `+55 ${kept.slice(0, 2)} 9 ${number.length <= 4 ? number : `${number.slice(0, 4)}-${number.slice(4)}`}`;
-}
-
-function numberIndexOfCaret(display: string, caret: number): number {
-  const digitsBefore = [...display.slice(FIRST_CARET, caret)].filter((char) => /\d/.test(char)).length;
-  return caret > SHOWN_NINE_AT ? digitsBefore - 1 : digitsBefore;
-}
 
 // DDD 55 numbers of the two shapes: the mobile (55 9 + eight digits) and the fixed line (55 + eight digits starting 2 to 5).
 // `typed` is what the visitor keys in; `digits` is DDD 55 and the eight digits (the 9 of the mobile is the field's own).

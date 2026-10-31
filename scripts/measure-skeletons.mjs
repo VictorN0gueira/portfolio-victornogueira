@@ -28,6 +28,9 @@ import { chromium } from 'playwright';
 const DEFAULT_SKELETON_PORT = 4191;
 const DEFAULT_URL = `http://localhost:${process.env.SKELETON_PORT ?? DEFAULT_SKELETON_PORT}/`;
 const DEV_SERVER_PORT = '3000';
+// The localStorage key of the accessibility preferences. This plain node script cannot import the context, so it keeps
+// one copy; src/test/a11yStorageKey.test.ts checks it against the context.
+const A11Y_STORAGE_KEY = 'a11y-preferences';
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
 const OUTPUT = resolve(import.meta.dirname, '../src/styles/skeleton.css');
 const DEFAULT_TOLERANCE_PX = 32;
@@ -69,7 +72,7 @@ async function measureAt(browser, url, width, isLarge) {
   const context = await browser.newContext({ viewport: { width, height: WINDOW_HEIGHT_PX } });
   try {
     const page = await context.newPage();
-    if (isLarge) await page.addInitScript(() => localStorage.setItem('a11y-preferences', JSON.stringify({ fontSize: true })));
+    if (isLarge) await page.addInitScript((key) => localStorage.setItem(key, JSON.stringify({ fontSize: true })), A11Y_STORAGE_KEY);
     await page.route('**/*', (route) => {
       const target = new URL(route.request().url());
       if (target.origin === origin) return route.continue();

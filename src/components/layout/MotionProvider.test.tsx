@@ -3,6 +3,7 @@ import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../test/render';
 import MotionProvider from './MotionProvider';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
 interface CapturedConfigProps {
   reducedMotion?: 'user' | 'always' | 'never';
@@ -18,8 +19,6 @@ vi.mock('motion/react', () => ({
   },
 }));
 
-const STORAGE_KEY = 'a11y-preferences';
-
 describe('MotionProvider', () => {
   beforeEach(() => {
     captured.props = undefined;
@@ -33,7 +32,7 @@ describe('MotionProvider', () => {
   });
 
   it('always reduces motion when the accessibility toggle turned animations off', () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ noAnimations: true }));
+    localStorage.setItem(A11Y_STORAGE_KEY, JSON.stringify({ noAnimations: true }));
 
     renderWithProviders(<MotionProvider>conteudo</MotionProvider>);
 

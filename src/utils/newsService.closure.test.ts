@@ -1,15 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getNewsArticles, getTimeAgo } from './newsService';
+import { jsonResponse, stubPublicFeeds } from '../test/news';
 
 const CACHE_KEY = 'blog_news_cache';
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 const CACHE_TTL_MS = 6 * HOUR_MS;
 const NOW = Date.parse('2026-12-01T12:00:00Z');
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
-}
 
 function devTo(day: number, overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -35,19 +32,6 @@ function tabNews(index: number, overrides: Record<string, unknown> = {}): Record
     tabcoins: 1,
     ...overrides,
   };
-}
-
-/** The edge function is down. dev.to answers every tag with `devToBody`, TabNews with `tabNewsBody`. */
-function stubPublicFeeds(devToBody: unknown, tabNewsBody: unknown) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      const address = String(input);
-      if (address.includes('dev.to')) return jsonResponse(devToBody);
-      if (address.includes('tabnews')) return jsonResponse(tabNewsBody);
-      return jsonResponse({}, 503);
-    }),
-  );
 }
 
 beforeEach(() => {

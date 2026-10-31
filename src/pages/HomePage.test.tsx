@@ -1,13 +1,12 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { contactFormCopy } from '../components/contact/contactFormCopy';
 import { faqs } from '../data/faqs';
 import { homeCopy } from '../data/homeCopy';
 import { DEFAULT_HOURLY_RATE, buildQuoteMessage } from '../lib/roi';
 import { SITE } from '../lib/site';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
-import { rejectUnexpectedFetch } from '../test/contactForm';
+import { messageField, rejectUnexpectedFetch } from '../test/contactForm';
 import { WARM_UP_HOOK_TIMEOUT_MS, preloadHomeSections, warmUpRender } from '../test/lazyPages';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
@@ -65,7 +64,6 @@ async function renderHome(route = '/') {
   return view;
 }
 
-const messageField = () => screen.getByLabelText(contactFormCopy.labels.mensagem) as HTMLTextAreaElement;
 
 describe('HomePage structure', () => {
   it('shows the hero first and then the sections in the order of the brief', async () => {

@@ -5,8 +5,8 @@ import { triggerIntersection } from '../../test/intersection';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import DefaultCountUp, { CountUp } from './CountUp';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
-const A11Y_STORAGE_KEY = 'a11y-preferences';
 const SHORT_DURATION_MS = 60;
 const SETTLE_TIMEOUT_MS = 2000;
 

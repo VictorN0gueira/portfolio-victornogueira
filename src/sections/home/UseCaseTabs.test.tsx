@@ -4,8 +4,8 @@ import { homeCopy } from '../../data/homeCopy';
 import { useCases } from '../../data/useCases';
 import { findAccentElements } from '../../test/accent';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 import {
-  A11Y_STORAGE_KEY,
   ROTATE_MS,
   TAB_NAMES,
   advance,

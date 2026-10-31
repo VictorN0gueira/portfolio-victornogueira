@@ -7,8 +7,8 @@ import { triggerIntersection } from '../../test/intersection';
 import { renderWithProviders } from '../../test/render';
 import { NEW_TAB_HINT } from '../ui/NewTabHint';
 import Footer from './Footer';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
-const A11Y_STORAGE_KEY = 'a11y-preferences';
 const HIDDEN_CLIP = /inset\(100%/;
 const SHOWN_CLIP = /inset\(0(%| 0| ?\))/;
 

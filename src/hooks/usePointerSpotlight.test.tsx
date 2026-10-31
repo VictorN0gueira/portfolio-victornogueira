@@ -1,23 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { usePointerSpotlight } from './usePointerSpotlight';
+import { stubRect } from '../test/rect';
 
 function Spotlight() {
   const { ref, onPointerMove } = usePointerSpotlight<HTMLDivElement>();
   return <div ref={ref} data-testid="card" onPointerMove={onPointerMove} />;
-}
-
-function stubRect(el: HTMLElement, rect: { left: number; top: number }): void {
-  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
-    ...rect,
-    right: rect.left + 100,
-    bottom: rect.top + 40,
-    width: 100,
-    height: 40,
-    x: rect.left,
-    y: rect.top,
-    toJSON: () => ({}),
-  });
 }
 
 describe('usePointerSpotlight', () => {

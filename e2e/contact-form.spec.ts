@@ -10,6 +10,7 @@ import {
   type N8nAnswer,
   type NetworkGuard,
 } from './n8nGuard';
+import { enableLargeFont } from './homeSupport';
 
 // Where the form lives: the final call to action of the home. The legacy /contato page renders the same form until it
 // is rebuilt, and has its own smoke test at the end of this file. Everything else goes through the constant.
@@ -659,9 +660,7 @@ test.describe('contact form on small screens', () => {
   });
 
   test('keeps them at 16px or more with the larger font option on', async ({ page, network }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem('a11y-preferences', JSON.stringify({ fontSize: true }));
-    });
+    await enableLargeFont(page);
     await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
     const form = await openForm(page);
     await expect(page.locator('html')).toHaveClass(/a11y-font-large/);

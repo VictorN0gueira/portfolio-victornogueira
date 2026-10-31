@@ -8,6 +8,7 @@ import { renderWithProviders } from '../../test/render';
 import { excerptOf } from './excerpt';
 import { TestimonialCard } from './TestimonialCard';
 import { Testimonials } from './Testimonials';
+import { itemOf } from '../../test/revealItem';
 
 const OPEN_NAME = /ler depoimento completo/i;
 const STAGGERED_POSITIONS = [1, 4];
@@ -16,7 +17,6 @@ const STAGGERED_POSITIONS = [1, 4];
 expectNoConsoleOutput();
 
 const cardOf = (name: string): HTMLElement => screen.getByRole('article', { name });
-const itemOf = (card: HTMLElement): HTMLElement => card.closest('[data-reveal-item]') as HTMLElement;
 
 describe('Testimonials section', () => {
   it('is the section with id clientes by default', () => {

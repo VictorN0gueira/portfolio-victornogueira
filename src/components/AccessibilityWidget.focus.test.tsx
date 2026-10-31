@@ -4,10 +4,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import AccessibilityWidget from './AccessibilityWidget';
+import { A11Y_STORAGE_KEY } from '../contexts/AccessibilityContext';
 
 const TRIGGER_NAME = 'Abrir opções de acessibilidade';
 const PANEL_NAME = 'Opções de acessibilidade';
-const A11Y_STORAGE_KEY = 'a11y-preferences';
 // The glyphs the brand fonts lack, which the panel used as icons (Ruling R13).
 const LEGACY_GLYPHS = [0x25d1, 0x2b1c, 0x23f8, 0x21ba, 0x332].map((code) => String.fromCodePoint(code));
 

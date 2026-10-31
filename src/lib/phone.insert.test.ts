@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { EIGHT_DIGIT_PARTS_INDEPENDENT as PARTS, EXISTING_DDDS, typedDisplay } from '../test/phoneInputs';
+import {
+  EIGHT_DIGIT_PARTS_INDEPENDENT as PARTS,
+  EXISTING_DDDS,
+  FIRST_CARET,
+  SHOWN_NINE_AT,
+  displayOfDigits,
+  numberIndexOfCaret,
+  typedDisplay,
+} from '../test/phoneInputs';
 import { formatWhatsappDisplay } from './phone';
 
 // Many hundreds of thousands of edits: the default 5 seconds is tight on a busy machine.
@@ -8,22 +16,7 @@ vi.setConfig({ testTimeout: 120_000 });
 // F2: a digit typed with the caret anywhere in a complete number must land in the number, where the caret is. The shown 9 is
 // the field's own: a digit typed between the space and the 9 used to turn that 9 into a digit of the number.
 
-const SHOWN_NINE_AT = 7; // "+55 81 9 ...": the 9 is the character at index 7.
-const FIRST_CARET = 4; // just after "+55 "
 const LAST_GROUP_CARET = 14; // just after the hyphen of "+55 DD 9 NNNN-NNNN"
-
-/** The display that digits give, written by hand (not through the formatter): DDD, the field's 9, the number, ten digits at most. */
-function displayOfDigits(digits: string): string {
-  const kept = digits.slice(0, 10);
-  const number = kept.slice(2);
-  return `+55 ${kept.slice(0, 2)} 9 ${number.length <= 4 ? number : `${number.slice(0, 4)}-${number.slice(4)}`}`;
-}
-
-/** The index, among the digits of the number (the shown 9 left out), that a caret at `caret` of a complete display points at. */
-function numberIndexOfCaret(display: string, caret: number): number {
-  const digitsBefore = [...display.slice(FIRST_CARET, caret)].filter((char) => /\d/.test(char)).length;
-  return caret > SHOWN_NINE_AT ? digitsBefore - 1 : digitsBefore;
-}
 
 const numbers = EXISTING_DDDS.flatMap((ddd) =>
   PARTS.filter((_, index) => index % 6 === 0).map((part) => ({ ddd, part, display: typedDisplay(`${ddd}9${part}`) })),

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { ACCENT_RGB, HOURS_PILL_NAME, choosePillOption as choose } from './homeSupport';
+import { ACCENT_RGB, HOURS_PILL_NAME, choosePillOption as choose, enableLargeFont } from './homeSupport';
 import { expect, test } from './n8nGuard';
 
 const ROWS_LIST_NAME = 'Passos da automação';
@@ -129,12 +129,6 @@ async function measureTaskPill(page: Page): Promise<PillMeasure> {
       offsetTop: period.top - lastLine.top,
       offsetBottom: period.bottom - lastLine.bottom,
     };
-  });
-}
-
-async function enableLargeFont(page: Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('a11y-preferences', JSON.stringify({ fontSize: true }));
   });
 }
 

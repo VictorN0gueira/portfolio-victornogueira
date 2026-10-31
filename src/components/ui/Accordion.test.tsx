@@ -1,14 +1,17 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { renderWithProviders } from '../../test/render';
 import { Accordion } from './Accordion';
 
 const ITEMS = [
-  { question: 'quanto tempo leva', answer: 'depende do escopo' },
-  { question: 'como funciona o suporte', answer: 'a gente responde no mesmo dia' },
-  { question: 'posso cancelar', answer: 'sim, quando quiser' },
+  { id: 'prazo', question: 'quanto tempo leva', answer: 'depende do escopo' },
+  { id: 'suporte', question: 'como funciona o suporte', answer: 'a gente responde no mesmo dia' },
+  { id: 'cancelar', question: 'posso cancelar', answer: 'sim, quando quiser' },
 ];
+
+expectNoConsoleOutput();
 
 function getDetails(container: HTMLElement): HTMLDetailsElement[] {
   return [...container.querySelectorAll('details')];
@@ -106,6 +109,18 @@ describe('Accordion', () => {
     const [first] = getDetails(container);
     expect(first).toHaveClass('vn-accordion');
     expect(first.querySelector('.vn-accordion-panel')).not.toBeNull();
+  });
+
+  // R:M25: the key is the id of the item, so two questions that read the same (a copy edit) do not clash.
+  it('keys the items by id: two items with the same question text give no duplicate key warning', () => {
+    const items = [
+      { id: 'first', question: 'mesma pergunta', answer: 'primeira resposta' },
+      { id: 'second', question: 'mesma pergunta', answer: 'segunda resposta' },
+    ];
+
+    const { container } = renderWithProviders(<Accordion items={items} name="faq" />);
+
+    expect(getDetails(container)).toHaveLength(2);
   });
 
   it('renders nothing but the wrapper for an empty list', () => {

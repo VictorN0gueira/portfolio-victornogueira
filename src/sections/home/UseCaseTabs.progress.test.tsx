@@ -1,6 +1,7 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
+import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../../test/scroll';
 import {
   ROTATE_MS,
   advance,
@@ -122,12 +123,11 @@ describe('UseCaseTabs keeps the active tab in view', () => {
 
   afterEach(() => {
     vi.useRealTimers();
-    Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+    removeScrollIntoViewStub();
   });
 
   it('scrolls the tablist, not the page, when the rotation selects a tab that is out of view', () => {
-    const scrollIntoView = vi.fn();
-    Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, value: scrollIntoView });
+    const scrollIntoView = stubScrollIntoViewEverywhere();
     renderTabs();
     expect(getTablist().scrollLeft).toBe(0);
 

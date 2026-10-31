@@ -1,14 +1,14 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { contactFormCopy } from '../components/contact/contactFormCopy';
 import { homeCopy } from '../data/homeCopy';
 import { shellCopy } from '../data/shellCopy';
 import { DEFAULT_HOURLY_RATE, buildQuoteMessage } from '../lib/roi';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
-import { rejectUnexpectedFetch } from '../test/contactForm';
+import { messageField, rejectUnexpectedFetch } from '../test/contactForm';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
+import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../test/scroll';
 import HomePage from './HomePage';
 
 const LAZY_WAIT = { timeout: 20_000 } as const;
@@ -18,20 +18,18 @@ vi.setConfig({ testTimeout: 30_000 });
 
 expectNoConsoleOutput();
 
-const scrollIntoView = vi.fn();
+let scrollIntoView: ReturnType<typeof stubScrollIntoViewEverywhere>;
 
 beforeEach(() => {
   stubMatchMedia();
   rejectUnexpectedFetch();
-  scrollIntoView.mockClear();
-  Object.defineProperty(Element.prototype, 'scrollIntoView', { value: scrollIntoView, configurable: true, writable: true });
+  scrollIntoView = stubScrollIntoViewEverywhere();
 });
 
 afterEach(() => {
-  Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+  removeScrollIntoViewStub();
 });
 
-const messageField = () => screen.getByLabelText(contactFormCopy.labels.mensagem) as HTMLTextAreaElement;
 
 async function waitForForm() {
   return screen.findByRole('region', { name: homeCopy.finalCta.heading }, LAZY_WAIT);

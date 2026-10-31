@@ -43,7 +43,7 @@ export default function FAQ() {
         >
           {faqs.map((faq, i) => (
             <motion.div
-              key={faq.question}
+              key={faq.id}
               variants={listItem}
               className="bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-100 dark:border-zinc-700 overflow-hidden"
             >

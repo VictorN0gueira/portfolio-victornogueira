@@ -1,8 +1,8 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 import {
-  A11Y_STORAGE_KEY,
   ROTATE_MS,
   advance,
   copy,

@@ -7,10 +7,9 @@ import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import { Testimonials } from './Testimonials';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
 const OPEN_NAME = /ler depoimento completo/i;
-const A11Y_STORAGE_KEY = 'a11y-preferences';
-
 // Pristine output: no act warning, no Radix missing title or description warning.
 expectNoConsoleOutput();
 

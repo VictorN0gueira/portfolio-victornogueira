@@ -1,4 +1,5 @@
 import { readPastedNumber } from '../components/contact/pastedNumber';
+import { validateContact } from '../lib/contact';
 import { formatWhatsappDisplay } from '../lib/phone';
 
 /**
@@ -115,3 +116,31 @@ export const handBuiltDisplay = (ddd: string, part: string): string => `+55 ${dd
 
 /** The value the lead channel gets, built by hand: 55, the DDD and the eight digits. */
 export const handBuiltValue = (ddd: string, part: string): string => `55${ddd}${part}`;
+
+/** "+55 81 9 ...": the 9 the field shows is the character at index 7. */
+export const SHOWN_NINE_AT = 7;
+/** The caret just after "+55 ". */
+export const FIRST_CARET = 4;
+
+/** The display that digits give, written by hand (not through the formatter): DDD, the field's 9, the number, ten digits at most. */
+export function displayOfDigits(digits: string): string {
+  const kept = digits.slice(0, 10);
+  const number = kept.slice(2);
+  return `+55 ${kept.slice(0, 2)} 9 ${number.length <= 4 ? number : `${number.slice(0, 4)}-${number.slice(4)}`}`;
+}
+
+/** The index, among the digits of the number (the shown 9 left out), that a caret at `caret` of a complete display points at. */
+export function numberIndexOfCaret(display: string, caret: number): number {
+  const digitsBefore = [...display.slice(FIRST_CARET, caret)].filter((char) => /\d/.test(char)).length;
+  return caret > SHOWN_NINE_AT ? digitsBefore - 1 : digitsBefore;
+}
+
+/** A fixed line starts with 2 to 5: the shapes with no mobile 9 are only real numbers for such a part. */
+export const isRealNumber = (shape: { hasMobileNine: boolean }, part: string): boolean => shape.hasMobileNine || '2345'.includes(part[0]);
+
+/** The error the whatsapp validation of the form gives this display (the other fields of the draft are valid), if any. */
+export const whatsappError = (display: string): string | undefined =>
+  validateContact({ nome: 'Ana Lima', email: 'a@b.com', whatsapp: display, mensagem: 'Quero automatizar notas fiscais', servico: 'x' }, 'whatsapp').whatsapp;
+
+/** True when the whatsapp validation of the form refuses this display. */
+export const isRefused = (display: string): boolean => whatsappError(display) !== undefined;

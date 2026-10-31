@@ -1,24 +1,10 @@
 import { fireEvent, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { FINE_POINTER_QUERY, REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import { SpotlightCard } from './SpotlightCard';
-
-const A11Y_STORAGE_KEY = 'a11y-preferences';
-
-function stubRect(element: HTMLElement): void {
-  vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
-    left: 10,
-    top: 20,
-    right: 210,
-    bottom: 120,
-    width: 200,
-    height: 100,
-    x: 10,
-    y: 20,
-    toJSON: () => ({}),
-  });
-}
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
+import { stubRect } from '../../test/rect';
 
 describe('SpotlightCard', () => {
   afterEach(() => {

@@ -7,6 +7,7 @@ import { findAccentElements } from '../../test/accent';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import { MethodSteps } from './MethodSteps';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
 // The real Reveal, wrapped in spies, so the props the section gives it can be read while it still works.
 vi.mock('../../components/ui/Reveal', async (importOriginal) => {
@@ -14,7 +15,6 @@ vi.mock('../../components/ui/Reveal', async (importOriginal) => {
   return { ...actual, RevealGroup: vi.fn(actual.RevealGroup), RevealItem: vi.fn(actual.RevealItem) };
 });
 
-const A11Y_STORAGE_KEY = 'a11y-preferences';
 const HEADING = 'Do primeiro papo ao fluxo rodando';
 const SUB = 'Você conhece o negócio e a gente cuida do método e da execução.';
 const STAIRCASE = ['lg:mt-24', 'lg:mt-16', 'lg:mt-8', 'lg:mt-0'];

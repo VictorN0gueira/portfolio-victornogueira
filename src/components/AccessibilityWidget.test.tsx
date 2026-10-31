@@ -4,11 +4,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import AccessibilityWidget from './AccessibilityWidget';
+import { A11Y_STORAGE_KEY } from '../contexts/AccessibilityContext';
 
 const TRIGGER_NAME = 'Abrir opções de acessibilidade';
 const PANEL_NAME = 'Opções de acessibilidade';
-const A11Y_STORAGE_KEY = 'a11y-preferences';
-
 beforeEach(() => {
   stubMatchMedia();
   window.localStorage.removeItem(A11Y_STORAGE_KEY);

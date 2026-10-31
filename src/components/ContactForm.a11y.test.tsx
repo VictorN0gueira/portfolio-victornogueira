@@ -10,6 +10,7 @@ import {
   stubFetch,
   submitButton,
   submitEmailForm,
+  togglePill,
 } from '../test/contactForm';
 import { renderWithProviders } from '../test/render';
 import ContactForm from './ContactForm';
@@ -23,8 +24,6 @@ expectNoConsoleOutput();
 beforeEach(() => {
   rejectUnexpectedFetch();
 });
-
-const togglePill = (name: string) => screen.getByRole('button', { name });
 
 describe('ContactForm success announcement', () => {
   it('keeps one polite status region mounted, empty until the send works', () => {

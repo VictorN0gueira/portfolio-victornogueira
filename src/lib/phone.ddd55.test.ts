@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { EIGHT_DIGIT_PARTS_INDEPENDENT as PARTS, typedDisplay } from '../test/phoneInputs';
-import { validateContact } from './contact';
+import {
+  EIGHT_DIGIT_PARTS_INDEPENDENT as PARTS,
+  FIRST_CARET,
+  SHOWN_NINE_AT,
+  displayOfDigits,
+  isRefused,
+  numberIndexOfCaret,
+  typedDisplay,
+} from '../test/phoneInputs';
 import { formatWhatsappDisplay, toEvolutionFormat } from './phone';
 
 vi.setConfig({ testTimeout: 120_000 });
@@ -8,23 +15,6 @@ vi.setConfig({ testTimeout: 120_000 });
 // F3: DDD 55 (Rio Grande do Sul) is also the country code, so its edits can be read as a typed country code. The shown 9
 // deleted from "+55 55 9 8002" used to give "+55 80 9 02". The edits at the end of a complete number cannot be told from
 // typing one more digit; they are measured and pinned here as a known limit.
-
-const SHOWN_NINE_AT = 7;
-const FIRST_CARET = 4;
-
-function displayOfDigits(digits: string): string {
-  const kept = digits.slice(0, 10);
-  const number = kept.slice(2);
-  return `+55 ${kept.slice(0, 2)} 9 ${number.length <= 4 ? number : `${number.slice(0, 4)}-${number.slice(4)}`}`;
-}
-
-function numberIndexOfCaret(display: string, caret: number): number {
-  const digitsBefore = [...display.slice(FIRST_CARET, caret)].filter((char) => /\d/.test(char)).length;
-  return caret > SHOWN_NINE_AT ? digitsBefore - 1 : digitsBefore;
-}
-
-const ok = { nome: 'Ana Lima', email: 'a@b.com', whatsapp: '', mensagem: 'Quero automatizar notas fiscais', servico: 'x' };
-const isRefused = (display: string) => validateContact({ ...ok, whatsapp: display }, 'whatsapp').whatsapp !== undefined;
 
 const numbers = PARTS.filter((_, index) => index % 3 === 0).map((part) => ({ part, display: typedDisplay(`559${part}`) }));
 

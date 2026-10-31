@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import * as motionReact from 'motion/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 import { renderWithProviders } from '../../test/render';
 import ScrollProgress from './ScrollProgress';
 
@@ -49,9 +50,9 @@ describe('ScrollProgress', () => {
   });
 
   it('still renders the bar, without the spring, when the visitor turned animations off', () => {
-    localStorage.setItem('a11y-preferences', JSON.stringify({ noAnimations: true }));
+    localStorage.setItem(A11Y_STORAGE_KEY, JSON.stringify({ noAnimations: true }));
 
-    const bar = renderBar();
+const bar = renderBar();
 
     expect(bar).toHaveClass('fixed', 'h-0.5', 'bg-vn-ink');
   });
@@ -61,7 +62,7 @@ describe('ScrollProgress', () => {
     expect(motionReact.useSpring).toHaveBeenCalledTimes(1);
 
     vi.mocked(motionReact.useSpring).mockClear();
-    localStorage.setItem('a11y-preferences', JSON.stringify({ noAnimations: true }));
+    localStorage.setItem(A11Y_STORAGE_KEY, JSON.stringify({ noAnimations: true }));
     renderBar();
 
     expect(motionReact.useSpring).not.toHaveBeenCalled();

@@ -1,6 +1,8 @@
 // @vitest-environment node
 import type { ConfigEnv, Plugin, UserConfig } from 'vite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { CoverageV8Options } from 'vitest/node';
+import { coverageConfigDefaults } from 'vitest/config';
 import { SECURITY_HEADERS } from '../../config/securityHeaders.mjs';
 
 // vite.config.ts decides what the build and the preview do. The pieces are tested one by one (injectCspMeta, the chunk
@@ -63,5 +65,32 @@ describe('the bundle', () => {
     const output = (await loadConfig(false))(build).build?.rollupOptions?.output;
     const manualChunks = (Array.isArray(output) ? output[0] : output)?.manualChunks;
     expect(typeof manualChunks).toBe('function');
+  });
+});
+
+describe('the coverage gate', () => {
+  const METRICS = ['lines', 'functions', 'branches', 'statements'] as const;
+  const MINIMUM_PERCENT = 80;
+  const defaultExcludes = new Set<string>(coverageConfigDefaults.exclude);
+  // The config uses the v8 provider, so its options are the v8 ones.
+  const coverageOf = async () => (await loadConfig(false))(build).test?.coverage as CoverageV8Options | undefined;
+
+  it('measures the whole of src and excludes only tests, types and the entry', async () => {
+    const coverage = await coverageOf();
+    expect(coverage?.include).toEqual(['src/**/*.{ts,tsx}']);
+    // `**/*.d.ts` is a default of vitest 3 and a listed pattern of ours (vitest 5 dropped it from the defaults).
+    const own = (coverage?.exclude ?? []).filter((pattern) => !defaultExcludes.has(pattern) && pattern !== '**/*.d.ts');
+    expect(own).toEqual(['src/test/**', '**/*.test.*', 'src/main.tsx', 'e2e/**']);
+    expect(coverage?.exclude).toContain('**/*.d.ts');
+  });
+
+  it.each(METRICS)('asks for %s of at least 80 percent on src as a whole', async (metric) => {
+    const thresholds = (await coverageOf())?.thresholds as Record<string, unknown>;
+    expect(thresholds[metric]).toBeGreaterThanOrEqual(MINIMUM_PERCENT);
+  });
+
+  it.each(['src/lib/**', 'src/hooks/**'])('keeps 80 percent on %s on its own as well', async (glob) => {
+    const thresholds = (await coverageOf())?.thresholds as Record<string, Record<string, number>>;
+    for (const metric of METRICS) expect(thresholds[glob][metric]).toBeGreaterThanOrEqual(MINIMUM_PERCENT);
   });
 });

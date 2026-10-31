@@ -9,8 +9,8 @@ import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import { IntegrationsMarquee } from './IntegrationsMarquee';
 import { StatementStats } from './StatementStats';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
-const A11Y_STORAGE_KEY = 'a11y-preferences';
 const MARQUEE_NAME = 'Integrações';
 
 // A box that takes its width from its content cannot hold the Marquee frame, which has no width of its own.

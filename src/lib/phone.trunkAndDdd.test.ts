@@ -7,11 +7,12 @@ import {
   NUMBER_SHAPES,
   handBuiltDisplay,
   handBuiltValue,
+  isRealNumber,
   pastedDisplay,
   typedDisplay,
+  whatsappError,
 } from '../test/phoneInputs';
 import { oracleHasValidLength, oracleToEvolution } from '../test/phoneOracle';
-import { validateContact } from './contact';
 import { toEvolutionFormat } from './phone';
 
 // Many thousands of typed strings: the default 5 seconds is tight on a busy machine.
@@ -20,20 +21,10 @@ vi.setConfig({ testTimeout: 120_000 });
 // P3: a trunk zero ("0 81 98445-1243", 081984451243) used to be read as the DDD 08 and the number was valid and sent with
 // it. Now the zero is dropped like the paste rules drop it, and a DDD that does not exist is refused.
 
-const ok = {
-  nome: 'Ana Lima',
-  email: 'ana@empresa.com.br',
-  whatsapp: '',
-  mensagem: 'Quero automatizar notas fiscais',
-  servico: 'Automação de processos',
-};
-const whatsappError = (whatsapp: string) => validateContact({ ...ok, whatsapp }, 'whatsapp').whatsapp;
 const INCOMPLETE = 'Coloca o número com DDD, por exemplo 81 99999-9999';
 const NO_SUCH_DDD = 'Esse DDD não existe, confere o número';
 
 const trunkShapes = NUMBER_SHAPES.filter((shape) => shape.name.includes('trunk'));
-/** A fixed line starts with 2 to 5: the shapes with no mobile 9 are only real numbers for such a part. */
-const isRealNumber = (shape: { hasMobileNine: boolean }, part: string) => shape.hasMobileNine || '2345'.includes(part[0]);
 
 describe('P3: a trunk zero is dropped, typed and pasted', () => {
   it('fixes the numbers of the review', () => {

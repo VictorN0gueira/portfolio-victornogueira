@@ -5,9 +5,9 @@ import {
   EXISTING_DDDS,
   NUMBER_SHAPES,
   typedDisplay,
+  whatsappError,
 } from '../test/phoneInputs';
 import { oracleHasValidLength, oracleToEvolution } from '../test/phoneOracle';
-import { validateContact } from './contact';
 import { toEvolutionFormat } from './phone';
 
 // What the whatsapp validation accepts, over the value the field really holds (the formatted display), compared with
@@ -16,14 +16,6 @@ import { toEvolutionFormat } from './phone';
 // Many thousands of typed strings: the default 5 seconds is tight on a busy machine.
 vi.setConfig({ testTimeout: 120_000 });
 
-const ok = {
-  nome: 'Ana Lima',
-  email: 'ana@empresa.com.br',
-  whatsapp: '',
-  mensagem: 'Quero automatizar notas fiscais',
-  servico: 'Automação de processos',
-};
-const whatsappError = (whatsapp: string) => validateContact({ ...ok, whatsapp }, 'whatsapp').whatsapp;
 const MESSAGE = 'Coloca o número com DDD, por exemplo 81 99999-9999';
 
 describe('P1: a number one digit short is not accepted just because the field adds the 9', () => {

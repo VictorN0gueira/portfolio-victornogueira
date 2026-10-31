@@ -7,8 +7,8 @@ import { FINE_POINTER_QUERY, REDUCED_MOTION_QUERY, stubMatchMedia } from '../../
 import { renderWithProviders } from '../../test/render';
 import { featuredServices } from './featuredServices';
 import { ServicesCards } from './ServicesCards';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
-const A11Y_STORAGE_KEY = 'a11y-preferences';
 const HEADING = 'Três jeitos de tirar trabalho manual da sua frente';
 const LINK_NAME = 'Ver todos os serviços';
 const CARD_NAMES = ['Automação Essencial', 'Agente de IA Sob Medida', 'Landing Page ou Site'];

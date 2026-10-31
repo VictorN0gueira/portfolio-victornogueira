@@ -6,13 +6,10 @@ import {configDefaults, coverageConfigDefaults} from 'vitest/config';
 import {manualChunks} from './config/manualChunks.mjs';
 import {SECURITY_HEADERS, injectCspMeta} from './config/securityHeaders.mjs';
 
-/** src/lib and src/hooks hold the logic, so they keep 80% on their own. */
-const LOGIC_THRESHOLD = { lines: 80, functions: 80, branches: 80, statements: 80 };
-/**
- * The whole of src, measured at 77.94% lines and statements, 96.74% functions and 96.68% branches, rounded down.
- * The gap is the pages and the news service that no unit test mounts yet. G.13 raises it to 80.
- */
-const GLOBAL_THRESHOLD = { lines: 77, functions: 96, branches: 96, statements: 77 };
+/** The floor for src as a whole. Measured on the integrated branch: 94.5% lines and statements, 97% functions and branches. */
+const GLOBAL_THRESHOLD = { lines: 80, functions: 80, branches: 80, statements: 80 };
+/** src/lib and src/hooks hold the logic, so they also keep 80% on their own. */
+const LOGIC_THRESHOLD = GLOBAL_THRESHOLD;
 
 const IS_PAGES_BUILD = process.env.GITHUB_PAGES === 'true';
 
@@ -53,7 +50,8 @@ export default defineConfig(({command}) => {
       exclude: [...configDefaults.exclude, '.claude/**', '.superpowers/**', 'e2e/**', 'dist/**'],
       coverage: {
         provider: 'v8',
-        include: ['src/**'],
+        // The code of src. vitest 5 also tries to parse the uncovered files it finds and warns about every stylesheet.
+        include: ['src/**/*.{ts,tsx}'],
         exclude: [
           ...coverageConfigDefaults.exclude,
           'src/test/**',

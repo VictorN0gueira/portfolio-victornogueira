@@ -1,10 +1,10 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 import { homeCopy } from '../../data/homeCopy';
 import { TEAM_OPTIONS } from '../../lib/roi';
 import { findAccentElements } from '../../test/accent';
 import {
-  A11Y_STORAGE_KEY,
   DEFAULT_COST,
   DEFAULT_INPUT,
   DEFAULT_SAVINGS,

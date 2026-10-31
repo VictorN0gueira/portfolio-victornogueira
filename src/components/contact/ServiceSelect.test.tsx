@@ -6,6 +6,7 @@ import { findAccentElements } from '../../test/accent';
 import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { offPaletteClasses, offPaletteInHtml } from '../../test/palette';
 import ServiceSelect from './ServiceSelect';
+import { tokensOf } from '../../test/dom';
 
 const OPTIONS = ['Automação de processos', 'Agente de IA', 'Site ou landing page', 'Sistema web sob medida'];
 const PLACEHOLDER = 'Escolhe um serviço';
@@ -41,7 +42,6 @@ function Harness({ initial = '', invalid = false, onChange }: HarnessProps) {
 }
 
 const trigger = (): HTMLElement => document.querySelector('button[aria-haspopup="listbox"]') as HTMLElement;
-const tokensOf = (element: Element): string[] => (element.getAttribute('class') ?? '').split(/\s+/).filter(Boolean);
 const option = (name: string) => screen.getByRole('option', { name });
 const closed = () => waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
 

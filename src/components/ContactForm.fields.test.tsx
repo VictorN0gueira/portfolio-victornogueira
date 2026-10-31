@@ -2,11 +2,12 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
-import { rejectUnexpectedFetch, submitButton, SWAP_WAIT, findWhatsappField } from '../test/contactForm';
+import { rejectUnexpectedFetch, submitButton, SWAP_WAIT, findWhatsappField, togglePill } from '../test/contactForm';
 import { offPaletteClasses } from '../test/palette';
 import { renderWithProviders } from '../test/render';
 import ContactForm from './ContactForm';
 import { contactFormCopy } from './contact/contactFormCopy';
+import { tokensOf } from '../test/dom';
 
 const SERVICE_TRIGGER_NAME = /escolhe um serviço/i;
 
@@ -15,9 +16,6 @@ expectNoConsoleOutput();
 beforeEach(() => {
   rejectUnexpectedFetch();
 });
-
-const tokensOf = (element: Element): string[] => (element.getAttribute('class') ?? '').split(/\s+/).filter(Boolean);
-const togglePill = (name: string) => screen.getByRole('button', { name });
 
 describe('ContactForm method toggle', () => {
   it('names the two methods Por e-mail and Por WhatsApp inside one group, which has one name', () => {

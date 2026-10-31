@@ -13,6 +13,7 @@ import {
   submitEmailForm,
   SWAP_WAIT,
   findWhatsappField,
+  togglePill,
   visibleThanksText,
 } from '../test/contactForm';
 import { offPaletteClasses, offPaletteInHtml } from '../test/palette';
@@ -36,8 +37,6 @@ function expectOnlyPalette(container: HTMLElement) {
   expect(offPaletteInHtml(container.innerHTML)).toEqual([]);
   expect(findAccentElements(container)).toEqual([]);
 }
-
-const togglePill = (name: string) => screen.getByRole('button', { name });
 
 describe('ContactForm validation messages', () => {
   it('shows each message with an icon and the text, never by color alone', async () => {

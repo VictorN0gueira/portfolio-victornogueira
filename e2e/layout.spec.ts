@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { menuButton } from './homeSupport';
+import { enableLargeFont, menuButton } from './homeSupport';
 import { expect, test } from './n8nGuard';
 
 const MAIN_NAV_NAME = 'Navegação principal';
@@ -26,13 +26,6 @@ const FONT_SIZE_TOLERANCE_PX = 0.5;
 const SCROLL_DISTANCE = 400;
 const TAB_PRESSES_INSIDE_MENU = 10;
 const MAIN_NAV_LINKS = 6;
-
-// The "fonte maior" toggle, set the way the site stores it, before the page loads.
-async function enableLargeFont(page: Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('a11y-preferences', JSON.stringify({ fontSize: true }));
-  });
-}
 
 function siteHeader(page: Page) {
   return page.getByRole('banner');

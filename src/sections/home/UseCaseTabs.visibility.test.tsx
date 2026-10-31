@@ -11,16 +11,12 @@ import {
   renderTabs,
   setInView,
 } from '../../test/useCaseTabsKit';
+import { setVisibility } from '../../test/visibility';
 
 const PARTIAL_WAIT_MS = 3000;
 
 function getBars(): HTMLElement[] {
   return Array.from(getWidget().querySelectorAll<HTMLElement>('[data-tab-progress]'));
-}
-
-function setVisibility(state: DocumentVisibilityState): void {
-  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
-  document.dispatchEvent(new Event('visibilitychange'));
 }
 
 // The setup file does not restore spies, so a spy left by a failing test would leak into the next ones.

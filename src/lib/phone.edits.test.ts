@@ -9,7 +9,7 @@ vi.setConfig({ testTimeout: 120_000 });
 // minus the 1 gave DDD 89). An edit of the field must keep the digits of the number, in order, and the 9 stays the field's own.
 
 /** The display that digits give, written by hand (not through the formatter): DDD, the field's 9, the number, ten digits at most. */
-function displayOfDigits(digits: string): string {
+function displayOfPartialDigits(digits: string): string {
   const kept = digits.slice(0, 10);
   if (kept.length === 0) return '+55 ';
   if (kept.length < 3) return `+55 ${kept}`;
@@ -62,7 +62,7 @@ describe('P4: deleting a DDD digit keeps the digits and the field’s own 9', ()
       for (const index of [0, 1]) {
         const after = formatWhatsappDisplay(deleteDigit(display, index));
         const remaining = (ddd + part).slice(0, index) + (ddd + part).slice(index + 1);
-        if (after !== displayOfDigits(remaining)) wrong.push(`${display} minus digit ${index}: ${after}`);
+        if (after !== displayOfPartialDigits(remaining)) wrong.push(`${display} minus digit ${index}: ${after}`);
       }
     }
 
@@ -94,7 +94,7 @@ describe('P4: deleting a DDD digit keeps the digits and the field’s own 9', ()
     for (const { ddd, part, display } of numbers.filter((_, index) => index % 5 === 0)) {
       const once = formatWhatsappDisplay(deleteDigit(display, 0));
       const twice = formatWhatsappDisplay(deleteDigit(once, 0));
-      if (twice !== displayOfDigits((ddd + part).slice(2))) wrong.push(`${display}: ${twice}`);
+      if (twice !== displayOfPartialDigits((ddd + part).slice(2))) wrong.push(`${display}: ${twice}`);
     }
 
     expect(wrong.slice(0, 20)).toEqual([]);
@@ -106,7 +106,7 @@ describe('P4: deleting a DDD digit keeps the digits and the field’s own 9', ()
       for (const index of [2, 3, 5, 7, 9]) {
         const after = formatWhatsappDisplay(deleteDigit(display, index));
         const all = ddd + part;
-        if (after !== displayOfDigits(all.slice(0, index) + all.slice(index + 1))) wrong.push(`${display} minus digit ${index}: ${after}`);
+        if (after !== displayOfPartialDigits(all.slice(0, index) + all.slice(index + 1))) wrong.push(`${display} minus digit ${index}: ${after}`);
       }
     }
 
@@ -119,7 +119,7 @@ describe('P4: deleting a DDD digit keeps the digits and the field’s own 9', ()
       for (const index of [0, 1, 2]) {
         const all = ddd + part;
         const after = formatWhatsappDisplay(insertDigit(display, index, '5'));
-        if (after !== displayOfDigits(all.slice(0, index) + '5' + all.slice(index))) wrong.push(`${display} plus 5 at ${index}: ${after}`);
+        if (after !== displayOfPartialDigits(all.slice(0, index) + '5' + all.slice(index))) wrong.push(`${display} plus 5 at ${index}: ${after}`);
       }
     }
 

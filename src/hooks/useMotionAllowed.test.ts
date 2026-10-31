@@ -6,8 +6,8 @@ import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../test/matchMedia';
 import { AllProviders } from '../test/render';
 import { useCycle } from './useCycle';
 import { useMotionAllowed } from './useMotionAllowed';
+import { A11Y_STORAGE_KEY } from '../contexts/AccessibilityContext';
 
-const A11Y_STORAGE_KEY = 'a11y-preferences';
 const INTERVAL_MS = 1000;
 
 describe('useMotionAllowed', () => {

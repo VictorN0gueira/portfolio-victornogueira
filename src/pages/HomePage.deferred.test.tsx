@@ -4,6 +4,7 @@ import { homeCopy } from '../data/homeCopy';
 import { rejectUnexpectedFetch } from '../test/contactForm';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
+import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../test/scroll';
 import HomePage from './HomePage';
 
 // The sections under the first screen mount after an idle moment (1200 ms at the latest), or at once when the URL
@@ -16,13 +17,13 @@ vi.setConfig({ testTimeout: 30_000 });
 beforeEach(() => {
   stubMatchMedia();
   rejectUnexpectedFetch();
-  Object.defineProperty(Element.prototype, 'scrollIntoView', { value: vi.fn(), configurable: true, writable: true });
+  stubScrollIntoViewEverywhere();
   vi.stubGlobal('requestIdleCallback', undefined);
   vi.stubGlobal('cancelIdleCallback', undefined);
 });
 
 afterEach(() => {
-  Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+  removeScrollIntoViewStub();
   vi.useRealTimers();
 });
 
