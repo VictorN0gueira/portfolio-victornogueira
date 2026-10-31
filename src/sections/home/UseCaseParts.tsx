@@ -1,4 +1,4 @@
-import { memo, useId, type ComponentProps, type CSSProperties } from 'react';
+import { memo, useId, useMemo, type ComponentProps, type CSSProperties } from 'react';
 import { Heading } from '../../components/ui/Heading';
 import { PauseToggle } from '../../components/ui/PauseToggle';
 import { RevealGroup, RevealItem } from '../../components/ui/Reveal';
@@ -66,7 +66,7 @@ function UseCaseTab({ label, id, panelId, isSelected, isRunning, durationMs, onS
         FOCUS_RING,
         isSelected
           ? 'border-vn-ink bg-vn-ink text-vn-white'
-          : 'border-vn-gray-light bg-vn-white text-vn-ink hover:border-vn-ink hover:bg-vn-cream',
+          : 'border-vn-gray-mid bg-vn-white text-vn-ink hover:border-vn-ink hover:bg-vn-cream',
       )}
     >
       {label}
@@ -81,11 +81,13 @@ export function tabIdFor(idBase: string, useCaseId: string): string {
 }
 
 // Below sm the tabs scroll sideways inside the tablist with scroll snap, never the page; from sm they wrap and the
-// tablist takes only the width of its tabs, so the pause toggle sits right after them.
+// tablist takes only the width of its tabs. The pause toggle sits before it, outside the scroller.
 // The padding leaves room for the focus ring (the scroll box would clip it) and the negative margin gives it back.
 // overscroll-x-contain keeps a swipe at the end of the row from chaining to the page or the back swipe of the browser.
+// Below sm the right edge fades out (a mask, so no extra element) as the hint that the row goes on, and the 2.5rem of
+// right padding keeps the last tab clear of the fade once the row is scrolled to its end. From sm the mask is gone.
 const TABLIST_CLASSES =
-  'relative -m-1.5 flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain scroll-px-1.5 p-1.5 scrollbar-hide sm:flex-initial sm:snap-none sm:flex-wrap sm:overflow-visible';
+  'relative -m-1.5 flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain scroll-px-1.5 py-1.5 pl-1.5 pr-10 scrollbar-hide [mask-image:linear-gradient(to_right,#000_calc(100%-2.5rem),transparent)] sm:flex-initial sm:snap-none sm:flex-wrap sm:overflow-visible sm:p-1.5 sm:[mask-image:none]';
 
 interface UseCaseTabListProps {
   idBase: string;
@@ -113,6 +115,14 @@ export function UseCaseTabList({
   onSelect,
   controls,
 }: UseCaseTabListProps) {
+  // One ref callback per tab for the life of the list: an inline arrow is a new function on every render, and React then
+  // calls the old one with null and the new one with the node at each commit.
+  const { registerTab } = controls;
+  const tabRefs = useMemo(
+    () => useCases.map((_, position) => (element: HTMLButtonElement | null) => registerTab(position, element)),
+    [registerTab],
+  );
+
   return (
     <div
       ref={controls.listRef}
@@ -131,7 +141,7 @@ export function UseCaseTabList({
           isRunning={isRunning}
           durationMs={durationMs}
           onSelect={() => onSelect(position)}
-          tabRef={(element) => controls.registerTab(position, element)}
+          tabRef={tabRefs[position]}
         />
       ))}
     </div>
@@ -213,8 +223,8 @@ interface UseCaseContentProps {
 /**
  * What one use case says: its title (an h3, under the h2 of the section) and body on the left, and the
  * "como funciona" card on the right with the three steps in an ordered list. Below lg they stack.
- * The whole content is one RevealGroup (one observer), so the parent gives it a key per use case and the
- * reveal plays again on every change. The items fade or rise with opacity and transform only.
+ * The whole content is one RevealGroup (one observer), so the parent gives it a key per use case once the visitor
+ * chooses and the reveal plays again on every choice (not on the rotation: see UseCasePanel). The items fade or rise with opacity and transform only.
  * A ghost has the same markup and classes, so it measures the same, but its items are plain divs.
  */
 function UseCaseContent({ useCase, isGhost = false }: UseCaseContentProps) {
@@ -257,16 +267,22 @@ const UseCaseSizers = memo(function UseCaseSizers() {
 
 interface UseCasePanelProps {
   useCase: UseCase;
+  /** True while the rotation still picks the tab: the content then keeps its reveal and only the words change. */
+  isAuto: boolean;
   panelId: string;
   /** Id of the selected tab, which names the panel. */
   tabId: string;
 }
 
+// The key of the content while the rotation runs: it does not change, so the reveal is not replayed at every turn.
+// It is the use case id once the visitor picks a tab, and that remount is the replay of a choice.
+const AUTO_KEY = 'auto';
+
 /**
  * The one tabpanel, kept mounted so every tab can point at it with aria-controls. It has a tab stop because
  * nothing inside it takes the focus. The sizers sit behind it in the same grid cell.
  */
-export function UseCasePanel({ useCase, panelId, tabId }: UseCasePanelProps) {
+export function UseCasePanel({ useCase, isAuto, panelId, tabId }: UseCasePanelProps) {
   return (
     <div className="mt-8 grid md:mt-10">
       <div
@@ -276,7 +292,7 @@ export function UseCasePanel({ useCase, panelId, tabId }: UseCasePanelProps) {
         tabIndex={0}
         className={cn('col-start-1 row-start-1 min-w-0 rounded-2xl', FOCUS_RING)}
       >
-        <UseCaseContent key={useCase.id} useCase={useCase} />
+        <UseCaseContent key={isAuto ? AUTO_KEY : useCase.id} useCase={useCase} />
       </div>
       <UseCaseSizers />
     </div>

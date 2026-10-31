@@ -10,7 +10,7 @@ import {
   getWidget,
   renderTabs,
   setInView,
-} from './UseCaseTabs.helpers';
+} from '../../test/useCaseTabsKit';
 
 const PARTIAL_WAIT_MS = 3000;
 

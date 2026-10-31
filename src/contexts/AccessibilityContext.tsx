@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-interface A11yState {
+export interface A11yState {
   fontSize: boolean;
   highContrast: boolean;
   grayscale: boolean;
@@ -8,6 +8,9 @@ interface A11yState {
   underlineLinks: boolean;
   readableFont: boolean;
 }
+
+/** The keys of the six preferences. */
+export type A11yKey = keyof A11yState;
 
 interface A11yContextValue {
   state: A11yState;
@@ -33,42 +36,58 @@ const classMap: Record<keyof A11yState, string> = {
   readableFont: 'a11y-readable-font',
 };
 
-const STORAGE_KEY = 'a11y-preferences';
+/** The localStorage key of the preferences. Exported so nothing else repeats the literal. */
+export const A11Y_STORAGE_KEY = 'a11y-preferences';
+
+const A11Y_KEYS = Object.keys(defaultState) as Array<keyof A11yState>;
 
 const A11yContext = createContext<A11yContextValue | null>(null);
 
+/**
+ * The preferences stored by an earlier visit, kept to the known keys and to the value `true` exactly. Anything
+ * else (a corrupted value, a string, an array, a key this version does not know) is dropped, so a stored
+ * `{ "fontSize": "no" }` can never turn a class on.
+ */
+function parseStoredState(saved: string | null): A11yState {
+  if (!saved) return defaultState;
+  try {
+    const parsed: unknown = JSON.parse(saved);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return defaultState;
+    const record = parsed as Record<string, unknown>;
+    return A11Y_KEYS.reduce<A11yState>((next, key) => ({ ...next, [key]: record[key] === true }), defaultState);
+  } catch {
+    return defaultState;
+  }
+}
+
+function readStoredState(): A11yState {
+  try {
+    return parseStoredState(localStorage.getItem(A11Y_STORAGE_KEY));
+  } catch {
+    return defaultState;
+  }
+}
+
 export function AccessibilityProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<A11yState>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? { ...defaultState, ...JSON.parse(saved) } : defaultState;
-    } catch {
-      return defaultState;
-    }
-  });
+  const [state, setState] = useState<A11yState>(readStoredState);
 
   useEffect(() => {
     const root = document.documentElement;
-    (Object.keys(classMap) as Array<keyof A11yState>).forEach((key) => {
+    A11Y_KEYS.forEach((key) => {
       root.classList.toggle(classMap[key], state[key]);
     });
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(A11Y_STORAGE_KEY, JSON.stringify(state));
     } catch {
       // storage não disponível
     }
   }, [state]);
 
-  const toggle = (key: keyof A11yState) =>
-    setState((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggle = useCallback((key: keyof A11yState) => setState((prev) => ({ ...prev, [key]: !prev[key] })), []);
+  const reset = useCallback(() => setState(defaultState), []);
+  const value = useMemo(() => ({ state, toggle, reset }), [state, toggle, reset]);
 
-  const reset = () => setState(defaultState);
-
-  return (
-    <A11yContext.Provider value={{ state, toggle, reset }}>
-      {children}
-    </A11yContext.Provider>
-  );
+  return <A11yContext.Provider value={value}>{children}</A11yContext.Provider>;
 }
 
 export function useAccessibility() {

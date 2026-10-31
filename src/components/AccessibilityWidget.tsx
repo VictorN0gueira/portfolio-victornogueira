@@ -1,211 +1,187 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { Accessibility } from 'lucide-react';
+import { useCallback, useEffect, useId, useRef, useState, type FocusEvent, type RefObject } from 'react';
 import { useAccessibility } from '../contexts/AccessibilityContext';
+import { cn } from '../lib/utils';
 import { KEEPS_PLACE_UNDER_SCROLL_LOCK } from '../lib/scrollLock';
+import { a11yWidgetCopy, activeSummaryText } from './a11yWidgetCopy';
+import { AccessibilityPanel } from './AccessibilityPanel';
+import { useBackdropIsDark } from './useBackdropIsDark';
 
-interface Option {
-  key: 'fontSize' | 'highContrast' | 'grayscale' | 'noAnimations' | 'underlineLinks' | 'readableFont';
-  label: string;
-  icon: string;
+// Mobile: the trigger sits right above the WhatsApp button (its offset, max(16px, safe area), plus the 52px button and a
+// 12px gap) and the panel grows upward from it. From sm up it is centred on the right edge. A phone on its side (height
+// under 30rem, 480px; the rem of the media query is the browser's, so the larger font does not move it) is centred too,
+// because there the list would be 8px tall; the panel then sits on the side of the WhatsApp button, in the corner.
+// The wrapper takes no pointer (pointer-events-none): the 60px bottom margin of the panel on a short window is a
+// transparent strip of this box and would cover the WhatsApp button. Only the panel and the trigger take it.
+const WRAPPER_CLASSES =
+  `${KEEPS_PLACE_UNDER_SCROLL_LOCK} pointer-events-none fixed right-0 bottom-[calc(max(16px,env(safe-area-inset-bottom))+64px)] z-[150] flex flex-row-reverse items-end sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:items-center [@media(max-height:30rem)]:bottom-auto [@media(max-height:30rem)]:top-1/2 [@media(max-height:30rem)]:-translate-y-1/2 [@media(max-height:30rem)]:items-center`;
+
+interface Dismissal {
+  onPointerDown: () => void;
+  onBlur: (event: FocusEvent<HTMLElement>) => void;
 }
 
-const options: Option[] = [
-  { key: 'fontSize',       label: 'Texto maior',        icon: 'Aa' },
-  { key: 'highContrast',   label: 'Alto contraste',     icon: '◑' },
-  { key: 'grayscale',      label: 'Escala de cinza',    icon: '⬜' },
-  { key: 'noAnimations',   label: 'Pausar animações',   icon: '⏸' },
-  { key: 'underlineLinks', label: 'Sublinhar links',    icon: 'U̲' },
-  { key: 'readableFont',   label: 'Fonte legível',      icon: 'F' },
-];
-
-function getBrightness(el: Element): number | null {
-  let current: Element | null = el;
-  while (current && current !== document.documentElement) {
-    const bg = window.getComputedStyle(current).backgroundColor;
-    const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-    if (m) {
-      const alpha = m[4] !== undefined ? parseFloat(m[4]) : 1;
-      if (alpha > 0.3) {
-        return (parseInt(m[1]) * 299 + parseInt(m[2]) * 587 + parseInt(m[3]) * 114) / 1000;
-      }
-    }
-    current = current.parentElement;
-  }
-  return null;
-}
-
-export default function AccessibilityWidget() {
-  const [open, setOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-  const { state, toggle, reset } = useAccessibility();
-  const panelRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-
-  const checkBackground = useCallback(() => {
-    const btn = btnRef.current;
-    if (!btn) return;
-    const rect = btn.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    const elements = document.elementsFromPoint(x, y);
-    for (const el of elements) {
-      if (el === btn || btn.contains(el as Node)) continue;
-      const brightness = getBrightness(el);
-      if (brightness !== null) {
-        setIsDark(brightness < 140);
-        return;
-      }
-    }
-  }, []);
+/**
+ * How the panel closes besides the trigger: Escape (the focus goes back to the trigger, since the focused option is
+ * about to unmount), a press outside the widget, and the focus leaving the widget (a Tab out, or a click on something
+ * else). A blur with no destination is not a leave while the pointer is pressing inside the widget (Safari does not focus a
+ * button it is clicking) or while the window itself lost the focus.
+ */
+function useDismissal(
+  isOpen: boolean,
+  close: () => void,
+  wrapperRef: RefObject<HTMLElement | null>,
+  triggerRef: RefObject<HTMLButtonElement | null>,
+): Dismissal {
+  const isPressingInside = useRef(false);
 
   useEffect(() => {
-    checkBackground();
-    let scrollTimeout: any;
-    
-    const handleScroll = () => {
-      if (scrollTimeout) return;
-      scrollTimeout = setTimeout(() => {
-        checkBackground();
-        scrollTimeout = null;
-      }, 150); // Só roda o cálculo de contraste a cada 150ms durante o scroll
+    if (!isOpen) return;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      close();
+      triggerRef.current?.focus();
     };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll, { passive: true });
-    return () => {
-      if (scrollTimeout) clearTimeout(scrollTimeout);
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
+    const handlePress = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) close();
     };
-  }, [checkBackground]);
-
-  useEffect(() => {
-    if (!open) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return;
-      setOpen(false);
-      // The panel unmounts with the focus inside it: put the focus back on the button that opened it.
-      btnRef.current?.focus();
-    }
-    function handleClick(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
     document.addEventListener('keydown', handleKey);
-    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('mousedown', handlePress);
     return () => {
       document.removeEventListener('keydown', handleKey);
-      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('mousedown', handlePress);
     };
-  }, [open]);
+  }, [isOpen, close, wrapperRef, triggerRef]);
 
+  const onPointerDown = () => {
+    isPressingInside.current = true;
+    // The blur of a press comes before the next task, so the flag is cleared after it.
+    window.setTimeout(() => {
+      isPressingInside.current = false;
+    }, 0);
+  };
+
+  const onBlur = (event: FocusEvent<HTMLElement>) => {
+    const next = event.relatedTarget as Node | null;
+    if (next && event.currentTarget.contains(next)) return;
+    if (!next && (isPressingInside.current || !document.hasFocus())) return;
+    close();
+  };
+
+  return { onPointerDown, onBlur };
+}
+
+/**
+ * The accessibility button and its panel, fixed to the right edge, in an aside named like the panel. The trigger is
+ * first in the DOM (the row is reversed with flex-row-reverse, not mirrored with direction: rtl), so a Tab from it goes
+ * into the panel, whose first option takes the focus when it opens. The panel is a dialog that does not trap the focus
+ * (no aria-modal): it closes when the focus leaves, or on Escape, and the trigger gets the focus back on Escape.
+ */
+export default function AccessibilityWidget() {
+  const [isOpen, setIsOpen] = useState(false);
+  const { state, toggle, reset } = useAccessibility();
+  const panelId = useId();
+  const summaryId = useId();
+  const close = useCallback(() => setIsOpen(false), []);
+  const wrapperRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dismissal = useDismissal(isOpen, close, wrapperRef, triggerRef);
+  const isDark = useBackdropIsDark(triggerRef);
   const activeCount = Object.values(state).filter(Boolean).length;
 
+  // Safari does not focus a button it is clicking, so the trigger takes the focus itself when it closes the panel.
+  const handleTriggerClick = () => {
+    if (isOpen) triggerRef.current?.focus();
+    setIsOpen(!isOpen);
+  };
+
   return (
-    /* Mobile: ancorado no bottom para alcance do polegar; Desktop: centralizado na lateral. Celular deitado (altura
-       abaixo de 30rem, 480px; o rem da media query e o do navegador, a fonte maior do site nao o move): centralizado
-       tambem, porque a 13rem do fundo a lista tinha 8px de altura. O painel fica do lado do botao do WhatsApp (que
-       esta no canto de baixo): a altura maxima deixa 16px em cima e a margem de baixo de 60px o sobe, de modo que a
-       borda de baixo para 76px acima do fim da janela, acima do botao do WhatsApp (16px de folga e 52px de altura).
-       Em px e nao em rem de proposito: com a fonte maior o rem cresce 20% e a lista ficaria menor que duas opcoes.
-       A margem de 60px e uma faixa transparente da caixa: o wrapper nao recebe ponteiro (pointer-events-none) e so o
-       painel e o botao recebem (pointer-events-auto), para a faixa nao cobrir o botao do WhatsApp. */
-    <div
-      ref={panelRef}
-      className={`${KEEPS_PLACE_UNDER_SCROLL_LOCK} pointer-events-none fixed right-0 bottom-52 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 [@media(max-height:30rem)]:bottom-auto [@media(max-height:30rem)]:top-1/2 [@media(max-height:30rem)]:-translate-y-1/2 z-[150] flex items-center`}
-      style={{ direction: 'rtl' }}
+    <aside
+      ref={wrapperRef}
+      aria-label={a11yWidgetCopy.panelLabel}
+      className={WRAPPER_CLASSES}
+      onPointerDown={dismissal.onPointerDown}
+      onBlur={dismissal.onBlur}
     >
-      {/* Painel */}
+      <AccessibilityTrigger
+        buttonRef={triggerRef}
+        isOpen={isOpen}
+        isDark={isDark}
+        panelId={panelId}
+        summaryId={summaryId}
+        activeCount={activeCount}
+        onClick={handleTriggerClick}
+      />
+      {activeCount > 0 ? (
+        <span id={summaryId} className="sr-only">
+          {activeSummaryText(activeCount)}
+        </span>
+      ) : null}
       <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, x: 16, scale: 0.95 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 16, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            style={{ willChange: 'transform, opacity', direction: 'ltr' }}
-            role="dialog"
-            aria-label="Opções de acessibilidade"
-            className="pointer-events-auto mr-2 w-[min(13rem,calc(100vw-3.5rem))] rounded-2xl border border-white/10 bg-zinc-950/98 md:bg-zinc-950/95 backdrop-blur-none md:backdrop-blur-xl shadow-2xl overflow-hidden max-h-[calc(100svh-14rem)] sm:max-h-[calc(100svh-8rem)] [@media(max-height:30rem)]:max-h-[calc(100svh-92px)] [@media(max-height:30rem)]:mb-[60px] flex flex-col"
-          >
-            <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between shrink-0">
-              <span className="text-xs font-semibold text-white/80 uppercase tracking-widest">
-                Acessibilidade
-              </span>
-              {activeCount > 0 && (
-                <span className="text-[10px] bg-white/20 text-white rounded-full px-2 py-0.5 font-medium">
-                  {activeCount} ativo{activeCount > 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
-
-            <ul className="py-1 overflow-y-auto">
-              {options.map(({ key, label, icon }) => {
-                const active = state[key];
-                return (
-                  <li key={key}>
-                    <button
-                      onClick={() => toggle(key)}
-                      className={`w-full min-h-11 flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm transition-colors text-left
-                        ${active
-                          ? 'bg-white/15 text-white'
-                          : 'text-white/60 hover:bg-white/8 hover:text-white/90'
-                        }`}
-                      aria-pressed={active}
-                    >
-                      <span className="w-5 text-center font-bold text-[13px] shrink-0" aria-hidden="true">
-                        {icon}
-                      </span>
-                      <span>{label}</span>
-                      {active && (
-                        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white shrink-0" aria-hidden="true" />
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-
-            {activeCount > 0 && (
-              <div className="px-4 py-3 border-t border-white/10 shrink-0">
-                <button
-                  onClick={reset}
-                  className="w-full min-h-11 text-xs text-white/50 hover:text-white/80 transition-colors text-center"
-                >
-                  ↺ Resetar tudo
-                </button>
-              </div>
-            )}
-          </motion.div>
-        )}
+        {isOpen ? (
+          <AccessibilityPanel id={panelId} state={state} activeCount={activeCount} onToggle={toggle} onReset={reset} />
+        ) : null}
       </AnimatePresence>
+    </aside>
+  );
+}
 
-      {/* Botão gatilho — cor adaptativa baseada no fundo detectado */}
-      <button
-        ref={btnRef}
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        aria-label="Abrir opções de acessibilidade"
-        className={`pointer-events-auto relative flex items-center justify-center w-11 h-11 rounded-l-xl shadow-lg transition-colors duration-300
-          ${isDark
-            ? 'bg-white text-zinc-950'
-            : 'bg-zinc-950 text-white border border-zinc-200'
-          }`}
-      >
-        <Accessibility className="w-5 h-5" aria-hidden="true" />
-        {activeCount > 0 && !open && (
-          <span
-            className={`absolute -top-1 right-0 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center
-              ${isDark ? 'bg-zinc-950 text-white' : 'bg-white text-zinc-950 border border-zinc-200'}`}
-            aria-hidden="true"
-          >
-            {activeCount}
-          </span>
-        )}
-      </button>
-    </div>
+interface AccessibilityTriggerProps {
+  buttonRef: RefObject<HTMLButtonElement | null>;
+  isOpen: boolean;
+  isDark: boolean;
+  panelId: string;
+  summaryId: string;
+  activeCount: number;
+  onClick: () => void;
+}
+
+/**
+ * The button that opens the panel. Its name is constant (a contract of the e2e specs); aria-expanded says the state,
+ * aria-controls points at the panel only while it exists, and the description says how many options are on, since the
+ * count badge is decoration. The colors are the opposite of the page under it, and the focus ring follows them.
+ */
+function AccessibilityTrigger({ buttonRef, isOpen, isDark, panelId, summaryId, activeCount, onClick }: AccessibilityTriggerProps) {
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      onClick={onClick}
+      aria-expanded={isOpen}
+      aria-haspopup="dialog"
+      aria-controls={isOpen ? panelId : undefined}
+      aria-describedby={activeCount > 0 ? summaryId : undefined}
+      aria-label={a11yWidgetCopy.triggerLabel}
+      className={cn(
+        'pointer-events-auto relative flex size-11 items-center justify-center rounded-l-xl shadow-lg transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2',
+        isDark
+          ? 'bg-white text-zinc-950 focus-visible:outline-white'
+          : 'border border-zinc-200 bg-zinc-950 text-white focus-visible:outline-zinc-950',
+      )}
+    >
+      <Accessibility className="size-5" aria-hidden="true" />
+      {activeCount > 0 && !isOpen ? <CountBadge count={activeCount} isDark={isDark} /> : null}
+    </button>
+  );
+}
+
+interface CountBadgeProps {
+  count: number;
+  isDark: boolean;
+}
+
+/** The number of options that are on, on the corner of the trigger. Decoration: the description says it. */
+function CountBadge({ count, isDark }: CountBadgeProps) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'absolute -top-1 right-0 flex size-5 items-center justify-center rounded-full text-xs font-bold',
+        isDark ? 'bg-zinc-950 text-white' : 'border border-zinc-200 bg-white text-zinc-950',
+      )}
+    >
+      {count}
+    </span>
   );
 }

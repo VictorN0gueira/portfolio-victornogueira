@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { homeCopy } from '../../data/homeCopy';
 import { integrations } from '../../data/integrations';
@@ -66,14 +67,75 @@ describe('IntegrationsMarquee with motion allowed', () => {
     icons.forEach((icon) => expect(icon).toHaveAttribute('aria-hidden', 'true'));
   });
 
-  it('puts the items in gray dark and turns them ink on hover, with no accent anywhere', () => {
+  it('draws the items in full ink with no hover color (they are not links), and no accent anywhere', () => {
     const { container } = renderWithProviders(<IntegrationsMarquee />);
     const [item] = screen.getAllByText('Notion');
-    const itemBox = item.closest('[class*="text-vn-gray-dark"]');
+    const itemBox = item.closest('li') as HTMLElement;
 
-    expect(itemBox).not.toBeNull();
-    expect(itemBox).toHaveClass('hover:text-vn-ink');
+    expect(itemBox).toHaveClass('text-vn-ink');
+    expect(itemBox.className).not.toMatch(/hover:/);
+    expect(itemBox.className).not.toMatch(/text-vn-gray/);
     expect(findAccentElements(container)).toHaveLength(0);
+  });
+
+  it('names the section by an h2 that holds the line, with the kicker above it', () => {
+    const { container } = renderWithProviders(<IntegrationsMarquee />);
+    const heading = screen.getByRole('heading', { level: 2, name: 'Conectamos o que você já usa' });
+    const section = container.querySelector('section') as HTMLElement;
+
+    expect(heading.id).not.toBe('');
+    expect(section).toHaveAttribute('aria-labelledby', heading.id);
+    expect(screen.getByRole('region', { name: 'Conectamos o que você já usa' })).toBe(section);
+    expect(screen.getByText('integrações').compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('reads the integrations as a list with one item each, the duplicate being an aria-hidden list', () => {
+    renderWithProviders(<IntegrationsMarquee />);
+    const region = screen.getByRole('region', { name: MARQUEE_NAME });
+    const lists = within(region).getAllByRole('list', { hidden: true });
+
+    expect(lists).toHaveLength(2);
+    expect(lists[1]).toHaveAttribute('aria-hidden', 'true');
+    expect(within(region).getAllByRole('listitem')).toHaveLength(integrations.length);
+  });
+
+  describe('pause button (WCAG 2.2.2)', () => {
+    const PAUSE_NAME = 'Pausar faixa de integrações';
+    const getTrack = (container: HTMLElement) => container.querySelector('.vn-marquee') as HTMLElement;
+
+    it('is a toggle with a constant name, not pressed at first, that sits before the marquee in the tab order', () => {
+      const { container } = renderWithProviders(<IntegrationsMarquee />);
+      const toggle = screen.getByRole('button', { name: PAUSE_NAME });
+
+      expect(toggle).toHaveAttribute('aria-pressed', 'false');
+      expect(getTrack(container)).not.toHaveAttribute('data-paused');
+      expect(toggle.compareDocumentPosition(getTrack(container)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('pauses the track on a click and resumes it on the next, and the name never changes', async () => {
+      const user = userEvent.setup();
+      const { container } = renderWithProviders(<IntegrationsMarquee />);
+
+      await user.click(screen.getByRole('button', { name: PAUSE_NAME }));
+      expect(getTrack(container)).toHaveAttribute('data-paused', 'true');
+      expect(screen.getByRole('button', { name: PAUSE_NAME })).toHaveAttribute('aria-pressed', 'true');
+
+      await user.click(screen.getByRole('button', { name: PAUSE_NAME }));
+      expect(getTrack(container)).not.toHaveAttribute('data-paused');
+      expect(screen.getByRole('button', { name: PAUSE_NAME })).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('is reached with the keyboard and works with Enter and Space', async () => {
+      const user = userEvent.setup();
+      const { container } = renderWithProviders(<IntegrationsMarquee />);
+
+      await user.tab();
+      expect(screen.getByRole('button', { name: PAUSE_NAME })).toHaveFocus();
+      await user.keyboard('{Enter}');
+      expect(getTrack(container)).toHaveAttribute('data-paused', 'true');
+      await user.keyboard(' ');
+      expect(getTrack(container)).not.toHaveAttribute('data-paused');
+    });
   });
 
   it('is a white section with a top and a bottom border', () => {
@@ -125,10 +187,10 @@ describe('IntegrationsMarquee without motion', () => {
 
     // The wrapping row takes the same gap variable, so its rows stay short (15 items) on a small screen.
     expect(screen.getByRole('region', { name: MARQUEE_NAME })).toHaveClass(
-      'flex-wrap',
       '[--vn-marquee-gap:1.5rem]',
       'sm:[--vn-marquee-gap:2.5rem]',
     );
+    expect(within(screen.getByRole('region', { name: MARQUEE_NAME })).getByRole('list')).toHaveClass('flex-wrap');
     expect(screen.getByText('Notion')).toBeInTheDocument();
     for (const { label } of integrations) {
       const copies = screen.getAllByText(label);
@@ -136,6 +198,16 @@ describe('IntegrationsMarquee without motion', () => {
       expect(copies).toHaveLength(1);
       expect(isInsideHiddenCopy(copies[0])).toBe(false);
     }
+  });
+
+  it('shows a static row and no pause button, since nothing moves', () => {
+    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
+
+    const { container } = renderWithProviders(<IntegrationsMarquee />);
+
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(container.querySelector('.vn-marquee')).toBeNull();
+    expect(screen.getAllByRole('listitem')).toHaveLength(integrations.length);
   });
 
   it('renders a single copy of each label when the accessibility toggle paused animations', () => {

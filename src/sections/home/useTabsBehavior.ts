@@ -8,6 +8,22 @@ import {
   type RefObject,
 } from 'react';
 
+/**
+ * How long each use case tab stays selected while the rotation runs. A panel holds a title, a paragraph and three steps
+ * (about fifty words), so it needs this long to be read; the test kit reads the same constant.
+ */
+export const ROTATE_MS = 9000;
+
+const COARSE_POINTER_QUERY = '(pointer: coarse)';
+
+/**
+ * True when the main pointer is a finger. A touch screen has no hover to hold the rotation under, so the rotation
+ * starts paused there and the visitor starts it with the toggle. Read once, when the widget mounts.
+ */
+export function startsOnCoarsePointer(): boolean {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(COARSE_POINTER_QUERY).matches;
+}
+
 /** Marks an element inside the held area that must never hold the cycle (the pause toggle). */
 export const HOLD_EXEMPT_ATTRIBUTE = 'data-hold-exempt';
 const HOLD_EXEMPT_SELECTOR = `[${HOLD_EXEMPT_ATTRIBUTE}]`;

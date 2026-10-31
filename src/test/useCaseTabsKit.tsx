@@ -1,11 +1,13 @@
 import { act, screen } from '@testing-library/react';
 import { vi } from 'vitest';
-import { homeCopy } from '../../data/homeCopy';
-import { triggerIntersection } from '../../test/intersection';
-import { renderWithProviders } from '../../test/render';
-import { UseCaseTabs } from './UseCaseTabs';
+import { homeCopy } from '../data/homeCopy';
+import { UseCaseTabs } from '../sections/home/UseCaseTabs';
+import { ROTATE_MS } from '../sections/home/useTabsBehavior';
+import { triggerIntersection } from './intersection';
+import { renderWithProviders } from './render';
 
-export const ROTATE_MS = 4200;
+/** The same constant the component rotates by, so no test repeats the number. */
+export { ROTATE_MS };
 export const A11Y_STORAGE_KEY = 'a11y-preferences';
 export const TAB_NAMES = ['Atendimento', 'Comercial', 'Financeiro', 'Operações'] as const;
 export const { useCases: copy } = homeCopy;

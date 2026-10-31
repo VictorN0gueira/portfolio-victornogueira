@@ -8,8 +8,8 @@ import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import HomePage from './HomePage';
 
-// The sections after the hero: the statement plus the seven named ones.
-const H2_COUNT = 8;
+// The sections after the hero: the strip of integrations, the statement and the seven named ones.
+const H2_COUNT = 9;
 
 expectNoConsoleOutput();
 

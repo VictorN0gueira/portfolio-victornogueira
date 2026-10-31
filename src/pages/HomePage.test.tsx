@@ -20,6 +20,9 @@ const QUOTE_BUTTON = homeCopy.roi.cta;
 const QUOTE_START = buildQuoteMessage({ hoursPerWeek: 1, teamMultiplier: 1, hourlyRate: DEFAULT_HOURLY_RATE }).split(':')[0];
 const OLD_SECTION_TEXTS = ['Cases em Destaque', 'Vamos criar', 'Respondo em até'];
 
+// The integrations strip is named by its own h2 (the line "Conectamos o que você já usa"), the first one on the page.
+const INTEGRATIONS_HEADING = 'Conectamos o que você já usa';
+
 // The h2 of every section after the hero, in the order the page shows them. The statement of the second section
 // is read from the page, since it is a long sentence that lives in the section.
 const SECTION_HEADINGS = [
@@ -32,6 +35,9 @@ const SECTION_HEADINGS = [
   FINAL_HEADING,
 ];
 
+// The strip of integrations and the statement each carry an h2 of their own, before the named sections.
+const EXPECTED_H2_COUNT = SECTION_HEADINGS.length + 2;
+
 expectNoConsoleOutput();
 
 let scrollIntoView: ReturnType<typeof stubScrollIntoViewEverywhere>;
@@ -39,7 +45,7 @@ let scrollIntoView: ReturnType<typeof stubScrollIntoViewEverywhere>;
 // The eight lazy chunks are loaded once, here, and the first render is paid here too, so a test waits for nothing slow.
 beforeAll(async () => {
   await preloadHomeSections();
-  await warmUpRender(<HomePage />, () => expect(document.querySelectorAll('h2')).toHaveLength(SECTION_HEADINGS.length + 1));
+  await warmUpRender(<HomePage />, () => expect(document.querySelectorAll('h2')).toHaveLength(EXPECTED_H2_COUNT));
 }, WARM_UP_HOOK_TIMEOUT_MS);
 
 beforeEach(() => {
@@ -55,7 +61,7 @@ afterEach(removeScrollIntoViewStub);
 /** Renders the home and waits until every lazy section (the statement, the seven headings and the form) is in. */
 async function renderHome(route = '/') {
   const view = renderWithProviders(<HomePage />, { route });
-  await waitFor(() => expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(SECTION_HEADINGS.length + 1));
+  await waitFor(() => expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(EXPECTED_H2_COUNT));
   return view;
 }
 
@@ -66,9 +72,10 @@ describe('HomePage structure', () => {
     await renderHome();
 
     const h2s = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
-    // The statement of the second section is the first h2: it is not one of the named ones.
-    expect(h2s.slice(1)).toEqual(SECTION_HEADINGS);
-    expect(h2s[0]).toBe(homeCopy.statement.heading);
+    // The strip of integrations is the first h2, the statement the second: it is not one of the named ones.
+    expect(h2s[0]).toBe(INTEGRATIONS_HEADING);
+    expect(h2s[1]).toBe(homeCopy.statement.heading);
+    expect(h2s.slice(2)).toEqual(SECTION_HEADINGS);
 
     const h1 = screen.getByRole('heading', { level: 1 });
     const first = screen.getAllByRole('heading', { level: 2 })[0];
@@ -79,7 +86,7 @@ describe('HomePage structure', () => {
     await renderHome();
     const strip = screen.getByText('Conectamos o que você já usa');
     const h1 = screen.getByRole('heading', { level: 1 });
-    const statement = screen.getAllByRole('heading', { level: 2 })[0];
+    const statement = screen.getAllByRole('heading', { level: 2 })[1];
 
     expect(h1.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(strip.compareDocumentPosition(statement) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

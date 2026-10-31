@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
@@ -133,6 +133,107 @@ describe('Marquee with motion allowed', () => {
     );
 
     expect(screen.getByRole('region', { name: LABEL })).toHaveClass('py-4', 'vn-marquee-frame');
+  });
+});
+
+describe('Marquee pause', () => {
+  beforeEach(() => {
+    stubMatchMedia();
+  });
+
+  function getTrack(container: HTMLElement): HTMLElement {
+    return container.querySelector('.vn-marquee') as HTMLElement;
+  }
+
+  it('does not mark the track as paused by default', () => {
+    const { container } = renderThreeItems();
+
+    expect(getTrack(container)).not.toHaveAttribute('data-paused');
+  });
+
+  it('marks the track data-paused and holds the loop with an inline play state, which the unlayered .vn-marquee rule cannot override', () => {
+    const { container } = renderWithProviders(
+      <Marquee ariaLabel={LABEL} isPaused>
+        <span>n8n</span>
+      </Marquee>,
+    );
+
+    expect(getTrack(container)).toHaveAttribute('data-paused', 'true');
+    expect(getTrack(container).style.animationPlayState).toBe('paused');
+  });
+
+  it('follows the isPaused prop both ways', () => {
+    const { container, rerender } = renderWithProviders(
+      <Marquee ariaLabel={LABEL} isPaused>
+        <span>n8n</span>
+      </Marquee>,
+    );
+
+    rerender(
+      <Marquee ariaLabel={LABEL} isPaused={false}>
+        <span>n8n</span>
+      </Marquee>,
+    );
+
+    expect(getTrack(container)).not.toHaveAttribute('data-paused');
+    expect(getTrack(container).style.animationPlayState).toBe('');
+  });
+});
+
+describe('Marquee as a list', () => {
+  beforeEach(() => {
+    stubMatchMedia();
+  });
+
+  function renderList() {
+    return renderWithProviders(
+      <Marquee ariaLabel={LABEL} groupAs="ul">
+        <li>n8n</li>
+        <li>react</li>
+      </Marquee>,
+    );
+  }
+
+  it('renders the first group as a list the screen reader reads, and the duplicate as an aria-hidden list', () => {
+    const { container } = renderList();
+    const [first, second] = getGroups(container);
+
+    expect(first.tagName).toBe('UL');
+    expect(first).toHaveAttribute('role', 'list');
+    expect(first).not.toHaveAttribute('aria-hidden');
+    expect(second.tagName).toBe('UL');
+    expect(second).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+  });
+
+  it('keeps plain boxes as the groups by default', () => {
+    const { container } = renderThreeItems();
+
+    expect(getGroups(container).map((group) => group.tagName)).toEqual(['DIV', 'DIV']);
+  });
+
+  it('keeps the list in the region without motion, with the wrapping row on the list', () => {
+    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
+
+    renderList();
+    const region = screen.getByRole('region', { name: LABEL });
+
+    expect(within(region).getByRole('list')).toHaveClass('flex-wrap');
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+  });
+
+  it('keeps keyboard users out of the duplicate list', () => {
+    const { container } = renderWithProviders(
+      <Marquee ariaLabel={LABEL} groupAs="ul">
+        <li>
+          <a href="#um">um</a>
+        </li>
+      </Marquee>,
+    );
+    const [first, second] = getGroups(container);
+
+    expect(second.querySelector('a')).toHaveAttribute('tabindex', '-1');
+    expect(first.querySelector('a')).not.toHaveAttribute('tabindex');
   });
 });
 

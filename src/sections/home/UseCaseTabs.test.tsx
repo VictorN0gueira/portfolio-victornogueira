@@ -15,7 +15,7 @@ import {
   getTab,
   getTablist,
   renderTabs,
-} from './UseCaseTabs.helpers';
+} from '../../test/useCaseTabsKit';
 
 // The em dash and the en dash, built from char codes so no file holds them literally.
 const DASH_PATTERN = new RegExp(`[${String.fromCharCode(0x2013)}${String.fromCharCode(0x2014)}]`);
@@ -251,7 +251,7 @@ describe('UseCaseTabs auto rotation', () => {
     vi.useRealTimers();
   });
 
-  it('selects Comercial after 4200ms and goes on every 4200ms, wrapping back to Atendimento', () => {
+  it('selects Comercial after the rotation interval and goes on every the rotation interval, wrapping back to Atendimento', () => {
     renderTabs();
     expect(getSelectedName()).toBe('Atendimento');
 
@@ -273,13 +273,12 @@ describe('UseCaseTabs auto rotation', () => {
     expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent(useCases[1].title);
   });
 
-  it('replays the reveal of the panel on every rotation, with a new group each time', () => {
+  // The reveal is not replayed by the rotation (see UseCaseTabs.browse.test.tsx), so the panel keeps its one group.
+  it('keeps one reveal group in the panel after a rotation', () => {
     renderTabs();
-    const before = getPanelGroup();
 
     advance(ROTATE_MS);
 
-    expect(getPanelGroup()).not.toBe(before);
     expect(screen.getByRole('tabpanel').querySelectorAll('[data-reveal-group]')).toHaveLength(1);
   });
 

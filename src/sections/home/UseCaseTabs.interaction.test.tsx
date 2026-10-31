@@ -12,7 +12,7 @@ import {
   getTablist,
   renderTabs,
   stubFocusVisible,
-} from './UseCaseTabs.helpers';
+} from '../../test/useCaseTabsKit';
 
 // The setup file does not restore spies, so a spy left by a failing test would leak into the next ones.
 afterEach(() => {

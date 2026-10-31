@@ -8,8 +8,8 @@ import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import HomePage from './HomePage';
 
-// The statement plus the seven named sections.
-const H2_COUNT = 8;
+// The strip of integrations, the statement and the seven named sections.
+const H2_COUNT = 9;
 const AXE_TIMEOUT_MS = 60_000;
 
 expectNoConsoleOutput();
