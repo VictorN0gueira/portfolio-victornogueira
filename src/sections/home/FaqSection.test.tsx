@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { NEW_TAB_HINT } from '../../components/ui/NewTabHint';
 import { faqs } from '../../data/faqs';
 import { whatsappUrl } from '../../lib/constants';
 import { findAccentElements } from '../../test/accent';
@@ -44,6 +45,15 @@ describe('FaqSection copy and structure', () => {
       expect(details[index].querySelector('summary')).toHaveTextContent(faq.question);
       expect(details[index]).toHaveTextContent(faq.answer);
     });
+  });
+});
+
+describe('FaqSection WhatsApp link', () => {
+  it('tells a screen reader it opens a new tab, without changing its name', () => {
+    renderWithProviders(<FaqSection />);
+
+    expect(linkEl()).toHaveAccessibleName(LINK_NAME);
+    expect(linkEl()).toHaveAccessibleDescription(NEW_TAB_HINT);
   });
 });
 

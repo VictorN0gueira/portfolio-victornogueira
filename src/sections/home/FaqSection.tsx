@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/Button';
 import { Container } from '../../components/ui/Container';
 import { Heading } from '../../components/ui/Heading';
 import { Kicker } from '../../components/ui/Kicker';
+import { NewTabHint } from '../../components/ui/NewTabHint';
 import { RevealGroup, RevealItem } from '../../components/ui/Reveal';
 import { Section } from '../../components/ui/Section';
 import { faqs } from '../../data/faqs';
@@ -20,16 +21,18 @@ interface FaqIntroProps {
 /** The kicker, the h2, the sub line and the WhatsApp button: the left column from lg, the top when stacked. */
 function FaqIntro({ headingId }: FaqIntroProps) {
   const { kicker, heading, sub, cta, message } = homeCopy.faq;
+  const newTabHintId = useId();
 
   return (
     <>
+      <NewTabHint id={newTabHintId} />
       <Kicker>{kicker}</Kicker>
       <Heading id={headingId} size="l" className="mt-6">
         {heading}
       </Heading>
       <p className="mt-6 max-w-xl text-pretty text-base text-vn-gray-dark md:text-lg">{sub}</p>
       <Button asChild intent="secondary" tone="light" size="lg" className="mt-8">
-        <a href={whatsappUrl(message)} target="_blank" rel="noopener noreferrer">
+        <a href={whatsappUrl(message)} target="_blank" rel="noopener noreferrer" aria-describedby={newTabHintId}>
           {cta}
         </a>
       </Button>

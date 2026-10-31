@@ -1,5 +1,5 @@
-import { motion, useScroll, useTransform } from 'motion/react';
-import { useRef, useState, type ReactNode } from 'react';
+import { motion, useInView, useScroll, useTransform } from 'motion/react';
+import { useRef, useState, type ReactNode, type RefObject } from 'react';
 import { WindowFrame } from '../../components/ui/WindowFrame';
 import { flowPanel, flowSteps, heroFlows, type HeroTaskId } from '../../data/heroFlows';
 import { homeCopy } from '../../data/homeCopy';
@@ -18,18 +18,23 @@ const PERSPECTIVE_PX = 1400;
 // Progress 0 is the panel top at the bottom of the screen, progress 1 is the panel top 30% down the screen.
 const SCROLL_OFFSET = ['start end', 'start 30%'] as const;
 
-interface ScrollTiltProps {
+interface TiltFrameProps {
+  /** The plain wrapper: the scroll is measured on it, and the panel reads its visibility from it. */
+  targetRef: RefObject<HTMLDivElement | null>;
+  /** False when motion is not welcome: the same two elements stay, but nothing is written to the transform. */
+  isTilted: boolean;
   children: ReactNode;
 }
 
 /**
- * Tilts its children with the scroll.
+ * Tilts its children with the scroll, or holds them flat.
+ * The tree is the same either way (a wrapper and a tilted layer), so a change of the motion preference only changes
+ * the style and never remounts the window inside: its cycle and the focus on the pause button stay.
  * The scroll target is the plain wrapper, not the tilted layer, because the tilt changes the box that is measured.
  * Only transform properties are written: rotateX, scale and the perspective.
  * Both angles are built up front, so the hooks never change with the screen size.
  */
-function ScrollTilt({ children }: ScrollTiltProps) {
-  const targetRef = useRef<HTMLDivElement>(null);
+function TiltFrame({ targetRef, isTilted, children }: TiltFrameProps) {
   const isWide = useMediaQuery(MD_QUERY);
   const { scrollYProgress } = useScroll({ target: targetRef, offset: [...SCROLL_OFFSET] });
   const rotateXWide = useTransform(scrollYProgress, [0, 1], [TILT_FROM_DEG, 0]);
@@ -40,10 +45,12 @@ function ScrollTilt({ children }: ScrollTiltProps) {
     <div ref={targetRef}>
       <motion.div
         data-flow-tilt=""
+        // Flat is the same style with the angle at 0, the scale at 1 and no perspective (the transform is then none):
+        // a style prop that disappears would leave the last values on the element.
         style={{
-          rotateX: isWide ? rotateXWide : rotateXNarrow,
-          scale,
-          transformPerspective: PERSPECTIVE_PX,
+          rotateX: isTilted ? (isWide ? rotateXWide : rotateXNarrow) : 0,
+          scale: isTilted ? scale : 1,
+          transformPerspective: isTilted ? PERSPECTIVE_PX : 0,
           transformOrigin: 'top center',
         }}
       >
@@ -57,6 +64,8 @@ interface FlowWindowProps {
   task: HeroTaskId;
   /** The visitor's own pause, kept by the parent so a new task does not undo it. */
   isUserPaused: boolean;
+  /** Whether the panel is on the screen: off screen the timer stops and the CSS loops are held. */
+  isVisible: boolean;
   onTogglePause: () => void;
 }
 
@@ -68,19 +77,21 @@ interface FlowWindowProps {
  * The pointer does not hold it: the panel keeps running while the mouse is over it, and the pause is the visitor's
  * own toggle. These are separate holds, so it resumes only when both are off.
  * The title bar is not part of the body, so pressing the pause control never holds the cycle by itself.
- * The hook also holds it while the tab is hidden.
- * The window carries data-paused while a hold is on, and CSS stops the cable with it.
+ * The hook also holds it while the tab is hidden, and the panel holds it while it is off screen.
+ * The window carries data-paused while a hold is on (or while it is off screen), and CSS stops the cable with it.
  * Without motion nothing runs: every row is done, there is no pause control and no timer.
  * The status word in the title bar follows the visitor's own pause only: "pausado" after they press the toggle,
  * "rodando" otherwise. A hold by the focus ends by itself when it leaves, so it keeps "rodando".
  * The parent gives it key={task}, so a new task starts a new cycle.
  */
-function FlowWindow({ task, isUserPaused, onTogglePause }: FlowWindowProps) {
+function FlowWindow({ task, isUserPaused, isVisible, onTogglePause }: FlowWindowProps) {
   const isMotionAllowed = useMotionAllowed();
   const [isFocused, setIsFocused] = useState(false);
   const rows = heroFlows[task];
   const isPaused = isMotionAllowed && (isUserPaused || isFocused);
-  const { index } = useCycle(rows.length + 1, CYCLE_STEP_MS, { enabled: isMotionAllowed && !isPaused });
+  const { index } = useCycle(rows.length + 1, CYCLE_STEP_MS, { enabled: isMotionAllowed && !isPaused && isVisible });
+  // The cable is held off screen too, but the mode stays "running": nothing the visitor reads changes.
+  const isHeld = isPaused || (isMotionAllowed && !isVisible);
 
   const { status } = homeCopy.hero.panel;
   const hasVisitorPaused = isMotionAllowed && isUserPaused;
@@ -94,7 +105,7 @@ function FlowWindow({ task, isUserPaused, onTogglePause }: FlowWindowProps) {
       role="group"
       aria-label={homeCopy.hero.panel.label}
       data-flow-window=""
-      data-paused={isPaused ? 'true' : undefined}
+      data-paused={isHeld ? 'true' : undefined}
     >
       <WindowFrame
         title={flowPanel.title}
@@ -130,21 +141,25 @@ interface AutomationPanelProps {
  * It starts leaning back and straightens as it scrolls up the screen.
  * It is an illustration (the footnote says so), so it is plain content, not a live region.
  * The changing rows are never announced, and there is no accent color in it.
- * The pause of the visitor lives here, so it survives a change of task.
+ * The pause of the visitor lives here, so it survives a change of task. The window runs only while it is on screen.
  */
 export function AutomationPanel({ task }: AutomationPanelProps) {
   const isMotionAllowed = useMotionAllowed();
   const [isUserPaused, setIsUserPaused] = useState(false);
-  const flow = (
-    <FlowWindow
-      key={task}
-      task={task}
-      isUserPaused={isUserPaused}
-      onTogglePause={() => setIsUserPaused((current) => !current)}
-    />
-  );
+  const frameRef = useRef<HTMLDivElement>(null);
+  const isVisible = useInView(frameRef);
 
-  return isMotionAllowed ? <ScrollTilt>{flow}</ScrollTilt> : <div>{flow}</div>;
+  return (
+    <TiltFrame targetRef={frameRef} isTilted={isMotionAllowed}>
+      <FlowWindow
+        key={task}
+        task={task}
+        isUserPaused={isUserPaused}
+        isVisible={isVisible}
+        onTogglePause={() => setIsUserPaused((current) => !current)}
+      />
+    </TiltFrame>
+  );
 }
 
 export default AutomationPanel;

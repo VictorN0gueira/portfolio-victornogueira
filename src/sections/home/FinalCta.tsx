@@ -5,6 +5,7 @@ import { Container } from '../../components/ui/Container';
 import { Cursor } from '../../components/ui/Cursor';
 import { Heading } from '../../components/ui/Heading';
 import { Kicker } from '../../components/ui/Kicker';
+import { NewTabHint } from '../../components/ui/NewTabHint';
 import { RevealGroup, RevealItem } from '../../components/ui/Reveal';
 import { ScanGrid } from '../../components/ui/ScanGrid';
 import { Section } from '../../components/ui/Section';
@@ -28,6 +29,7 @@ interface FinalCtaIntroProps {
 /** The kicker, the large heading with its cursor, the body and the WhatsApp button. */
 function FinalCtaIntro({ headingId }: FinalCtaIntroProps) {
   const { kicker, heading, body, cta, message } = homeCopy.finalCta;
+  const newTabHintId = useId();
   // The last word and the cursor never part: the block cannot wrap onto a line of its own.
   const lastWordStart = heading.lastIndexOf(' ') + 1;
   const headingStart = heading.slice(0, lastWordStart);
@@ -35,6 +37,7 @@ function FinalCtaIntro({ headingId }: FinalCtaIntroProps) {
 
   return (
     <>
+      <NewTabHint id={newTabHintId} />
       <Kicker tone="dark">{kicker}</Kicker>
       <Heading id={headingId} size="xl" className={cn('mt-6', HEADING_FIT_CLASSES)}>
         {headingStart}
@@ -45,7 +48,7 @@ function FinalCtaIntro({ headingId }: FinalCtaIntroProps) {
       </Heading>
       <p className="mt-6 max-w-xl text-pretty text-base text-vn-gray-light md:text-lg">{body}</p>
       <Button asChild intent="secondary" tone="dark" size="lg" className="mt-8">
-        <a href={whatsappUrl(message)} target="_blank" rel="noopener noreferrer">
+        <a href={whatsappUrl(message)} target="_blank" rel="noopener noreferrer" aria-describedby={newTabHintId}>
           {cta}
         </a>
       </Button>
@@ -63,7 +66,8 @@ interface FinalCtaProps {
 /**
  * The closing call to action of the home, id contato: a black section with the dark scan grid, a large question
  * ending in the block cursor (the one accent of the section; the form adds none), the WhatsApp button and the
- * contact form. Two columns from lg, stacked below it with the form at full width. One RevealGroup for the one
+ * contact form. The scan line of the grid sweeps only the margins beside the content, never the heading or the form.
+ * Two columns from lg, stacked below it with the form at full width. One RevealGroup for the one
  * container.
  */
 export function FinalCta({ prefillMessage, prefillNonce }: FinalCtaProps) {
@@ -71,7 +75,7 @@ export function FinalCta({ prefillMessage, prefillNonce }: FinalCtaProps) {
 
   return (
     <Section id={SECTION_ID} tone="black" labelledBy={headingId}>
-      <ScanGrid tone="dark" />
+      <ScanGrid tone="dark" keepContentClear />
       <Container>
         <RevealGroup className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start lg:gap-16">
           <RevealItem className="@container min-w-0">

@@ -74,11 +74,73 @@ describe('excerptOf', () => {
     expect(result.endsWith(`frase${ELLIPSIS}`)).toBe(true);
   });
 
-  it('drops a sentence ending period and a closing parenthesis too', () => {
-    const text = `${wordsOfLength(120)} fim (de frase). ${'z'.repeat(40)}`;
+  it('drops a period and a closing parenthesis that sit right before a word cut', () => {
+    // No sentence end after the half of the limit: the period is at 18, so the word cut is used.
+    const text = `fim (de frase). ${wordsOfLength(125)} ${'z'.repeat(40)}`;
     const result = excerptOf(text);
 
-    expect(result.endsWith(`frase${ELLIPSIS}`)).toBe(true);
+    expect(result.endsWith(ELLIPSIS)).toBe(true);
+    expect(result).not.toMatch(/[,;:.\s]…$/);
+  });
+
+  describe('sentence cut', () => {
+    const FIRST = `${wordsOfLength(95)}.`;
+    const SECOND = `${wordsOfLength(60)}.`;
+
+    it('ends on the last whole sentence inside the limit, with no ellipsis', () => {
+      const text = `${FIRST} ${SECOND}`;
+
+      expect(excerptOf(text)).toBe(FIRST);
+    });
+
+    it('prefers the later sentence when two fit', () => {
+      const short = `${wordsOfLength(40)}.`;
+      const text = `${short} ${wordsOfLength(60)}. ${wordsOfLength(80)}.`;
+
+      expect(excerptOf(text)).toBe(`${short} ${wordsOfLength(60)}.`);
+    });
+
+    it('keeps the closing quote or parenthesis of the sentence', () => {
+      const text = `${wordsOfLength(90)}.") ${wordsOfLength(80)}.`;
+
+      expect(excerptOf(text)).toBe(`${wordsOfLength(90)}.")`);
+    });
+
+    it('takes a question mark and an exclamation mark as the end of a sentence', () => {
+      expect(excerptOf(`${wordsOfLength(100)}? ${wordsOfLength(80)}.`)).toBe(`${wordsOfLength(100)}?`);
+      expect(excerptOf(`${wordsOfLength(100)}! ${wordsOfLength(80)}.`)).toBe(`${wordsOfLength(100)}!`);
+    });
+
+    it('does not take the point of a decimal number as the end of a sentence', () => {
+      const text = `${wordsOfLength(100)} 3.5 ${wordsOfLength(80)}`;
+
+      expect(excerptOf(text).endsWith(ELLIPSIS)).toBe(true);
+    });
+
+    it('falls back to the word cut when the only sentence end is in the first half of the limit', () => {
+      const text = `${wordsOfLength(30)}. ${wordsOfLength(200)}`;
+      const result = excerptOf(text);
+
+      expect(result.endsWith(ELLIPSIS)).toBe(true);
+      expect(result.length).toBeGreaterThan(100);
+    });
+
+    it('keeps a sentence of exactly half of the limit (70 of 140 characters), and drops one a character shorter (R8 M14)', () => {
+      const half = EXCERPT_LIMIT / 2;
+      const atHalf = `${wordsOfLength(half - 1)}.`;
+      const belowHalf = `${wordsOfLength(half - 2)}.`;
+      const rest = wordsOfLength(200);
+
+      expect(Array.from(atHalf)).toHaveLength(half);
+      expect(excerptOf(`${atHalf} ${rest}`)).toBe(atHalf);
+      expect(excerptOf(`${belowHalf} ${rest}`).endsWith(ELLIPSIS)).toBe(true);
+    });
+
+    it('never ends a cut sentence past the limit by more than its closing marks', () => {
+      const text = `${wordsOfLength(139)}. ${wordsOfLength(50)}`;
+
+      expect(Array.from(excerptOf(text)).length).toBeLessThanOrEqual(EXCERPT_LIMIT);
+    });
   });
 
   it('counts accented letters as one character each', () => {
@@ -136,18 +198,27 @@ describe('excerptOf', () => {
       for (const item of short) expect(excerptOf(item.text)).toBe(item.text);
     });
 
-    it('cuts the longer ones on a word boundary, as a prefix of the verbatim text', () => {
+    it('cuts the longer ones on a sentence or a word boundary, as a prefix of the verbatim text', () => {
       const long = testimonials.filter((item) => Array.from(item.text).length > EXCERPT_LIMIT);
 
       expect(long.length).toBeGreaterThan(0);
       for (const item of long) {
         const result = excerptOf(item.text);
-        const body = result.slice(0, -1);
+        const isSentenceCut = !result.endsWith(ELLIPSIS);
+        const body = isSentenceCut ? result : result.slice(0, -1);
 
-        expect(result.endsWith(ELLIPSIS)).toBe(true);
         expect(item.text.startsWith(body)).toBe(true);
         expect(item.text.charAt(body.length)).toMatch(/[\s,;:.]/);
         expect(Array.from(body).length).toBeLessThanOrEqual(EXCERPT_LIMIT);
+      }
+    });
+
+    it('never leaves an ellipsis in the middle of a sentence when the card has a whole sentence to show (V:D4)', () => {
+      for (const item of testimonials) {
+        const result = excerptOf(item.text);
+
+        if (result.endsWith(ELLIPSIS)) continue;
+        expect(result).toMatch(/[.!?]["')\]]*$/);
       }
     });
   });

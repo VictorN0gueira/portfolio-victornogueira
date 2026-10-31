@@ -17,22 +17,35 @@ interface ScrollProgressProps {
   tone?: ScrollProgressTone;
 }
 
-/**
- * A 2px bar across the top of the page that fills as the visitor scrolls. The spring smooths it only
- * when motion is welcome, otherwise the bar follows the scroll position exactly.
- */
-export function ScrollProgress({ tone = 'light' }: ScrollProgressProps) {
-  const isMotionAllowed = useMotionAllowed();
+interface BarProps {
+  tone: ScrollProgressTone;
+}
+
+const BAR_CLASSES = `${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed inset-x-0 top-0 z-[60] h-0.5 origin-left`;
+
+/** The bar follows the scroll position exactly. */
+function PlainBar({ tone }: BarProps) {
+  const { scrollYProgress } = useScroll();
+
+  return <motion.div aria-hidden="true" className={`${BAR_CLASSES} ${TONE_CLASSES[tone]}`} style={{ scaleX: scrollYProgress }} />;
+}
+
+/** The bar follows the scroll through a spring that smooths it. The spring exists only here, where motion is welcome. */
+function SmoothBar({ tone }: BarProps) {
   const { scrollYProgress } = useScroll();
   const smoothProgress = useSpring(scrollYProgress, SPRING);
 
-  return (
-    <motion.div
-      aria-hidden="true"
-      className={`${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed inset-x-0 top-0 z-[60] h-0.5 origin-left ${TONE_CLASSES[tone]}`}
-      style={{ scaleX: isMotionAllowed ? smoothProgress : scrollYProgress }}
-    />
-  );
+  return <motion.div aria-hidden="true" className={`${BAR_CLASSES} ${TONE_CLASSES[tone]}`} style={{ scaleX: smoothProgress }} />;
+}
+
+/**
+ * A 2px bar across the top of the page that fills as the visitor scrolls. The spring smooths it only
+ * when motion is welcome, otherwise the bar follows the scroll position exactly and no spring is created.
+ */
+export function ScrollProgress({ tone = 'light' }: ScrollProgressProps) {
+  const isMotionAllowed = useMotionAllowed();
+
+  return isMotionAllowed ? <SmoothBar tone={tone} /> : <PlainBar tone={tone} />;
 }
 
 export default ScrollProgress;

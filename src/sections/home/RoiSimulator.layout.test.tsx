@@ -12,7 +12,7 @@ import {
   getSlider,
   getTeamGroup,
   renderSimulator,
-} from './RoiSimulator.helpers';
+} from '../../test/roiSimulatorKit';
 
 const FIT_EM = '--vn-fit-em';
 

@@ -15,7 +15,7 @@ import {
   getRate,
   getSlider,
   renderSimulator,
-} from './RoiSimulator.helpers';
+} from '../../test/roiSimulatorKit';
 import { MAX_HOURLY_RATE } from './roiInput';
 
 const INFINITY_SIGN = String.fromCharCode(0x221e);
@@ -293,7 +293,7 @@ describe('RoiSimulator rate cap note', () => {
     expect(onQuoteRequest).toHaveBeenCalledWith(buildQuoteMessage({ ...DEFAULT_INPUT, hourlyRate: MAX_HOURLY_RATE }));
   });
 
-  it('has no note at the default rate, at the cap itself or for text that counts as 0', () => {
+  it('has no cap note at the default rate, at the cap itself or for text that counts as 0', () => {
     renderSimulator();
 
     expect(getAmounts(RATE_CAP_NOTE)).toHaveLength(0);
@@ -301,7 +301,16 @@ describe('RoiSimulator rate cap note', () => {
       fireEvent.change(getRate(), { target: { value: text } });
 
       expect(getAmounts(RATE_CAP_NOTE), text).toHaveLength(0);
-      expect(getRate()).not.toHaveAttribute('aria-describedby');
+    }
+  });
+
+  it('has no description at the cap itself or for an empty field, only the cap or the issue notes describe it', () => {
+    renderSimulator();
+
+    for (const text of ['5000', '']) {
+      fireEvent.change(getRate(), { target: { value: text } });
+
+      expect(getRate(), text).not.toHaveAttribute('aria-describedby');
     }
   });
 

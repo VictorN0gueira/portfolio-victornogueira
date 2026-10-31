@@ -54,6 +54,8 @@ interface RoiResultsProps {
   savings: number;
   /** Said after the values when the rate was counted at its ceiling, so a screen reader hears it too. */
   rateCapNote?: string | null;
+  /** Said after the values when the rate typed cannot be used (negative, unreadable): the field alone does not speak on change. */
+  rateIssueNote?: string | null;
   onQuoteRequest: () => void;
 }
 
@@ -63,11 +65,12 @@ interface RoiResultsProps {
  * The figures count, so they are hidden from assistive tech together with their labels, and one visually hidden
  * status region says both final values instead: it starts with them, so a reader browsing the page finds them, and it
  * changes only after the values have stayed still for 600ms, so a drag of the slider is announced once, at its end.
- * The note about the rate ceiling, when there is one, ends the same sentence: there is only this one status region.
+ * The note about the rate ceiling and the note about a rate that cannot be used, when there is one, end the same
+ * sentence: there is only this one status region.
  */
-export function RoiResults({ cost, savings, rateCapNote = null, onQuoteRequest }: RoiResultsProps) {
+export function RoiResults({ cost, savings, rateCapNote = null, rateIssueNote = null, onQuoteRequest }: RoiResultsProps) {
   const { results, note, cta, aria } = homeCopy.roi;
-  const sentence = [aria.status(formatBRL(cost), formatBRL(savings)), rateCapNote].filter(Boolean).join(' ');
+  const sentence = [aria.status(formatBRL(cost), formatBRL(savings)), rateCapNote, rateIssueNote].filter(Boolean).join(' ');
   const announcement = useDebouncedValue(sentence, STATUS_DEBOUNCE_MS);
 
   return (

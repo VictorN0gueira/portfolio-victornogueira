@@ -5,7 +5,7 @@ import {
   HEADER_HEIGHT_LANDSCAPE,
   HEADER_LANDSCAPE_LIFT,
   HEADER_TOP_OFFSET,
-} from '../../components/layout/Header';
+} from '../../components/layout/headerMetrics';
 import { Button } from '../../components/ui/Button';
 import { Container } from '../../components/ui/Container';
 import { Kicker } from '../../components/ui/Kicker';

@@ -22,7 +22,9 @@ import {
   MAX_HOURLY_RATE,
   isHourlyRateCapped,
   parseHourlyRate,
+  rateIssue,
 } from './roiInput';
+import { rateIssueNote } from './roiFeedbackCopy';
 
 interface RoiSimulatorProps {
   /** Called with the pre-filled quote message of the current values when the visitor asks for the automation. */
@@ -70,7 +72,9 @@ function useRateField() {
   };
   const capNote = isHourlyRateCapped(countedText) ? homeCopy.roi.rateCap(formatBRL(MAX_HOURLY_RATE)) : null;
 
-  return { text, rate: parseHourlyRate(countedText), capNote, onChange };
+  const issue = rateIssue(countedText);
+
+  return { text, rate: parseHourlyRate(countedText), capNote, issueNote: issue ? rateIssueNote(issue) : null, onChange };
 }
 
 /**
@@ -108,6 +112,7 @@ export function RoiSimulator({ onQuoteRequest }: RoiSimulatorProps) {
                 onTeamChange={setTeamIndex}
                 rateText={rateField.text}
                 rateCapNote={rateField.capNote}
+                rateIssueNote={rateField.issueNote}
                 onRateChange={rateField.onChange}
               />
             </RevealItem>
@@ -116,6 +121,7 @@ export function RoiSimulator({ onQuoteRequest }: RoiSimulatorProps) {
                 cost={annualManualCost(input)}
                 savings={annualSavings(input)}
                 rateCapNote={rateField.capNote}
+                rateIssueNote={rateField.issueNote}
                 onQuoteRequest={() => onQuoteRequest(buildQuoteMessage(input))}
               />
             </RevealItem>

@@ -28,6 +28,10 @@ const STEP_ON_CLASSES = [
   'aria-[current=step]:border-vn-ink aria-[current=step]:bg-vn-ink aria-[current=step]:text-vn-white',
 ].join(' ');
 
+// While the row overflows, its right edge fades out and the end keeps 2rem free, so the last pill is clear of the fade
+// once it is scrolled to: a pill cut at the edge then reads as "there is more" instead of as a clipped label.
+const STEPS_FADE_CLASSES = 'pr-8 [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]';
+
 interface StepPillsProps {
   /** Index of the step the cycle is on, or -1 when none is (nothing runs without motion). */
   activeIndex: number;
@@ -37,7 +41,7 @@ interface StepPillsProps {
 /**
  * The four steps as pills. The row may not fit on a narrow screen, so it scrolls sideways inside the panel (never
  * the page), with the scrollbar hidden, and it is a tab stop only while it really overflows, so a keyboard can
- * scroll it. While the cycle runs the step is marked with data-active (a drawing, not an announcement); only a
+ * scroll it, and its right edge fades while it does. While the cycle runs the step is marked with data-active (a drawing, not an announcement); only a
  * pause marks it for assistive tech, with aria-current.
  */
 function StepPills({ activeIndex, mode }: StepPillsProps) {
@@ -48,8 +52,9 @@ function StepPills({ activeIndex, mode }: StepPillsProps) {
     <ol
       ref={ref}
       aria-label={flowPanel.aria.steps}
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a row that overflows must be reachable by keyboard to scroll
       tabIndex={isOverflowing ? 0 : undefined}
-      className={`scrollbar-hide flex gap-2 overflow-x-auto rounded-lg py-1 -outline-offset-2 ${FOCUS_RING}`}
+      className={`scrollbar-hide flex gap-2 overflow-x-auto rounded-lg py-1 -outline-offset-2 ${isOverflowing ? STEPS_FADE_CLASSES : ''} ${FOCUS_RING}`}
     >
       {flowSteps.map((step, index) => {
         const isOn = index === activeIndex;

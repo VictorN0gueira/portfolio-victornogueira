@@ -1,6 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { MAIN_NAV, PRIMARY_CTA } from '../../data/navigation';
@@ -10,17 +10,15 @@ import MobileMenu from './MobileMenu';
 
 function Harness() {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <MobileMenu
-      open={open}
-      onOpenChange={setOpen}
-      trigger={
-        <button type="button" aria-label="Abrir menu">
-          menu
-        </button>
-      }
-    />
+    <>
+      <button ref={buttonRef} type="button" aria-label="Abrir menu" onClick={() => setOpen(true)}>
+        menu
+      </button>
+      <MobileMenu id="menu-panel" open={open} onOpenChange={setOpen} returnFocusTo={buttonRef} />
+    </>
   );
 }
 
@@ -102,6 +100,20 @@ describe('MobileMenu', () => {
     expect(current.map((link) => link.textContent)).toEqual(['Projetos']);
   });
 
+  it('underlines the current page, so the color is not the only mark', async () => {
+    const user = renderMenu('/sobre');
+    const dialog = await openMenu(user);
+
+    expect(within(dialog).getByRole('link', { name: 'Sobre' })).toHaveClass('aria-[current=page]:underline');
+    expect(within(dialog).getByRole('link', { name: 'Sobre' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('names the panel with the id the opening button points at', async () => {
+    const user = renderMenu();
+
+    expect(await openMenu(user)).toHaveAttribute('id', 'menu-panel');
+  });
+
   it('closes with the explicit 44px button', async () => {
     const user = renderMenu();
     const dialog = await openMenu(user);
@@ -168,22 +180,22 @@ describe('MobileMenu', () => {
   });
 
   it('stays open when the parent re-renders and hands it a new onOpenChange function', async () => {
-    let rerenderParent: () => void = () => undefined;
+    const parent = { rerender: () => undefined as void };
     function InlineHandlerHarness() {
       const [open, setOpen] = useState(false);
       const [, setTick] = useState(0);
-      rerenderParent = () => setTick((tick) => tick + 1);
+      const buttonRef = useRef<HTMLButtonElement>(null);
+      useEffect(() => {
+        parent.rerender = () => setTick((tick) => tick + 1);
+      });
 
       return (
-        <MobileMenu
-          open={open}
-          onOpenChange={(next) => setOpen(next)}
-          trigger={
-            <button type="button" aria-label="Abrir menu">
-              menu
-            </button>
-          }
-        />
+        <>
+          <button ref={buttonRef} type="button" aria-label="Abrir menu" onClick={() => setOpen(true)}>
+            menu
+          </button>
+          <MobileMenu id="menu-panel" open={open} onOpenChange={(next) => setOpen(next)} returnFocusTo={buttonRef} />
+        </>
       );
     }
     const user = userEvent.setup();
@@ -191,8 +203,8 @@ describe('MobileMenu', () => {
     await user.click(screen.getByRole('button', { name: 'Abrir menu' }));
     await screen.findByRole('dialog', { name: 'Menu de navegação' });
 
-    act(() => rerenderParent());
-    act(() => rerenderParent());
+    act(() => parent.rerender());
+    act(() => parent.rerender());
 
     expect(screen.getByRole('dialog', { name: 'Menu de navegação' })).toBeInTheDocument();
   });

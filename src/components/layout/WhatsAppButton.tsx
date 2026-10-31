@@ -1,6 +1,8 @@
+import { useId } from 'react';
 import { WHATSAPP_GREETING, whatsappUrl } from '../../lib/constants';
 import { SCROLL_LOCK_BAR_SIZE } from '../../lib/scrollLock';
 import BrandIcon from '../ui/BrandIcon';
+import NewTabHint from '../ui/NewTabHint';
 
 // The offsets are inline because the safe area inset has to be compared with the 16px margin:
 // the pt-safe family of utilities replaces the padding instead of taking the larger of the two.
@@ -19,13 +21,17 @@ const POSITION = {
  * It sits in its own complementary landmark, so no content of the page is left outside a landmark.
  */
 export function WhatsAppButton() {
+  const newTabHintId = useId();
+
   return (
     <aside aria-label="Contato rápido">
+      <NewTabHint id={newTabHintId} />
       <a
         href={whatsappUrl(WHATSAPP_GREETING)}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Falar no WhatsApp"
+        aria-describedby={newTabHintId}
         style={POSITION}
         className="fixed z-40 grid size-[52px] place-items-center rounded-full border border-vn-gray-dark bg-vn-black text-vn-white shadow-lg transition-transform duration-150 ease-out hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--color-vn-white),0_0_0_4px_var(--color-vn-ink)]"
       >

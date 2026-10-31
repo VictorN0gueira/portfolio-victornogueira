@@ -458,7 +458,8 @@ test.describe('hero with reduced motion', () => {
     for (let index = 0; index < ROW_COUNT; index += 1) {
       await expect(flowRows(page).nth(index)).toHaveAttribute('data-state', 'done');
     }
-    await expect(page.locator('[data-flow-tilt]')).toHaveCount(0);
+    // The wrapper stays (one tree, so the window never remounts when the preference changes), but it lies flat.
+    await expect(page.locator('[data-flow-tilt]')).toHaveCSS('transform', 'none');
     await expect(page.getByRole('button', { name: PAUSE_NAME })).toHaveCount(0);
     await expect(windowStatus(page, 'rodando')).toBeVisible();
   });

@@ -1,17 +1,17 @@
 import { getDefaultNormalizer, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import { formatBRL } from '../../lib/format';
-import { annualManualCost, annualSavings, type RoiInput } from '../../lib/roi';
-import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
-import { renderWithProviders } from '../../test/render';
-import { RoiSimulator } from './RoiSimulator';
+import { formatBRL } from '../lib/format';
+import { annualManualCost, annualSavings, type RoiInput } from '../lib/roi';
+import { REDUCED_MOTION_QUERY, stubMatchMedia } from './matchMedia';
+import { renderWithProviders } from './render';
+import { RoiSimulator } from '../sections/home/RoiSimulator';
 
 export const NBSP = String.fromCharCode(0x00a0);
 export const A11Y_STORAGE_KEY = 'a11y-preferences';
 export const SLIDER_NAME = 'Horas por semana em tarefas repetitivas';
-export const TEAM_NAME = 'Quantas pessoas fazem isso';
-export const RATE_NAME = 'Valor da hora (R$)';
+const TEAM_NAME = 'Quantas pessoas fazem isso';
+const RATE_NAME = 'Valor da hora (R$)';
 export const CTA_NAME = 'Quero automatizar esse processo';
 export const STATUS_DEBOUNCE_MS = 600;
 export const DEFAULT_COST = `R$${NBSP}78.000`;
@@ -28,13 +28,15 @@ const KEEP_SPACES = getDefaultNormalizer({ trim: false, collapseWhitespace: fals
 interface RenderOptions {
   /** True (the default) stubs prefers-reduced-motion, so the numbers show their final value at once. */
   isMotionReduced?: boolean;
+  /** Wraps the tree in StrictMode, so the effects run twice like in development. */
+  strict?: boolean;
   onQuoteRequest?: (message: string) => void;
 }
 
-export function renderSimulator({ isMotionReduced = true, onQuoteRequest = vi.fn() }: RenderOptions = {}) {
+export function renderSimulator({ isMotionReduced = true, onQuoteRequest = vi.fn(), strict = false }: RenderOptions = {}) {
   stubMatchMedia({ [REDUCED_MOTION_QUERY]: isMotionReduced });
   const user = userEvent.setup();
-  const view = renderWithProviders(<RoiSimulator onQuoteRequest={onQuoteRequest} />);
+  const view = renderWithProviders(<RoiSimulator onQuoteRequest={onQuoteRequest} />, { strict });
   return { user, onQuoteRequest, ...view };
 }
 

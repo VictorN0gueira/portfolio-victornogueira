@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { WHATSAPP_GREETING, WHATSAPP_NUMBER, whatsappUrl } from '../../lib/constants';
 import { renderWithProviders } from '../../test/render';
+import { NEW_TAB_HINT } from '../ui/NewTabHint';
 import WhatsAppButton from './WhatsAppButton';
 
 function renderButton() {
@@ -18,6 +19,13 @@ describe('WhatsAppButton', () => {
     expect(WHATSAPP_GREETING).toBe('Olá! Vim pelo site da VN One e quero conversar sobre um projeto.');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('tells a screen reader it opens a new tab, without changing its name', () => {
+    const link = renderButton();
+
+    expect(link).toHaveAccessibleName('Falar no WhatsApp');
+    expect(link).toHaveAccessibleDescription(NEW_TAB_HINT);
   });
 
   it('keeps 16px from the edges, or the safe area when it is larger, through inline styles', () => {

@@ -8,6 +8,7 @@ import { homeCopy, type HeroHourOption, type HeroSentencePart, type HeroSentence
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import { formatBRL } from '../../lib/format';
 import { DEFAULT_HOURLY_RATE, monthlySavings } from '../../lib/roi';
+import { groupWords } from './heroWords';
 
 const DEFAULT_HOURS: HeroHourOption['value'] = 10;
 // The hours the visitor picks already count the whole team, so the team multiplier stays at 1.
@@ -25,9 +26,11 @@ const WHITESPACE = /\s+/;
 
 // leading-[1.22] is the documented exception to the title line height (0.92 to 0.98) for this interactive sentence:
 // inline pills are 44px tall and bordered, so at the tight title leading the pills of one line collide with the next.
+// The size never goes below 9vw at the smallest phones: with the larger font, 1.75rem is 33.6px, and at 280px a word like
+// "Automatizando," is wider than the 220px of the heading, so a line break would cut it. From about 330px the rem floor wins.
 const HEADING_CLASSES = [
-  'font-display font-bold lowercase tracking-[-0.03em] leading-[1.22] break-words',
-  'text-[length:clamp(1.75rem,0.95rem+2.9vw,3.75rem)]',
+  'font-display font-bold lowercase tracking-[-0.03em] leading-[1.22] break-words [text-wrap:balance]',
+  'text-[length:clamp(min(1.75rem,9vw),0.95rem+2.9vw,3.75rem)]',
 ].join(' ');
 // The pills sit in the sentence as one more word: they scale with the heading, and a long one may wrap inside.
 const PILL_SIZE_CLASSES = 'px-[0.6em] py-[0.04em]';
@@ -75,10 +78,7 @@ function tokenize(parts: readonly HeroSentencePart[]): SentenceToken[] {
     }
 
     const isSticky = STICKY_PUNCTUATION.test(part);
-    part
-      .split(WHITESPACE)
-      .filter(Boolean)
-      .forEach((word, wordIndex) => {
+    groupWords(part.split(WHITESPACE).filter(Boolean)).forEach((word, wordIndex) => {
         const previous = tokens.at(-1);
         if (isSticky && wordIndex === 0 && previous && ONLY_PUNCTUATION.test(word)) {
           tokens[tokens.length - 1] = { ...previous, suffix: previous.suffix + word };
@@ -209,7 +209,8 @@ function savingsFor(hours: HeroHourOption['value']): number {
  * week and the task) and a result pill that follows the hours. The task is controlled by the parent, because the
  * flow panel next to the headline shows the automation for that task; the hours are local. The pills sit inside
  * the h1 as buttons, each with its own accessible name, and the result is a plain span, so the name of the heading
- * carries every value. Every word enters with a rise and a blur, 0.05s apart, and the heading wraps by itself, so
+ * carries every value. Every word enters with a rise (opacity and position, no blur filter: about twenty blurred
+ * words are costly on weak GPUs and delay the first legible text), 0.05s apart, the last two words of a run of text stay together, and the heading wraps by itself, so
  * the pills move to the next line when they do not fit (nothing is nowrap). The reveal items are spans, because a
  * heading only holds phrasing content.
  * The announcement of a change lives next to the heading, not in it: a visually hidden status region (polite,
@@ -239,7 +240,7 @@ export function HeroSentence({ task, onTaskChange }: HeroSentenceProps) {
             {token.hasSpaceBefore ? ' ' : null}
             <RevealItem
               as="span"
-              variant="rise-blur"
+              variant="up"
               className={token.suffix ? ITEM_WITH_SUFFIX_CLASSES : ITEM_CLASSES}
             >
               {token.slot ? (
@@ -277,6 +278,20 @@ export function HeroFinePrint() {
 // A loose curve that starts beside the note and rises up and to the left, toward the numbers of the sentence
 // above it, ending in an open arrowhead.
 const ARROW_PATH = 'M64 50 C46 50 20 44 12 12 M4 22 L12 10 L22 18';
+
+const COMMENT_GLYPH = /^(\/\/)\s*/;
+
+/** A leading "//" is a comment glyph: it is drawn, but a screen reader does not say "slash slash". */
+function AnnotationText({ text }: { text: string }) {
+  const glyph = COMMENT_GLYPH.exec(text);
+  if (!glyph) return <p className="mt-3">{text}</p>;
+
+  return (
+    <p className="mt-3">
+      <span aria-hidden="true">{glyph[1]}</span> {text.slice(glyph[0].length)}
+    </p>
+  );
+}
 
 /**
  * The note that tells people the numbers are theirs to change.
@@ -318,7 +333,7 @@ export function HeroAnnotation() {
           <path d={ARROW_PATH} />
         )}
       </svg>
-      <p className="mt-3">{homeCopy.hero.annotation}</p>
+      <AnnotationText text={homeCopy.hero.annotation} />
     </div>
   );
 }

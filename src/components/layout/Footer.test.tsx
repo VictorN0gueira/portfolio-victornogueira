@@ -5,6 +5,7 @@ import { services } from '../../data/services';
 import { CONTACT_EMAIL, SOCIAL_LINKS, WHATSAPP_DISPLAY, WHATSAPP_NUMBER } from '../../lib/constants';
 import { triggerIntersection } from '../../test/intersection';
 import { renderWithProviders } from '../../test/render';
+import { NEW_TAB_HINT } from '../ui/NewTabHint';
 import Footer from './Footer';
 
 const A11Y_STORAGE_KEY = 'a11y-preferences';
@@ -41,6 +42,13 @@ describe('Footer', () => {
 
       expect(footer).toHaveAttribute('id', 'rodape');
       expect(footer).toHaveClass('bg-vn-black', 'text-vn-white', 'rounded-t-[clamp(24px,4vw,40px)]');
+    });
+
+    // The corners of the round top edge used to show the page behind the footer: cream wedges beside the black CTA.
+    it('reaches up by the radius of its corners, over the end of the section above, and closes its top with a 1px rule', () => {
+      const footer = renderFooter();
+
+      expect(footer).toHaveClass('relative', '-mt-[clamp(24px,4vw,40px)]', 'border-t', 'border-vn-gray-dark');
     });
 
     it('lays the columns out as 4 at lg, 2 from 360px and 1 below that', () => {
@@ -113,15 +121,17 @@ describe('Footer', () => {
       expect(links.map((link) => link.getAttribute('href'))).toEqual([...MAIN_NAV.map((item) => item.to), '/contato']);
     });
 
-    it('links to /servicos once per category of service', () => {
+    it('links once per category of service to the card of its first service on the services page', () => {
       const footer = renderFooter();
 
       const categories = [...new Set(services.map((service) => service.categoria))];
       const links = within(column(footer, 'Serviços')).getAllByRole('link');
       expect(links.map((link) => link.textContent)).toEqual(categories);
-      for (const link of links) {
-        expect(link).toHaveAttribute('href', '/servicos');
-      }
+      expect(links.map((link) => link.getAttribute('href'))).toEqual([
+        '/servicos#automacao-essencial',
+        '/servicos#agente-de-ia-sob-medida',
+        '/servicos#landing-page-ou-site',
+      ]);
     });
 
     it('gives the WhatsApp number, the e-mail and the city in Contato', () => {
@@ -132,6 +142,7 @@ describe('Footer', () => {
       expect(whatsapp.getAttribute('href')).toContain(`https://wa.me/${WHATSAPP_NUMBER}`);
       expect(whatsapp).toHaveAttribute('target', '_blank');
       expect(whatsapp).toHaveAttribute('rel', 'noopener noreferrer');
+      expect(whatsapp).toHaveAccessibleDescription(NEW_TAB_HINT);
       expect(contact.getByRole('link', { name: CONTACT_EMAIL })).toHaveAttribute('href', `mailto:${CONTACT_EMAIL}`);
       expect(contact.getByText('Recife e remoto')).toBeInTheDocument();
     });
@@ -190,13 +201,14 @@ describe('Footer', () => {
         expect(link).toHaveAttribute('target', '_blank');
         expect(link).toHaveAttribute('rel', 'noopener noreferrer');
         expect(link).toHaveClass('size-11');
+        expect(link).toHaveAccessibleDescription(NEW_TAB_HINT);
         expect(link.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
       }
     });
   });
 
   describe('wordmark', () => {
-    it('is the giant "vn one" in chrome, hidden from assistive tech and replaced by a screen reader text', () => {
+    it('is the giant "vn one" in chrome, hidden from assistive tech, with no text twin: the logo link names the brand', () => {
       const footer = renderFooter();
       const mark = wordmark(footer);
 
@@ -204,7 +216,10 @@ describe('Footer', () => {
       expect(mark).toHaveAttribute('aria-hidden', 'true');
       expect(mark).toHaveClass('font-display', 'font-bold', 'vn-chrome-text', 'whitespace-nowrap', 'overflow-clip');
       expect(mark.getAttribute('style')).toContain('min(clamp(4.5rem, 22vw, 20rem), 33cqw)');
-      expect(within(footer).getAllByText('VN One').some((node) => node.className.includes('sr-only'))).toBe(true);
+      expect(within(footer).queryByText('VN One', { selector: '.sr-only' })).not.toBeInTheDocument();
+      // The only other text of the footer that is not for the eye is the new tab hint, and it is hidden, not sr-only.
+      expect(footer.querySelectorAll('.sr-only')).toHaveLength(0);
+      expect(within(footer).getByRole('link', { name: 'VN One, página inicial' })).toBeInTheDocument();
     });
 
     it('never outgrows its box: the size is also capped at 33cqw of a container-sized wrapper', () => {

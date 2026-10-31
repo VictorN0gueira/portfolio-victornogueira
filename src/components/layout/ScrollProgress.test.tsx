@@ -1,7 +1,13 @@
 import { screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import * as motionReact from 'motion/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../test/render';
 import ScrollProgress from './ScrollProgress';
+
+vi.mock('motion/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('motion/react')>();
+  return { ...actual, useSpring: vi.fn(actual.useSpring) };
+});
 
 function renderBar(tone?: 'light' | 'dark') {
   const { container } = renderWithProviders(<ScrollProgress tone={tone} />);
@@ -11,6 +17,7 @@ function renderBar(tone?: 'light' | 'dark') {
 describe('ScrollProgress', () => {
   afterEach(() => {
     localStorage.clear();
+    vi.mocked(motionReact.useSpring).mockClear();
   });
 
   it('draws a 2px ink bar fixed at the top, hidden from assistive tech', () => {
@@ -47,5 +54,16 @@ describe('ScrollProgress', () => {
     const bar = renderBar();
 
     expect(bar).toHaveClass('fixed', 'h-0.5', 'bg-vn-ink');
+  });
+
+  it('creates the spring only when motion is welcome (R:M14)', () => {
+    renderBar();
+    expect(motionReact.useSpring).toHaveBeenCalledTimes(1);
+
+    vi.mocked(motionReact.useSpring).mockClear();
+    localStorage.setItem('a11y-preferences', JSON.stringify({ noAnimations: true }));
+    renderBar();
+
+    expect(motionReact.useSpring).not.toHaveBeenCalled();
   });
 });

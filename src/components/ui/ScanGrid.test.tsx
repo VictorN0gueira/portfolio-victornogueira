@@ -44,4 +44,35 @@ describe('ScanGrid', () => {
 
     expect(container.firstElementChild).toHaveClass('opacity-60', 'vn-scan-grid');
   });
+
+  describe('keepContentClear', () => {
+    function renderClear() {
+      const { container } = renderWithProviders(<ScanGrid keepContentClear />);
+      const grid = container.firstElementChild as HTMLElement;
+      return { grid, line: grid.querySelector('.vn-scan-line') as HTMLElement };
+    }
+
+    it('masks the scan line, and only the line, so the grid keeps its own look', () => {
+      const { grid, line } = renderClear();
+
+      expect(line.style.maskImage || line.style.webkitMaskImage).toContain('linear-gradient');
+      expect(grid.style.maskImage).toBe('');
+    });
+
+    it('lets the line through only beside the 1216px column, with the gutters of the Container', () => {
+      const { grid, line } = renderClear();
+
+      const mask = line.getAttribute('style') ?? '';
+      expect(mask).toContain('1216px');
+      expect(mask).toContain('var(--scan-pad)');
+      expect(grid).toHaveClass('[--scan-pad:1rem]', 'min-[360px]:[--scan-pad:1.25rem]', 'md:[--scan-pad:3rem]');
+    });
+
+    it('is off by default: no mask and no pad on the plain grid', () => {
+      const plain = renderGrid();
+
+      expect(plain.querySelector('.vn-scan-line')?.getAttribute('style')).toBeNull();
+      expect(plain.className).not.toContain('--scan-pad');
+    });
+  });
 });

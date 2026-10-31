@@ -96,6 +96,7 @@ function TeamRadios({ selectedIndex, onChange }: TeamRadiosProps) {
       <p id={labelId} className={LABEL_CLASSES}>
         {homeCopy.roi.labels.team}
       </p>
+      {/* eslint-disable-next-line jsx-a11y/interactive-supports-focus -- the native radios inside are the tab stop */}
       <div
         role="radiogroup"
         aria-labelledby={labelId}
@@ -120,10 +121,18 @@ function TeamRadios({ selectedIndex, onChange }: TeamRadiosProps) {
   );
 }
 
+/** The ids of the notes that describe the field, or undefined when there is none. */
+function describedBy(...ids: (string | null)[]): string | undefined {
+  const present = ids.filter((id): id is string => id !== null);
+  return present.length > 0 ? present.join(' ') : undefined;
+}
+
 interface RateFieldProps {
   text: string;
   /** Said under the field when the rate is counted at its ceiling, and linked to the field with aria-describedby. */
   capNote: string | null;
+  /** Said under the field when the text cannot be used (negative, unreadable), and linked with aria-describedby. */
+  issueNote: string | null;
   /** The text as typed, and whether the browser calls it incomplete (a number field has no value for "12." yet). */
   onChange: (text: string, isIncomplete: boolean) => void;
 }
@@ -136,9 +145,10 @@ interface RateFieldProps {
  * keystroke both run with the same arguments, and the handler is idempotent (it sets the same state twice in one
  * batch, so there is a single render and nothing loops).
  */
-function RateField({ text, capNote, onChange }: RateFieldProps) {
+function RateField({ text, capNote, issueNote, onChange }: RateFieldProps) {
   const id = useId();
   const noteId = useId();
+  const issueId = useId();
   const handleInput = (event: FormEvent<HTMLInputElement>) =>
     onChange(event.currentTarget.value, event.currentTarget.validity.badInput);
 
@@ -155,7 +165,8 @@ function RateField({ text, capNote, onChange }: RateFieldProps) {
         max={MAX_HOURLY_RATE}
         step="any"
         value={text}
-        aria-describedby={capNote ? noteId : undefined}
+        aria-invalid={issueNote ? true : undefined}
+        aria-describedby={describedBy(capNote ? noteId : null, issueNote ? issueId : null)}
         onChange={handleInput}
         onInput={handleInput}
         className={RATE_FIELD_CLASSES}
@@ -163,6 +174,11 @@ function RateField({ text, capNote, onChange }: RateFieldProps) {
       {capNote ? (
         <p id={noteId} className="mt-2 text-sm text-vn-gray-light">
           {capNote}
+        </p>
+      ) : null}
+      {issueNote ? (
+        <p id={issueId} className="mt-2 text-sm text-vn-white">
+          {issueNote}
         </p>
       ) : null}
     </div>
@@ -176,6 +192,7 @@ interface RoiControlsProps {
   onTeamChange: (index: number) => void;
   rateText: string;
   rateCapNote: string | null;
+  rateIssueNote: string | null;
   onRateChange: (text: string, isIncomplete: boolean) => void;
 }
 
@@ -187,13 +204,15 @@ export function RoiControls({
   onTeamChange,
   rateText,
   rateCapNote,
+  rateIssueNote,
   onRateChange,
 }: RoiControlsProps) {
   return (
-    <div className="flex flex-col gap-8">
+    // From lg the controls spread over the height of the results card beside them, so the two columns end together.
+    <div className="flex flex-col gap-8 lg:h-full lg:justify-between">
       <HoursSlider hours={hours} onChange={onHoursChange} />
       <TeamRadios selectedIndex={teamIndex} onChange={onTeamChange} />
-      <RateField text={rateText} capNote={rateCapNote} onChange={onRateChange} />
+      <RateField text={rateText} capNote={rateCapNote} issueNote={rateIssueNote} onChange={onRateChange} />
     </div>
   );
 }

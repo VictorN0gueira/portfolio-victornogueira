@@ -45,7 +45,8 @@ describe('ContactForm motion with reduced motion', () => {
 
     const heading = await screen.findByRole('heading', { level: 3, name: contactFormCopy.success.title });
     const panel = heading.closest('[style]') as HTMLElement;
-    expect(transformOf(panel)).toMatch(NO_TRANSFORM);
+    // The heading is found while the panel still holds its first style: the jump comes a frame or two later.
+    await waitFor(() => expect(transformOf(panel)).toMatch(NO_TRANSFORM), JUMP);
     expect(heading.closest('[style*="scale"]')).toBeNull();
   });
 

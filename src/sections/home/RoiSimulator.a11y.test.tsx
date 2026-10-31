@@ -19,7 +19,7 @@ import {
   getStatus,
   getTeamGroup,
   renderSimulator,
-} from './RoiSimulator.helpers';
+} from '../../test/roiSimulatorKit';
 
 const HEADING = 'Quanto o trabalho manual custa por ano';
 const DEFAULT_STATUS = `Custo anual hoje ${DEFAULT_COST}. Economia estimada por ano ${DEFAULT_SAVINGS}.`;

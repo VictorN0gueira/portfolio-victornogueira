@@ -2,12 +2,14 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { flowPanel } from '../../data/heroFlows';
-import { HEADER_HEIGHT, HEADER_HEIGHT_LANDSCAPE, HEADER_LANDSCAPE_LIFT } from '../../components/layout/Header';
+import { HEADER_HEIGHT, HEADER_HEIGHT_LANDSCAPE, HEADER_LANDSCAPE_LIFT } from '../../components/layout/headerMetrics';
 import { homeCopy } from '../../data/homeCopy';
 import { findAccentElements } from '../../test/accent';
 import { renderWithProviders } from '../../test/render';
 import { HeroSection } from './HeroSection';
 
+// The leading // is a comment glyph in its own aria-hidden span, so the words are what the text query finds.
+const ANNOTATION_WORDS = homeCopy.hero.annotation.replace(/^\/\/\s*/, '');
 const TASK_TRIGGER = 'Tarefa: planilha e WhatsApp. Alterar';
 
 function renderHero() {
@@ -64,7 +66,7 @@ describe('HeroSection structure', () => {
   it('puts the annotation directly under the sentence, between it and the paragraph, hidden below lg', () => {
     const { section } = renderHero();
 
-    const note = screen.getByText(homeCopy.hero.annotation).closest('[data-hero-annotation]') as HTMLElement;
+    const note = screen.getByText(ANNOTATION_WORDS, { exact: false }).closest('[data-hero-annotation]') as HTMLElement;
     expect(note).toHaveClass('hidden', 'lg:flex');
     const sentenceColumn = screen.getByRole('heading', { level: 1 }).closest('.max-w-5xl') as HTMLElement;
     const sub = screen.getByText(homeCopy.hero.sub);
@@ -77,7 +79,7 @@ describe('HeroSection structure', () => {
   it('right aligns the annotation under the sentence, so its arrow rises to the numbers', () => {
     renderHero();
 
-    const slot = screen.getByText(homeCopy.hero.annotation).closest('[data-hero-annotation]')?.parentElement as HTMLElement;
+    const slot = screen.getByText(ANNOTATION_WORDS, { exact: false }).closest('[data-hero-annotation]')?.parentElement as HTMLElement;
     expect(slot).toHaveClass('max-w-5xl', 'lg:flex', 'lg:justify-end');
   });
 
@@ -85,7 +87,7 @@ describe('HeroSection structure', () => {
     const { section } = renderHero();
 
     expect(section.outerHTML).not.toMatch(/scale-y|-scale-|\[&_svg\]/);
-    const note = screen.getByText(homeCopy.hero.annotation).closest('[data-hero-annotation]') as HTMLElement;
+    const note = screen.getByText(ANNOTATION_WORDS, { exact: false }).closest('[data-hero-annotation]') as HTMLElement;
     for (let node: HTMLElement | null = note; node && node !== section; node = node.parentElement) {
       expect(node.className).not.toMatch(/scale|rotate/);
       expect(node.getAttribute('style') ?? '').not.toMatch(/scale|rotate/);
@@ -99,7 +101,7 @@ describe('HeroSection structure', () => {
     const ordered = [
       screen.getByText(homeCopy.hero.kicker),
       screen.getByRole('heading', { level: 1 }),
-      screen.getByText(homeCopy.hero.annotation),
+      screen.getByText(ANNOTATION_WORDS, { exact: false }),
       screen.getByText(homeCopy.hero.sub),
       screen.getByRole('link', { name: 'Quero automatizar' }),
       screen.getByText(homeCopy.hero.finePrint),

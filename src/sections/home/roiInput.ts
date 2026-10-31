@@ -1,3 +1,5 @@
+import type { RateIssue } from './roiFeedbackCopy';
+
 export const HOURS_MIN = 1;
 export const HOURS_MAX = 80;
 export const DEFAULT_HOURS = 12;
@@ -41,4 +43,15 @@ export function isHourlyRateCapped(text: string): boolean {
 export function hoursPercent(hours: number): number {
   const percent = ((hours - HOURS_MIN) / HOURS_SPAN) * 100;
   return Math.min(100, Math.max(0, percent));
+}
+
+/**
+ * What is wrong with the text of the hourly rate, or null when it is usable. A negative rate and a number that is not
+ * finite (an exponent that overflows) both count as R$ 0 in the formula, so the visitor is told instead of left to wonder.
+ * An empty field is not an issue: it is a plain R$ 0, and a rate above the ceiling has its own note (isHourlyRateCapped).
+ */
+export function rateIssue(text: string): RateIssue | null {
+  const rate = readRate(text);
+  if (rate < 0) return 'negative';
+  return Number.isFinite(rate) ? null : 'unreadable';
 }

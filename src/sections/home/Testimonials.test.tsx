@@ -6,6 +6,7 @@ import { findAccentElements } from '../../test/accent';
 import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { renderWithProviders } from '../../test/render';
 import { excerptOf } from './excerpt';
+import { TestimonialCard } from './TestimonialCard';
 import { Testimonials } from './Testimonials';
 
 const OPEN_NAME = /ler depoimento completo/i;
@@ -88,7 +89,7 @@ describe('Testimonials cards', () => {
     }
   });
 
-  it('shows the excerpt in a blockquote: the first 140 characters cut at the last word, or the whole text when short', () => {
+  it('shows the excerpt in a blockquote: cut at the last sentence or word that fits in 140 characters, or the whole text when short', () => {
     renderWithProviders(<Testimonials />);
 
     for (const { name, text } of testimonials) {
@@ -101,8 +102,25 @@ describe('Testimonials cards', () => {
     const whole = testimonials.filter((item) => excerptOf(item.text) === item.text);
     expect(cut.length).toBeGreaterThan(0);
     expect(whole.length).toBeGreaterThan(0);
-    for (const item of cut) expect(excerptOf(item.text).endsWith('…')).toBe(true);
+    for (const item of cut) expect(excerptOf(item.text)).toMatch(/…$|[.!?]["')\]]*$/);
     for (const item of whole) expect(cardOf(item.name).textContent).not.toContain('…');
+  });
+
+  it('pins the author row and the button to the bottom of the card, so the rows of cards line up (V:D4)', () => {
+    renderWithProviders(<Testimonials />);
+
+    for (const { name } of testimonials) {
+      const footer = cardOf(name).querySelector('[data-card-footer]') as HTMLElement;
+
+      expect(footer).toHaveClass('mt-auto');
+      expect(footer.parentElement).toBe(cardOf(name));
+      expect(footer).toContainElement(within(cardOf(name)).getByRole('button'));
+      expect(footer).toHaveTextContent(name);
+    }
+  });
+
+  it('memoizes the card, so opening the dialog does not render the six cards again (R:M16)', () => {
+    expect((TestimonialCard as unknown as { $$typeof: symbol }).$$typeof).toBe(Symbol.for('react.memo'));
   });
 
   it('shows the author name, the role and the company', () => {
