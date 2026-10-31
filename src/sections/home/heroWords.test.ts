@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { homeCopy } from '../../data/homeCopy';
 import { groupWords } from './heroWords';
 
 const joined = (...words: string[]) => words.join(' ');
@@ -56,3 +57,24 @@ describe('groupWords', () => {
     expect(words).toEqual(['Sua', 'equipe', 'perde']);
   });
 });
+
+describe('groupWords on the sentence of the home', () => {
+  const runs = homeCopy.hero.sentence.filter((part): part is string => typeof part === 'string');
+  const wordsOf = (run: string) => run.split(/\s+/).filter(Boolean);
+
+  it('groups every run without losing or reordering a word', () => {
+    for (const run of runs) {
+      expect(groupWords(wordsOf(run)).join(' ').split(' ')).toEqual(wordsOf(run));
+    }
+  });
+
+  it('gives the runs the pieces the layout was measured with (e2e D10: no lone word from 280 to 2560px)', () => {
+    expect(runs.map((run) => groupWords(wordsOf(run)))).toEqual([
+      ['Sua', joined('equipe', 'perde')],
+      ['por', joined('semana', 'com')],
+      ['.', joined('Automatizando,', 'dá'), joined('pra', 'recuperar')],
+      [joined('por', 'mês.')],
+    ]);
+  });
+});
+

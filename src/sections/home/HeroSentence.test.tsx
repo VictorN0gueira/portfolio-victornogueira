@@ -193,10 +193,10 @@ describe('HeroSentence line layout', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveClass('[text-wrap:balance]');
   });
 
-  it('caps the smallest size with the width, so a long word still fits a 280px phone with the larger font (R7)', () => {
+  it('caps the size with the width on the smallest phones, so a piece of the sentence still fits a 280px phone with the larger font (R7, D10)', () => {
     renderHero();
 
-    expect(screen.getByRole('heading', { level: 1 }).className).toContain('clamp(min(1.75rem,9vw),0.95rem+2.9vw,3.75rem)');
+    expect(screen.getByRole('heading', { level: 1 }).className).toContain('clamp(min(1.75rem,9vw),min(0.95rem+2.9vw,9vw),3.75rem)');
   });
 
   it('keeps plain words as inline blocks', () => {

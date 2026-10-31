@@ -26,11 +26,13 @@ const WHITESPACE = /\s+/;
 
 // leading-[1.22] is the documented exception to the title line height (0.92 to 0.98) for this interactive sentence:
 // inline pills are 44px tall and bordered, so at the tight title leading the pills of one line collide with the next.
-// The size never goes below 9vw at the smallest phones: with the larger font, 1.75rem is 33.6px, and at 280px a word like
-// "Automatizando," is wider than the 220px of the heading, so a line break would cut it. From about 330px the rem floor wins.
+// Both the floor and the fluid size stop at 9vw. With the larger font 1.75rem is 33.6px and the fluid size is 26.3px at
+// 280px, where the heading is 220px wide: the piece "Automatizando, dá" (8.53em) needs 25.8px or less to fit one line,
+// and wrapped at its spaces it left two words alone. From about 300px the fluid size is smaller than 9vw, so nothing
+// changes there (and nothing changes with the normal font, whose floor already is 9vw at 280px).
 const HEADING_CLASSES = [
   'font-display font-bold lowercase tracking-[-0.03em] leading-[1.22] break-words [text-wrap:balance]',
-  'text-[length:clamp(min(1.75rem,9vw),0.95rem+2.9vw,3.75rem)]',
+  'text-[length:clamp(min(1.75rem,9vw),min(0.95rem+2.9vw,9vw),3.75rem)]',
 ].join(' ');
 // The pills sit in the sentence as one more word: they scale with the heading, and a long one may wrap inside.
 const PILL_SIZE_CLASSES = 'px-[0.6em] py-[0.04em]';

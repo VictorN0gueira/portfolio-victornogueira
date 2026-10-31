@@ -256,7 +256,11 @@ test.describe('D10 hero sentence', () => {
   const FIRST_WIDTH = 280;
   const LAST_WIDTH = 1100;
   const WIDTH_STEP = 20;
-  const widths = Array.from({ length: (LAST_WIDTH - FIRST_WIDTH) / WIDTH_STEP + 1 }, (_, index) => FIRST_WIDTH + index * WIDTH_STEP);
+  const WIDE_WIDTHS = [1280, 1440, 1920, 2560];
+  const widths = [
+    ...Array.from({ length: (LAST_WIDTH - FIRST_WIDTH) / WIDTH_STEP + 1 }, (_, index) => FIRST_WIDTH + index * WIDTH_STEP),
+    ...WIDE_WIDTHS,
+  ];
 
   /**
    * The rows of the h1, word by word (a piece of several words may wrap inside itself, so the pieces are not enough),
@@ -297,7 +301,7 @@ test.describe('D10 hero sentence', () => {
   }
 
   for (const hasLargeFont of [false, true]) {
-    test(`leaves no plain word alone on a line, and nothing overflows, every ${WIDTH_STEP}px from ${FIRST_WIDTH} to ${LAST_WIDTH}px (${hasLargeFont ? 'larger font' : 'normal font'})`, async ({ page }) => {
+    test(`leaves no plain word alone on a line, and nothing overflows, every ${WIDTH_STEP}px from ${FIRST_WIDTH} to ${LAST_WIDTH}px and at the wide screens (${hasLargeFont ? 'larger font' : 'normal font'})`, async ({ page }) => {
       if (hasLargeFont) await enableLargeFont(page);
       await page.setViewportSize({ width: FIRST_WIDTH, height: 844 });
       await page.goto('/');
