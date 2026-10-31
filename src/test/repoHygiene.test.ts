@@ -85,3 +85,19 @@ describe('files nothing references are not in the repo', () => {
     expect(missing).toEqual([]);
   });
 });
+
+describe('the scrollbar skin that was removed does not come back', () => {
+  // The class was a custom scrollbar skin: the CSS and the pin on the page are gone, and nothing may name it again.
+  it('has no custom scrollbar class left in src, e2e, public or the root pages', () => {
+    expect(hits(new RegExp(`custom-${'scrollbar'}`))).toEqual([]);
+  });
+});
+
+describe('the mobile menu button name lives in one place', () => {
+  // The e2e specs find the trigger with menuButton() of e2e/homeSupport.ts, which reads MENU_BUTTON_NAME from the code.
+  it('keeps no spec of e2e with a name regex or a literal for the trigger of its own', () => {
+    const specs = textFiles.filter((file) => file.includes(join(ROOT, 'e2e')) && !file.endsWith('homeSupport.ts'));
+    expect(specs.length).toBeGreaterThan(0);
+    expect(hits(/Abrir menu|name: \/\^\(\?:/, specs)).toEqual([]);
+  });
+});

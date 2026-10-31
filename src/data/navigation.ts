@@ -12,4 +12,7 @@ export const MAIN_NAV: NavItem[] = [
   { label: 'Blog', to: '/blog' },
 ];
 
+/** The accessible name of the phone and tablet menu button (Header.tsx); the e2e helper menuButton() reads it too. */
+export const MENU_BUTTON_NAME = 'Menu';
+
 export const PRIMARY_CTA: NavItem = { label: 'Vamos conversar', to: '/contato' };

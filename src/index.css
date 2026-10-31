@@ -27,6 +27,14 @@
     scroll-padding-bottom: 5rem;
   }
 
+  /* On a phone held upright the accessibility tab floats 96px over the bottom margin: a focused control is scrolled
+     clear of it, not left under it (it is centred on the edge from sm up and on a phone held sideways). */
+  @media (width < 40rem) and (min-height: 30rem) {
+    html {
+      scroll-padding-bottom: calc(max(16px, env(safe-area-inset-bottom)) + 96px + 2.75rem + 8px);
+    }
+  }
+
   /* The floating header sits 8px higher and is thinner on a phone held sideways. */
   @media (max-height: 480px) {
     html {

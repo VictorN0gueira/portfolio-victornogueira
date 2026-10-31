@@ -1,7 +1,7 @@
 import { Menu } from 'lucide-react';
 import { Suspense, useId, useRef, useState, type Ref, type RefObject } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MAIN_NAV, PRIMARY_CTA } from '../../data/navigation';
+import { MAIN_NAV, MENU_BUTTON_NAME, PRIMARY_CTA } from '../../data/navigation';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { lazyWithRetry } from '../../lib/lazyWithRetry';
 import { KEEPS_PLACE_UNDER_SCROLL_LOCK } from '../../lib/scrollLock';
@@ -64,7 +64,7 @@ function MenuButton({ ref, isOpen, controlsId, onToggle }: MenuButtonProps) {
     <button
       ref={ref}
       type="button"
-      aria-label="Menu"
+      aria-label={MENU_BUTTON_NAME}
       aria-haspopup="dialog"
       aria-expanded={isOpen}
       aria-controls={isOpen ? controlsId : undefined}

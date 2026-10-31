@@ -53,7 +53,7 @@ describe('AccessibilityWidget', () => {
   it('caps the panel by the height of the window, so it fits a short phone, and scrolls the list inside it', async () => {
     const { panel } = await openPanel();
 
-    expect(panel).toHaveClass('max-h-[calc(100svh-112px-env(safe-area-inset-bottom))]', 'sm:max-h-[calc(100svh-8rem)]', 'flex', 'flex-col', 'overflow-hidden');
+    expect(panel).toHaveClass('max-h-[calc(100svh-112px-max(16px,env(safe-area-inset-bottom)))]', 'sm:max-h-[calc(100svh-8rem)]', 'flex', 'flex-col', 'overflow-hidden');
     expect(within(panel).getAllByRole('list')[0]).toHaveClass('overflow-y-auto');
   });
 

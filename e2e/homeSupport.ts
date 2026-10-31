@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import { contactFormCopy } from '../src/components/contact/contactFormCopy';
 import { homeCopy } from '../src/data/homeCopy';
+import { MENU_BUTTON_NAME } from '../src/data/navigation';
 import { DEFAULT_HOURLY_RATE, buildQuoteMessage } from '../src/lib/roi';
 import { expect } from './n8nGuard';
 
@@ -28,10 +29,10 @@ export const QUOTE_START = buildQuoteMessage({ hoursPerWeek: 1, teamMultiplier: 
 export const SERVICE_PLACEHOLDER = contactFormCopy.placeholders.servico;
 
 /**
- * The button that opens the mobile menu. It is named "Abrir menu" today and may be renamed "Menu", so the specs
- * ask for either name. Once the menu is open the same button reads "Fechar menu", which does not match.
+ * The button that opens the mobile menu, found by role and by MENU_BUTTON_NAME, the constant the Header uses, so a
+ * rename is one change. The match is exact: the close button inside the open menu ("Fechar menu") does not match.
  */
-export const menuButton = (page: Page) => page.getByRole('button', { name: /^(?:Abrir menu|Menu)$/ });
+export const menuButton = (page: Page) => page.getByRole('button', { name: MENU_BUTTON_NAME, exact: true });
 export const MIN_TOUCH_PX = 44;
 // A box of 44px can be measured as 43.99997 (floating point), which is not a smaller target.
 export const TOUCH_ROUNDING_PX = 0.01;

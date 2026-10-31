@@ -4,6 +4,7 @@ import { SECURITY_HEADERS } from '../config/securityHeaders.mjs';
 import { contactFormCopy } from '../src/components/contact/contactFormCopy';
 import { serviceOptions } from '../src/data/services';
 import { WEBHOOKS } from '../src/lib/contact';
+import { menuButton } from './homeSupport';
 import { N8N_WEBHOOK_PATTERN, expect, fulfillOk, n8nRoute, test } from './n8nGuard';
 
 // `vite preview` serves the build with the real security headers (config/securityHeaders.mjs, the same module that
@@ -133,7 +134,7 @@ test.describe('no page breaks the policy', () => {
     await expect(testimonial).toBeHidden();
 
     if (testInfo.project.name === 'mobile') {
-      await page.getByRole('button', { name: /^(?:Abrir menu|Menu)$/ }).click();
+      await menuButton(page).click();
       const menu = page.getByRole('dialog', { name: MENU_DIALOG_NAME });
       await expect(menu).toBeVisible();
       await page.keyboard.press('Escape');
