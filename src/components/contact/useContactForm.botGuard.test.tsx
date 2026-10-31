@@ -281,7 +281,7 @@ describe('the cooldown after a successful send', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result.current.status).toBe('idle');
     expect(result.current.notice).toBe(COOLDOWN_MESSAGE);
-    expect(COOLDOWN_MESSAGE).toBe('Já recebemos a sua mensagem. Aguarde alguns segundos para enviar outra.');
+    expect(COOLDOWN_MESSAGE).toBe('A gente já recebeu a sua mensagem. Espera alguns segundos para enviar outra.');
   });
 
   it('sends again once 30 seconds have passed', async () => {

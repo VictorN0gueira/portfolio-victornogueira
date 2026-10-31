@@ -26,14 +26,14 @@ export const contactFormCopy = {
   // Under the WhatsApp field: how the number is typed.
   whatsappHint: 'Com DDD, por exemplo 81 99999-9999',
   // Under Enviar while the box of the consent is not ticked: why the button is off.
-  consentHint: 'Marque a caixa acima para enviar',
+  consentHint: 'Marca a caixa acima para enviar',
   formLabel: 'Formulário de contato',
   // Shown under a field that has reached its cap (see FieldCapHint).
   capHint: (max: number) => `Máximo de ${max} caracteres.`,
   submit: 'Enviar',
   sending: 'Enviando…',
   success: {
-    title: 'Recebemos sua mensagem',
+    title: 'A gente recebeu sua mensagem',
     text: (method: ContactMethod) =>
       `Obrigado! A gente responde pelo ${method === 'email' ? 'e-mail' : 'WhatsApp'} em breve.`,
     again: 'Enviar outra',

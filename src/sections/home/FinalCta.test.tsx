@@ -152,7 +152,7 @@ describe('FinalCta accent', () => {
     await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: 'Enviar' }));
 
-    expect(screen.getAllByRole('alert')).toHaveLength(4);
+    expect(container.querySelectorAll('[aria-invalid="true"]')).toHaveLength(4);
     expect(findAccentElements(container)).toHaveLength(1);
   });
 
@@ -163,7 +163,7 @@ describe('FinalCta accent', () => {
 
     await submitEmailForm(user);
 
-    expect(await screen.findByRole('heading', { level: 4, name: 'Recebemos sua mensagem' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 3, name: 'A gente recebeu sua mensagem' })).toBeInTheDocument();
     expect(findAccentElements(container)).toHaveLength(1);
   });
 

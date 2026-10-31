@@ -6,9 +6,9 @@ const CV_URL = assetUrl('/cv/cv-joao-victor-nogueira.pdf');
 const CV_FILE_NAME = 'CV-Joao-Victor-Nogueira.pdf';
 
 const specialties = [
-  { id: '01', title: 'Automação de Processos', desc: 'Fluxos automáticos que eliminam retrabalho e escalam sem esforço manual', icon: Workflow, color: '#8B5CF6' },
+  { id: '01', title: 'Automação de Processos', desc: 'Fluxos automáticos que tiram o retrabalho da rotina.', icon: Workflow, color: '#8B5CF6' },
   { id: '02', title: 'Inteligência Artificial', desc: 'LLMs e agentes inteligentes integrados às operações do negócio', icon: BrainCircuit, color: '#3B82F6' },
-  { id: '03', title: 'Desenvolvimento Web', desc: 'Interfaces rápidas, modernas e focadas em conversão', icon: Globe, color: '#10B981' }
+  { id: '03', title: 'Desenvolvimento Web', desc: 'Interfaces rápidas, feitas para o visitante virar contato.', icon: Globe, color: '#10B981' }
 ];
 
 export default function About() {
@@ -45,10 +45,10 @@ export default function About() {
 
           <div className="space-y-8 text-lg md:text-xl text-zinc-500 leading-relaxed font-light mb-12">
             <p>
-              Especialista em transformar processos manuais em fluxos <span className="text-black dark:text-white font-medium">automatizados e inteligentes</span> — sem projetos de meses ou equipes grandes.
+              Especialista em montar fluxos <span className="text-black dark:text-white font-medium">automatizados e inteligentes</span>, sem projetos de meses ou equipes grandes.
             </p>
             <p>
-              Foco total em <span className="text-black dark:text-white font-medium">Inteligência Artificial e Desenvolvimento Web</span> para escalar operações de negócios de forma rápida e mensurável.
+              Foco total em <span className="text-black dark:text-white font-medium">Inteligência Artificial e Desenvolvimento Web</span> para ajudar a operação a crescer de forma rápida e medida.
             </p>
           </div>
 

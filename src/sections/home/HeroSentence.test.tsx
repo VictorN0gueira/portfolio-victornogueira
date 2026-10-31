@@ -87,8 +87,8 @@ describe('HeroSentence sentence', () => {
     expect(slotCount).toBe(pillAndResultCount);
     const items = screen.getByRole('heading', { level: 1 }).querySelectorAll('[data-reveal-item]');
     // Runs of text are bound by heroWords (see heroWords.test.ts), and the period after the task pill joins the pill:
-    // "Sua", "equipe perde", the hours, "por", "semana com", the task and its period, "Automatizando, a",
-    // "gente devolve", the result and "por mês." are the ten items.
+    // "Sua", "equipe perde", the hours, "por", "semana com", the task and its period, "Automatizando, dá",
+    // "pra recuperar", the result and "por mês." are the ten items.
     const itemCount = 10;
     expect(items).toHaveLength(itemCount);
     const words = homeCopy.hero.sentence
@@ -181,10 +181,10 @@ describe('HeroSentence line layout', () => {
     const heading = screen.getByRole('heading', { level: 1 });
     const items = Array.from(heading.querySelectorAll<HTMLElement>('[data-reveal-item]')).map((item) => item.textContent);
     expect(items).toContain('por mês.');
-    expect(items).toContain('gente devolve');
+    expect(items).toContain('pra recuperar');
     expect(items).toContain('equipe perde');
     expect(items).toContain('semana com');
-    expect(items).toContain('Automatizando, a');
+    expect(items).toContain('Automatizando, dá');
   });
 
   it('balances the lines of the heading, so the last line is never a lone word', () => {
@@ -277,14 +277,14 @@ describe('HeroFinePrint', () => {
   it('shows the approved fine print, as small text', () => {
     renderWithProviders(<HeroFinePrint />);
 
-    expect(screen.getByText('Estimativa com R$ 50 por hora e 80% do tempo automatizado.')).toHaveClass('text-sm');
+    expect(screen.getByText(homeCopy.hero.finePrint.replace(/\u00a0/g, ' '))).toHaveClass('text-sm');
   });
 
   it('states the same rate and share the result is computed with', () => {
     renderWithProviders(<HeroFinePrint />);
 
     const text = homeCopy.hero.finePrint;
-    expect(text).toContain(`R$ ${DEFAULT_HOURLY_RATE} por hora`);
+    expect(text).toContain(`R$\u00a0${DEFAULT_HOURLY_RATE} por hora`);
     expect(text).toContain(`${SAVINGS_RATE * 100}% do tempo`);
   });
 

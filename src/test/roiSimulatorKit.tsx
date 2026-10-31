@@ -17,7 +17,7 @@ export const STATUS_DEBOUNCE_MS = 600;
 export const DEFAULT_COST = `R$${NBSP}78.000`;
 export const DEFAULT_SAVINGS = `R$${NBSP}62.400`;
 /** The note that says the rate was capped, as the simulator writes it for the ceiling of R$ 5.000. */
-export const RATE_CAP_NOTE = `Calculamos com no máximo R$${NBSP}5.000 por hora.`;
+export const RATE_CAP_NOTE = `A conta usa no máximo R$${NBSP}5.000 por hora.`;
 
 /** The input the simulator starts with: 12 hours, 2 to 3 people (2.5) and R$ 50 per hour. */
 export const DEFAULT_INPUT: RoiInput = { hoursPerWeek: 12, teamMultiplier: 2.5, hourlyRate: 50 };

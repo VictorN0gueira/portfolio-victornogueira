@@ -1,5 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { homeCopy } from '../../data/homeCopy';
 import { buildQuoteMessage } from '../../lib/roi';
 import {
   CTA_NAME,
@@ -108,7 +109,8 @@ describe('RoiSimulator results', () => {
     renderSimulator();
 
     expect(
-      screen.getByText('Considera 80% do tempo automatizado. É uma estimativa, o número real sai do diagnóstico.'),
+      // Testing Library collapses the non breaking spaces of the head count list into plain ones.
+      screen.getByText(homeCopy.roi.note.replace(/\u00a0/g, ' ')),
     ).toBeInTheDocument();
   });
 });

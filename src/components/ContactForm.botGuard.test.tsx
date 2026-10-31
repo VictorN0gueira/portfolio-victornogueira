@@ -17,8 +17,8 @@ import ContactForm from './ContactForm';
 vi.mock('./contact/botGuard', async (importOriginal) => importOriginal());
 
 const FIXED_NOW = new Date('2026-10-29T12:00:00.000Z');
-const THANKS = 'Recebemos sua mensagem';
-const COOLDOWN_TEXT = 'Já recebemos a sua mensagem. Aguarde alguns segundos para enviar outra.';
+const THANKS = 'A gente recebeu sua mensagem';
+const COOLDOWN_TEXT = 'A gente já recebeu a sua mensagem. Espera alguns segundos para enviar outra.';
 
 // These flows type a whole form and some wait for a real 2 second timer: on a busy machine the default 5 seconds is tight.
 vi.setConfig({ testTimeout: 20_000 });

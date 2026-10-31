@@ -30,7 +30,7 @@ import {
 const categories = [
   {
     title: 'Automação & IA',
-    description: 'Especialista em orquestração de fluxos e agentes inteligentes.',
+    description: 'Fluxos automáticos e agentes de IA.',
     skills: [
       {
         name: 'Automação de Fluxos',
@@ -71,7 +71,7 @@ const categories = [
   },
   {
     title: 'Desenvolvimento Frontend',
-    description: 'Interfaces modernas, performáticas e altamente interativas.',
+    description: 'Interfaces rápidas e com boa interação.',
     skills: [
       {
         name: 'React',
@@ -106,7 +106,7 @@ const categories = [
   },
   {
     title: 'Backend & Cloud',
-    description: 'Serviços robustos e infraestrutura preparada para escala.',
+    description: 'Serviços estáveis e infraestrutura para crescer com o uso.',
     skills: [
       {
         name: 'Node.js',
@@ -181,7 +181,7 @@ export default function Skills() {
             <AnimatedText text="Stack Tecnológica" delay={0.1} />
           </h2>
           <p className="text-zinc-500 text-lg md:text-xl font-light max-w-2xl mx-auto">
-            Soluções completas, da orquestração de fluxos à entrega de interfaces de alta performance.
+            Soluções completas, da automação de fluxos à entrega de interfaces rápidas.
           </p>
         </motion.div>
 

@@ -11,7 +11,7 @@ const NAME = 'Ana Lima';
 // the real channel.
 const EMAIL = 'ana@example.com';
 const MESSAGE = 'Quero automatizar a emissão de notas fiscais';
-const SUCCESS_TITLE = 'Recebemos sua mensagem';
+const SUCCESS_TITLE = 'A gente recebeu sua mensagem';
 const MIN_TOUCH_PX = 44;
 const TOUCH_ROUNDING_PX = 0.01;
 

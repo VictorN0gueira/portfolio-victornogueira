@@ -51,12 +51,16 @@ afterEach(() => {
 });
 
 describe('App when the accessibility widget cannot be loaded', () => {
-  it('makes the widget lazy without the reload, and every other lazy with it', () => {
+  it('makes the widget and the mobile menu lazy without the reload, and every other lazy with it', () => {
     const widget = lazyCalls.filter((call) => call.source.includes('AccessibilityWidget'));
-    const others = lazyCalls.filter((call) => !call.source.includes('AccessibilityWidget'));
+    const menu = lazyCalls.filter((call) => call.source.includes('MobileMenu'));
+    const others = lazyCalls.filter((call) => !call.source.includes('AccessibilityWidget') && !call.source.includes('MobileMenu'));
 
     expect(widget).toHaveLength(1);
     expect(widget[0].options).toEqual({ canReload: false });
+    // The menu has its own boundary with the links as a fallback: it never reloads the page either.
+    expect(menu).toHaveLength(1);
+    expect(menu[0].options).toEqual({ canReload: false });
     expect(others.length).toBeGreaterThan(5);
     expect(others.every((call) => call.options === undefined)).toBe(true);
   });

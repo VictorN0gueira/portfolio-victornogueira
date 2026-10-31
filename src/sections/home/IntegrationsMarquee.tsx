@@ -10,7 +10,7 @@ import { integrations } from '../../data/integrations';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 
 const KICKER = 'integrações';
-const LINE = 'Conectamos o que você já usa';
+const LINE = 'A gente conecta o que você já usa';
 const MARQUEE_LABEL = 'Integrações';
 // The constant name of the pause button (WCAG 2.2.2): aria-pressed carries the state, the name never changes.
 const PAUSE_LABEL = 'Pausar faixa de integrações';

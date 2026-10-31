@@ -46,7 +46,7 @@ describe('ContactForm success announcement', () => {
 
     await submitEmailForm(user);
 
-    const heading = await screen.findByRole('heading', { level: 3, name: 'Recebemos sua mensagem' });
+    const heading = await screen.findByRole('heading', { level: 3, name: 'A gente recebeu sua mensagem' });
     expect(screen.getByRole('status')).toBe(before);
     expect(before).toHaveTextContent(STATUS_TEXT_EMAIL);
     // The title is read once, from the heading that takes the focus: the region must not say it a second time.

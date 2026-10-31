@@ -60,11 +60,14 @@ describe('useCases', () => {
 describe('homeCopy.useCases', () => {
   it('has the approved section copy', () => {
     expect(homeCopy.useCases.kicker).toBe('onde a automação entra');
-    expect(homeCopy.useCases.heading).toBe('Comece pelo processo que mais pesa na rotina');
+    expect(homeCopy.useCases.heading).toBe('Começa pelo processo que mais pesa na rotina');
     expect(homeCopy.useCases.sub).toBe(
-      'Toda empresa tem aquele trabalho que ninguém aguenta mais fazer. É por ele que a gente começa.',
+      'Toda empresa tem aquele trabalho que ninguém aguenta mais fazer. A gente começa por ele.',
     );
-    expect(homeCopy.useCases.note).toBe('Exemplo de aplicação. O fluxo de verdade sai do diagnóstico.');
+    expect(homeCopy.useCases.note).toBe('Exemplo ilustrativo. O fluxo real sai do diagnóstico.');
+    // "Como funciona" is the kicker of the method section; the card of the steps has its own name.
+    expect(homeCopy.useCases.stepsTitle).toBe('Passo a passo');
+    expect(homeCopy.method.kicker).toBe('como funciona');
   });
 
   it('has the constant name of the pause toggle', () => {

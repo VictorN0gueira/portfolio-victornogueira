@@ -21,7 +21,7 @@ export default function AboutPage() {
     <>
       <SEO
         title="Sobre"
-        description="Quem é Victor Nogueira, como trabalho e a stack que uso para transformar processos manuais em fluxos automatizados e inteligentes."
+        description="Quem é Victor Nogueira, como trabalho e a stack que uso para trocar processos manuais por fluxos automatizados e inteligentes."
         path="/sobre"
       />
       <div className="pt-24 md:pt-28">
@@ -41,7 +41,7 @@ export default function AboutPage() {
               Pronto para automatizar?
             </h2>
             <p className="text-zinc-500 text-lg font-light mb-10">
-              Uma conversa de 30 minutos para mapear onde a automação gera mais valor no seu negócio.
+              Uma conversa de 30 minutos para mapear onde a automação mais ajuda no seu negócio.
             </p>
             <Link
               to="/contato"

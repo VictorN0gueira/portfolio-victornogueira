@@ -76,7 +76,7 @@ describe('ServicesCards content', () => {
       expect(within(card).getByText(service.descricao)).toBeInTheDocument();
       expect(category.closest('p')).toHaveClass('font-mono', 'uppercase');
       expect(term).toHaveClass('font-mono');
-      expect(card).toHaveTextContent(`Prazo: ${service.prazo}`);
+      expect(card).toHaveTextContent(`${homeCopy.services.term}: ${service.prazo}`);
     });
   });
 

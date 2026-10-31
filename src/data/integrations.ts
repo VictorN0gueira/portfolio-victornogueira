@@ -10,7 +10,7 @@ export const integrations: Integration[] = [
   { id: 'googlesheets', label: 'Google Sheets' },
   { id: 'googledrive', label: 'Google Drive' },
   { id: 'gmail', label: 'Gmail' },
-  { id: 'googlecalendar', label: 'Google Agenda' },
+  { id: 'googlecalendar', label: 'Google Calendar' },
   { id: 'notion', label: 'Notion' },
   { id: 'hubspot', label: 'HubSpot' },
   { id: 'shopify', label: 'Shopify' },

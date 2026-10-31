@@ -23,7 +23,7 @@ export const useCases: UseCase[] = [
   {
     id: 'comercial',
     tab: 'Comercial',
-    title: 'Nenhum lead esquecido no meio do caminho.',
+    title: 'Lead não fica esquecido no meio do caminho.',
     body: 'Cada contato entra no CRM com origem e histórico, e o retorno sai na hora certa sem ninguém precisar lembrar.',
     steps: ['Capturar o lead de onde ele vier', 'Qualificar e registrar no CRM', 'Agendar e mandar o retorno'],
   },

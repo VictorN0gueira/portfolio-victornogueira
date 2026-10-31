@@ -10,6 +10,8 @@ import { HeroSection } from './HeroSection';
 
 // The leading // is a comment glyph in its own aria-hidden span, so the words are what the text query finds.
 const ANNOTATION_WORDS = homeCopy.hero.annotation.replace(/^\/\/\s*/, '');
+// Testing Library collapses the non breaking space of the fine print into a plain one.
+const FINE_PRINT = homeCopy.hero.finePrint.replace(/\u00a0/g, ' ');
 const TASK_TRIGGER = 'Tarefa: planilha e WhatsApp. Alterar';
 
 function renderHero() {
@@ -39,7 +41,7 @@ describe('HeroSection structure', () => {
 
     expect(screen.getByText(homeCopy.hero.kicker)).toBeInTheDocument();
     expect(screen.getByText(homeCopy.hero.sub)).toBeInTheDocument();
-    expect(screen.getByText(homeCopy.hero.finePrint)).toBeInTheDocument();
+    expect(screen.getByText(FINE_PRINT)).toBeInTheDocument();
   });
 
   it('has the primary CTA to the contact anchor and the secondary one to the method anchor', () => {
@@ -104,7 +106,7 @@ describe('HeroSection structure', () => {
       screen.getByText(ANNOTATION_WORDS, { exact: false }),
       screen.getByText(homeCopy.hero.sub),
       screen.getByRole('link', { name: 'Quero automatizar' }),
-      screen.getByText(homeCopy.hero.finePrint),
+      screen.getByText(FINE_PRINT),
       screen.getByText(flowPanel.title),
     ];
     ordered.slice(1).forEach((node, index) => {

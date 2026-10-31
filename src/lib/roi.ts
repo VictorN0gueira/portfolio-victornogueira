@@ -15,7 +15,7 @@ export const TEAM_OPTIONS: readonly { label: string; value: number }[] = [
 
 export const DEFAULT_HOURLY_RATE = 50;
 export const SAVINGS_RATE = 0.8;
-export const WEEKS_PER_YEAR = 52;
+const WEEKS_PER_YEAR = 52;
 const MONTHS_PER_YEAR = 12;
 
 /** Horas por semana oferecidas na frase do hero. */
@@ -58,9 +58,11 @@ export function monthlySavings(input: RoiInput): number {
   return Math.round((rawAnnualCost(input) * SAVINGS_RATE) / MONTHS_PER_YEAR);
 }
 
-/** Mensagem pré-preenchida do CTA da calculadora. */
+/** Mensagem pré-preenchida do CTA do simulador. Vai para o campo `mensagem` do formulário de contato. */
 export function buildQuoteMessage(input: RoiInput): string {
   const safeInput = sanitize(input);
   const annualCost = formatBRL(Math.round(costOfSafeInput(safeInput)));
-  return `Olá, VN One! Usei a calculadora do site: a gente perde cerca de ${annualCost} por ano com tarefas manuais (${safeInput.hoursPerWeek}h por semana). Quero automatizar esse processo.`;
+  const hours = safeInput.hoursPerWeek;
+  const hoursText = `${hours} ${hours === 1 ? 'hora' : 'horas'} por semana`;
+  return `Olá! Usei o simulador do site: a gente perde cerca de ${annualCost} por ano com tarefas manuais (${hoursText}). Quero automatizar esse processo.`;
 }

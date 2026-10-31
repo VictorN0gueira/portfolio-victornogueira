@@ -176,7 +176,7 @@ function FeaturedCard({ article }: { article: NewsArticle }) {
           </h2>
 
           <p className="text-sm text-zinc-400 leading-relaxed line-clamp-3 font-light">
-            {article.description || 'Clique para ler o artigo completo.'}
+            {article.description || 'Clica para ler o artigo completo.'}
           </p>
         </div>
 
@@ -266,7 +266,7 @@ function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
         </h3>
 
         <p className="text-sm text-zinc-400 leading-relaxed line-clamp-3 mb-auto font-light">
-          {article.description || 'Clique para ler o artigo completo.'}
+          {article.description || 'Clica para ler o artigo completo.'}
         </p>
 
         <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/[0.06]">
@@ -558,7 +558,7 @@ export default function BlogPage() {
                   <Newspaper className="w-8 h-8 text-zinc-500" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2 font-display">Nenhuma notícia encontrada</h3>
-                <p className="text-zinc-400 text-sm">Tente atualizar em alguns instantes.</p>
+                <p className="text-zinc-400 text-sm">Tenta atualizar em alguns instantes.</p>
               </motion.div>
             )}
 
@@ -569,7 +569,7 @@ export default function BlogPage() {
               >
                 <Search className="w-10 h-10 text-zinc-700" />
                 <p className="text-white font-bold text-xl font-display">Nenhum artigo encontrado</p>
-                <p className="text-zinc-500 text-sm">Tente outros filtros ou limpe a busca.</p>
+                <p className="text-zinc-500 text-sm">Tenta outros filtros ou limpa a busca.</p>
                 <button
                   onClick={clearFilters}
                   className="px-6 py-2.5 rounded-full border border-white/10 text-xs text-zinc-400 hover:text-white hover:border-white/20 transition-all"

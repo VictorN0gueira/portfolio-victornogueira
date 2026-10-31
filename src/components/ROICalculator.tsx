@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { TrendingUp, ArrowUpRight, Sparkles } from 'lucide-react';
+import { homeCopy } from '../data/homeCopy';
 import { formatBRL, formatBRLCompact } from '../lib/format';
 import {
   DEFAULT_HOURLY_RATE,
@@ -77,13 +78,13 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
           className="mb-12 md:mb-16"
         >
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-5">
-            Calcule o impacto
+            Calcula o impacto
           </p>
           <h2 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter font-display italic leading-none mb-5">
             Quanto sua empresa<br className="hidden sm:block" /> perde por ano?
           </h2>
           <p className="text-zinc-500 text-base md:text-lg font-light max-w-xl">
-            Descubra o custo real dos seus processos manuais — e o quanto você pode recuperar.
+            Descobre o custo real dos seus processos manuais e quanto você pode recuperar.
           </p>
         </motion.div>
 
@@ -179,7 +180,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
               <p className="text-xs text-zinc-500 mb-2 uppercase tracking-widest font-medium">
                 Custo anual atual
               </p>
-              <p className="text-4xl md:text-5xl font-bold text-white tabular-nums leading-none">
+              <p className="text-3xl min-[360px]:text-4xl md:text-5xl font-bold text-white tabular-nums leading-none">
                 {formatBRLCompact(displayCost)}
               </p>
               <p className="text-zinc-600 text-xs mt-1.5 tabular-nums">
@@ -194,7 +195,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
               <p className="text-xs text-zinc-500 mb-2 uppercase tracking-widest font-medium">
                 Economia com automação
               </p>
-              <p className="text-4xl md:text-5xl font-bold text-emerald-400 tabular-nums leading-none">
+              <p className="text-3xl min-[360px]:text-4xl md:text-5xl font-bold text-emerald-400 tabular-nums leading-none">
                 {formatBRLCompact(displaySavings)}
               </p>
               <p className="text-zinc-600 text-xs mt-1.5">/ano estimados</p>
@@ -217,7 +218,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
               </div>
             </div>
 
-            {/* CTA — com onQuoteRequest pré-preenche o form; sem, abre o WhatsApp */}
+            {/* CTA: com onQuoteRequest pré-preenche o form; sem, abre o WhatsApp */}
             {onQuoteRequest ? (
               <motion.button
                 type="button"
@@ -244,7 +245,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
             )}
 
             <p className="text-center text-zinc-600 text-[11px] leading-relaxed relative z-10">
-              Estimativa baseada em projetos anteriores.<br />Consulta gratuita e sem compromisso.
+              {homeCopy.roi.note}<br />Consulta gratuita e sem compromisso.
             </p>
           </div>
         </motion.div>

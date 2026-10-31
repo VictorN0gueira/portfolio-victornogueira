@@ -1,4 +1,4 @@
-import { HERO_HOUR_OPTIONS } from '../lib/roi';
+import { HERO_HOUR_OPTIONS, SAVINGS_RATE, TEAM_OPTIONS } from '../lib/roi';
 
 /** Which interactive piece of the hero sentence fills a slot. */
 export type HeroSentenceSlot = 'hours' | 'task' | 'result';
@@ -10,6 +10,16 @@ export interface HeroHourOption {
   value: (typeof HERO_HOUR_OPTIONS)[number];
   label: string;
 }
+
+const NBSP = '\u00A0';
+
+// The note under the simulator results states what the code counts, so its numbers come from the code: the share of
+// time saved and the head count each team option multiplies by ("1; 2,5; 7 ou 15 pessoas": semicolons, because the
+// decimal comma of 2,5 would read as one more list comma). The non breaking spaces keep the list in one piece when the
+// line wraps, and keep "É uma" and "sai do diagnóstico" from leaving a lone word at the end of a line.
+const SAVINGS_PERCENT = Math.round(SAVINGS_RATE * 100);
+const TEAM_SIZES = TEAM_OPTIONS.map((option) => option.value.toLocaleString('pt-BR'));
+const TEAM_SIZES_TEXT = `${TEAM_SIZES.slice(0, -1).join(`;${NBSP}`)}${NBSP}ou${NBSP}${TEAM_SIZES[TEAM_SIZES.length - 1]}${NBSP}pessoas`;
 
 const ROI_COST_LABEL = 'Custo anual hoje';
 const ROI_SAVINGS_LABEL = 'Economia estimada por ano';
@@ -24,13 +34,13 @@ export const homeCopy = {
       { slot: 'hours' },
       'por semana com',
       { slot: 'task' },
-      '. Automatizando, a gente devolve',
+      '. Automatizando, dá pra recuperar',
       { slot: 'result' },
       'por mês.',
     ] as readonly HeroSentencePart[],
     hourOptions: HERO_HOUR_OPTIONS.map((hours) => ({ value: hours, label: `${hours} horas` })) as readonly HeroHourOption[],
     sub: 'A gente mapeia o processo e entrega a automação rodando nas ferramentas que você já usa. Sua equipe fica com o trabalho que precisa de gente.',
-    finePrint: 'Estimativa com R$ 50 por hora e 80% do tempo automatizado.',
+    finePrint: 'Estimativa com R$\u00A050 por hora e 80% do tempo automatizado.',
     ctaPrimary: { label: 'Quero automatizar', to: '/#contato' },
     ctaSecondary: { label: 'Ver como funciona', to: '/#metodo' },
     annotation: '// mexe nos números aí',
@@ -53,18 +63,18 @@ export const homeCopy = {
   // Os textos da seção da frase de resultado (os quatro números estão em data/stats.ts). `heading` é o h2 da seção.
   statement: {
     kicker: 'resultado',
-    heading: 'O trabalho repetitivo vai para os fluxos. A equipe fica com o resto.',
+    heading: 'Vê o que a automação já tirou da rotina de outras empresas.',
     sub: 'Números dos projetos que a gente já entregou.',
   },
   // Os textos das abas de casos de uso (o conteúdo de cada aba está em data/useCases.ts). `pause` é o nome fixo do
   // botão que para a troca automática: o estado vai em aria-pressed, o nome não muda.
   useCases: {
     kicker: 'onde a automação entra',
-    heading: 'Comece pelo processo que mais pesa na rotina',
-    sub: 'Toda empresa tem aquele trabalho que ninguém aguenta mais fazer. É por ele que a gente começa.',
-    note: 'Exemplo de aplicação. O fluxo de verdade sai do diagnóstico.',
+    heading: 'Começa pelo processo que mais pesa na rotina',
+    sub: 'Toda empresa tem aquele trabalho que ninguém aguenta mais fazer. A gente começa por ele.',
+    note: 'Exemplo ilustrativo. O fluxo real sai do diagnóstico.',
     tablistLabel: 'Casos de uso',
-    stepsTitle: 'Como funciona',
+    stepsTitle: 'Passo a passo',
     pause: 'Pausar troca automática',
   },
   // Os textos dos três cartões de serviço. `term` é a palavra lida antes do prazo de cada cartão (o prazo em si vem de
@@ -72,14 +82,14 @@ export const homeCopy = {
   services: {
     kicker: 'o que a gente faz',
     heading: 'Três jeitos de tirar trabalho manual da sua frente',
-    term: 'Prazo',
+    term: 'Prazo estimado',
     link: 'Ver todos os serviços',
   },
   // Os textos da seção do método (o conteúdo de cada passo está em data/process.ts).
   method: {
-    kicker: 'como a gente trabalha',
+    kicker: 'como funciona',
     heading: 'Do primeiro papo ao fluxo rodando',
-    sub: 'Você conhece o negócio. A gente entra com o método e a execução.',
+    sub: 'Você conhece o negócio e a gente cuida do método e da execução.',
   },
   // Os textos da seção de depoimentos (as falas e os autores estão em data/testimonials.ts, sem edição). `readFull` é o
   // texto visível do botão de cada cartão; `readFullFor` é o nome dele para leitor de tela e começa com o texto visível.
@@ -112,14 +122,14 @@ export const homeCopy = {
     kicker: 'próximo passo',
     heading: 'Qual processo a gente automatiza primeiro?',
     body: 'Conta como funciona hoje. Em 30 minutos a gente mostra por onde começar, sem compromisso.',
-    cta: 'Chamar no WhatsApp',
+    cta: 'Falar no WhatsApp',
     message: 'Olá! Quero automatizar um processo da minha empresa.',
   },
   // Os textos do simulador de economia. As opções de equipe vêm de TEAM_OPTIONS (lib/roi.ts).
   roi: {
     kicker: 'simulador',
     heading: 'Quanto o trabalho manual custa por ano',
-    sub: 'Mexe nos valores e veja quanto dá pra recuperar automatizando.',
+    sub: 'Mexe nos valores e vê quanto dá pra recuperar automatizando.',
     labels: {
       hours: 'Horas por semana em tarefas repetitivas',
       team: 'Quantas pessoas fazem isso',
@@ -129,17 +139,17 @@ export const homeCopy = {
       cost: ROI_COST_LABEL,
       savings: ROI_SAVINGS_LABEL,
     },
-    note: 'Considera 80% do tempo automatizado. É uma estimativa, o número real sai do diagnóstico.',
+    note: `Considera ${SAVINGS_PERCENT}% do tempo automatizado. Cada faixa de equipe conta como ${TEAM_SIZES_TEXT}. É${NBSP}uma estimativa: o número real sai${NBSP}do${NBSP}diagnóstico.`,
     cta: 'Quero automatizar esse processo',
     // Aviso quando o valor da hora passa do teto: o valor já chega formatado em reais.
-    rateCap: (max: string) => `Calculamos com no máximo ${max} por hora.`,
+    rateCap: (max: string) => `A conta usa no máximo ${max} por hora.`,
     // O valor do controle de horas, ao lado do rótulo.
     hoursShown: (hours: number) => `${hours} h`,
     aria: {
       // Lido pelo controle de horas no lugar do número solto.
       hoursValue: (hours: number) => `${hours} ${hours === 1 ? 'hora' : 'horas'} por semana`,
       // Lido pela região de status quando os valores se firmam. Os valores chegam já formatados em reais.
-      status: (cost: string, savings: string) => `${ROI_COST_LABEL} ${cost}. ${ROI_SAVINGS_LABEL} ${savings}.`,
+      status: (cost: string, savings: string) => `${ROI_COST_LABEL}: ${cost}. ${ROI_SAVINGS_LABEL}: ${savings}.`,
     },
   },
 } as const;

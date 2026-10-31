@@ -3,6 +3,7 @@ import { services, type Service } from '../../data/services';
 import { FEATURED_CATEGORIES, featuredServices, pickFeatured } from './featuredServices';
 
 const service = (nome: string, categoria: Service['categoria']): Service => ({
+  slug: nome.toLowerCase(),
   nome,
   categoria,
   descricao: 'descricao',

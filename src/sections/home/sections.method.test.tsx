@@ -16,7 +16,7 @@ vi.mock('../../components/ui/Reveal', async (importOriginal) => {
 
 const A11Y_STORAGE_KEY = 'a11y-preferences';
 const HEADING = 'Do primeiro papo ao fluxo rodando';
-const SUB = 'Você conhece o negócio. A gente entra com o método e a execução.';
+const SUB = 'Você conhece o negócio e a gente cuida do método e da execução.';
 const STAIRCASE = ['lg:mt-24', 'lg:mt-16', 'lg:mt-8', 'lg:mt-0'];
 const STAGGER_S = 0.12;
 // A top margin that is not the staircase: one that applies below lg would bend the 2x2 and the column.
@@ -65,10 +65,10 @@ describe('MethodSteps content', () => {
   it('shows the kicker, the heading and the sub line exactly as approved', () => {
     renderWithProviders(<MethodSteps />);
 
-    expect(screen.getByText('como a gente trabalha')).toBeInTheDocument();
+    expect(screen.getByText(homeCopy.method.kicker)).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(HEADING);
     expect(screen.getByText(SUB)).toBeInTheDocument();
-    expect(homeCopy.method).toEqual({ kicker: 'como a gente trabalha', heading: HEADING, sub: SUB });
+    expect(homeCopy.method).toEqual({ kicker: 'como funciona', heading: HEADING, sub: SUB });
   });
 
   it('has exactly one h2, and the section is named by it', () => {

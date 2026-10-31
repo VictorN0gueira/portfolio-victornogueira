@@ -148,7 +148,7 @@ describe('ContactForm submit wiring', () => {
       mensagem: 'Quero automatizar notas fiscais',
     });
     // The same words are also in the status region, so the visible title is read by its role.
-    expect(await screen.findByRole('heading', { name: 'Recebemos sua mensagem' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'A gente recebeu sua mensagem' })).toBeInTheDocument();
   });
 
   it('posts the exact whatsapp payload to the whatsapp webhook', async () => {

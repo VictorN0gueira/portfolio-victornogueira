@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { homeCopy } from '../data/homeCopy';
 import * as roi from './roi';
 import {
   HERO_HOUR_OPTIONS,
@@ -53,27 +54,40 @@ describe('buildQuoteMessage', () => {
   it('mensagem de orçamento sem travessão nem barra', () => {
     const msg = buildQuoteMessage(BASE_INPUT);
     expect(msg).toBe(
-      `Olá, VN One! Usei a calculadora do site: a gente perde cerca de R$${NBSP}78.000 por ano com tarefas manuais (12h por semana). Quero automatizar esse processo.`,
+      `Olá! Usei o simulador do site: a gente perde cerca de R$${NBSP}78.000 por ano com tarefas manuais (12 horas por semana). Quero automatizar esse processo.`,
     );
     expect(msg).not.toMatch(DASH_OR_SLASH);
+    expect(msg).not.toMatch(/calculadora|\dh\b/);
   });
 
-  it('invalid hours print 0h por semana and a cost of R$ 0', () => {
+  it('invalid hours print 0 horas por semana and a cost of R$ 0', () => {
     const msg = buildQuoteMessage({ hoursPerWeek: NaN, teamMultiplier: 2.5, hourlyRate: 50 });
 
-    expect(msg).toContain('(0h por semana)');
+    expect(msg).toContain('(0 horas por semana)');
     expect(msg).toContain(`cerca de R$${NBSP}0 por ano`);
   });
 
   it('a negative or non finite rate prints R$ 0 as well', () => {
     const msg = buildQuoteMessage({ hoursPerWeek: 12, teamMultiplier: 2.5, hourlyRate: -Infinity });
 
-    expect(msg).toContain('(12h por semana)');
+    expect(msg).toContain('(12 horas por semana)');
     expect(msg).toContain(`cerca de R$${NBSP}0 por ano`);
   });
 });
 
+describe('buildQuoteMessage with one hour', () => {
+  it('uses the singular', () => {
+    const msg = buildQuoteMessage({ hoursPerWeek: 1, teamMultiplier: 1, hourlyRate: 50 });
+
+    expect(msg).toContain('(1 hora por semana)');
+  });
+});
+
 describe('public surface', () => {
+  it('keeps the week count private', () => {
+    expect(roi).not.toHaveProperty('WEEKS_PER_YEAR');
+  });
+
   it('keeps the month count private', () => {
     expect(roi).not.toHaveProperty('MONTHS_PER_YEAR');
   });
@@ -91,5 +105,23 @@ describe('TEAM_OPTIONS', () => {
 
   it('mantém os multiplicadores da calculadora atual', () => {
     expect(TEAM_OPTIONS.map((o) => o.value)).toEqual([1, 2.5, 7, 15]);
+  });
+});
+
+describe('the simulator note', () => {
+  const NOTE_NBSP = String.fromCharCode(0xa0);
+
+  it('states the savings share and every team multiplier, as the code uses them', () => {
+    const multipliers = TEAM_OPTIONS.map((option) => option.value.toLocaleString('pt-BR'));
+    const note = homeCopy.roi.note.split(NOTE_NBSP).join(' ');
+
+    expect(note).toContain(`Considera ${roi.SAVINGS_RATE * 100}% do tempo automatizado`);
+    for (const multiplier of multipliers) expect(note).toMatch(new RegExp(`(^|[ ;])${multiplier}[ ;.]`));
+  });
+
+  it('reads as the approved sentence, with the list of head counts kept in one piece', () => {
+    expect(homeCopy.roi.note).toBe(
+      `Considera 80% do tempo automatizado. Cada faixa de equipe conta como 1;${NOTE_NBSP}2,5;${NOTE_NBSP}7${NOTE_NBSP}ou${NOTE_NBSP}15${NOTE_NBSP}pessoas. É${NOTE_NBSP}uma estimativa: o número real sai${NOTE_NBSP}do${NOTE_NBSP}diagnóstico.`,
+    );
   });
 });

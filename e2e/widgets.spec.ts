@@ -41,7 +41,7 @@ test.describe('the integrations marquee pause (WCAG 2.2.2)', () => {
     test.slow();
     await page.setViewportSize({ width: 1440, height: 900 });
     await openHome(page);
-    const region = page.getByRole('region', { name: 'Conectamos o que você já usa' });
+    const region = page.getByRole('region', { name: 'A gente conecta o que você já usa' });
     await region.scrollIntoViewIfNeeded();
     // The pointer is far from the strip, so only the toggle can pause it.
     await page.mouse.move(2, 2);
@@ -67,7 +67,7 @@ test.describe('the integrations marquee pause (WCAG 2.2.2)', () => {
     test.slow();
     await page.setViewportSize({ width: 390, height: 844 });
     await openHome(page);
-    const region = page.getByRole('region', { name: 'Conectamos o que você já usa' });
+    const region = page.getByRole('region', { name: 'A gente conecta o que você já usa' });
     const toggle = region.getByRole('button', { name: MARQUEE_PAUSE_NAME });
     await toggle.scrollIntoViewIfNeeded();
 
@@ -87,7 +87,7 @@ test.describe('the integrations marquee pause (WCAG 2.2.2)', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 390, height: 844 });
     await openHome(page);
-    const region = page.getByRole('region', { name: 'Conectamos o que você já usa' });
+    const region = page.getByRole('region', { name: 'A gente conecta o que você já usa' });
 
     await expect(region.locator('.vn-marquee')).toHaveCount(0);
     await expect(region.getByRole('button')).toHaveCount(0);

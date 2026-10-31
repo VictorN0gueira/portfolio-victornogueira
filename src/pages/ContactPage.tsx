@@ -27,7 +27,7 @@ export default function ContactPage() {
     <>
       <SEO
         title="Contato"
-        description="Fale sobre seu projeto: calcule o custo dos seus processos manuais e solicite uma consulta gratuita de 30 minutos."
+        description="Fala sobre o seu projeto: calcula o custo dos seus processos manuais e pede uma consulta gratuita de 30 minutos."
         path="/contato"
         jsonLd={[faqJsonLd]}
       />

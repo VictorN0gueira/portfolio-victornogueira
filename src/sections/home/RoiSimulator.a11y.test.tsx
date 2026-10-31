@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { homeCopy } from '../../data/homeCopy';
 import { TEAM_OPTIONS } from '../../lib/roi';
 import { findAccentElements } from '../../test/accent';
 import {
@@ -22,8 +23,8 @@ import {
 } from '../../test/roiSimulatorKit';
 
 const HEADING = 'Quanto o trabalho manual custa por ano';
-const DEFAULT_STATUS = `Custo anual hoje ${DEFAULT_COST}. Economia estimada por ano ${DEFAULT_SAVINGS}.`;
-const ONE_PERSON_STATUS = `Custo anual hoje R$${NBSP}31.200. Economia estimada por ano R$${NBSP}24.960.`;
+const DEFAULT_STATUS = homeCopy.roi.aria.status(DEFAULT_COST, DEFAULT_SAVINGS);
+const ONE_PERSON_STATUS = homeCopy.roi.aria.status(`R$${NBSP}31.200`, `R$${NBSP}24.960`);
 const EM_DASH = String.fromCharCode(0x2014);
 const EN_DASH = String.fromCharCode(0x2013);
 
@@ -43,7 +44,7 @@ describe('RoiSimulator structure', () => {
     renderSimulator();
 
     expect(screen.getByText('simulador')).toBeInTheDocument();
-    expect(screen.getByText('Mexe nos valores e veja quanto dá pra recuperar automatizando.')).toBeInTheDocument();
+    expect(screen.getByText(homeCopy.roi.sub)).toBeInTheDocument();
   });
 
   it('writes no dash and no slash separator in anything it shows', () => {
@@ -263,6 +264,11 @@ describe('RoiSimulator numbers for assistive tech', () => {
     expect(status).toHaveClass('sr-only');
     expect(status.textContent).toBe(DEFAULT_STATUS);
   });
+
+  it('reads the status as two labeled sentences, each label followed by a colon', () => {
+    expect(homeCopy.roi.aria.status('R$ 1', 'R$ 2')).toBe('Custo anual hoje: R$ 1. Economia estimada por ano: R$ 2.');
+    expect(DEFAULT_STATUS).toMatch(/^Custo anual hoje: R\$.\d[\d.]*\. Economia estimada por ano: R\$.\d[\d.]*\.$/);
+  });
 });
 
 describe('RoiSimulator status debounce', () => {
@@ -302,7 +308,7 @@ describe('RoiSimulator status debounce', () => {
     advance(STATUS_DEBOUNCE_MS);
 
     const { cost, savings } = figuresOf({ ...DEFAULT_INPUT, hoursPerWeek: 47 });
-    expect(status.textContent).toBe(`Custo anual hoje ${cost}. Economia estimada por ano ${savings}.`);
+    expect(status.textContent).toBe(homeCopy.roi.aria.status(cost, savings));
     expect(observer.takeRecords().length).toBeGreaterThan(0);
     observer.disconnect();
   });
@@ -338,7 +344,7 @@ describe('RoiSimulator status debounce', () => {
 
     const { cost, savings } = figuresOf({ ...DEFAULT_INPUT, hourlyRate: 5000 });
     expect(getStatus().textContent).toBe(
-      `Custo anual hoje ${cost}. Economia estimada por ano ${savings}. ${RATE_CAP_NOTE}`,
+      `${homeCopy.roi.aria.status(cost, savings)} ${RATE_CAP_NOTE}`,
     );
     expect(screen.getAllByRole('status')).toHaveLength(1);
   });
@@ -361,7 +367,7 @@ describe('RoiSimulator status debounce', () => {
     advance(STATUS_DEBOUNCE_MS);
 
     expect(getStatus().textContent).toBe(
-      `Custo anual hoje R$${NBSP}0. Economia estimada por ano R$${NBSP}0.`,
+      homeCopy.roi.aria.status(`R$${NBSP}0`, `R$${NBSP}0`),
     );
   });
 });

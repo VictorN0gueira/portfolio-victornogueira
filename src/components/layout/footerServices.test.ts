@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { services } from '../../data/services';
-import { FOOTER_SERVICE_LINKS, SERVICE_SLUGS, slugOf } from './footerServices';
-
-// MERGE STEP (batch E adds `slug` to every service in src/data/services.ts): once it is merged, delete SERVICE_SLUGS
-// and the fallback of slugOf in footerServices.ts, so slugOf is just `service.slug`, and keep this file. Until then
-// the map holds the slugs the services page will use as card ids. The test below compares the two whenever the data
-// has the field, so a slug that E renames (or a service it adds) fails here instead of breaking the footer anchors.
+import { FOOTER_SERVICE_LINKS, slugOf } from './footerServices';
 
 const SLUG_SHAPE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const FIRST_OF_EACH_CATEGORY = ['automacao-essencial', 'agente-de-ia-sob-medida', 'landing-page-ou-site'];
@@ -23,17 +18,10 @@ describe('slugOf', () => {
     expect(new Set(slugs).size).toBe(services.length);
   });
 
-  it('agrees with the slug the data itself carries, when it carries one', () => {
+  it('is the slug the data itself carries', () => {
     for (const service of services) {
-      const carried = (service as { slug?: string }).slug;
-      if (carried === undefined) continue;
-
-      expect(SERVICE_SLUGS[service.nome], `map entry of ${service.nome}`).toBe(carried);
+      expect(slugOf(service), `slug of ${service.nome}`).toBe(service.slug);
     }
-  });
-
-  it('knows exactly the services of the data: a renamed or new service fails here', () => {
-    expect(Object.keys(SERVICE_SLUGS).sort()).toEqual(services.map((service) => service.nome).sort());
   });
 });
 

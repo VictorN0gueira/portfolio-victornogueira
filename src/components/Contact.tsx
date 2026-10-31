@@ -21,7 +21,7 @@ export default function Contact({ prefillMessage }: ContactProps) {
             Vamos criar <br/> <span className="not-italic text-zinc-400">algo juntos.</span>
           </h2>
           <p className="text-zinc-400 text-lg md:text-xl mb-12 max-w-md font-light leading-relaxed">
-            Estou sempre aberto a discutir novos projetos, ideias criativas ou oportunidades de fazer parte da sua visão.
+            A gente conversa sobre o seu projeto e mostra por onde começar.
           </p>
           
           <div className="space-y-6">
@@ -56,9 +56,6 @@ export default function Contact({ prefillMessage }: ContactProps) {
           className="relative z-10"
         >
           <ContactForm initialMessage={prefillMessage} />
-          <p className="text-center text-zinc-600 text-xs mt-5 tracking-wide">
-            Respondo em até <span className="text-white font-medium">24 horas</span>
-          </p>
         </motion.div>
       </div>
 

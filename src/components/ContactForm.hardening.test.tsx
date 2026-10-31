@@ -103,7 +103,7 @@ describe('the channel the thanks names', () => {
     await user.click(screen.getByRole('button', { name: 'Por WhatsApp' }));
     await act(async () => answer({ ok: true }));
 
-    expect(await screen.findByRole('heading', { name: 'Recebemos sua mensagem' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'A gente recebeu sua mensagem' })).toBeInTheDocument();
     expect(visibleThanksText('Obrigado! A gente responde pelo e-mail em breve.')).toHaveLength(1);
     expect(screen.getByRole('status')).toHaveTextContent('A gente responde pelo e-mail em breve.');
   });
@@ -145,7 +145,7 @@ describe('the honeypot field', () => {
     await user.type(honeypot(), 'https://spam.example');
     await user.click(submitButton());
 
-    expect(await screen.findByRole('heading', { name: 'Recebemos sua mensagem' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'A gente recebeu sua mensagem' })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -162,7 +162,7 @@ describe('the honeypot field', () => {
     await user.type(honeypot(), 'https://spam.example');
     await user.click(submitButton());
 
-    expect(await screen.findByRole('heading', { name: 'Recebemos sua mensagem' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'A gente recebeu sua mensagem' })).toBeInTheDocument();
     expect(visibleThanksText('Obrigado! A gente responde pelo WhatsApp em breve.')).toHaveLength(1);
     expect(fetchMock).not.toHaveBeenCalled();
   });

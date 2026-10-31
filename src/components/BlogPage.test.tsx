@@ -210,7 +210,7 @@ describe('BlogPage filters', () => {
     const search = await screen.findByLabelText('Buscar artigos');
 
     await user.type(search, 'nada disso existe');
-    expect(await screen.findByText('Tente outros filtros ou limpe a busca.')).toBeInTheDocument();
+    expect(await screen.findByText('Tenta outros filtros ou limpa a busca.')).toBeInTheDocument();
 
     await user.click(screen.getAllByRole('button', { name: 'Limpar filtros' })[0]);
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
@@ -228,7 +228,7 @@ describe('BlogPage filters', () => {
     expect((screen.getByLabelText('Buscar artigos') as HTMLInputElement).value).toBe('');
 
     await user.click(screen.getByRole('button', { name: 'N8N' }));
-    expect(await screen.findByText('Tente outros filtros ou limpe a busca.')).toBeInTheDocument();
+    expect(await screen.findByText('Tenta outros filtros ou limpa a busca.')).toBeInTheDocument();
   });
 });
 

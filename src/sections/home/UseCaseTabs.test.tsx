@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { homeCopy } from '../../data/homeCopy';
 import { useCases } from '../../data/useCases';
 import { findAccentElements } from '../../test/accent';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
@@ -43,11 +44,11 @@ describe('UseCaseTabs content', () => {
     renderTabs();
 
     expect(screen.getByText('onde a automação entra')).toBeInTheDocument();
-    expect(screen.getByText('Comece pelo processo que mais pesa na rotina')).toBeInTheDocument();
+    expect(screen.getByText('Começa pelo processo que mais pesa na rotina')).toBeInTheDocument();
     expect(
-      screen.getByText('Toda empresa tem aquele trabalho que ninguém aguenta mais fazer. É por ele que a gente começa.'),
+      screen.getByText(homeCopy.useCases.sub),
     ).toBeInTheDocument();
-    expect(screen.getByText('Exemplo de aplicação. O fluxo de verdade sai do diagnóstico.')).toBeInTheDocument();
+    expect(screen.getByText(homeCopy.useCases.note)).toBeInTheDocument();
   });
 
   it('has exactly one h2, the heading of the section, and names the section by it', () => {
@@ -56,8 +57,8 @@ describe('UseCaseTabs content', () => {
     const headings = screen.getAllByRole('heading', { level: 2 });
 
     expect(headings).toHaveLength(1);
-    expect(headings[0]).toHaveTextContent('Comece pelo processo que mais pesa na rotina');
-    expect(screen.getByRole('region', { name: /Comece pelo processo/ })).toBeInTheDocument();
+    expect(headings[0]).toHaveTextContent('Começa pelo processo que mais pesa na rotina');
+    expect(screen.getByRole('region', { name: /Começa pelo processo/ })).toBeInTheDocument();
   });
 
   it('titles the panel with an h3, so the outline is h2 and then h3', () => {

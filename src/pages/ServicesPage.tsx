@@ -3,6 +3,8 @@ import { motion, useInView } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Check } from 'lucide-react';
 import SEO from '../components/SEO';
+import { homeCopy } from '../data/homeCopy';
+import { useScrollToHash } from '../hooks/useScrollToHash';
 import { services, combos } from '../data/services';
 
 const gridContainer = {
@@ -15,6 +17,9 @@ const gridItem = {
 };
 
 export default function ServicesPage() {
+  // The page is a lazy route, so the browser looks for /servicos#slug before the cards exist: the scroll waits for them.
+  useScrollToHash();
+
   const gridRef = useRef(null);
   const gridInView = useInView(gridRef, { once: true, margin: '-80px' });
   const combosRef = useRef(null);
@@ -24,7 +29,7 @@ export default function ServicesPage() {
     <>
       <SEO
         title="Serviços"
-        description="Automação de processos, agentes de IA e desenvolvimento web. Escopo claro, prazo definido e preço transparente."
+        description="Automação de processos, agentes de IA e desenvolvimento web. Escopo claro e prazo definido."
         path="/servicos"
       />
       <div className="pt-32 md:pt-40 bg-brand-white">
@@ -36,13 +41,13 @@ export default function ServicesPage() {
           className="max-w-7xl mx-auto px-6 md:px-12 mb-16 md:mb-20"
         >
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-5">
-            O que eu entrego
+            O que a gente entrega
           </p>
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter font-display italic leading-none mb-5">
             Serviços
           </h1>
           <p className="text-zinc-500 text-base md:text-lg font-light max-w-xl">
-            Escopo claro, prazo definido e preço transparente — do primeiro fluxo automatizado ao sistema completo.
+            Escopo claro e prazo definido, do primeiro fluxo automatizado ao sistema completo.
           </p>
         </motion.div>
 
@@ -57,9 +62,10 @@ export default function ServicesPage() {
           >
             {services.map((service) => (
               <motion.div
-                key={service.nome}
+                key={service.slug}
+                id={service.slug}
                 variants={gridItem}
-                className="group bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-3xl p-7 md:p-8 flex flex-col hover:border-zinc-300 dark:hover:border-zinc-500 transition-colors duration-300"
+                className="scroll-mt-28 group bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-3xl p-7 md:p-8 flex flex-col hover:border-zinc-300 dark:hover:border-zinc-500 transition-colors duration-300"
               >
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-400 mb-4">
                   {service.categoria}
@@ -81,7 +87,7 @@ export default function ServicesPage() {
                 </ul>
 
                 <div className="mt-auto pt-6 border-t border-zinc-200 dark:border-zinc-700">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Prazo estimado</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">{homeCopy.services.term}</p>
                   <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{service.prazo}</p>
                 </div>
               </motion.div>
@@ -139,7 +145,7 @@ export default function ServicesPage() {
               Não sabe por onde começar?
             </h2>
             <p className="text-zinc-500 text-lg font-light mb-10">
-              Na consulta gratuita eu identifico qual serviço resolve o seu gargalo — sem compromisso.
+              Na consulta gratuita a gente identifica qual serviço resolve o seu gargalo, sem compromisso.
             </p>
             <Link
               to="/contato"

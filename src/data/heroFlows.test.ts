@@ -82,8 +82,10 @@ describe('heroFlows', () => {
     expect([...flowSources]).toEqual(['WhatsApp', 'E-mail', 'Planilhas', 'Seu sistema']);
   });
 
-  it('has the approved window copy', () => {
-    expect(flowPanel.title).toBe('automação ao vivo');
+  it('calls the window an example, not a live automation, and shares the footnote with the use case tabs', () => {
+    expect(flowPanel.title).toBe('exemplo de automação');
+    expect(flowPanel.title).not.toMatch(/ao vivo/);
+    expect(flowPanel.footnote).toBe(homeCopy.useCases.note);
     expect(flowPanel.footnote).toBe('Exemplo ilustrativo. O fluxo real sai do diagnóstico.');
   });
 

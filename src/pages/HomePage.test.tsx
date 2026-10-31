@@ -20,8 +20,8 @@ const QUOTE_BUTTON = homeCopy.roi.cta;
 const QUOTE_START = buildQuoteMessage({ hoursPerWeek: 1, teamMultiplier: 1, hourlyRate: DEFAULT_HOURLY_RATE }).split(':')[0];
 const OLD_SECTION_TEXTS = ['Cases em Destaque', 'Vamos criar', 'Respondo em até'];
 
-// The integrations strip is named by its own h2 (the line "Conectamos o que você já usa"), the first one on the page.
-const INTEGRATIONS_HEADING = 'Conectamos o que você já usa';
+// The integrations strip is named by its own h2 (the line "A gente conecta o que você já usa"), the first one on the page.
+const INTEGRATIONS_HEADING = 'A gente conecta o que você já usa';
 
 // The h2 of every section after the hero, in the order the page shows them. The statement of the second section
 // is read from the page, since it is a long sentence that lives in the section.
@@ -84,7 +84,7 @@ describe('HomePage structure', () => {
 
   it('puts the integrations strip between the hero and the statement', async () => {
     await renderHome();
-    const strip = screen.getByText('Conectamos o que você já usa');
+    const strip = screen.getByText('A gente conecta o que você já usa');
     const h1 = screen.getByRole('heading', { level: 1 });
     const statement = screen.getAllByRole('heading', { level: 2 })[1];
 

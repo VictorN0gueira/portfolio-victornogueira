@@ -35,7 +35,7 @@ describe('IntegrationsMarquee with motion allowed', () => {
     renderWithProviders(<IntegrationsMarquee />);
 
     expect(screen.getByText('integrações')).toBeInTheDocument();
-    expect(screen.getByText('Conectamos o que você já usa')).toBeInTheDocument();
+    expect(screen.getByText('A gente conecta o que você já usa')).toBeInTheDocument();
   });
 
   it('renders every integration label from the data file', () => {
@@ -80,12 +80,12 @@ describe('IntegrationsMarquee with motion allowed', () => {
 
   it('names the section by an h2 that holds the line, with the kicker above it', () => {
     const { container } = renderWithProviders(<IntegrationsMarquee />);
-    const heading = screen.getByRole('heading', { level: 2, name: 'Conectamos o que você já usa' });
+    const heading = screen.getByRole('heading', { level: 2, name: 'A gente conecta o que você já usa' });
     const section = container.querySelector('section') as HTMLElement;
 
     expect(heading.id).not.toBe('');
     expect(section).toHaveAttribute('aria-labelledby', heading.id);
-    expect(screen.getByRole('region', { name: 'Conectamos o que você já usa' })).toBe(section);
+    expect(screen.getByRole('region', { name: 'A gente conecta o que você já usa' })).toBe(section);
     expect(screen.getByText('integrações').compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 

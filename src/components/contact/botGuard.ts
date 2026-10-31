@@ -22,7 +22,7 @@ export const MIN_FILL_MS = 2_000;
 /** How long after a successful send the next send is held. */
 export const COOLDOWN_MS = 30_000;
 
-export const COOLDOWN_MESSAGE = 'Já recebemos a sua mensagem. Aguarde alguns segundos para enviar outra.';
+export const COOLDOWN_MESSAGE = 'A gente já recebeu a sua mensagem. Espera alguns segundos para enviar outra.';
 
 /** Name of the hidden input: valid, and no word at all, so no browser or extension classifies it as a field to fill. */
 export const HONEYPOT_NAME = 'hp_7c';
