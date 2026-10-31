@@ -2,6 +2,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { BLOG_IMAGE_HOSTS } from '../../config/blogImageHosts.mjs';
 import { MOCKED_FEED_HOSTS, MOCKED_HOSTS, MOCKED_IMAGE_HOSTS, N8N_HOST } from '../../e2e/guardHosts';
 
 // The n8n webhooks are the only lead channel of the business. e2e/n8nGuard.ts gives a test a catch-all net and the n8n
@@ -421,8 +422,8 @@ describe('the hosts the network guard answers itself', () => {
     expect(new Set(MOCKED_HOSTS).size).toBe(MOCKED_HOSTS.length);
   });
 
-  it('hold the hosts the pages still load from and no more: the self hosted minio is gone', () => {
-    expect([...MOCKED_IMAGE_HOSTS]).toEqual(['images.unsplash.com']);
+  it('hold the hosts the pages still load from and no more: the blog image allow list, the feeds, and no minio', () => {
+    expect([...MOCKED_IMAGE_HOSTS]).toEqual([...BLOG_IMAGE_HOSTS]);
     expect([...MOCKED_FEED_HOSTS]).toEqual(['dev.to', 'www.tabnews.com.br', 'qpcwoioflaxiasmcdfbd.supabase.co']);
     expect(MOCKED_HOSTS.some((host) => host.includes('minio'))).toBe(false);
   });

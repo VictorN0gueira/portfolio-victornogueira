@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { BLOG_IMAGE_HOSTS, BLOG_IMG_SRC, CLOUDINARY_HOST, CLOUDINARY_PATH_PREFIX } from '../../config/blogImageHosts.mjs';
 import {
   BLOG_FEED_ORIGINS,
   CONTENT_SECURITY_POLICY,
@@ -16,6 +17,7 @@ import {
   renderNginxSnippet,
 } from '../../config/securityHeaders.mjs';
 import { WEBHOOKS } from '../lib/contact';
+import { safeImageUrl } from '../utils/newsSanitize';
 
 // config/securityHeaders.mjs is the single source of the security headers: nginx (through the generated snippet),
 // `vite preview` and the GitHub Pages meta tag all read it. These tests pin the policy itself and tie it to the
@@ -56,6 +58,21 @@ describe('the content security policy', () => {
   it('self hosts fonts, and lets only the lead webhooks and the blog feeds be fetched', () => {
     expect(policy['font-src']).toEqual(["'self'"]);
     expect(policy['connect-src']).toEqual(["'self'", N8N_ORIGIN, ...BLOG_FEED_ORIGINS]);
+  });
+
+  it('lets images come from the site itself, data: and exactly the hosts of the blog allow list, never every https host', () => {
+    expect(policy['img-src']).toEqual(["'self'", ...BLOG_IMG_SRC]);
+    expect(policy['img-src']).not.toContain('https:');
+    expect(CONTENT_SECURITY_POLICY).not.toMatch(/img-src[^;]*\shttps:(\s|;|$)/);
+    for (const host of BLOG_IMAGE_HOSTS) expect(policy['img-src'], host).toContain(`https://${host}`);
+    expect(policy['img-src']).toContain('data:');
+  });
+
+  it('allows an image from every host safeImageUrl accepts, and the policy lists no host the sanitizer would refuse', () => {
+    const accepted = BLOG_IMAGE_HOSTS.map((host) => safeImageUrl(`https://${host}${host === CLOUDINARY_HOST ? CLOUDINARY_PATH_PREFIX : '/'}x.jpg`));
+    expect(accepted.every((url) => url !== '')).toBe(true);
+    const origins = (policy['img-src'] ?? []).filter((source) => source.startsWith('https://'));
+    expect(origins.sort()).toEqual(BLOG_IMAGE_HOSTS.map((host) => `https://${host}`).sort());
   });
 
   it('allows no wildcard source and no origin that is not https', () => {

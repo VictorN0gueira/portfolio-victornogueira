@@ -6,6 +6,7 @@ import { findAccentElements } from '../test/accent';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
 import {
   TEST_PHONE_TYPED,
+  fieldError,
   pickService,
   rejectUnexpectedFetch,
   stubFetch,
@@ -66,7 +67,7 @@ describe('ContactForm validation messages', () => {
 
     const nome = screen.getByLabelText('Nome');
     expect(nome).toHaveAttribute('aria-invalid', 'true');
-    expect(nome).toHaveAttribute('aria-describedby', 'contact-nome-error');
+    expect(nome).toHaveAttribute('aria-describedby', fieldError('nome')?.id);
     expect(nome).toHaveClass('border-vn-white');
     expect(offPaletteClasses(nome.className)).toEqual([]);
   });

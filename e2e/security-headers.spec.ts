@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { BLOG_IMAGE_HOSTS, CLOUDINARY_HOST, CLOUDINARY_PATH_PREFIX } from '../config/blogImageHosts.mjs';
 import { SECURITY_HEADERS } from '../config/securityHeaders.mjs';
 import { contactFormCopy } from '../src/components/contact/contactFormCopy';
 import { serviceOptions } from '../src/data/services';
@@ -140,6 +141,87 @@ test.describe('no page breaks the policy', () => {
     }
 
     expect(await violations()).toEqual([]);
+  });
+});
+
+const EDGE_FUNCTION = 'https://qpcwoioflaxiasmcdfbd.supabase.co/functions/v1/gnews-proxy';
+// A host the site already talks to (a feed it may fetch), but one that is not on the image list: the policy must refuse it for images.
+const HOSTILE_IMAGE = 'https://www.tabnews.com.br/hostile-pixel.png';
+const FALLBACK_IMAGE_PREFIX = 'data:image/svg+xml';
+const CORS_JSON = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type' };
+
+/** One sample article whose cover image is `image`. Dated now, so the sanitizer keeps it. */
+function sampleArticle(index: number, image: string) {
+  return {
+    title: `Artigo de teste ${index}`,
+    description: 'Texto de teste da política de segurança.',
+    url: `https://dev.to/teste/artigo-${index}`,
+    image,
+    publishedAt: new Date(Date.now() - index * 3_600_000).toISOString(),
+    source: { name: 'Dev.to', url: 'https://dev.to' },
+    language: 'pt',
+  };
+}
+
+/** The blog's edge function answers with `articles`; the browser's preflight is answered too. */
+async function serveArticles(page: Page, articles: readonly object[]) {
+  await page.route(EDGE_FUNCTION, async (route) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: CORS_JSON });
+      return;
+    }
+    await route.fulfill({ status: 200, headers: CORS_JSON, contentType: 'application/json', body: JSON.stringify({ articles, source: 'edge-function' }) });
+  });
+}
+
+test.describe('the image sources of the policy', () => {
+  test('the blog shows a cover image from every allowed host with zero violations, and a hostile host never loads', async ({ page }) => {
+    const allowed = BLOG_IMAGE_HOSTS.map((host, index) =>
+      sampleArticle(index + 1, `https://${host}${host === CLOUDINARY_HOST ? CLOUDINARY_PATH_PREFIX : '/'}cover-${index}.png`),
+    );
+    const hostile = sampleArticle(BLOG_IMAGE_HOSTS.length + 1, HOSTILE_IMAGE);
+    await serveArticles(page, [...allowed, hostile]);
+    const requested = new Set<string>();
+    page.on('request', (request) => requested.add(request.url()));
+    const violations = await recordViolations(page);
+
+    await visit(page, '/blog');
+    await expect(page.getByText(hostile.title)).toBeVisible();
+
+    for (const host of BLOG_IMAGE_HOSTS) {
+      const cover = page.locator(`img[src^="https://${host}/"]`);
+      await expect(cover, host).toHaveCount(1);
+      await cover.scrollIntoViewIfNeeded();
+      await expect.poll(() => cover.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0), { message: host }).toBe(true);
+    }
+    // The sanitizer drops the foreign cover before it is rendered, so the card shows the built-in placeholder and nothing is requested.
+    const hostileCover = page.getByRole('link', { name: new RegExp(hostile.title) }).locator('img');
+    await expect.poll(() => hostileCover.getAttribute('src').then((src) => src?.startsWith(FALLBACK_IMAGE_PREFIX))).toBe(true);
+    expect([...requested]).not.toContain(HOSTILE_IMAGE);
+    expect(await violations()).toEqual([]);
+  });
+
+  test('the policy itself blocks an image from a host outside the list, even one the site fetches data from', async ({ page }) => {
+    const violations = await recordViolations(page);
+    await visit(page, '/blog');
+
+    const outcome = await page.evaluate(
+      (src) =>
+        new Promise<{ loaded: boolean; width: number }>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve({ loaded: true, width: img.naturalWidth });
+          img.onerror = () => resolve({ loaded: false, width: img.naturalWidth });
+          img.src = src;
+        }),
+      HOSTILE_IMAGE,
+    );
+
+    expect(outcome).toEqual({ loaded: false, width: 0 });
+    // The browser reports it twice: as the securitypolicyviolation event and as a console error.
+    const seen = await violations();
+    expect(seen.map((violation) => violation.directive)).toEqual(['img-src', 'console']);
+    expect(seen[0].blocked).toBe(HOSTILE_IMAGE);
+    expect(seen[1].blocked).toContain(HOSTILE_IMAGE);
   });
 });
 

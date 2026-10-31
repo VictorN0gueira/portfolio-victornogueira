@@ -133,13 +133,14 @@ describe('ContactForm service label', () => {
   it('ties the trigger to the label by id, and the label text is the visible one', () => {
     renderWithProviders(<ContactForm />);
     const trigger = screen.getByRole('button', { name: SERVICE_TRIGGER_NAME });
-    const label = document.getElementById('contact-servico-label') as HTMLElement;
+    const label = document.querySelector(`label[for="${trigger.id}"]`) as HTMLElement;
 
+    expect(label).not.toBeNull();
     expect(label).toHaveTextContent('Serviço de interesse');
     expect(trigger.id).not.toBe('');
     // The text of the button is pointed at by its own span, not by the button: the button has the label by `for`, and
     // pointing at it would read the label twice instead of the text.
-    expect(trigger).toHaveAttribute('aria-labelledby', `contact-servico-label ${trigger.id}-value`);
+    expect(trigger).toHaveAttribute('aria-labelledby', `${label.id} ${trigger.id}-value`);
     expect(label).toHaveAttribute('for', trigger.id);
   });
 });

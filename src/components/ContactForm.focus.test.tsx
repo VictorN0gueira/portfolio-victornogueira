@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { danglingReferences, duplicateIds } from '../test/ariaWiring';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
 import {
   SWAP_WAIT,
@@ -189,21 +190,6 @@ describe('Enviar and its hint', () => {
   });
 });
 
-const REFERENCING_ATTRIBUTES = ['aria-controls', 'aria-describedby', 'aria-labelledby'] as const;
-
-/** Every `attribute=id` pair of the page whose id is not on any element: a reference that points at nothing. */
-function danglingReferences(root: ParentNode): string[] {
-  const dangling: string[] = [];
-  for (const attribute of REFERENCING_ATTRIBUTES) {
-    for (const element of root.querySelectorAll(`[${attribute}]`)) {
-      for (const id of (element.getAttribute(attribute) ?? '').split(/\s+/).filter(Boolean)) {
-        if (!root.querySelector(`[id="${id}"]`)) dangling.push(`${attribute}=${id}`);
-      }
-    }
-  }
-  return dangling;
-}
-
 describe('form structure', () => {
   it('is a named form (a landmark) with one group name for the method', () => {
     renderWithProviders(<ContactForm />);
@@ -216,17 +202,14 @@ describe('form structure', () => {
     const { container } = renderWithProviders(
       <>
         <ContactForm />
-        <ContactForm idPrefix="segundo" />
+        <ContactForm />
       </>,
     );
 
     // The new-tab line of the consent has a fixed id of its own, in ContactConsent.tsx (a protected file of the lead path).
-    const ids = [...container.querySelectorAll('[id]')]
-      .map((element) => element.id)
-      .filter((id) => id !== 'contact-privacy-new-tab');
-    expect(new Set(ids).size).toBe(ids.length);
-    expect(container.querySelector('#contact-nome')).not.toBeNull();
-    expect(container.querySelector('#segundo-nome')).not.toBeNull();
+    expect(duplicateIds(container, ['contact-privacy-new-tab'])).toEqual([]);
+    const [first, second] = [...container.querySelectorAll<HTMLFormElement>('form[name="contact"]')];
+    expect(first.querySelector('input[type="text"]')?.id).not.toBe(second.querySelector('input[type="text"]')?.id);
   });
 
   it('keeps the ids unique and every reference inside its own form once both forms show their errors', async () => {
@@ -234,7 +217,7 @@ describe('form structure', () => {
     const { container } = renderWithProviders(
       <>
         <ContactForm />
-        <ContactForm idPrefix="segundo" />
+        <ContactForm />
       </>,
     );
     const forms = [...container.querySelectorAll<HTMLFormElement>('form[name="contact"]')];
@@ -246,10 +229,7 @@ describe('form structure', () => {
     }
 
     // Same exception as above: the fixed id of the new-tab line of the consent.
-    const ids = [...container.querySelectorAll('[id]')]
-      .map((element) => element.id)
-      .filter((id) => id !== 'contact-privacy-new-tab');
-    expect(new Set(ids).size).toBe(ids.length);
+    expect(duplicateIds(container, ['contact-privacy-new-tab'])).toEqual([]);
     for (const form of forms) {
       expect(form.querySelectorAll('[aria-invalid="true"]').length).toBeGreaterThan(0);
       expect(danglingReferences(form), 'a reference that leaves its form').toEqual([]);

@@ -7,6 +7,8 @@
 // client logos are self hosted. Everything else is a link the visitor clicks (wa.me, LinkedIn, GitHub, Instagram):
 // navigation is not governed by this policy.
 
+import { BLOG_IMG_SRC } from './blogImageHosts.mjs';
+
 /** The two lead webhooks (src/lib/contact.ts). The only POST the site makes. */
 export const N8N_ORIGIN = 'https://n8n.vnone.com.br';
 /** The blog reads the Supabase edge function first (src/utils/newsService.ts), then these two public feeds. */
@@ -21,15 +23,16 @@ export const BLOG_FEED_ORIGINS = Object.freeze([
  *
  * style-src needs 'unsafe-inline': Radix Dialog (react-remove-scroll, style-singleton) and motion create style
  * elements at run time. React's own style props go through the CSSOM, which the policy allows.
- * img-src needs https: because the blog shows cover images from any host (dev.to, TabNews, the edge function) and
- * data: for the inline SVG placeholder of BlogPage.tsx. The home and the project pages only load 'self' images.
+ * img-src is 'self' plus BLOG_IMG_SRC (config/blogImageHosts.mjs): the five https hosts a blog cover image may come from
+ * (src/utils/newsSanitize.ts refuses any other host before it is rendered) and data: for the inline SVG placeholder of
+ * BlogPage.tsx. There is no bare `https:`. The home and the project pages only load 'self' images.
  * gnews.io is not allowed: the direct GNews call needs a key that must never be in the bundle (finding F-15).
  */
 export const CSP_DIRECTIVES = Object.freeze({
   'default-src': ["'self'"],
   'script-src': ["'self'"],
   'style-src': ["'self'", "'unsafe-inline'"],
-  'img-src': ["'self'", 'data:', 'https:'],
+  'img-src': ["'self'", ...BLOG_IMG_SRC],
   'font-src': ["'self'"],
   'connect-src': ["'self'", N8N_ORIGIN, ...BLOG_FEED_ORIGINS],
   'object-src': ["'none'"],

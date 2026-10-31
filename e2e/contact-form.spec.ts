@@ -179,13 +179,63 @@ test.describe('contact form WhatsApp number integrity', () => {
     return form.getByLabel('WhatsApp', { exact: true });
   }
 
+  // The page scrolls smoothly (html has scroll-behavior: smooth), and a scroll that Playwright or the hash link starts keeps
+  // going for a while, longer on a busy machine and on the phone, where the form sits far down a long page. A real mouse
+  // drag reads the box of an element and then moves the mouse in viewport coordinates: if the page is still scrolling the
+  // point lands on another element, or below the viewport, and no drag starts. So a drag first puts the fields in the
+  // middle of the viewport, jumping instead of gliding, waits until the scroll position has stopped, and checks what sits
+  // under the point before pressing the button.
+  const SETTLED_FRAMES = 8;
+  const SEND_WAIT_MS = 15_000;
+
+  /** Jumps the field to the middle of the viewport and resolves once scrollY has been the same for SETTLED_FRAMES frames. */
+  async function centerAndSettle(field: Locator) {
+    await field.evaluate(async (element: HTMLElement, frames: number) => {
+      element.scrollIntoView({ block: 'center', behavior: 'instant' });
+      const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      let still = 0;
+      let last = window.scrollY;
+      while (still < frames) {
+        await nextFrame();
+        still = window.scrollY === last ? still + 1 : 0;
+        last = window.scrollY;
+      }
+    }, SETTLED_FRAMES);
+  }
+
+  /** The id of the element under a viewport point, so a drag can prove it starts where it means to. */
+  const idUnder = (page: Page, x: number, y: number) =>
+    page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.id ?? '', [x, y]);
+
+  /** A real mouse drag from a point to another one, after checking the first point is on `source`. */
+  async function dragMouse(page: Page, source: Locator, from: { x: number; y: number }, to: { x: number; y: number }) {
+    const sourceId = await source.getAttribute('id');
+    expect(await idUnder(page, from.x, from.y), 'the element under the start of the drag').toBe(sourceId);
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 12 });
+    await page.mouse.up();
+  }
+
+  /** Selects the text of the message box and drags it onto the left edge of the number field, inside the "+55 " prefix. */
+  async function dragMessageOntoField(page: Page, message: Locator, whatsapp: Locator) {
+    await message.press('Control+A');
+    await centerAndSettle(whatsapp);
+    const source = await message.boundingBox();
+    const target = await whatsapp.boundingBox();
+    if (!source || !target) throw new Error('the message box and the field need a box');
+    await dragMouse(page, message, { x: source.x + 20, y: source.y + 14 }, { x: target.x + 2, y: target.y + target.height / 2 });
+  }
+
   /** Sends the form and checks that the lead goes to the number that was typed, in order and in the right format. */
   async function expectLeadForTheTypedNumber(page: Page, form: Locator, network: NetworkGuard, whatsapp: Locator) {
     await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
     await form.getByRole('checkbox').check();
     await submit(form).click();
 
-    await expect(page.getByRole('heading', { level: 3, name: SUCCESS_TITLE })).toBeVisible();
+    // The form holds a send that comes less than two seconds after the first touch (the time trap of botGuard.ts) and
+    // then sends it, so the thanks needs more than the default five seconds on a machine that is short of CPU.
+    await expect(page.getByRole('heading', { level: 3, name: SUCCESS_TITLE })).toBeVisible({ timeout: SEND_WAIT_MS });
     expect(network.calls).toHaveLength(1);
     const [call] = network.calls;
     expect(new URL(call.url).pathname).toBe(WHATSAPP_PATH);
@@ -346,6 +396,7 @@ test.describe('contact form WhatsApp number integrity', () => {
     await whatsapp.pressSequentially(WHATSAPP_TYPED);
     await expect(whatsapp).toHaveValue(WHATSAPP_DISPLAY);
 
+    await centerAndSettle(whatsapp);
     // The x of the gap between the "+5" and the second "5" is the width of "+5" in the font of the field, past its padding.
     const drag = await whatsapp.evaluate((input: HTMLInputElement) => {
       const style = getComputedStyle(input);
@@ -355,10 +406,7 @@ test.describe('contact form WhatsApp number integrity', () => {
       const textLeft = box.left + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
       return { fromX: textLeft + context.measureText('+5').width, toX: box.right - 3, y: box.top + box.height / 2 };
     });
-    await page.mouse.move(drag.fromX, drag.y);
-    await page.mouse.down();
-    await page.mouse.move(drag.toX, drag.y, { steps: 8 });
-    await page.mouse.up();
+    await dragMouse(page, whatsapp, { x: drag.fromX, y: drag.y }, { x: drag.toX, y: drag.y });
     await whatsapp.pressSequentially(WHATSAPP_TYPED);
 
     await expectLeadForTheTypedNumber(page, form, network, whatsapp);
@@ -503,15 +551,8 @@ test.describe('contact form WhatsApp number integrity', () => {
     const whatsapp = await fillUpToTheNumber(page, form);
     const message = form.getByLabel('Mensagem', { exact: true });
     await message.fill(INTERNATIONAL_NUMBER);
-    await message.press('Control+A');
 
-    const source = await message.boundingBox();
-    const target = await whatsapp.boundingBox();
-    if (!source || !target) throw new Error('the message box and the field need a box');
-    await page.mouse.move(source.x + 20, source.y + 14);
-    await page.mouse.down();
-    await page.mouse.move(target.x + 2, target.y + target.height / 2, { steps: 12 });
-    await page.mouse.up();
+    await dragMessageOntoField(page, message, whatsapp);
     // The drag moved the text out of the message box: it needs a message again to be sent.
     await message.fill(MESSAGE);
 
@@ -530,15 +571,8 @@ test.describe('contact form WhatsApp number integrity', () => {
         }
         const message = form.getByLabel('Mensagem', { exact: true });
         await message.fill(text);
-        await message.press('Control+A');
-        const source = await message.boundingBox();
-        const target = await whatsapp.boundingBox();
-        if (!source || !target) throw new Error('the message box and the field need a box');
 
-        await page.mouse.move(source.x + 20, source.y + 14);
-        await page.mouse.down();
-        await page.mouse.move(target.x + 2, target.y + target.height / 2, { steps: 12 });
-        await page.mouse.up();
+        await dragMessageOntoField(page, message, whatsapp);
 
         await expect(whatsapp).toHaveValue(typed ? WHATSAPP_DISPLAY : '+55 ');
       });

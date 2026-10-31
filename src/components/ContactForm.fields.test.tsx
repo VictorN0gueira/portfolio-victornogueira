@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
-import { rejectUnexpectedFetch, submitButton, SWAP_WAIT, findWhatsappField, togglePill } from '../test/contactForm';
+import { fieldError, rejectUnexpectedFetch, submitButton, SWAP_WAIT, findWhatsappField, togglePill, whatsappHint } from '../test/contactForm';
 import { offPaletteClasses } from '../test/palette';
 import { renderWithProviders } from '../test/render';
 import ContactForm from './ContactForm';
@@ -132,10 +132,7 @@ describe('ContactForm labels, placeholders and attributes', () => {
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 
-    expect(whatsapp.getAttribute('aria-describedby')?.split(' ')).toEqual([
-      'contact-whatsapp-hint',
-      'contact-whatsapp-error',
-    ]);
+    expect(whatsapp.getAttribute('aria-describedby')?.split(' ')).toEqual([whatsappHint()?.id, fieldError('whatsapp')?.id]);
   });
 });
 

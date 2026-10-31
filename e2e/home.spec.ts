@@ -66,7 +66,8 @@ test.describe('home sections', () => {
 
     await expect(page.locator('form[name="contact"]')).toHaveCount(1);
     await expect(page.locator('#contato')).toHaveCount(1);
-    await expect(page.locator('#contact-nome')).toHaveCount(1);
+    // The ids of the form come from useId, so the check is on the form and its label wiring, never on an id.
+    await expect(page.locator('form[name="contact"] label[for]')).not.toHaveCount(0);
   });
 
   test('carries none of the old home sections', async ({ page }) => {

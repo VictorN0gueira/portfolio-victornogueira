@@ -102,3 +102,18 @@ export async function sendWhatsappForm(user: User, fetchMock: ReturnType<typeof 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
   return readCall(fetchMock);
 }
+
+/**
+ * The elements a form id names, found by the suffix the form gives each one (`<prefix>-nome-error`). The prefix comes from
+ * React's useId, so a test never spells it out: it follows the wiring (aria-describedby, label for) or this suffix.
+ */
+const bySuffix = (suffix: string) => document.querySelector<HTMLElement>(`[id^="contact-"][id$="-${suffix}"]`);
+
+/** The error line of a field of the form, or null while the field has none. */
+export const fieldError = (field: string) => bySuffix(`${field}-error`);
+
+/** The live region that tells a field has reached its cap. */
+export const capRegion = (field: string) => bySuffix(`${field}-cap`);
+
+/** The hint line of the WhatsApp field. */
+export const whatsappHint = () => bySuffix('whatsapp-hint');

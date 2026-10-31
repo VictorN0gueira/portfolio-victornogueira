@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ContactIdsContext, DEFAULT_ID_PREFIX, contactIds } from './contact/contactIds';
+import { useEffect, useId, useMemo, useState } from 'react';
+import { ContactIdsContext, contactIdPrefix, contactIds } from './contact/contactIds';
 import { contactFormCopy } from './contact/contactFormCopy';
 import ContactPanel from './contact/ContactPanel';
 import ContactSuccess from './contact/ContactSuccess';
@@ -10,11 +10,6 @@ interface ContactFormProps {
   initialMessage?: string;
   /** Changes each time the parent hands over a message, so the same message fills the field again */
   prefillNonce?: number;
-  /**
-   * Start of every DOM id of the form (`contact-nome`, `contact-nome-error`...). A page that holds a second form gives
-   * it another prefix, so no id repeats. The default is the one the form has always had.
-   */
-  idPrefix?: string;
 }
 
 /**
@@ -25,10 +20,13 @@ interface ContactFormProps {
  * (a live region that mounts together with its text is skipped by many screen readers). The region carries only the
  * second sentence of the thanks: the title is read once, by the focus that lands on the heading (see ContactSuccess).
  * Enviar outra puts the focus on the name field of the new, empty form.
+ * Every DOM id of the form (`contact-<useId>-nome`, `...-nome-error`...) starts with a prefix made from React's useId, so
+ * two forms on one page can never share an id.
  */
-export default function ContactForm({ initialMessage, prefillNonce, idPrefix = DEFAULT_ID_PREFIX }: ContactFormProps) {
+export default function ContactForm({ initialMessage, prefillNonce }: ContactFormProps) {
   const form = useContactForm(initialMessage, prefillNonce);
-  const ids = useMemo(() => contactIds(idPrefix), [idPrefix]);
+  const reactId = useId();
+  const ids = useMemo(() => contactIds(contactIdPrefix(reactId)), [reactId]);
   const [resetCount, setResetCount] = useState(0);
   const isSent = form.status === 'success';
   const { text } = contactFormCopy.success;

@@ -5,6 +5,7 @@ import { faqs } from '../data/faqs';
 import { homeCopy } from '../data/homeCopy';
 import { DEFAULT_HOURLY_RATE, buildQuoteMessage } from '../lib/roi';
 import { SITE } from '../lib/site';
+import { danglingReferences, duplicateIds } from '../test/ariaWiring';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
 import { messageField, rejectUnexpectedFetch } from '../test/contactForm';
 import { WARM_UP_HOOK_TIMEOUT_MS, preloadHomeSections, warmUpRender } from '../test/lazyPages';
@@ -98,12 +99,14 @@ describe('HomePage structure', () => {
     }
   });
 
-  it('has exactly one contato anchor and one form: the contact fields use fixed ids', async () => {
+  it('has exactly one contato anchor and one named contact form with its labels wired', async () => {
     const { container } = await renderHome();
 
     expect(container.querySelectorAll('#contato')).toHaveLength(1);
     expect(container.querySelectorAll('form')).toHaveLength(1);
-    expect(container.querySelectorAll('#contact-nome')).toHaveLength(1);
+    expect(container.querySelectorAll('form[name="contact"]')).toHaveLength(1);
+    expect(danglingReferences(container)).toEqual([]);
+    expect(duplicateIds(container, ['contact-privacy-new-tab'])).toEqual([]);
     expect(screen.getByRole('region', { name: FINAL_HEADING })).toHaveAttribute('id', 'contato');
   });
 

@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { rejectUnexpectedFetch } from '../test/contactForm';
+import { capRegion, rejectUnexpectedFetch } from '../test/contactForm';
 import { renderWithProviders } from '../test/render';
 import ContactForm from './ContactForm';
 
@@ -55,7 +55,7 @@ describe('ContactForm length caps', () => {
 describe('ContactForm cap hint', () => {
   const text = (max: number) => `Máximo de ${max} caracteres.`;
   // The live region of a field: always in the DOM, so a screen reader hears its text change.
-  const region = (field: 'nome' | 'email' | 'mensagem') => document.getElementById(`contact-${field}-cap`) as HTMLElement;
+  const region = (field: 'nome' | 'email' | 'mensagem') => capRegion(field) as HTMLElement;
   // The visible line: the same words, hidden from assistive tech so nothing is announced twice.
   const visibleLine = (max: number) => screen.queryAllByText(text(max)).filter((node) => node.getAttribute('aria-hidden') === 'true');
 

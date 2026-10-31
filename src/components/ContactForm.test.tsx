@@ -18,6 +18,7 @@ import {
   type User,
   SWAP_WAIT,
   findWhatsappField,
+  fieldError,
 } from '../test/contactForm';
 import ContactForm from './ContactForm';
 
@@ -65,20 +66,20 @@ describe('ContactForm validation', () => {
     expect(fetch).not.toHaveBeenCalled();
     const nome = screen.getByLabelText('Nome');
     expect(nome).toHaveAttribute('aria-invalid', 'true');
-    expect(nome).toHaveAttribute('aria-describedby', 'contact-nome-error');
-    expect(document.getElementById('contact-nome-error')).toHaveTextContent('Conta pra gente seu nome');
-    expect(screen.getByLabelText('E-mail')).toHaveAttribute('aria-describedby', 'contact-email-error');
-    expect(document.getElementById('contact-email-error')).toHaveTextContent('Esse e-mail parece incompleto');
-    expect(screen.getByLabelText('Mensagem')).toHaveAttribute('aria-describedby', 'contact-mensagem-error');
-    expect(document.getElementById('contact-mensagem-error')).toHaveTextContent(
+    expect(nome).toHaveAttribute('aria-describedby', fieldError('nome')?.id);
+    expect(fieldError('nome')).toHaveTextContent('Conta pra gente seu nome');
+    expect(screen.getByLabelText('E-mail')).toHaveAttribute('aria-describedby', fieldError('email')?.id);
+    expect(fieldError('email')).toHaveTextContent('Esse e-mail parece incompleto');
+    expect(screen.getByLabelText('Mensagem')).toHaveAttribute('aria-describedby', fieldError('mensagem')?.id);
+    expect(fieldError('mensagem')).toHaveTextContent(
       'Escreve um pouco mais sobre o que você precisa',
     );
 
     await user.type(nome, 'Ana');
     expect(nome).toHaveAttribute('aria-invalid', 'false');
     expect(nome).not.toHaveAttribute('aria-describedby');
-    expect(document.getElementById('contact-nome-error')).toBeNull();
-    expect(document.getElementById('contact-email-error')).not.toBeNull();
+    expect(fieldError('nome')).toBeNull();
+    expect(fieldError('email')).not.toBeNull();
   });
 
   it('links the servico error to the select trigger and unlinks it once a service is picked', async () => {
@@ -89,15 +90,15 @@ describe('ContactForm validation', () => {
 
     const trigger = serviceTrigger();
     expect(trigger).toHaveAttribute('aria-invalid', 'true');
-    expect(trigger).toHaveAttribute('aria-describedby', 'contact-servico-error');
-    const error = document.getElementById('contact-servico-error');
+    expect(trigger).toHaveAttribute('aria-describedby', fieldError('servico')?.id);
+    const error = fieldError('servico');
     // The message is the description of the field, which the failed submit focuses: it is not an alert of its own.
     expect(error).not.toHaveAttribute('role');
     expect(error).toHaveTextContent('Escolhe um serviço');
 
     await pickService(user);
 
-    expect(document.getElementById('contact-servico-error')).toBeNull();
+    expect(fieldError('servico')).toBeNull();
     const picked = screen.getByRole('button', { name: `Serviço de interesse ${serviceOptions[0]}` });
     expect(picked).not.toHaveAttribute('aria-invalid');
     expect(picked).not.toHaveAttribute('aria-describedby');
@@ -109,7 +110,7 @@ describe('ContactForm validation', () => {
 
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
-    expect(document.getElementById('contact-email-error')).not.toBeNull();
+    expect(fieldError('email')).not.toBeNull();
     expect(document.querySelectorAll('[aria-invalid="true"]').length).toBeGreaterThan(0);
 
     // The leaving field keeps its last frame while it fades out, so wait for it to go.

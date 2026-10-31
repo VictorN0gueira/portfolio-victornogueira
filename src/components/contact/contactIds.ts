@@ -21,8 +21,19 @@ export function contactIds(prefix: string) {
 
 export type ContactIds = ReturnType<typeof contactIds>;
 
-/** The prefix the form has always used. A page with one form needs nothing else. */
+/** The prefix of a form that is not inside a ContactForm (a piece rendered on its own). */
 export const DEFAULT_ID_PREFIX = 'contact';
+
+const UNSAFE_ID_CHARACTERS = /[^A-Za-z0-9_-]/g;
+
+/**
+ * The id prefix of one form, from the id React's useId gave it. useId returns characters that break a CSS selector or an
+ * aria token (":r1:", or "«r1»" in some versions): only letters, digits, "-" and "_" are kept, and `contact-` goes in
+ * front so the prefix always starts with a letter. Two forms on a page get two useId values, so no id repeats.
+ */
+export function contactIdPrefix(reactId: string): string {
+  return `${DEFAULT_ID_PREFIX}-${reactId.replace(UNSAFE_ID_CHARACTERS, '')}`;
+}
 
 export const ContactIdsContext = createContext<ContactIds>(contactIds(DEFAULT_ID_PREFIX));
 
