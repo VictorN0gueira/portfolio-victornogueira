@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState, useCallback } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import SEO from '../components/SEO';
 import { SectionSkeleton } from '../components/ui/SectionSkeleton';
 import { revealProps } from '../lib/reveal';
@@ -33,19 +33,19 @@ export default function ContactPage() {
       />
       <div className="pt-16 md:pt-20">
         <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}>
+          <m.div {...revealProps}>
             <ROICalculator onQuoteRequest={handleQuoteRequest} />
-          </motion.div>
+          </m.div>
         </Suspense>
 
         <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}>
+          <m.div {...revealProps}>
             <Contact prefillMessage={prefillMessage} />
-          </motion.div>
+          </m.div>
         </Suspense>
 
         <Suspense fallback={null}>
-          <motion.div {...revealProps}><FAQ /></motion.div>
+          <m.div {...revealProps}><FAQ /></m.div>
         </Suspense>
       </div>
     </>

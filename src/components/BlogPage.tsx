@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -125,7 +125,7 @@ function FeaturedCard({ article }: { article: NewsArticle }) {
   const novo = isNew(article.publishedAt);
 
   return (
-    <motion.a
+    <m.a
       href={article.url}
       target="_blank"
       rel="noopener noreferrer"
@@ -202,7 +202,7 @@ function FeaturedCard({ article }: { article: NewsArticle }) {
           </span>
         </div>
       </div>
-    </motion.a>
+    </m.a>
   );
 }
 
@@ -213,7 +213,7 @@ function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
   const novo = isNew(article.publishedAt);
 
   return (
-    <motion.a
+    <m.a
       href={article.url}
       target="_blank"
       rel="noopener noreferrer"
@@ -284,7 +284,7 @@ function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
           </div>
         </div>
       </div>
-    </motion.a>
+    </m.a>
   );
 }
 
@@ -382,7 +382,7 @@ export default function BlogPage() {
       {/* Hero */}
       <section className="relative pt-32 pb-10 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -431,7 +431,7 @@ export default function BlogPage() {
                 </span>
               )}
             </div>
-          </motion.div>
+          </m.div>
         </div>
       </section>
 
@@ -442,7 +442,7 @@ export default function BlogPage() {
 
       {/* Filtros + Busca */}
       {!loading && !error && articles.length > 0 && (
-        <motion.section
+        <m.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -519,7 +519,7 @@ export default function BlogPage() {
               </div>
             )}
           </div>
-        </motion.section>
+        </m.section>
       )}
 
       {/* Artigos */}
@@ -528,7 +528,7 @@ export default function BlogPage() {
           <AnimatePresence mode="wait">
             {/* Error */}
             {error && !loading && (
-              <motion.div key="error" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              <m.div key="error" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center py-32 text-center"
               >
                 <div className="w-20 h-20 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
@@ -536,22 +536,22 @@ export default function BlogPage() {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2 font-display">Ops! Algo deu errado</h3>
                 <p className="text-zinc-400 mb-8 max-w-md text-sm leading-relaxed">{error}</p>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Loading */}
             {loading && (
-              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <m.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <SkeletonFeatured />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
                 </div>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Empty state: sem artigos */}
             {!loading && !error && articles.length === 0 && (
-              <motion.div key="empty" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              <m.div key="empty" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center py-32 text-center"
               >
                 <div className="w-20 h-20 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-6">
@@ -559,12 +559,12 @@ export default function BlogPage() {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2 font-display">Nenhuma notícia encontrada</h3>
                 <p className="text-zinc-400 text-sm">Tenta atualizar em alguns instantes.</p>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Empty state: filtros sem resultado */}
             {!loading && !error && articles.length > 0 && filteredArticles.length === 0 && (
-              <motion.div key="no-filter-results" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              <m.div key="no-filter-results" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="flex flex-col items-center py-24 text-center gap-4"
               >
                 <Search className="w-10 h-10 text-zinc-700" />
@@ -576,12 +576,12 @@ export default function BlogPage() {
                 >
                   Limpar filtros
                 </button>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Artigos com featured */}
             {!loading && !error && filteredArticles.length > 0 && (
-              <motion.div key="articles" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <m.div key="articles" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <FeaturedCard article={filteredArticles[0]} />
                 {filteredArticles.length > 1 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -590,7 +590,7 @@ export default function BlogPage() {
                     ))}
                   </div>
                 )}
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>

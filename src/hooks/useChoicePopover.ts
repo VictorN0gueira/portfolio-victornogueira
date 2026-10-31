@@ -11,6 +11,8 @@ interface ChoicePopoverOptions<T extends string | number> {
    * navigation starts at the first one. Without it such a value counts as the first option, as it does for the hero pill.
    */
   allowEmpty?: boolean;
+  /** The list is open from the first render (the pill was clicked before the chunk that holds the list arrived). Default false. */
+  initialOpen?: boolean;
 }
 
 const ARROW_KEYS = new Set(['ArrowDown', 'ArrowUp']);
@@ -62,8 +64,9 @@ export function useChoicePopover<T extends string | number>({
   options,
   onChange,
   allowEmpty = false,
+  initialOpen = false,
 }: ChoicePopoverOptions<T>) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const foundIndex = options.findIndex((option) => option.value === value);
   const startIndex = Math.max(0, foundIndex);

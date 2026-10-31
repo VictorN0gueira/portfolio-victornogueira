@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import SEO from '../components/SEO';
 
 const EFFECTIVE_DATE = '8 de julho de 2026';
@@ -23,7 +23,7 @@ export default function PrivacyPage() {
         path="/privacidade"
       />
       <div className="pt-32 md:pt-40 pb-24 px-6 md:px-12 bg-brand-white min-h-screen">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -117,7 +117,7 @@ export default function PrivacyPage() {
               topo indica a versão atual.
             </p>
           </Section>
-        </motion.div>
+        </m.div>
       </div>
     </>
   );

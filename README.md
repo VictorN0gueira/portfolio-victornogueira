@@ -16,7 +16,7 @@ Requer Node 22 ou mais novo.
 | `npm test` | Testes unitários (Vitest, jsdom) |
 | `npm run coverage` | Testes com cobertura |
 | `npm run e2e` | Playwright em Chromium desktop e mobile. Faz o build, sobe o preview (`E2E_PORT`, padrão 4173) |
-| `npm run budget` | Peso gzip do caminho crítico (entrada mais modulepreloads). `-- --enforce` falha acima de 150 kB |
+| `npm run budget` | Peso gzip do caminho crítico (entrada mais modulepreloads). `-- --enforce` falha acima de 160 kB (a meta é 150, o motivo da diferença está em `scripts/check-bundle-budget.mjs`) |
 | `npm run headers` | Regenera `nginx/security-headers.conf` a partir de `config/securityHeaders.mjs` |
 | `npm run og` | Regenera `public/og-banner.png` |
 | `npm run lcp` e `npm run measure:skeletons` | Medem LCP e as alturas dos esqueletos, só em páginas locais |

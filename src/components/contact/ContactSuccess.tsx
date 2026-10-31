@@ -1,5 +1,5 @@
 import { CheckCircle2 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { useEffect, useRef } from 'react';
 import type { ContactMethod } from '../../lib/contact';
 import { Button } from '../ui/Button';
@@ -32,7 +32,7 @@ export function ContactSuccess({ method, onReset }: ContactSuccessProps) {
   }, []);
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       className={`${PANEL_CLASS} text-center`}
@@ -49,7 +49,7 @@ export function ContactSuccess({ method, onReset }: ContactSuccessProps) {
       <Button tone="dark" size="lg" onClick={onReset}>
         {success.again}
       </Button>
-    </motion.div>
+    </m.div>
   );
 }
 

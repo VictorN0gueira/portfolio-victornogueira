@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 import { render, type RenderResult } from '@testing-library/react';
-import { HelmetProvider } from 'react-helmet-async';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AccessibilityProvider } from '../contexts/AccessibilityContext';
 
@@ -23,11 +23,12 @@ export interface RenderWithProvidersOptions {
  */
 export function AllProviders({ children, route = DEFAULT_ROUTE }: AllProvidersProps) {
   return (
-    <HelmetProvider>
-      <AccessibilityProvider>
+    <AccessibilityProvider>
+      {/* The animation features the app loads in MotionProvider: without them an m component never animates. */}
+      <LazyMotion features={domAnimation} strict>
         <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
-      </AccessibilityProvider>
-    </HelmetProvider>
+      </LazyMotion>
+    </AccessibilityProvider>
   );
 }
 

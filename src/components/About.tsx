@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { Download, Workflow, BrainCircuit, Globe } from 'lucide-react';
 import { assetUrl } from '../lib/asset';
 
@@ -15,7 +15,7 @@ export default function About() {
   return (
     <section id="sobre" className="py-32 px-6 md:px-12 bg-white dark:bg-zinc-900 overflow-hidden">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 md:gap-16 lg:gap-24 items-center">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, x: -30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -62,9 +62,9 @@ export default function About() {
             <Download className="w-4 h-4" />
             Baixar Currículo
           </a>
-        </motion.div>
+        </m.div>
         
-        <motion.div
+        <m.div
           initial={{ opacity: 0, x: 30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -95,7 +95,7 @@ export default function About() {
           </div>
           {/* Decorative mesh gradient background */}
           <div className="absolute -inset-10 bg-linear-to-br from-zinc-100 dark:from-zinc-800 to-white dark:to-zinc-900 z-0 rounded-full blur-3xl opacity-50"></div>
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

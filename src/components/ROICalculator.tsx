@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { TrendingUp, ArrowUpRight, Sparkles } from 'lucide-react';
 import { homeCopy } from '../data/homeCopy';
 import { formatBRL, formatBRLCompact } from '../lib/format';
@@ -70,7 +70,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -86,10 +86,10 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
           <p className="text-zinc-500 text-base md:text-lg font-light max-w-xl">
             Descobre o custo real dos seus processos manuais e quanto você pode recuperar.
           </p>
-        </motion.div>
+        </m.div>
 
         {/* Main card */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -128,7 +128,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
               <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Pessoas que executam essa tarefa</p>
               <div className="grid grid-cols-2 gap-2">
                 {TEAM_OPTIONS.map((opt, i) => (
-                  <motion.button
+                  <m.button
                     key={opt.label}
                     type="button"
                     onClick={() => setTeamIndex(i)}
@@ -140,7 +140,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
                     }`}
                   >
                     {opt.label}
-                  </motion.button>
+                  </m.button>
                 ))}
               </div>
             </div>
@@ -220,7 +220,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
 
             {/* CTA: com onQuoteRequest pré-preenche o form; sem, abre o WhatsApp */}
             {onQuoteRequest ? (
-              <motion.button
+              <m.button
                 type="button"
                 onClick={() => onQuoteRequest(buildQuoteMessage(roiInput), savings)}
                 whileHover={{ scale: 1.02 }}
@@ -229,9 +229,9 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
               >
                 Quero automatizar esse processo
                 <ArrowUpRight className="w-4 h-4" />
-              </motion.button>
+              </m.button>
             ) : (
-              <motion.a
+              <m.a
                 href={WA_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -241,14 +241,14 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
               >
                 Quero automatizar esse processo
                 <ArrowUpRight className="w-4 h-4" />
-              </motion.a>
+              </m.a>
             )}
 
             <p className="text-center text-zinc-600 text-[11px] leading-relaxed relative z-10">
               {homeCopy.roi.note}<br />Consulta gratuita e sem compromisso.
             </p>
           </div>
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

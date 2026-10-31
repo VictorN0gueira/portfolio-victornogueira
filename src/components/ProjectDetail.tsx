@@ -1,8 +1,9 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import type { Project } from '../data/projects';
 import { HeroGallery, StackedGallery } from './ProjectDetailGallery';
 import { FEATURES_LABEL, TAGS_LABEL } from './projectLabels';
 import ProjectTitle from './ProjectTitle';
+import { EASE_OUT } from '../lib/motion';
 
 interface ProjectDetailProps {
   project: Project;
@@ -72,10 +73,10 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
   const textLayout = isFeatured ? 'grid min-w-0 gap-10 lg:grid-cols-2 lg:gap-16' : 'flex min-w-0 flex-col lg:sticky lg:top-28 lg:self-start';
 
   return (
-    <motion.div
+    <m.div
       initial={{ y: 16 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+      transition={{ duration: 0.5, ease: EASE_OUT }}
       className={`relative mx-auto flex w-full max-w-6xl overflow-clip rounded-3xl border border-white/10 bg-zinc-950 shadow-2xl md:rounded-[2.5rem] md:bg-zinc-900 ${layout}`}
     >
       {isFeatured ? <HeroGallery project={project} /> : <StackedGallery project={project} />}
@@ -89,6 +90,6 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
           </div>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }

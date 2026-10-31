@@ -4,10 +4,9 @@ import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import { formatBRL } from '../../lib/format';
 import { cn } from '../../lib/utils';
 import { largestAmountWithDigitsOf } from './amountFit';
+import { EASE_OUT } from '../../lib/motion';
 
 const COUNT_DURATION_S = 0.55;
-// The design system easing, as the cubic bezier points motion expects.
-const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 // Tabular figures keep every digit the same width, and the amount never wraps onto a second line. transition-none
 // because the reduced motion reset of the site gives every element a near zero transition on every property: it holds
 // the old font size for a frame, and the new, longer text would be drawn at it and spill out of its box.

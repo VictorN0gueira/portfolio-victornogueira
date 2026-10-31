@@ -1,4 +1,4 @@
-import { motion, useInView, type Variants } from 'motion/react';
+import { m, useInView, type Variants } from 'motion/react';
 import {
   useCallback,
   useContext,
@@ -11,13 +11,12 @@ import {
 } from 'react';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import { RevealGroupContext } from './revealGroupContext';
+import { EASE_OUT } from '../../lib/motion';
 
 /** `rise-blur` is a shorter rise that also sharpens from a blur, meant for the words of a headline. */
 export type RevealVariant = 'up' | 'fade' | 'rise-blur';
 
 const REVEAL_DURATION_S = 0.7;
-// The design system easing, as the cubic bezier points motion expects.
-const REVEAL_EASE = [0.22, 1, 0.36, 1] as const;
 const INSTANT = { duration: 0 } as const;
 const IN_VIEW_OPTIONS = { once: true, margin: '0px 0px -8% 0px' } as const;
 
@@ -44,7 +43,7 @@ function createVariants(variant: RevealVariant): Variants {
     hidden: HIDDEN[variant],
     show: (getDelay: () => number) => ({
       ...SHOWN[variant],
-      transition: { duration: REVEAL_DURATION_S, ease: REVEAL_EASE, delay: getDelay() },
+      transition: { duration: REVEAL_DURATION_S, ease: EASE_OUT, delay: getDelay() },
     }),
   };
 }
@@ -120,7 +119,7 @@ interface RevealItemProps {
  * Fades and slides its children in when the surrounding RevealGroup enters the view.
  * Without motion (system preference or the accessibility toggle), or outside a group, it renders its
  * children in their final state at once, with no hidden style at all. It always renders the same element
- * (a motion.div, or a motion.span with `as="span"`), so switching motion on or off while the page is open keeps
+ * (a m.div, or a m.span with `as="span"`), so switching motion on or off while the page is open keeps
  * its children mounted: their state and focus survive. If motion goes off while the item is still hidden, it jumps to its final state.
  * An item that mounts after its group was already revealed (or after motion was switched back on) also
  * appears in its final state, so content is never hidden again. Needs AccessibilityProvider above it.
@@ -129,7 +128,7 @@ export function RevealItem({ variant = 'up', as = 'div', className, children }: 
   const group = useContext(RevealGroupContext);
   const isMotionAllowed = useMotionAllowed();
   // Typed as the div variant only to keep TypeScript from building a union of both tags: they take the same props here.
-  const Tag = (as === 'span' ? motion.span : motion.div) as typeof motion.div;
+  const Tag = (as === 'span' ? m.span : m.div) as typeof m.div;
   const ref = useRef<HTMLDivElement>(null);
   const isActive = group !== null && isMotionAllowed;
 
@@ -139,7 +138,7 @@ export function RevealItem({ variant = 'up', as = 'div', className, children }: 
 
   const getDelay = useCallback(() => (group && ref.current ? group.getDelay(ref.current) : 0), [group]);
 
-  let motionProps: ComponentProps<typeof motion.div> = {};
+  let motionProps: ComponentProps<typeof m.div> = {};
   if (group && isActive) {
     motionProps = {
       variants: VARIANTS[variant],

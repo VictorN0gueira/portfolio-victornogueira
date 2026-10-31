@@ -1,11 +1,12 @@
-import { motion, useInView } from 'motion/react';
+import { m, useInView } from 'motion/react';
 import { useRef } from 'react';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import Container from '../ui/Container';
+import { EASE_OUT } from '../../lib/motion';
 
 const WORDMARK_HIDDEN = 'inset(100% 0% 0% 0%)';
 const WORDMARK_SHOWN = 'inset(0% 0% 0% 0%)';
-const WORDMARK_REVEAL = { duration: 0.9, ease: [0.22, 1, 0.36, 1] } as const;
+const WORDMARK_REVEAL = { duration: 0.9, ease: EASE_OUT } as const;
 const WORDMARK_INSTANT = { duration: 0 } as const;
 const WORDMARK_IN_VIEW = { once: true, amount: 0.4 } as const;
 
@@ -30,7 +31,7 @@ export function Wordmark() {
   return (
     <Container className="mt-12 md:mt-16">
       <div ref={wrapperRef} className="[container-type:inline-size] max-sm:px-8">
-        <motion.p
+        <m.p
           data-footer-wordmark=""
           aria-hidden="true"
           className="vn-chrome-text overflow-clip whitespace-nowrap pb-[0.04em] text-center font-display font-bold leading-[0.85] tracking-[-0.04em]"
@@ -40,7 +41,7 @@ export function Wordmark() {
           transition={isMotionAllowed ? WORDMARK_REVEAL : WORDMARK_INSTANT}
         >
           vn one
-        </motion.p>
+        </m.p>
       </div>
     </Container>
   );

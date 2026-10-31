@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { MessageCircle } from 'lucide-react';
 import ContactForm from './ContactForm';
 
@@ -11,7 +11,7 @@ export default function Contact({ prefillMessage }: ContactProps) {
   return (
     <section id="contato" className="py-32 px-6 md:px-12 bg-black text-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, x: -30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -46,9 +46,9 @@ export default function Contact({ prefillMessage }: ContactProps) {
               <p className="text-xl md:text-2xl font-light">Recife, Brasil & Remoto</p>
             </div>
           </div>
-        </motion.div>
+        </m.div>
 
-        <motion.div
+        <m.div
           initial={{ opacity: 0, x: 30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -56,7 +56,7 @@ export default function Contact({ prefillMessage }: ContactProps) {
           className="relative z-10"
         >
           <ContactForm initialMessage={prefillMessage} />
-        </motion.div>
+        </m.div>
       </div>
 
       {/* Decorative circle */}

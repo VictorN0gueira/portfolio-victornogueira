@@ -1,4 +1,3 @@
-import { Helmet } from 'react-helmet-async';
 import { SOCIAL_LINKS } from '../lib/constants';
 import { serializeJsonLd } from '../lib/jsonLd';
 import { SITE, pageTitle } from '../lib/site';
@@ -56,8 +55,8 @@ const websiteSchema = {
   description: SITE.description,
 };
 
-// Helmet reads its children as head elements, so these builders are plain functions that return elements (arrays are
-// flattened by Helmet), never components: a component child would be an invalid head element.
+// React hoists the title, meta and link elements into the document head, so these builders are plain functions that return
+// elements (arrays are flattened), never components.
 
 /** One JSON-LD script. The text goes through serializeJsonLd, so no value can close the element. */
 function jsonLdScript(schema: object, key: string | number) {
@@ -127,7 +126,7 @@ export default function SEO(props: SEOProps) {
   const isHome = path === '/' && !noindex;
 
   return (
-    <Helmet>
+    <>
       <title>{tags.fullTitle}</title>
       <meta name="description" content={tags.description} />
       {!noindex && <link rel="canonical" href={tags.pageUrl} />}
@@ -140,6 +139,6 @@ export default function SEO(props: SEOProps) {
       {isHome && jsonLdScript(organizationSchema, 'organization')}
       {isHome && jsonLdScript(websiteSchema, 'website')}
       {!noindex && jsonLd?.map((schema, index) => jsonLdScript(schema, index))}
-    </Helmet>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import { useParams, Link, Navigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import SEO from '../components/SEO';
 import NotFound from '../components/NotFound';
@@ -53,7 +53,7 @@ export default function ProjectDetailPage() {
       />
       <div className="min-h-screen bg-brand-white px-3 pb-24 pt-28 min-[321px]:px-4 md:px-12 md:pt-36">
         <div className="mx-auto max-w-6xl">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -66,11 +66,11 @@ export default function ProjectDetailPage() {
               <ArrowLeft className="size-4 motion-safe:transition-transform motion-safe:group-hover:-translate-x-1" aria-hidden="true" />
               {BACK_LABEL}
             </Link>
-          </motion.div>
+          </m.div>
 
           <ProjectDetail project={project} />
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -85,7 +85,7 @@ export default function ProjectDetailPage() {
               {CONTACT_LABEL}
               <ArrowRight className="size-5 motion-safe:transition-transform motion-safe:group-hover:translate-x-1" aria-hidden="true" />
             </Link>
-          </motion.div>
+          </m.div>
         </div>
       </div>
     </>

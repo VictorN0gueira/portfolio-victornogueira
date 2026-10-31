@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import SEO from './components/SEO';
 import ErrorBoundary, { ErrorPanel } from './components/layout/ErrorBoundary';
 import ScrollProgress from './components/layout/ScrollProgress';
@@ -61,7 +61,7 @@ function BlogRoute() {
     <>
       {/* The blog background is dark, so its progress bar is white. */}
       <ScrollProgress tone="dark" />
-      <motion.div initial={pageTransition.initial} animate={pageTransition.animate} transition={pageTransition.transition}>
+      <m.div initial={pageTransition.initial} animate={pageTransition.animate} transition={pageTransition.transition}>
         <ErrorBoundary fallback={(retry) => <ErrorPanel onRetry={retry} isFullScreen />}>
           <Suspense
             fallback={
@@ -78,7 +78,7 @@ function BlogRoute() {
             <BlogPage />
           </Suspense>
         </ErrorBoundary>
-      </motion.div>
+      </m.div>
     </>
   );
 }

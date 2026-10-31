@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { Suspense, useEffect, useRef } from 'react';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { focusAndGuard } from '../../lib/focusGuard';
@@ -50,11 +50,11 @@ export function SiteLayout() {
             if (mainRef.current) stopFocusGuard.current = focusAndGuard(mainRef.current);
           }}
         >
-          <motion.div key={location.pathname} {...pageTransition}>
+          <m.div key={location.pathname} {...pageTransition}>
             <ErrorBoundary>
               <Suspense fallback={<PageFallback />}>{outlet}</Suspense>
             </ErrorBoundary>
-          </motion.div>
+          </m.div>
         </AnimatePresence>
       </main>
       <Footer />

@@ -11,6 +11,7 @@ export interface BudgetResult {
   limitBytes: number;
 }
 
+export const TARGET_KB: number;
 export const BUDGET_KB: number;
 export function criticalPathAssets(html: string): string[];
 export function measureBudget(distDir: string, options?: { limitKb?: number }): BudgetResult;

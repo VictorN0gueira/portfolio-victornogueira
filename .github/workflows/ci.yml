@@ -45,9 +45,9 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Report only for now: the budget is enforced once the bundle work of the fix plan lands.
+      # Fails above 160 kB gzip for the critical path (the target is 150; see scripts/check-bundle-budget.mjs).
       - name: Bundle budget
-        run: npm run budget
+        run: npm run budget -- --enforce
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium

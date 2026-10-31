@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { motion, useInView } from 'motion/react';
+import { m, useInView } from 'motion/react';
 import AnimatedText from './AnimatedText';
 
 const categoryHeader = {
@@ -171,7 +171,7 @@ export default function Skills() {
       </div>
 
       <div ref={sectionRef} className="max-w-7xl mx-auto relative z-10">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
@@ -183,12 +183,12 @@ export default function Skills() {
           <p className="text-zinc-500 text-lg md:text-xl font-light max-w-2xl mx-auto">
             Soluções completas, da automação de fluxos à entrega de interfaces rápidas.
           </p>
-        </motion.div>
+        </m.div>
 
         <div className="space-y-32">
           {categories.map((category, catIndex) => (
             <div key={category.title} className="space-y-12">
-              <motion.div
+              <m.div
                 variants={categoryHeader}
                 initial="hidden"
                 animate={isInView ? "show" : "hidden"}
@@ -206,16 +206,16 @@ export default function Skills() {
                 <div className="text-zinc-200 text-6xl font-bold font-display opacity-50 hidden md:block">
                   0{catIndex + 1}
                 </div>
-              </motion.div>
+              </m.div>
 
-              <motion.div
+              <m.div
                 className="grid grid-cols-2 md:grid-cols-4 gap-6"
                 variants={skillsContainer}
                 initial="hidden"
                 animate={isInView ? "show" : "hidden"}
               >
                 {category.skills.map((skill) => (
-                  <motion.div
+                  <m.div
                     key={skill.name}
                     variants={skillCard}
                     whileHover={{ y: -5 }}
@@ -250,9 +250,9 @@ export default function Skills() {
                       className="absolute top-4 right-4 w-1.5 h-1.5 rounded-full scale-0 group-hover:scale-100 transition-transform duration-300"
                       style={{ backgroundColor: skill.color }}
                     />
-                  </motion.div>
+                  </m.div>
                 ))}
-              </motion.div>
+              </m.div>
             </div>
           ))}
         </div>

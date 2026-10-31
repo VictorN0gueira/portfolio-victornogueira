@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { motion, useInView } from 'motion/react';
+import { m, useInView } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Check } from 'lucide-react';
 import SEO from '../components/SEO';
@@ -34,7 +34,7 @@ export default function ServicesPage() {
       />
       <div className="pt-32 md:pt-40 bg-brand-white">
         {/* Cabeçalho da página */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
@@ -49,11 +49,11 @@ export default function ServicesPage() {
           <p className="text-zinc-500 text-base md:text-lg font-light max-w-xl">
             Escopo claro e prazo definido, do primeiro fluxo automatizado ao sistema completo.
           </p>
-        </motion.div>
+        </m.div>
 
         {/* Grid de serviços */}
         <div className="max-w-7xl mx-auto px-6 md:px-12 pb-8">
-          <motion.div
+          <m.div
             ref={gridRef}
             variants={gridContainer}
             initial="hidden"
@@ -61,7 +61,7 @@ export default function ServicesPage() {
             className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
           >
             {services.map((service) => (
-              <motion.div
+              <m.div
                 key={service.slug}
                 id={service.slug}
                 variants={gridItem}
@@ -90,31 +90,31 @@ export default function ServicesPage() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">{homeCopy.services.term}</p>
                   <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{service.prazo}</p>
                 </div>
-              </motion.div>
+              </m.div>
             ))}
-          </motion.div>
+          </m.div>
         </div>
 
         {/* Combos */}
         <div className="max-w-7xl mx-auto px-6 md:px-12 py-16 md:py-24">
-          <motion.div
+          <m.div
             ref={combosRef}
             variants={gridContainer}
             initial="hidden"
             animate={combosInView ? 'show' : 'hidden'}
           >
-            <motion.div variants={gridItem} className="mb-10">
+            <m.div variants={gridItem} className="mb-10">
               <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-4">
                 Pacotes com desconto
               </p>
               <h2 className="text-3xl md:text-5xl font-bold tracking-tighter font-display italic">
                 Combos
               </h2>
-            </motion.div>
+            </m.div>
 
             <div className="grid md:grid-cols-3 gap-4 md:gap-5">
               {combos.map((combo) => (
-                <motion.div
+                <m.div
                   key={combo.nome}
                   variants={gridItem}
                   className="bg-zinc-950 rounded-3xl p-7 md:p-8 relative overflow-hidden"
@@ -126,14 +126,14 @@ export default function ServicesPage() {
                   <h3 className="text-xl font-bold text-white mb-2 font-display relative z-10">{combo.nome}</h3>
                   <p className="text-xs text-zinc-500 uppercase tracking-wider mb-4 relative z-10">{combo.composicao}</p>
                   <p className="text-sm text-zinc-400 leading-relaxed relative z-10">{combo.descricao}</p>
-                </motion.div>
+                </m.div>
               ))}
             </div>
-          </motion.div>
+          </m.div>
         </div>
 
         {/* CTA final */}
-        <motion.section
+        <m.section
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
@@ -155,7 +155,7 @@ export default function ServicesPage() {
               <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
             </Link>
           </div>
-        </motion.section>
+        </m.section>
       </div>
     </>
   );

@@ -1,5 +1,4 @@
 import { render } from '@testing-library/react';
-import { HelmetProvider } from 'react-helmet-async';
 import { describe, expect, it, vi } from 'vitest';
 import SEO from './SEO';
 
@@ -21,11 +20,7 @@ function organization(): Record<string, unknown> | undefined {
 
 describe('SEO sameAs with a missing profile link', () => {
   it('drops the empty entries of the founder and leaves the Organization without a sameAs list', () => {
-    render(
-      <HelmetProvider>
-        <SEO />
-      </HelmetProvider>,
-    );
+    render(<SEO />);
 
     const schema = organization();
     const founder = schema?.founder as { sameAs: string[] };

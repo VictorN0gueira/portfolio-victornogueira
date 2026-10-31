@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { projects } from '../data/projects';
 import FeaturedProjectCard from './FeaturedProjectCard';
 import ProjectCard from './ProjectCard';
@@ -12,7 +12,7 @@ const regularProjects = projects.filter((project) => !project.featured);
 export default function Projects() {
   return (
     <section id="projetos" aria-labelledby="projetos-titulo" className="mx-auto max-w-7xl px-4 py-24 sm:px-6 md:px-12 md:py-32">
-      <motion.div
+      <m.div
         initial={{ y: 30 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.8 }}
@@ -24,7 +24,7 @@ export default function Projects() {
           </h1>
           <p className="text-lg text-vn-gray-dark md:text-xl">{PROJECTS_INTRO}</p>
         </div>
-      </motion.div>
+      </m.div>
 
       <ul role="list" className="mb-16 grid list-none gap-6 p-0 md:mb-24 md:gap-10">
         {featuredProjects.map((project, index) => (

@@ -1,4 +1,4 @@
-import { motion, useScroll, useSpring } from 'motion/react';
+import { m, useScroll, useSpring } from 'motion/react';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import { KEEPS_PLACE_UNDER_SCROLL_LOCK } from '../../lib/scrollLock';
 
@@ -27,7 +27,7 @@ const BAR_CLASSES = `${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed inset-x-0 top-0 z-[6
 function PlainBar({ tone }: BarProps) {
   const { scrollYProgress } = useScroll();
 
-  return <motion.div aria-hidden="true" className={`${BAR_CLASSES} ${TONE_CLASSES[tone]}`} style={{ scaleX: scrollYProgress }} />;
+  return <m.div aria-hidden="true" className={`${BAR_CLASSES} ${TONE_CLASSES[tone]}`} style={{ scaleX: scrollYProgress }} />;
 }
 
 /** The bar follows the scroll through a spring that smooths it. The spring exists only here, where motion is welcome. */
@@ -35,7 +35,7 @@ function SmoothBar({ tone }: BarProps) {
   const { scrollYProgress } = useScroll();
   const smoothProgress = useSpring(scrollYProgress, SPRING);
 
-  return <motion.div aria-hidden="true" className={`${BAR_CLASSES} ${TONE_CLASSES[tone]}`} style={{ scaleX: smoothProgress }} />;
+  return <m.div aria-hidden="true" className={`${BAR_CLASSES} ${TONE_CLASSES[tone]}`} style={{ scaleX: smoothProgress }} />;
 }
 
 /**

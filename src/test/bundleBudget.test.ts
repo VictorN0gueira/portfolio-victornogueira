@@ -3,13 +3,15 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { BUDGET_KB, criticalPathAssets, measureBudget } from '../../scripts/check-bundle-budget.mjs';
+import { BUDGET_KB, TARGET_KB, criticalPathAssets, measureBudget } from '../../scripts/check-bundle-budget.mjs';
 
 // The critical path is what the browser must download before the home can run: the entry module plus every
-// modulepreload of dist/index.html, gzipped. The budget (150 kB for a landing page, rules/web/performance) is only
-// enforced by `npm run budget -- --enforce`; this tests the measuring itself on a fixture dist.
+// modulepreload of dist/index.html, gzipped. The target is 150 kB for a landing page (rules/web/performance); the budget
+// that `npm run budget -- --enforce` holds is 160 kB, accepted by the owner with the reasons in the script. This tests
+// the measuring itself and the two limits on a fixture dist.
 
 const SCRIPT = resolve(__dirname, '../../scripts/check-bundle-budget.mjs');
 let dist = '';
@@ -23,6 +25,13 @@ function noise(length: number, seed: number): string {
     text += String.fromCharCode(97 + (state % 26));
   }
   return text;
+}
+
+/** Text that stays close to incompressible (a chain of hashes), so a size in characters maps to a size in gzip bytes. */
+function hashed(length: number): string {
+  let text = '';
+  for (let index = 0; text.length < length; index += 1) text += createHash('sha256').update(String(index)).digest('base64');
+  return text.slice(0, length);
 }
 
 function writeAsset(name: string, body: string): number {
@@ -89,6 +98,13 @@ describe('the measurement', () => {
   });
 });
 
+describe('the target and the budget', () => {
+  it('keeps 150 kB as the documented target and enforces 160 kB', () => {
+    expect(TARGET_KB).toBe(150);
+    expect(BUDGET_KB).toBe(160);
+  });
+});
+
 describe('the command line', () => {
   function runCli(args: string[]) {
     return spawnSync(process.execPath, [SCRIPT, `--dist=${dist}`, ...args], { encoding: 'utf8' });
@@ -120,6 +136,24 @@ describe('the command line', () => {
     const result = runCli(['--limit=500', '--enforce']);
     expect(result.status).toBe(0);
     expect(result.stdout).toMatch(/within the budget/i);
+  });
+
+  it('enforces 160 kB by default: exits 1 above it and 0 below it, and the report line names both numbers', () => {
+    const over = writeAsset('index-AAA.js', hashed(260_000));
+    writeIndex('<script type="module" src="/assets/index-AAA.js"></script>');
+    expect(over).toBeGreaterThan(160_000);
+    const failing = runCli(['--enforce']);
+    expect(failing.status).toBe(1);
+    expect(failing.stdout).toMatch(/over the budget of 160.0 kB/);
+    expect(failing.stdout).toContain('target 150, budget 160');
+
+    const under = writeAsset('index-AAA.js', hashed(200_000));
+    expect(under).toBeGreaterThan(100_000);
+    expect(under).toBeLessThan(160_000);
+    const passing = runCli(['--enforce']);
+    expect(passing.status).toBe(0);
+    expect(passing.stdout).toMatch(/within the budget of 160.0 kB/);
+    expect(passing.stdout).toContain('target 150, budget 160');
   });
 
   it('refuses a limit that is not a positive number', () => {

@@ -1,5 +1,5 @@
 import { AlertCircle } from 'lucide-react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { WHATSAPP_FALLBACK_URL } from '../../lib/constants';
 import { contactFormCopy } from './contactFormCopy';
 import { LINK_CLASS } from './contactStyles';
@@ -16,7 +16,7 @@ interface ContactErrorAlertProps {
  */
 export function ContactErrorAlert({ onClose }: ContactErrorAlertProps) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       role="alert"
@@ -38,7 +38,7 @@ export function ContactErrorAlert({ onClose }: ContactErrorAlertProps) {
       >
         {error.close}
       </button>
-    </motion.div>
+    </m.div>
   );
 }
 

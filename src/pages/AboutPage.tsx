@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import SEO from '../components/SEO';
@@ -25,17 +25,17 @@ export default function AboutPage() {
         path="/sobre"
       />
       <div className="pt-24 md:pt-28">
-        <motion.div {...revealProps}><About /></motion.div>
+        <m.div {...revealProps}><About /></m.div>
 
         {/* It reveals its own header and cards, so it needs neither the lazy boundary nor the page reveal around it. */}
         <MethodSteps />
 
         <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><Skills /></motion.div>
+          <m.div {...revealProps}><Skills /></m.div>
         </Suspense>
 
         {/* CTA final → /contato */}
-        <motion.section {...revealProps} className="py-24 px-6 md:px-12 bg-brand-white">
+        <m.section {...revealProps} className="py-24 px-6 md:px-12 bg-brand-white">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter font-display italic mb-6">
               Pronto para automatizar?
@@ -51,7 +51,7 @@ export default function AboutPage() {
               <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
             </Link>
           </div>
-        </motion.section>
+        </m.section>
       </div>
     </>
   );

@@ -1,4 +1,4 @@
-import { animate, motion, useInView } from 'motion/react';
+import { animate, m, useInView } from 'motion/react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { ChoicePill } from '../../components/ui/ChoicePill';
 import { Cursor } from '../../components/ui/Cursor';
@@ -9,6 +9,7 @@ import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import { formatBRL } from '../../lib/format';
 import { DEFAULT_HOURLY_RATE, monthlySavings } from '../../lib/roi';
 import { groupWords } from './heroWords';
+import { EASE_OUT } from '../../lib/motion';
 
 const DEFAULT_HOURS: HeroHourOption['value'] = 10;
 // The hours the visitor picks already count the whole team, so the team multiplier stays at 1.
@@ -17,8 +18,6 @@ const WORD_STAGGER_S = 0.05;
 const COUNT_DURATION_S = 0.55;
 const ARROW_DURATION_S = 0.8;
 const ARROW_DELAY_S = 1.2;
-// The design system easing, as the cubic bezier points motion expects.
-const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 // Punctuation that starts a piece of the sentence sticks to the piece before it, with no space.
 const STICKY_PUNCTUATION = /^[.,;:!?)]/;
 const ONLY_PUNCTUATION = /^[.,;:!?)]+$/;
@@ -325,7 +324,7 @@ export function HeroAnnotation() {
         className="h-12 w-16 shrink-0"
       >
         {isMotionAllowed ? (
-          <motion.path
+          <m.path
             d={ARROW_PATH}
             initial={{ pathLength: 0 }}
             animate={{ pathLength: isInView ? 1 : 0 }}

@@ -1,20 +1,14 @@
 import { render } from '@testing-library/react';
-import { HelmetProvider } from 'react-helmet-async';
 import { describe, expect, it } from 'vitest';
 import { SOCIAL_LINKS } from '../lib/constants';
 import SEO from './SEO';
 
 const DASH_PATTERN = /[\u2014\u2013]/;
 
-// react-helmet-async v3 on React 19 renders plain elements that React hoists
-// into document.head. HelmetProvider `context.helmet` is NOT populated on
-// React 19, so the rendered head is read from the document instead.
+// React 19 hoists the title, meta and link elements SEO renders into document.head, so the rendered head is read from
+// the document.
 function renderSeo(props: Parameters<typeof SEO>[0] = {}) {
-  return render(
-    <HelmetProvider>
-      <SEO {...props} />
-    </HelmetProvider>,
-  );
+  return render(<SEO {...props} />);
 }
 
 function readJsonLd(): Array<Record<string, unknown>> {

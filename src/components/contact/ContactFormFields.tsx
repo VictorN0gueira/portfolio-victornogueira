@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { formatWhatsappDisplay } from '../../lib/phone';
 import { ContactInput, ContactMessage, ContactService } from './ContactFieldControls';
 import ContactHoneypot from './ContactHoneypot';
@@ -23,23 +23,23 @@ function ContactMethodField({ form }: ContactFormFieldsProps) {
   return (
     <AnimatePresence mode="wait">
       {method === 'email' ? (
-        <motion.div key="email" {...SWAP_MOTION}>
+        <m.div key="email" {...SWAP_MOTION}>
           <ContactInput
             field="email"
             value={formData.email}
             error={errors.email}
             onChange={(value) => setField('email', value)}
           />
-        </motion.div>
+        </m.div>
       ) : (
-        <motion.div key="whatsapp" {...SWAP_MOTION}>
+        <m.div key="whatsapp" {...SWAP_MOTION}>
           <ContactInput
             field="whatsapp"
             value={formData.whatsapp}
             error={errors.whatsapp}
             onChange={(value) => setField('whatsapp', formatWhatsappDisplay(value))}
           />
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

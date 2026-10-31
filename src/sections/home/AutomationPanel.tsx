@@ -1,4 +1,4 @@
-import { motion, useInView, useScroll, useTransform } from 'motion/react';
+import { m, useInView, useScroll, useTransform } from 'motion/react';
 import { useRef, useState, type ReactNode, type RefObject } from 'react';
 import { WindowFrame } from '../../components/ui/WindowFrame';
 import { flowPanel, flowSteps, heroFlows, type HeroTaskId } from '../../data/heroFlows';
@@ -43,7 +43,7 @@ function TiltFrame({ targetRef, isTilted, children }: TiltFrameProps) {
 
   return (
     <div ref={targetRef}>
-      <motion.div
+      <m.div
         data-flow-tilt=""
         // Flat is the same style with the angle at 0, the scale at 1 and no perspective (the transform is then none):
         // a style prop that disappears would leave the last values on the element.
@@ -55,7 +55,7 @@ function TiltFrame({ targetRef, isTilted, children }: TiltFrameProps) {
         }}
       >
         {children}
-      </motion.div>
+      </m.div>
     </div>
   );
 }

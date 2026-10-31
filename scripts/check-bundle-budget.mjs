@@ -5,14 +5,23 @@
 //   npm run budget -- --enforce         exits 1 when the sum is above the budget
 //   node scripts/check-bundle-budget.mjs --dist=<folder> --limit=<kB> [--enforce]
 //
-// The budget is the 150 kB gzip JS of a landing page (rules/web/performance). A kilobyte is 1000 bytes, the unit
-// `vite build` prints, so the numbers can be compared with its output.
+// The target is the 150 kB gzip JS of a landing page (rules/web/performance). The budget that --enforce holds is 160 kB.
+// A kilobyte is 1000 bytes, the unit `vite build` prints, so the numbers can be compared with its output.
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
-export const BUDGET_KB = 150;
+/** The number to reach: the 150 kB gzip JS of a landing page. It is printed with every report, not enforced. */
+export const TARGET_KB = 150;
+/**
+ * The number --enforce holds, in CI. The owner accepted 160 kB (the build measures about 156) because the remainder to
+ * the 150 target is three things that cannot move safely now: tailwind-merge 9.8 kB gzip (every cn() call relies on its
+ * conflict rules, so a smaller config needs an equivalence test over every class string and risks visual regressions),
+ * the brand icons of the integrations strip 4.8 kB, and the lucide icons chunk 5.1 kB. React, react-dom and the router
+ * are 74.6 kB of the path and cannot be cut. Lower this number when one of those three moves.
+ */
+export const BUDGET_KB = 160;
 const BYTES_PER_KB = 1000;
 const GZIP_LEVEL = 9;
 const ASSETS_FOLDER = 'assets/';
@@ -59,7 +68,8 @@ export function formatReport({ rows, totalBytes, limitBytes }) {
   const lines = rows.map((row) => `${row.file.padEnd(width)}  ${kb(row.rawBytes).padStart(8)} kB  ${kb(row.gzipBytes).padStart(8)} kB gzip`);
   const header = `${'file'.padEnd(width)}  ${'raw'.padStart(11)}  ${'gzip'.padStart(13)}`;
   const gap = totalBytes - limitBytes;
-  const verdict = gap > 0 ? `${kb(gap)} kB over the budget of ${kb(limitBytes)} kB` : `within the budget of ${kb(limitBytes)} kB (${kb(-gap)} kB to spare)`;
+  const standing = gap > 0 ? `${kb(gap)} kB over the budget of ${kb(limitBytes)} kB` : `within the budget of ${kb(limitBytes)} kB (${kb(-gap)} kB to spare)`;
+  const verdict = `${standing}, target ${TARGET_KB}, budget ${limitBytes / BYTES_PER_KB}`;
   return [header, ...lines, `${'total'.padEnd(width)}  ${''.padStart(11)}  ${kb(totalBytes).padStart(8)} kB gzip, ${verdict}`].join('\n');
 }
 

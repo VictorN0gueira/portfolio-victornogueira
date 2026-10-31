@@ -1,9 +1,10 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { RotateCcw } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { A11yKey } from '../contexts/AccessibilityContext';
 import { a11yWidgetCopy, activeBadgeText } from './a11yWidgetCopy';
 import { AccessibilityOptions, PANEL_FOCUS_RING } from './AccessibilityOptions';
+import { EASE_OUT } from '../lib/motion';
 
 // Below sm the panel grows upward from the trigger, which sits above the WhatsApp button: 112px keeps 16px under the top
 // and leaves the trigger and the WhatsApp button below it. In px and not rem on purpose: the larger font grows the rem and
@@ -33,7 +34,7 @@ export function AccessibilityPanel({ id, state, activeCount, onToggle, onReset }
   }, []);
 
   return (
-    <motion.div
+    <m.div
       id={id}
       role="dialog"
       aria-label={a11yWidgetCopy.panelLabel}
@@ -41,7 +42,7 @@ export function AccessibilityPanel({ id, state, activeCount, onToggle, onReset }
       initial={{ opacity: 0, x: 16, scale: 0.95 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 16, scale: 0.95 }}
-      transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+      transition={{ duration: 0.2, ease: EASE_OUT }}
       style={{ willChange: 'transform, opacity' }}
       className={PANEL_CLASSES}
     >
@@ -64,6 +65,6 @@ export function AccessibilityPanel({ id, state, activeCount, onToggle, onReset }
           </button>
         </div>
       ) : null}
-    </motion.div>
+    </m.div>
   );
 }
