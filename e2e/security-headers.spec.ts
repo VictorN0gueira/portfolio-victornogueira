@@ -160,7 +160,7 @@ test.describe('the lead channel under the policy', () => {
     await form.getByRole('checkbox').check();
     await form.getByRole('button', { name: contactFormCopy.submit, exact: true }).click();
 
-    await expect(page.getByRole('heading', { level: 4, name: contactFormCopy.success.title })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: contactFormCopy.success.title })).toBeVisible();
     expect(network.calls).toHaveLength(1);
     expect(network.calls[0].url).toBe(WEBHOOKS.email);
     expect(await violations()).toEqual([]);
