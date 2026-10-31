@@ -95,8 +95,7 @@ const FIRST_PERSON_PLURAL_PATTERN = new RegExp(
 // sends), and those are fine.
 const FIRST_PERSON_SINGULAR_PATTERN =
   /(?<!\p{L})(estou|respondo|eu|sou|entrego|faço|construo|desenvolvo|mim|minhas)(?!\p{L})|como trabalho|que uso/iu;
-// VN One sells AI agents, not chatbots. The only text that may keep the word is the label of the contact form
-// dropdown (see CHATBOT_DOCUMENTED_EXCEPTION).
+// VN One sells AI agents, not chatbots: the word is in no scanned file, the contact form dropdown included.
 const CHATBOT_PATTERN = /chat[\s-]?bot/i;
 // Voice rule for "pra" and "para": "pra" in short UI lines (buttons, hints, one line sentences), "para" in long
 // answers. The long ones are the FAQ answers and the process step descriptions, and a test below enforces them.
@@ -152,9 +151,6 @@ const FIRST_PERSON_HANDOFF = new Set<string>([]);
 // founder's voice. The owner kept them for now, because /sobre is rewritten in plan 3 (Victor as the founder). The
 // first person singular is allowed on these two files until then.
 const VOICE_OWNER_DECISION = new Set(['src/components/About.tsx', 'src/pages/AboutPage.tsx']);
-// The one line where "chatbot" stays: the `servico` label of the contact form dropdown. That exact text is what the
-// lead channel receives, so it changes only when the owner and the n8n side agree (decision pending).
-const CHATBOT_DOCUMENTED_EXCEPTION = "'Agente de IA ou chatbot',";
 const SCANNED_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.html', '.json']);
 const TEST_FILE_PATTERN = /\.test\.[^.]+$/;
 
@@ -294,17 +290,8 @@ describe('copy rules', () => {
     expect(findOffendingLines(files, FIRST_PERSON_SINGULAR_PATTERN, withoutCommentLine)).toEqual([]);
   });
 
-  it('never says "chatbot" in any scanned file, except the documented label of the contact form dropdown', () => {
-    const prepare = (line: string) =>
-      line.trim() === CHATBOT_DOCUMENTED_EXCEPTION ? '' : withoutCommentLine(line);
-
-    expect(findOffendingLines(scannedFiles, CHATBOT_PATTERN, prepare)).toEqual([]);
-  });
-
-  it('keeps the documented chatbot label where the exception says it is, so the exception cannot go stale', () => {
-    const services = readFileSync(resolve(ROOT, 'src/data/services.ts'), 'utf8').split(/\r?\n/);
-
-    expect(services.filter((line) => line.trim() === CHATBOT_DOCUMENTED_EXCEPTION)).toHaveLength(1);
+  it('never says "chatbot" in any scanned file', () => {
+    expect(findOffendingLines(scannedFiles, CHATBOT_PATTERN, withoutCommentLine)).toEqual([]);
   });
 
   it.each([...FORMAL_IMPERATIVE_HANDOFF])(

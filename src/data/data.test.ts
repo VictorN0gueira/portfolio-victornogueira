@@ -218,7 +218,7 @@ describe('serviceOptions', () => {
   it('keeps the dropdown labels the lead channel expects', () => {
     expect(serviceOptions).toEqual([
       'Automação de processos',
-      'Agente de IA ou chatbot',
+      'Agente de IA',
       'Site ou landing page',
       'Sistema web sob medida',
       'Combo de site e automação',
@@ -400,8 +400,7 @@ describe('home copy voice', () => {
     expect(offenders).toEqual([]);
   });
 
-  // VN One sells AI agents, not chatbots. The only place the word may stay is the `servico` label of the contact form
-  // (serviceOptions), because that exact text is what the lead channel receives.
+  // VN One sells AI agents, not chatbots: the word is in no copy the visitor reads, the `servico` options included.
   it('never says "chatbot" in the copy the visitor reads on the home and on the services page', () => {
     const modules = [homeCopy, faqs, processSteps, services, combos, useCases, stats, flowPanel, heroFlows, heroTasks, integrations];
     const offenders = collectStrings(modules).filter((text) => /chat[\s-]?bot/i.test(text));

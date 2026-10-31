@@ -96,7 +96,7 @@ test.describe('contact form service listbox', () => {
     await page.keyboard.press('Enter');
 
     await expect(listbox).toHaveCount(0);
-    await expect(form.getByRole('button', { name: 'Serviço de interesse Agente de IA ou chatbot' })).toBeFocused();
+    await expect(form.getByRole('button', { name: 'Serviço de interesse Agente de IA' })).toBeFocused();
   });
 
   test('closes with Escape and the focus returns to the trigger', async ({ page, network }) => {

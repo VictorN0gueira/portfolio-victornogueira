@@ -7,7 +7,7 @@ import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { offPaletteClasses, offPaletteInHtml } from '../../test/palette';
 import ServiceSelect from './ServiceSelect';
 
-const OPTIONS = ['Automação de processos', 'Agente de IA ou chatbot', 'Site ou landing page', 'Sistema web sob medida'];
+const OPTIONS = ['Automação de processos', 'Agente de IA', 'Site ou landing page', 'Sistema web sob medida'];
 const PLACEHOLDER = 'Escolhe um serviço';
 
 expectNoConsoleOutput();

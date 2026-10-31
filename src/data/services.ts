@@ -18,7 +18,7 @@ export interface ServiceCombo {
 /** Opções de alto nível para o dropdown de interesse no formulário de contato */
 export const serviceOptions: string[] = [
   'Automação de processos',
-  'Agente de IA ou chatbot',
+  'Agente de IA',
   'Site ou landing page',
   'Sistema web sob medida',
   'Combo de site e automação',
