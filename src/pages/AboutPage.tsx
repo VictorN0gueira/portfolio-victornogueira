@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import SEO from '../components/SEO';
 import About from '../components/About';
-import { revealProps, SectionSkeleton } from '../lib/reveal';
-import { useScrollToHash } from '../lib/useScrollToHash';
+import { SectionSkeleton } from '../components/ui/SectionSkeleton';
+import { revealProps } from '../lib/reveal';
+import { useScrollToHash } from '../hooks/useScrollToHash';
 import MethodSteps from '../sections/home/MethodSteps';
 
 // Only what sits below #metodo is lazy: this page is already a lazy route chunk, and a lazy section above the anchor

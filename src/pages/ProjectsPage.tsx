@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react';
 import SEO from '../components/SEO';
 import { PROJECTS_PAGE_DESCRIPTION, PROJECTS_TITLE } from '../components/projectLabels';
-import { SectionSkeleton } from '../lib/reveal';
+import { SectionSkeleton } from '../components/ui/SectionSkeleton';
 
 const Projects = lazy(() => import('../components/Projects'));
 

@@ -3,9 +3,10 @@ import { createElement, type ReactNode } from 'react';
 import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useScrollToHash } from './useScrollToHash';
+import { StrictMode } from 'react';
 
 const FRAME_MS = 16;
-const RETRY_WINDOW_MS = 5000;
+const RETRY_WINDOW_MS = 15_000;
 // The first window of the hook was one second: a lazy chunk that takes longer than that must still be waited for.
 const OLD_WINDOW_MS = 1000;
 
@@ -147,6 +148,92 @@ describe('useScrollToHash', () => {
 
     unmount();
 
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('useScrollToHash focus', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe(): void {}
+        unobserve(): void {}
+        disconnect(): void {}
+      },
+    );
+  });
+
+  afterEach(() => {
+    window.dispatchEvent(new Event('wheel'));
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    document.body.innerHTML = '';
+  });
+
+  function mountLabelledSection(id: string): HTMLElement {
+    const section = document.createElement('section');
+    section.id = id;
+    section.setAttribute('aria-labelledby', `${id}-title`);
+    section.scrollIntoView = vi.fn();
+    section.getBoundingClientRect = () => ({ top: 0 }) as DOMRect;
+    const heading = document.createElement('h2');
+    heading.id = `${id}-title`;
+    section.appendChild(heading);
+    document.body.appendChild(section);
+    return heading;
+  }
+
+  it('moves focus to the heading of the section the hash points at, without scrolling again', () => {
+    const heading = mountLabelledSection('metodo');
+    const focus = vi.spyOn(heading, 'focus');
+
+    renderHook(() => useScrollToHash(), { wrapper: routerAt('/#metodo') });
+    vi.advanceTimersByTime(FRAME_MS);
+
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+    expect(heading).toHaveFocus();
+  });
+
+  it('focuses the heading again when the same hash link is followed a second time', () => {
+    const heading = mountLabelledSection('metodo');
+    const { result } = renderHook(
+      () => {
+        useScrollToHash();
+        return useNavigate();
+      },
+      { wrapper: routerAt('/#metodo') },
+    );
+    heading.blur();
+    expect(heading).not.toHaveFocus();
+
+    act(() => result.current('/#metodo'));
+    vi.advanceTimersByTime(FRAME_MS);
+
+    expect(heading).toHaveFocus();
+  });
+
+  it('does not move focus when there is no hash', () => {
+    const heading = mountLabelledSection('metodo');
+
+    renderHook(() => useScrollToHash(), { wrapper: routerAt('/') });
+    vi.advanceTimersByTime(FRAME_MS * 3);
+
+    expect(heading).not.toHaveFocus();
+  });
+
+  it('survives StrictMode double effects: focused once the effects settle, nothing left running', () => {
+    const heading = mountLabelledSection('metodo');
+
+    const { unmount } = renderHook(() => useScrollToHash(), {
+      wrapper: ({ children }: { children: ReactNode }) => createElement(StrictMode, null, createElement(routerAt('/#metodo'), null, children)),
+    });
+    vi.advanceTimersByTime(FRAME_MS);
+    expect(heading).toHaveFocus();
+
+    unmount();
+    window.dispatchEvent(new Event('wheel'));
     expect(vi.getTimerCount()).toBe(0);
   });
 });

@@ -1,8 +1,9 @@
 import { Suspense, lazy, useState, useCallback } from 'react';
 import { motion } from 'motion/react';
 import SEO from '../components/SEO';
-import { revealProps, SectionSkeleton } from '../lib/reveal';
-import { useScrollToHash } from '../lib/useScrollToHash';
+import { SectionSkeleton } from '../components/ui/SectionSkeleton';
+import { revealProps } from '../lib/reveal';
+import { useScrollToHash } from '../hooks/useScrollToHash';
 import { faqs } from '../data/faqs';
 import { buildFaqJsonLd } from '../lib/faqJsonLd';
 

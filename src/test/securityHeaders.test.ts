@@ -86,12 +86,13 @@ describe('the origins the code contacts', () => {
     for (const url of Object.values(WEBHOOKS)) expect(connectSources).toContain(new URL(url).origin);
   });
 
-  it('covers every origin the blog service fetches, except the GNews call that needs a baked key', () => {
+  it('covers every origin the blog service fetches (no GNews call with a baked key is left in the client)', () => {
     const source = read('src/utils/newsService.ts');
     const fetched = [...source.matchAll(/(?:fetch\(\s*|EDGE_FUNCTION_URL = )['"`](https:\/\/[^/'"`]+)/g)].map((match) => match[1]);
-    expect(fetched.length).toBeGreaterThanOrEqual(4);
+    expect(fetched.length).toBeGreaterThanOrEqual(3);
     const uncovered = [...new Set(fetched)].filter((origin) => !connectSources.includes(origin));
-    expect(uncovered.filter((origin) => origin !== 'https://gnews.io')).toEqual([]);
+    expect(uncovered).toEqual([]);
+    expect(source).not.toContain('gnews.io');
   });
 
   it('lists the origin of every fetch in the lead and blog code', () => {
@@ -99,7 +100,7 @@ describe('the origins the code contacts', () => {
     for (const file of files) {
       const hosts = [...read(file).matchAll(/fetch\(\s*['"`](https:\/\/[^/'"`]+)/g)].map((match) => match[1]);
       for (const host of hosts) {
-        if (host !== 'https://gnews.io') expect(connectSources, `${file}: ${host}`).toContain(host);
+        expect(connectSources, `${file}: ${host}`).toContain(host);
       }
     }
   });

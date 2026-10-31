@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { scrollToIdWhenMounted } from './scrollToIdWhenMounted';
 
 const FRAME_MS = 16;
-const MOUNT_WINDOW_MS = 5000;
+const MOUNT_WINDOW_MS = 15_000;
+const SLOW_CHUNK_MS = 6000;
 const REALIGN_WINDOW_MS = 5000;
 const SCROLL_IDLE_MS = 120;
 const OLD_WINDOW_MS = 1000;
@@ -76,6 +77,82 @@ describe('scrollToIdWhenMounted', () => {
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
   });
 
+  it('waits for a section whose chunk takes six seconds, then scrolls to it', () => {
+    scrollToIdWhenMounted('x');
+    vi.advanceTimersByTime(SLOW_CHUNK_MS);
+
+    const { scrollIntoView } = mountTarget('x');
+    vi.advanceTimersByTime(2 * FRAME_MS);
+
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['wheel', 'touchstart', 'keydown', 'pointerdown'])('stops waiting for the element at the first %s of the visitor', (type) => {
+    scrollToIdWhenMounted('x');
+    vi.advanceTimersByTime(2000);
+
+    window.dispatchEvent(new Event(type));
+    const { scrollIntoView } = mountTarget('x');
+    vi.advanceTimersByTime(MOUNT_WINDOW_MS);
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('stops waiting for the element when the function it returned is called, with no input listener left', () => {
+    const removed: string[] = [];
+    const remove = window.removeEventListener.bind(window);
+    vi.spyOn(window, 'removeEventListener').mockImplementation((type: string, ...rest: [EventListenerOrEventListenerObject, ...unknown[]]) => {
+      removed.push(type);
+      return remove(type, ...(rest as [EventListenerOrEventListenerObject]));
+    });
+    const cancel = scrollToIdWhenMounted('x');
+    vi.advanceTimersByTime(1000);
+
+    cancel();
+    const { scrollIntoView } = mountTarget('x');
+    vi.advanceTimersByTime(MOUNT_WINDOW_MS);
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(removed).toEqual(expect.arrayContaining(['wheel', 'touchstart', 'keydown', 'pointerdown']));
+    vi.restoreAllMocks();
+  });
+
+  const INPUT_EVENTS = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
+
+  /** How many input listeners were taken off the window, counted per event type. */
+  function spyOnInputListenerRemoval() {
+    const removed: string[] = [];
+    const remove = window.removeEventListener.bind(window);
+    vi.spyOn(window, 'removeEventListener').mockImplementation((type: string, ...rest: [EventListenerOrEventListenerObject, ...unknown[]]) => {
+      removed.push(type);
+      return remove(type, ...(rest as [EventListenerOrEventListenerObject]));
+    });
+    return (type: string) => removed.filter((name) => name === type).length;
+  }
+
+  it('lets go of its input listeners once the element is found when there is no focus to move, without being cancelled', () => {
+    mountTarget('x');
+    const removedCount = spyOnInputListenerRemoval();
+
+    scrollToIdWhenMounted('x');
+
+    // The alignment loop still runs and keeps its own listeners: only the wait for the visitor input is over.
+    for (const type of INPUT_EVENTS) expect(removedCount(type), type).toBeGreaterThanOrEqual(1);
+    vi.restoreAllMocks();
+  });
+
+  it('lets go of its input listeners at the end of the mount window when the element never came', () => {
+    const removedCount = spyOnInputListenerRemoval();
+    scrollToIdWhenMounted('x');
+    for (const type of INPUT_EVENTS) expect(removedCount(type), type).toBe(0);
+
+    vi.advanceTimersByTime(MOUNT_WINDOW_MS + 4 * FRAME_MS);
+
+    for (const type of INPUT_EVENTS) expect(removedCount(type), type).toBeGreaterThanOrEqual(1);
+    vi.restoreAllMocks();
+  });
+
   it('gives up when the element has not come after the mount window, and leaves nothing running', () => {
     scrollToIdWhenMounted('x');
     vi.advanceTimersByTime(MOUNT_WINDOW_MS + 4 * FRAME_MS);
@@ -99,11 +176,25 @@ describe('scrollToIdWhenMounted', () => {
     expect(scrollBy).toHaveBeenCalledWith({ top: 180, behavior: 'instant' });
   });
 
-  it('leaves the page alone when the element is within a few pixels of its place', () => {
+  it('puts the element back even when it is only a few pixels off, so the section ends where an anchor puts it', () => {
     const { state } = mountTarget('x', 0);
     scrollToIdWhenMounted('x');
 
-    state.top = 8;
+    state.top = 7.2;
+    resizeBody();
+    vi.advanceTimersByTime(SCROLL_IDLE_MS + FRAME_MS);
+
+    expect(scrollBy).toHaveBeenCalledTimes(1);
+    expect(scrollBy).toHaveBeenCalledWith({ top: 7.2, behavior: 'instant' });
+  });
+
+  it('leaves the page alone when the element is within one pixel of its place, so rounding never makes it jitter', () => {
+    const { state } = mountTarget('x', 0);
+    scrollToIdWhenMounted('x');
+
+    state.top = 0.8;
+    resizeBody();
+    state.top = -0.8;
     resizeBody();
     vi.advanceTimersByTime(SCROLL_IDLE_MS + FRAME_MS);
 
