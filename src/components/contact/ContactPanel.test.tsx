@@ -3,7 +3,7 @@ import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { renderWithProviders } from '../../test/render';
-import ContactPanel from './ContactPanel';
+import { ContactPanel } from './ContactPanel';
 import { useContactForm } from './useContactForm';
 
 expectNoConsoleOutput();

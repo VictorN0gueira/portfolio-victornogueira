@@ -5,7 +5,7 @@ import { Link, Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { shellCopy } from '../../data/shellCopy';
 import { renderWithProviders } from '../../test/render';
-import SiteLayout from './SiteLayout';
+import { SiteLayout } from './SiteLayout';
 
 const EXIT_TIMEOUT_MS = 3000;
 const state = { shouldBreak: true };

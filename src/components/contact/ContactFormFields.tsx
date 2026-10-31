@@ -1,9 +1,9 @@
 import { AnimatePresence, m } from 'motion/react';
 import { formatWhatsappDisplay } from '../../lib/phone';
 import { ContactInput, ContactMessage, ContactService } from './ContactFieldControls';
-import ContactHoneypot from './ContactHoneypot';
+import { ContactHoneypot } from './ContactHoneypot';
 import { useContactIds } from './contactIds';
-import FieldError from './FieldError';
+import { FieldError } from './FieldError';
 import type { ContactFormState } from './useContactForm';
 
 const SWAP_MOTION = {
@@ -76,5 +76,3 @@ export function ContactFormFields({ form }: ContactFormFieldsProps) {
     </div>
   );
 }
-
-export default ContactFormFields;

@@ -11,7 +11,7 @@ import {
 } from '../test/contactForm';
 import { serviceOptions } from '../data/services';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 
 // The test setup turns the time trap and the cooldown off; the form here runs with the real ones.
 vi.mock('./contact/botGuard', async (importOriginal) => importOriginal());

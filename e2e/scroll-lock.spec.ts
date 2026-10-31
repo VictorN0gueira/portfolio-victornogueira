@@ -50,6 +50,8 @@ interface Snapshot {
   bodyWidth: number;
 }
 
+// Playwright reads the fixtures from an object pattern in the first argument, so the empty pattern cannot be an identifier.
+// eslint-disable-next-line no-empty-pattern -- required by Playwright
 test.beforeEach(({}, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'a phone has overlay scrollbars: they take no room');
 });

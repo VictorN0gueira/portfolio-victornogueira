@@ -52,5 +52,3 @@ export function ContactSuccess({ method, onReset }: ContactSuccessProps) {
     </m.div>
   );
 }
-
-export default ContactSuccess;

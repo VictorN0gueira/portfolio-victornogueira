@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { WHATSAPP_GREETING, WHATSAPP_NUMBER, whatsappUrl } from '../../lib/constants';
 import { renderWithProviders } from '../../test/render';
 import { NEW_TAB_HINT } from '../ui/NewTabHint';
-import WhatsAppButton from './WhatsAppButton';
+import { WhatsAppButton } from './WhatsAppButton';
 
 function renderButton() {
   renderWithProviders(<WhatsAppButton />);

@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '../../test/render';
-import Kicker from './Kicker';
+import { Kicker } from './Kicker';
 
 function findRule(label: HTMLElement): Element | null {
   return label.parentElement?.querySelector('span[aria-hidden="true"]') ?? null;

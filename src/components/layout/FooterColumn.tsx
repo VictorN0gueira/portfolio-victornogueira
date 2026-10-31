@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/utils';
 
-export const FOOTER_COLUMN_TITLE = 'font-mono text-xs lowercase tracking-[0.18em] text-vn-gray-mid';
+const FOOTER_COLUMN_TITLE = 'font-mono text-xs lowercase tracking-[0.18em] text-vn-gray-mid';
 /** A footer link: 44px tall and wide at least, so a short word is a full touch target. */
 export const FOOTER_LINK =
   'inline-flex min-h-11 min-w-11 items-center text-sm text-vn-gray-light hover:text-vn-white [overflow-wrap:anywhere] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-white';
@@ -33,5 +33,3 @@ export function FooterColumn({ title, navLabel, className, children }: FooterCol
 
   return <div className={cn(className)}>{content}</div>;
 }
-
-export default FooterColumn;

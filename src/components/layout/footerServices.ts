@@ -5,7 +5,7 @@ export function slugOf(service: Service): string {
   return service.slug;
 }
 
-export interface FooterServiceLink {
+interface FooterServiceLink {
   label: Service['categoria'];
   slug: string;
   to: string;

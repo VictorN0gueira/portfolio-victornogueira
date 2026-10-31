@@ -1,7 +1,7 @@
 import { useEffect, type RefObject } from 'react';
 import { Link } from 'react-router-dom';
 import { MAIN_NAV, PRIMARY_CTA } from '../../data/navigation';
-import Button from '../ui/Button';
+import { Button } from '../ui/Button';
 
 interface MenuFallbackProps {
   open: boolean;
@@ -64,5 +64,3 @@ export function MenuFallback({ open, id, onClose, returnFocusTo }: MenuFallbackP
     </div>
   );
 }
-
-export default MenuFallback;

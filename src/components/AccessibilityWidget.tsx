@@ -1,7 +1,7 @@
 import { AnimatePresence } from 'motion/react';
 import { Accessibility } from 'lucide-react';
 import { useCallback, useEffect, useId, useRef, useState, type FocusEvent, type RefObject } from 'react';
-import { useAccessibility } from '../contexts/AccessibilityContext';
+import { useAccessibility } from '../contexts/useAccessibility';
 import { cn } from '../lib/utils';
 import { KEEPS_PLACE_UNDER_SCROLL_LOCK } from '../lib/scrollLock';
 import { a11yWidgetCopy, activeSummaryText } from './a11yWidgetCopy';

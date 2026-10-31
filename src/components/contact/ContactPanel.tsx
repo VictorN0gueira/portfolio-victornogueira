@@ -1,9 +1,9 @@
 import { useRef, useState, type FormEvent } from 'react';
-import ContactConsent from './ContactConsent';
-import ContactErrorAlert from './ContactErrorAlert';
-import ContactFormFields from './ContactFormFields';
-import ContactMethodToggle from './ContactMethodToggle';
-import ContactSubmit from './ContactSubmit';
+import { ContactConsent } from './ContactConsent';
+import { ContactErrorAlert } from './ContactErrorAlert';
+import { ContactFormFields } from './ContactFormFields';
+import { ContactMethodToggle } from './ContactMethodToggle';
+import { ContactSubmit } from './ContactSubmit';
 import { contactFormCopy } from './contactFormCopy';
 import { PANEL_CLASS } from './contactStyles';
 import type { ContactFormState } from './useContactForm';
@@ -52,5 +52,3 @@ export function ContactPanel({ form }: ContactPanelProps) {
     </div>
   );
 }
-
-export default ContactPanel;

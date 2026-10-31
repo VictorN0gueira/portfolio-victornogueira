@@ -65,5 +65,3 @@ export function IntegrationsMarquee() {
     </Section>
   );
 }
-
-export default IntegrationsMarquee;

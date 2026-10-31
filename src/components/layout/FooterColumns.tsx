@@ -90,5 +90,3 @@ export function FooterColumns({ newTabHintId }: { newTabHintId: string }) {
     </div>
   );
 }
-
-export default FooterColumns;

@@ -4,7 +4,7 @@ import { KEEPS_PLACE_UNDER_SCROLL_LOCK } from '../../lib/scrollLock';
 
 const SPRING = { stiffness: 100, damping: 30, restDelta: 0.001 } as const;
 
-export type ScrollProgressTone = 'light' | 'dark';
+type ScrollProgressTone = 'light' | 'dark';
 
 // ink on the light site, white on a dark page (the blog), both palette colors.
 const TONE_CLASSES: Record<ScrollProgressTone, string> = {
@@ -47,5 +47,3 @@ export function ScrollProgress({ tone = 'light' }: ScrollProgressProps) {
 
   return isMotionAllowed ? <SmoothBar tone={tone} /> : <PlainBar tone={tone} />;
 }
-
-export default ScrollProgress;

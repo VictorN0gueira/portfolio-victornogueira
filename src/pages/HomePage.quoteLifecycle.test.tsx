@@ -8,7 +8,7 @@ import { messageField, rejectUnexpectedFetch } from '../test/contactForm';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../test/scroll';
-import HomePage from './HomePage';
+import { HomePage } from './HomePage';
 
 // Every call of scrollToIdWhenMounted is recorded with the function that cancels it, so the tests can see when the
 // page cancels a scroll and focus loop that it started (the loop itself is the real one).

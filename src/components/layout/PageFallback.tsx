@@ -13,5 +13,3 @@ export function PageFallback() {
     </div>
   );
 }
-
-export default PageFallback;

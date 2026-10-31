@@ -1,7 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../test/render';
-import Header from './Header';
+import { Header } from './Header';
 
 // The loader is the network: its calls are the requests for the code of the menu.
 const requests = vi.hoisted(() => ({ load: vi.fn() }));

@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { brandIcons, type BrandIconId } from '../../data/brandIcons';
 import { renderWithProviders } from '../../test/render';
-import BrandIcon from './BrandIcon';
+import { BrandIcon } from './BrandIcon';
 
 describe('BrandIcon', () => {
   it('draws the path of the requested brand in a 24 by 24 currentColor svg', () => {

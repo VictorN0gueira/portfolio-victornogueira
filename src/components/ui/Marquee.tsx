@@ -85,7 +85,6 @@ function StaticMarquee({ ariaLabel, className, groupAs, children }: StaticMarque
     <div role="region" aria-label={ariaLabel} className={cn(groupAs === 'div' && ROW_CLASS, className)}>
       {groupAs === 'ul' ? (
         // role="list" on purpose: with list-style none, Safari with VoiceOver stops reading a ul as a list.
-        // eslint-disable-next-line jsx-a11y/no-redundant-roles
         <ul role="list" className={ROW_CLASS}>
           {children}
         </ul>
@@ -135,5 +134,3 @@ function MarqueeTrack({ durationS, isPaused, groupAs, children }: MarqueeTrackPr
     </div>
   );
 }
-
-export default Marquee;

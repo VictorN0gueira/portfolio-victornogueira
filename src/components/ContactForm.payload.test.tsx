@@ -14,7 +14,7 @@ import {
   submitButton,
 } from '../test/contactForm';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 
 /**
  * The lead channel contract. The two n8n webhooks are the only way a lead reaches the business, so the exact bytes the

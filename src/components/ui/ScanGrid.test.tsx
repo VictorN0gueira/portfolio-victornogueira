@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '../../test/render';
-import ScanGrid from './ScanGrid';
+import { ScanGrid } from './ScanGrid';
 
 function renderGrid(tone?: 'light' | 'dark'): HTMLElement {
   const { container } = renderWithProviders(<ScanGrid tone={tone} />);

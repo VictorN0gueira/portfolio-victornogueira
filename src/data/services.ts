@@ -8,7 +8,7 @@ export interface Service {
   prazo: string;
 }
 
-export interface ServiceCombo {
+interface ServiceCombo {
   nome: string;
   composicao: string;
   desconto: string;

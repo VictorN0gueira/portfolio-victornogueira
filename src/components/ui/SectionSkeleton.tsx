@@ -37,5 +37,3 @@ export function SectionSkeleton({ heightClassName }: SectionSkeletonProps) {
     </div>
   );
 }
-
-export default SectionSkeleton;

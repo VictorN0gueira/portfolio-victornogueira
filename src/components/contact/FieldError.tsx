@@ -16,7 +16,7 @@ interface FieldErrorProps {
  * Mensagem de erro de um campo do formulário de contato; não renderiza nada sem mensagem.
  * O erro vai em texto com um ícone, nunca só na cor.
  */
-export default function FieldError({ id, message, announce = false }: FieldErrorProps) {
+export function FieldError({ id, message, announce = false }: FieldErrorProps) {
   if (!message) return null;
 
   return (

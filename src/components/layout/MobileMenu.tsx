@@ -4,8 +4,8 @@ import { useEffect, useRef, type RefObject } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { MAIN_NAV, PRIMARY_CTA } from '../../data/navigation';
 import { CONTACT_EMAIL } from '../../lib/constants';
-import Button from '../ui/Button';
-import Logo from '../ui/Logo';
+import { Button } from '../ui/Button';
+import { Logo } from '../ui/Logo';
 import { isNavCurrent } from './isNavCurrent';
 
 interface MobileMenuProps {
@@ -111,7 +111,7 @@ function useCloseOnNavigation(onOpenChange: (open: boolean) => void) {
  * It closes by itself whenever the route changes, including a click on the link of the current page.
  * It is loaded on demand (Header), and the button that opens it lives outside, so the focus goes back to that button.
  */
-export function MobileMenu({ open, onOpenChange, id, returnFocusTo }: MobileMenuProps) {
+function MobileMenu({ open, onOpenChange, id, returnFocusTo }: MobileMenuProps) {
   useCloseOnNavigation(onOpenChange);
 
   return (

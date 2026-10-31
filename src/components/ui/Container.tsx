@@ -14,5 +14,3 @@ export function Container({ children, className }: ContainerProps) {
     </div>
   );
 }
-
-export default Container;

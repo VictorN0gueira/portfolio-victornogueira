@@ -15,7 +15,7 @@ import {
 } from '../test/contactForm';
 import { range } from '../test/range';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 
 // The adversarial paste matrix of the WhatsApp field, through the whole form: what a visitor can copy from WhatsApp, a
 // vCard, a web page or a spreadsheet, and what the field and the webhook get. Fictitious numbers only (11 90000-0000 and

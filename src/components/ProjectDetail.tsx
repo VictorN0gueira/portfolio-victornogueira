@@ -2,7 +2,7 @@ import { m } from 'motion/react';
 import type { Project } from '../data/projects';
 import { HeroGallery, StackedGallery } from './ProjectDetailGallery';
 import { FEATURES_LABEL, TAGS_LABEL } from './projectLabels';
-import ProjectTitle from './ProjectTitle';
+import { ProjectTitle } from './ProjectTitle';
 import { EASE_OUT } from '../lib/motion';
 
 interface ProjectDetailProps {
@@ -67,7 +67,7 @@ function Heading({ project, large }: { project: Project; large: boolean }) {
 
 /* Conteúdo do case como seção de página, renderizado no fluxo normal (visível para SEO, deep-linkável).
    Os projetos em destaque (DizPara, Hub081) ganham a galeria grande no topo e a lista do que fazem. */
-export default function ProjectDetail({ project }: ProjectDetailProps) {
+export function ProjectDetail({ project }: ProjectDetailProps) {
   const isFeatured = Boolean(project.featured);
   const layout = isFeatured ? 'flex-col' : 'flex-col lg:flex-row';
   const textLayout = isFeatured ? 'grid min-w-0 gap-10 lg:grid-cols-2 lg:gap-16' : 'flex min-w-0 flex-col lg:sticky lg:top-28 lg:self-start';

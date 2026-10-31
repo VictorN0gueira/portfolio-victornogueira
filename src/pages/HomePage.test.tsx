@@ -12,7 +12,7 @@ import { WARM_UP_HOOK_TIMEOUT_MS, preloadHomeSections, warmUpRender } from '../t
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../test/scroll';
-import HomePage from './HomePage';
+import { HomePage } from './HomePage';
 
 const FINAL_HEADING = homeCopy.finalCta.heading;
 const QUOTE_BUTTON = homeCopy.roi.cta;

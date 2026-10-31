@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { triggerIntersection } from '../../test/intersection';
 import { renderWithProviders } from '../../test/render';
-import { useAccessibility } from '../../contexts/AccessibilityContext';
+import { useAccessibility } from '../../contexts/useAccessibility';
 import { RevealGroup, RevealItem } from './Reveal';
 import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 

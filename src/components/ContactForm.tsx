@@ -1,8 +1,8 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import { ContactIdsContext, contactIdPrefix, contactIds } from './contact/contactIds';
 import { contactFormCopy } from './contact/contactFormCopy';
-import ContactPanel from './contact/ContactPanel';
-import ContactSuccess from './contact/ContactSuccess';
+import { ContactPanel } from './contact/ContactPanel';
+import { ContactSuccess } from './contact/ContactSuccess';
 import { useContactForm } from './contact/useContactForm';
 
 interface ContactFormProps {
@@ -23,7 +23,7 @@ interface ContactFormProps {
  * Every DOM id of the form (`contact-<useId>-nome`, `...-nome-error`...) starts with a prefix made from React's useId, so
  * two forms on one page can never share an id.
  */
-export default function ContactForm({ initialMessage, prefillNonce }: ContactFormProps) {
+export function ContactForm({ initialMessage, prefillNonce }: ContactFormProps) {
   const form = useContactForm(initialMessage, prefillNonce);
   const reactId = useId();
   const ids = useMemo(() => contactIds(contactIdPrefix(reactId)), [reactId]);

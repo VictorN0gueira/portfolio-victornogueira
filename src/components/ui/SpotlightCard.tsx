@@ -39,5 +39,3 @@ export function SpotlightCard({ as = 'article', tone = 'light', className, child
     </Tag>
   );
 }
-
-export default SpotlightCard;

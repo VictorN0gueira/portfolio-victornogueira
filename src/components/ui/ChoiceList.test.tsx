@@ -2,7 +2,8 @@ import * as Popover from '@radix-ui/react-popover';
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '../../test/render';
-import { ChoiceList, type ChoiceTone } from './ChoiceList';
+import { ChoiceList } from './ChoiceList';
+import type { ChoiceTone } from './choiceListStyles';
 import { OPTION_CLASSES } from './choiceListStyles';
 
 const OPTIONS = [

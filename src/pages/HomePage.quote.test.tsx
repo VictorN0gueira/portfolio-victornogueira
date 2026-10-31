@@ -9,7 +9,7 @@ import { FINAL_CTA_POSITION, WARM_UP_HOOK_TIMEOUT_MS, preloadHomeSections, warmU
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../test/scroll';
-import HomePage from './HomePage';
+import { HomePage } from './HomePage';
 
 // One test in this file, on purpose: React.lazy keeps what it loaded inside the module, so the chunk of the form is
 // held back (by the gate below) only for the first load of it, and Vitest gives every file its own modules.

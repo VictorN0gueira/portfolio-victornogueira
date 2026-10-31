@@ -2,9 +2,9 @@ import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { projects } from '../data/projects';
 import { renderWithProviders } from '../test/render';
-import FeaturedProjectCard from './FeaturedProjectCard';
-import ProjectCard from './ProjectCard';
-import ProjectDetail from './ProjectDetail';
+import { FeaturedProjectCard } from './FeaturedProjectCard';
+import { ProjectCard } from './ProjectCard';
+import { ProjectDetail } from './ProjectDetail';
 
 const ACCESS_WORDS = /acessar|acesso restrito|ver projeto|demo|visitar|projeto p\/ cliente|case de cliente|resultados/i;
 const CARD_SIZES = '92vw';

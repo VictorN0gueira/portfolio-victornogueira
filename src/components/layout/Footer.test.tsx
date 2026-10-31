@@ -6,7 +6,7 @@ import { CONTACT_EMAIL, SOCIAL_LINKS, WHATSAPP_DISPLAY, WHATSAPP_NUMBER } from '
 import { triggerIntersection } from '../../test/intersection';
 import { renderWithProviders } from '../../test/render';
 import { NEW_TAB_HINT } from '../ui/NewTabHint';
-import Footer from './Footer';
+import { Footer } from './Footer';
 import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
 const HIDDEN_CLIP = /inset\(100%/;

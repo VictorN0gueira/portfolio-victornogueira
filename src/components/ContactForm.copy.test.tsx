@@ -5,7 +5,7 @@ import { expectNoConsoleOutput } from '../test/consoleGuard';
 import { EMAIL_WEBHOOK, readCall, rejectUnexpectedFetch, stubFetch, submitEmailForm } from '../test/contactForm';
 import { offPaletteClasses } from '../test/palette';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 
 // The legal line, copied character by character from the form as it was before the redesign.
 const ORIGINAL_CONSENT_TEXT =

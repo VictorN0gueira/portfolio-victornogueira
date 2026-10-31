@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import type { Project, ProjectShot } from '../data/projects';
 import { coverOf } from '../data/projects';
 import { galleryLabel } from './projectLabels';
-import ProjectShotImage from './ProjectShotImage';
+import { ProjectShotImage } from './ProjectShotImage';
 
 // The width a gallery image takes: 60% of the 1152px case on desktop, the window minus the paddings below that.
 const STACK_SIZES = '(min-width: 1152px) 640px, (min-width: 768px) 55vw, 92vw';

@@ -14,7 +14,7 @@ import {
   submitEmailForm,
 } from '../test/contactForm';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 import { contactFormCopy } from './contact/contactFormCopy';
 
 expectNoConsoleOutput();

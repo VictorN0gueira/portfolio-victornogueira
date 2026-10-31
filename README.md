@@ -12,7 +12,7 @@ Requer Node 22 ou mais novo.
 | `npm run dev` | Servidor de desenvolvimento na porta 3000 |
 | `npm run build` | Gera `dist/` |
 | `npm run preview` | Serve `dist/` já com os cabeçalhos de segurança de produção |
-| `npm run lint` | Checagem de tipos (`tsc --noEmit`) |
+| `npm run lint` | ESLint (todas as regras como erro) e checagem de tipos (`tsc --noEmit`) |
 | `npm test` | Testes unitários (Vitest, jsdom) |
 | `npm run coverage` | Testes com cobertura |
 | `npm run e2e` | Playwright em Chromium desktop e mobile. Faz o build, sobe o preview (`E2E_PORT`, padrão 4173) |

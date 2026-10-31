@@ -1,6 +1,6 @@
 import { cn } from '../../lib/utils';
 
-export type ScanGridTone = 'light' | 'dark';
+type ScanGridTone = 'light' | 'dark';
 
 interface ScanGridProps {
   /** `dark` for black sections. */
@@ -43,5 +43,3 @@ export function ScanGrid({ tone = 'light', keepContentClear = false, className }
     </div>
   );
 }
-
-export default ScanGrid;

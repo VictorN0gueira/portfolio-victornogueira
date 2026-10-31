@@ -1,6 +1,6 @@
 import type { BrandIconId } from './brandIcons';
 
-export type Integration = { id: BrandIconId; label: string };
+type Integration = { id: BrandIconId; label: string };
 
 export const integrations: Integration[] = [
   { id: 'whatsapp', label: 'WhatsApp' },

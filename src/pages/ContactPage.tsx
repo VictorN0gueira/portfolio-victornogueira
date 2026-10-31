@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState, useCallback } from 'react';
 import { m } from 'motion/react';
-import SEO from '../components/SEO';
+import { SEO } from '../components/SEO';
 import { SectionSkeleton } from '../components/ui/SectionSkeleton';
 import { revealProps } from '../lib/reveal';
 import { useScrollToHash } from '../hooks/useScrollToHash';

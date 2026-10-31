@@ -25,5 +25,3 @@ export class MenuBoundary extends Component<MenuBoundaryProps, MenuBoundaryState
     return this.state.hasFailed ? this.props.fallback : this.props.children;
   }
 }
-
-export default MenuBoundary;

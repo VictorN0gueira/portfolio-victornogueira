@@ -1,4 +1,4 @@
-import type { A11yKey } from '../contexts/AccessibilityContext';
+import type { A11yKey } from '../contexts/useAccessibility';
 
 // Os textos do botão de acessibilidade e do painel dele. Os nomes `triggerLabel` e `panelLabel` são contratos dos
 // testes e2e (devices, layout, scroll-lock) e do leitor de tela: não mudam.

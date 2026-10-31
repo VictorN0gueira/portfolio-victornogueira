@@ -6,7 +6,7 @@ import { rejectUnexpectedFetch } from '../test/contactForm';
 import { WARM_UP_HOOK_TIMEOUT_MS, preloadHomeSections, warmUpRender } from '../test/lazyPages';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
-import HomePage from './HomePage';
+import { HomePage } from './HomePage';
 
 // The sections after the hero: the strip of integrations, the statement and the seven named ones.
 const H2_COUNT = 9;

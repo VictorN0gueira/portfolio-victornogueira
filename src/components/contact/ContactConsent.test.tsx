@@ -4,9 +4,9 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { rejectUnexpectedFetch } from '../../test/contactForm';
 import { renderWithProviders } from '../../test/render';
-import ContactForm from '../ContactForm';
-import Footer from '../layout/Footer';
-import ContactConsent from './ContactConsent';
+import { ContactForm } from '../ContactForm';
+import { Footer } from '../layout/Footer';
+import { ContactConsent } from './ContactConsent';
 
 // The legal line, copied character by character from the form as it was before the redesign. It is legal text.
 const LEGAL_SENTENCE =

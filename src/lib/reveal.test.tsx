@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { SectionSkeleton } from './reveal';
+import { SectionSkeleton } from '../components/ui/SectionSkeleton';
 
 describe('SectionSkeleton as a band of the new design', () => {
   const band = () => render(<SectionSkeleton heightClassName="min-h-[52rem] lg:min-h-[40rem]" />);

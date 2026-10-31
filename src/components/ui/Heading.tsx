@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/utils';
 
-export type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4';
-export type HeadingSize = 'xl' | 'l' | 'm';
+type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4';
+type HeadingSize = 'xl' | 'l' | 'm';
 
 interface HeadingProps {
   as?: HeadingTag;
@@ -37,5 +37,3 @@ export function Heading({ as: Tag = 'h2', size = 'l', children, id, className }:
     </Tag>
   );
 }
-
-export default Heading;

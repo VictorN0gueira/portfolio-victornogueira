@@ -1,7 +1,7 @@
 import { m } from 'motion/react';
 import { projects } from '../data/projects';
-import FeaturedProjectCard from './FeaturedProjectCard';
-import ProjectCard from './ProjectCard';
+import { FeaturedProjectCard } from './FeaturedProjectCard';
+import { ProjectCard } from './ProjectCard';
 import { cardLayout } from './projectGrid';
 import { PROJECTS_INTRO, PROJECTS_TITLE } from './projectLabels';
 

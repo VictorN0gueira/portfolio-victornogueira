@@ -162,3 +162,8 @@ export function useTabListControls(
 
   return { listRef, registerTab, onKeyDown };
 }
+
+/** The id of the tab of a use case, which the panel points at with aria-labelledby. */
+export function tabIdFor(idBase: string, useCaseId: string): string {
+  return `${idBase}-tab-${useCaseId}`;
+}

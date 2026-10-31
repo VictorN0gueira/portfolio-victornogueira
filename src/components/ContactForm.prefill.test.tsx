@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
 import { rejectUnexpectedFetch } from '../test/contactForm';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 
 expectNoConsoleOutput();
 

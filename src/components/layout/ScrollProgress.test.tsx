@@ -3,7 +3,7 @@ import * as motionReact from 'motion/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 import { renderWithProviders } from '../../test/render';
-import ScrollProgress from './ScrollProgress';
+import { ScrollProgress } from './ScrollProgress';
 
 vi.mock('motion/react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('motion/react')>();

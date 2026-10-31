@@ -161,5 +161,3 @@ export function AutomationPanel({ task }: AutomationPanelProps) {
     </TiltFrame>
   );
 }
-
-export default AutomationPanel;

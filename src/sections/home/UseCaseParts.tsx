@@ -5,7 +5,7 @@ import { RevealGroup, RevealItem } from '../../components/ui/Reveal';
 import { homeCopy } from '../../data/homeCopy';
 import { useCases, type UseCase } from '../../data/useCases';
 import { cn } from '../../lib/utils';
-import { HOLD_EXEMPT_ATTRIBUTE, type TabListControls } from './useTabsBehavior';
+import { HOLD_EXEMPT_ATTRIBUTE, tabIdFor, type TabListControls } from './useTabsBehavior';
 
 const FOCUS_RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-ink';
 
@@ -75,11 +75,6 @@ function UseCaseTab({ label, id, panelId, isSelected, isRunning, durationMs, onS
   );
 }
 
-/** The id of the tab of a use case, which the panel points at with aria-labelledby. */
-export function tabIdFor(idBase: string, useCaseId: string): string {
-  return `${idBase}-tab-${useCaseId}`;
-}
-
 // Below sm the tabs scroll sideways inside the tablist with scroll snap, never the page; from sm they wrap and the
 // tablist takes only the width of its tabs. The pause toggle sits before it, outside the scroller.
 // The padding leaves room for the focus ring (the scroll box would clip it) and the negative margin gives it back.
@@ -117,18 +112,20 @@ export function UseCaseTabList({
 }: UseCaseTabListProps) {
   // One ref callback per tab for the life of the list: an inline arrow is a new function on every render, and React then
   // calls the old one with null and the new one with the node at each commit.
-  const { registerTab } = controls;
+  const { listRef, onKeyDown, registerTab } = controls;
   const tabRefs = useMemo(
     () => useCases.map((_, position) => (element: HTMLButtonElement | null) => registerTab(position, element)),
     [registerTab],
   );
 
   return (
+    // The focus of a tab list lives on its tabs (a roving tab stop), not on the list itself: the rule is a known false positive here.
+    // eslint-disable-next-line jsx-a11y/interactive-supports-focus -- WAI-ARIA tabs pattern: only the tabs take the focus
     <div
-      ref={controls.listRef}
+      ref={listRef}
       role="tablist"
       aria-label={homeCopy.useCases.tablistLabel}
-      onKeyDown={controls.onKeyDown}
+      onKeyDown={onKeyDown}
       className={cn(TABLIST_CLASSES, isMotionAllowed && 'scroll-smooth')}
     >
       {useCases.map(({ id, tab }, position) => (

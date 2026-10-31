@@ -1,24 +1,11 @@
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
+import { initialsOf } from './logoInitials';
 
 // The 1x size of the logo files in public/clients: 2:1 canvases of 384x192 (2x, for high density screens) that
 // scripts/process-client-logos.mjs writes, each logo trimmed and sized on its own so all of them weigh the same.
 export const LOGO_WIDTH = 192;
 export const LOGO_HEIGHT = 96;
-
-// Connectors of Brazilian company names: they do not give a letter to the initials.
-const CONNECTORS = /^(de|da|do|das|dos|e)$/i;
-const MAX_INITIALS = 2;
-
-/** Up to two capital letters from a company name: its first two words, leaving out de, da, do, das, dos and e. */
-export function initialsOf(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter((word) => word !== '' && !CONNECTORS.test(word))
-    .slice(0, MAX_INITIALS)
-    .map((word) => Array.from(word)[0].toLocaleUpperCase('pt-BR'))
-    .join('');
-}
 
 interface LogoImageProps {
   src: string;
@@ -97,5 +84,3 @@ export function LogoPlate({ src, name, isToned = false }: LogoPlateProps) {
     </div>
   );
 }
-
-export default LogoImage;

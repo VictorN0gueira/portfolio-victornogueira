@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { getProjectBySlug } from '../data/projects';
 import { renderWithProviders } from '../test/render';
-import ProjectCard from './ProjectCard';
-import ProjectDetail from './ProjectDetail';
-import ProjectTitle from './ProjectTitle';
+import { ProjectCard } from './ProjectCard';
+import { ProjectDetail } from './ProjectDetail';
+import { ProjectTitle } from './ProjectTitle';
 
 describe('ProjectTitle', () => {
   it('keeps the whole text and wraps only the hyphenated word in a no-wrap span', () => {

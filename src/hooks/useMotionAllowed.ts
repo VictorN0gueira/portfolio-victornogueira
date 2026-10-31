@@ -1,4 +1,4 @@
-import { useAccessibility } from '../contexts/AccessibilityContext';
+import { useAccessibility } from '../contexts/useAccessibility';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 
 /**

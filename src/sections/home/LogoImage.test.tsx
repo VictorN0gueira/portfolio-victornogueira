@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { testimonials } from '../../data/testimonials';
-import { initialsOf, LOGO_HEIGHT, LOGO_WIDTH, LogoImage, LogoPlate } from './LogoImage';
+import { LOGO_HEIGHT, LOGO_WIDTH, LogoImage, LogoPlate } from './LogoImage';
+import { initialsOf } from './logoInitials';
 
 const SRC = 'https://example.test/logo.png';
 

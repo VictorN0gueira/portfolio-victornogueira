@@ -5,8 +5,8 @@ import { MAIN_NAV, PRIMARY_CTA } from '../../data/navigation';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { lazyWithRetry } from '../../lib/lazyWithRetry';
 import { KEEPS_PLACE_UNDER_SCROLL_LOCK } from '../../lib/scrollLock';
-import Button from '../ui/Button';
-import Logo from '../ui/Logo';
+import { Button } from '../ui/Button';
+import { Logo } from '../ui/Logo';
 import { DESKTOP_NAV_QUERY, HEADER_STYLE } from './headerMetrics';
 import { isNavCurrent } from './isNavCurrent';
 import { MenuBoundary } from './MenuBoundary';
@@ -187,5 +187,3 @@ export function Header() {
     </header>
   );
 }
-
-export default Header;

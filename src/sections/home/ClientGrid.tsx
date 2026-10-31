@@ -4,12 +4,12 @@ import { RevealGroup, RevealItem } from '../../components/ui/Reveal';
 import { homeCopy } from '../../data/homeCopy';
 import { partners } from '../../data/partners';
 import { cn } from '../../lib/utils';
+import { spansLastRow } from './clientGridLayout';
 import { LOGO_HEIGHT, LOGO_WIDTH, LogoImage } from './LogoImage';
 
 // The grid has 2 columns and 3 from md. Nine logos make whole rows at 3 columns (3 by 3), and at 2 columns the last logo
 // spans both columns, so no cell is ever empty. Every cell closes itself with a line on its right and bottom and the
 // grid draws the line of the top and left edges, so a row of any length ends with a line.
-const COLUMNS_BASE = 2;
 const LIST_CLASSES = 'mt-6 grid grid-cols-2 border-t border-l border-vn-gray-light md:grid-cols-3';
 const CELL_CLASSES =
   'vn-logo-host flex min-h-24 min-w-0 items-center justify-center border-r border-b border-vn-gray-light bg-vn-white p-3 min-[360px]:p-4 md:min-h-32';
@@ -18,14 +18,6 @@ const CELL_CLASSES =
 const LOGO_CLASSES = 'aspect-[2/1] w-full max-w-56 vn-logo-tone';
 // The time between one logo and the next, in seconds.
 const LOGO_STAGGER_S = 0.05;
-
-/**
- * True for the last logo when the rows at 2 columns would end on a lone cell: it then spans both columns. From md it
- * stops spanning, because there the columns are 3 and the 9 logos make whole rows.
- */
-export function spansLastRow(position: number, count: number): boolean {
-  return position === count - 1 && count % COLUMNS_BASE === 1;
-}
 
 /**
  * The clients of VN One as a wall of logos: a list named by its kicker ("quem confia") with one cell per partner,
@@ -57,5 +49,3 @@ export function ClientGrid() {
     </RevealGroup>
   );
 }
-
-export default ClientGrid;

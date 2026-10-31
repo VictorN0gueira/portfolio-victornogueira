@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { WHATSAPP_GREETING, whatsappUrl } from '../../lib/constants';
-import BrandIcon from '../ui/BrandIcon';
-import NewTabHint from '../ui/NewTabHint';
+import { BrandIcon } from '../ui/BrandIcon';
+import { NewTabHint } from '../ui/NewTabHint';
 
 // The offsets are inline because the safe area inset has to be compared with the 16px margin:
 // the pt-safe family of utilities replaces the padding instead of taking the larger of the two.
@@ -43,5 +43,3 @@ export function WhatsAppButton() {
     </aside>
   );
 }
-
-export default WhatsAppButton;

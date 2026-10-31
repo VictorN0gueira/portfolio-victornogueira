@@ -6,7 +6,7 @@ import { shellCopy } from '../data/shellCopy';
 import { rejectUnexpectedFetch } from '../test/contactForm';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
-import HomePage from './HomePage';
+import { HomePage } from './HomePage';
 
 // One test in this file, on purpose: React.lazy keeps what it loaded inside the module, and Vitest gives every file
 // its own modules. The Testimonials chunk fails to load here (the gate), and every other section loads.

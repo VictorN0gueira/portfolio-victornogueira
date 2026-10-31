@@ -1,6 +1,6 @@
 import { assetUrl } from '../lib/asset';
 
-export type Partner = { name: string; logo: string };
+type Partner = { name: string; logo: string };
 
 // The logos are self-hosted copies in public/clients, trimmed and sized by scripts/process-client-logos.mjs. The last
 // partner is the widest wordmark: it closes the grid of the home on a row of its own at two columns.

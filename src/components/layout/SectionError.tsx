@@ -29,5 +29,3 @@ export function SectionError({ heightClassName, onRetry }: SectionErrorProps) {
     </div>
   );
 }
-
-export default SectionError;

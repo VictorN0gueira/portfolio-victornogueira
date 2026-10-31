@@ -13,7 +13,7 @@ interface ProjectShotImageProps {
 }
 
 /** A project screenshot with every size the manifest knows: srcset, width and height, so nothing shifts when it loads. */
-export default function ProjectShotImage({ shot, sizes, priority = false, className, style }: ProjectShotImageProps) {
+export function ProjectShotImage({ shot, sizes, priority = false, className, style }: ProjectShotImageProps) {
   const { image, alt } = shot;
 
   return (

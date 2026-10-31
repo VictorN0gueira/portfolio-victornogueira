@@ -6,7 +6,7 @@ import { rejectUnexpectedFetch } from '../test/contactForm';
 import { WARM_UP_HOOK_TIMEOUT_MS, preloadHomeSections, warmUpRender } from '../test/lazyPages';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
-import HomePage from './HomePage';
+import { HomePage } from './HomePage';
 
 // The strip of integrations, the statement and the seven named sections.
 const H2_COUNT = 9;

@@ -5,7 +5,7 @@ import { expectNoConsoleOutput } from '../test/consoleGuard';
 import { danglingReferences, describedByElements, duplicateIds } from '../test/ariaWiring';
 import { SWAP_WAIT, rejectUnexpectedFetch, stubFetch, submitEmailForm } from '../test/contactForm';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 import { contactIdPrefix, contactIds } from './contact/contactIds';
 import { contactFormCopy } from './contact/contactFormCopy';
 

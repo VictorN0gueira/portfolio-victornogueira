@@ -9,7 +9,7 @@ import { messageField, rejectUnexpectedFetch } from '../test/contactForm';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../test/scroll';
-import HomePage from './HomePage';
+import { HomePage } from './HomePage';
 
 const LAZY_WAIT = { timeout: 20_000 } as const;
 const QUOTE_START = buildQuoteMessage({ hoursPerWeek: 1, teamMultiplier: 1, hourlyRate: DEFAULT_HOURLY_RATE }).split(':')[0];

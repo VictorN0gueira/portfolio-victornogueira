@@ -1,6 +1,6 @@
 import { m } from 'motion/react';
 import { MessageCircle } from 'lucide-react';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 
 interface ContactProps {
   /** Mensagem vinda do ROICalculator para pré-preencher o formulário */

@@ -5,7 +5,7 @@ import { MAIN_NAV, PRIMARY_CTA } from '../../data/navigation';
 import { MD_QUERY } from '../../lib/breakpoints';
 import { stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
-import Header from './Header';
+import { Header } from './Header';
 import {
   HEADER_HEIGHT,
   HEADER_HEIGHT_LANDSCAPE,

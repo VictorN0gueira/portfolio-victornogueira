@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
-import DefaultMarquee, { Marquee } from './Marquee';
+import { Marquee as DefaultMarquee, Marquee } from './Marquee';
 import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
 const LABEL = 'tecnologias que a gente usa';
@@ -54,6 +54,7 @@ describe('Marquee with motion allowed', () => {
         <a href="#um">um</a>
         <button type="button">dois</button>
         <input aria-label="tres" />
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- the fixture needs a custom tab stop to prove it is copied */}
         <span tabIndex={0}>quatro</span>
         <span>cinco</span>
       </Marquee>,

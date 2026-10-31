@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MAIN_NAV, PRIMARY_CTA } from '../../data/navigation';
 import { renderWithProviders } from '../../test/render';
-import Header from './Header';
+import { Header } from './Header';
 
 // The code of the menu is a chunk that a flaky network can fail to load: the dynamic import rejects. The header, the
 // page and the button have to survive it, and the menu has to degrade to a plain list of the same links.

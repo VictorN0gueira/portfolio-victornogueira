@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '../../test/render';
-import Section from './Section';
+import { Section } from './Section';
 
 describe('Section', () => {
   it('renders a section element with its children', () => {

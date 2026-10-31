@@ -39,5 +39,3 @@ export function WindowFrame({ title, status, actions, className, children }: Win
     </div>
   );
 }
-
-export default WindowFrame;

@@ -79,5 +79,3 @@ function CountingCurrency({ value, className }: AnimatedCurrencyProps) {
     </span>
   );
 }
-
-export default AnimatedCurrency;

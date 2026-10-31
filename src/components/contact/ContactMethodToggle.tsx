@@ -49,5 +49,3 @@ export function ContactMethodToggle({ method, onSelect }: ContactMethodTogglePro
     </fieldset>
   );
 }
-
-export default ContactMethodToggle;

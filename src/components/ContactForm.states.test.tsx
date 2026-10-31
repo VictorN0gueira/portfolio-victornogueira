@@ -19,7 +19,7 @@ import {
 } from '../test/contactForm';
 import { offPaletteClasses, offPaletteInHtml } from '../test/palette';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 import { contactFormCopy } from './contact/contactFormCopy';
 
 const { error: errorCopy, success: successCopy } = contactFormCopy;

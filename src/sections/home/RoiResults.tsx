@@ -100,5 +100,3 @@ export function RoiResults({ cost, savings, rateCapNote = null, rateIssueNote = 
     </div>
   );
 }
-
-export default RoiResults;

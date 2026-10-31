@@ -4,7 +4,7 @@
 const LARGE_COLUMNS = 3;
 const MEDIUM_COLUMNS = 2;
 
-export interface ProjectCardLayout {
+interface ProjectCardLayout {
   /** The span classes of the grid cell, written out whole so the stylesheet generator can see them. */
   readonly cellClassName: string;
   /** The `sizes` attribute of the card image: the width the card takes at each breakpoint. */

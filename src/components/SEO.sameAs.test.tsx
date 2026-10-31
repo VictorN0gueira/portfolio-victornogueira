@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import SEO from './SEO';
+import { SEO } from './SEO';
 
 // A profile link that is missing (an empty href) must never reach the structured data as "": schema.org readers treat an
 // empty sameAs entry as an invalid URL.

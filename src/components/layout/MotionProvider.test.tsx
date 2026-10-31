@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { m, motion } from 'motion/react';
 import { renderWithProviders } from '../../test/render';
-import MotionProvider from './MotionProvider';
+import { MotionProvider } from './MotionProvider';
 import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
 interface CapturedConfigProps {

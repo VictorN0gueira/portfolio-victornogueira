@@ -99,5 +99,3 @@ export function TestimonialDialog({ testimonial, isOpen, onOpenChange, onCloseAu
     </Dialog.Root>
   );
 }
-
-export default TestimonialDialog;

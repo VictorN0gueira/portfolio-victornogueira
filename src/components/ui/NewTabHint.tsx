@@ -20,5 +20,3 @@ export function NewTabHint({ id }: NewTabHintProps) {
     </span>
   );
 }
-
-export default NewTabHint;

@@ -2,7 +2,7 @@ import { renderHook, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import { useAccessibility } from '../contexts/AccessibilityContext';
+import { useAccessibility } from '../contexts/useAccessibility';
 import { AllProviders, renderWithProviders } from './render';
 
 function Probe() {

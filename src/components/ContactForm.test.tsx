@@ -20,7 +20,7 @@ import {
   findWhatsappField,
   fieldError,
 } from '../test/contactForm';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 
 // src/lib/constants.ts reads window.matchMedia while it is imported.
 vi.hoisted(() => {

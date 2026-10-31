@@ -19,10 +19,10 @@ export function contactIds(prefix: string) {
   };
 }
 
-export type ContactIds = ReturnType<typeof contactIds>;
+type ContactIds = ReturnType<typeof contactIds>;
 
 /** The prefix of a form that is not inside a ContactForm (a piece rendered on its own). */
-export const DEFAULT_ID_PREFIX = 'contact';
+const DEFAULT_ID_PREFIX = 'contact';
 
 const UNSAFE_ID_CHARACTERS = /[^A-Za-z0-9_-]/g;
 

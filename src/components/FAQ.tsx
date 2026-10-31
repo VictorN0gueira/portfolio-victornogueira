@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { m, useInView, AnimatePresence } from 'motion/react';
 import { Plus, Minus } from 'lucide-react';
-import AnimatedText from './AnimatedText';
+import { AnimatedText } from './AnimatedText';
 import { faqs } from '../data/faqs';
 import { EASE_OUT } from '../lib/motion';
 

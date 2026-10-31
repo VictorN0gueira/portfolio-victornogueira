@@ -2,15 +2,15 @@ import { AnimatePresence, m } from 'motion/react';
 import { Suspense, useEffect, useRef } from 'react';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { focusAndGuard } from '../../lib/focusGuard';
-import ErrorBoundary from './ErrorBoundary';
-import Footer from './Footer';
-import Header from './Header';
-import PageFallback from './PageFallback';
+import { ErrorBoundary } from './ErrorBoundary';
+import { Footer } from './Footer';
+import { Header } from './Header';
+import { PageFallback } from './PageFallback';
 import { pageTransition } from './pageTransition';
-import RouteAnnouncer from './RouteAnnouncer';
-import ScrollProgress from './ScrollProgress';
-import SkipLink, { MAIN_CONTENT_ID } from './SkipLink';
-import WhatsAppButton from './WhatsAppButton';
+import { RouteAnnouncer } from './RouteAnnouncer';
+import { ScrollProgress } from './ScrollProgress';
+import { SkipLink, MAIN_CONTENT_ID } from './SkipLink';
+import { WhatsAppButton } from './WhatsAppButton';
 
 /**
  * The frame every page of the site renders in: skip link, scroll bar, floating header, one main landmark
@@ -62,5 +62,3 @@ export function SiteLayout() {
     </>
   );
 }
-
-export default SiteLayout;

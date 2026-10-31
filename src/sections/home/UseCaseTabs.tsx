@@ -9,8 +9,8 @@ import { homeCopy } from '../../data/homeCopy';
 import { useCases } from '../../data/useCases';
 import { useCycle } from '../../hooks/useCycle';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
-import { tabIdFor, UseCasePanel, UseCasePauseToggle, UseCaseTabList } from './UseCaseParts';
-import { ROTATE_MS, startsOnCoarsePointer, useCycleHold, useTabListControls } from './useTabsBehavior';
+import { UseCasePanel, UseCasePauseToggle, UseCaseTabList } from './UseCaseParts';
+import { ROTATE_MS, startsOnCoarsePointer, tabIdFor, useCycleHold, useTabListControls } from './useTabsBehavior';
 
 /** The share of the tabs and the panel that must be on the screen for the rotation to run. */
 const IN_VIEW_AMOUNT = 0.3;

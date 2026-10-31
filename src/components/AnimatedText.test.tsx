@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
-import AnimatedText from './AnimatedText';
+import { AnimatedText } from './AnimatedText';
 import { A11Y_STORAGE_KEY } from '../contexts/AccessibilityContext';
 
 const OFFSET = 'translateY(18px)';

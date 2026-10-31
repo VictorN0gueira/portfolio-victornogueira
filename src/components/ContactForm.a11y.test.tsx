@@ -13,7 +13,7 @@ import {
   togglePill,
 } from '../test/contactForm';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 
 const SERVICE_TRIGGER_NAME = /escolhe um serviço/i;
 const STATUS_TEXT_EMAIL = 'Obrigado! A gente responde pelo e-mail em breve.';

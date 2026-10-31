@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '../../test/render';
-import Container from './Container';
+import { Container } from './Container';
 
 describe('Container', () => {
   it('centers content with the 1216px max width and responsive gutters', () => {

@@ -1,7 +1,7 @@
 import { m } from 'motion/react';
 import { RotateCcw } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import type { A11yKey } from '../contexts/AccessibilityContext';
+import type { A11yKey } from '../contexts/useAccessibility';
 import { a11yWidgetCopy, activeBadgeText } from './a11yWidgetCopy';
 import { AccessibilityOptions, PANEL_FOCUS_RING } from './AccessibilityOptions';
 import { EASE_OUT } from '../lib/motion';

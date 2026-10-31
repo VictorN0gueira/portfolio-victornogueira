@@ -11,11 +11,8 @@ function useScramble(text: string) {
   const [active, setActive] = useState(false);
 
   useEffect(() => {
-    // Reduced motion: the title is shown as it is, with no scramble.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setDisplay(text);
-      return;
-    }
+    // Reduced motion: the title stays as it is (the hook returns the text while display is empty), with no scramble.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const timer = setTimeout(() => setActive(true), 400);
     return () => clearTimeout(timer);
   }, [text]);

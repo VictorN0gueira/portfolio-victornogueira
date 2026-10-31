@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/utils';
 
-export type KickerTone = 'light' | 'dark';
+type KickerTone = 'light' | 'dark';
 
 interface KickerProps {
   children: ReactNode;
@@ -30,5 +30,3 @@ export function Kicker({ children, tone = 'light', className }: KickerProps) {
     </p>
   );
 }
-
-export default Kicker;

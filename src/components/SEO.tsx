@@ -119,7 +119,7 @@ function twitterMeta(tags: ShareTags, noindex?: boolean) {
   ];
 }
 
-export default function SEO(props: SEOProps) {
+export function SEO(props: SEOProps) {
   const { path = '/', noindex, jsonLd } = props;
   const tags = resolveShareTags(props);
   // Uma página noindex (404, projeto removido) não declara canonical, og:url nem entidades da home.
@@ -142,3 +142,6 @@ export default function SEO(props: SEOProps) {
     </>
   );
 }
+
+// PrivacyPage and LgpdPage are kept byte identical and still import this default.
+export default SEO;

@@ -5,7 +5,7 @@ import { rejectUnexpectedFetch } from '../test/contactForm';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../test/scroll';
-import HomePage from './HomePage';
+import { HomePage } from './HomePage';
 
 // The sections under the first screen mount after an idle moment (1200 ms at the latest), or at once when the URL
 // has a hash. Until then the page shows skeletons of their heights.

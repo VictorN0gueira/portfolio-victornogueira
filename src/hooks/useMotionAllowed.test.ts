@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAccessibility } from '../contexts/AccessibilityContext';
+import { useAccessibility } from '../contexts/useAccessibility';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../test/matchMedia';
 import { AllProviders } from '../test/render';
 import { useCycle } from './useCycle';

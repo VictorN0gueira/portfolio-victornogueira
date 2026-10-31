@@ -11,7 +11,7 @@ const specialties = [
   { id: '03', title: 'Desenvolvimento Web', desc: 'Interfaces rápidas, feitas para o visitante virar contato.', icon: Globe, color: '#10B981' }
 ];
 
-export default function About() {
+export function About() {
   return (
     <section id="sobre" className="py-32 px-6 md:px-12 bg-white dark:bg-zinc-900 overflow-hidden">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 md:gap-16 lg:gap-24 items-center">

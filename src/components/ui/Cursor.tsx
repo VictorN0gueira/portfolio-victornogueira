@@ -1,6 +1,6 @@
 import { cn } from '../../lib/utils';
 
-export type CursorTone = 'ink' | 'white' | 'accent';
+type CursorTone = 'ink' | 'white' | 'accent';
 
 interface CursorProps {
   tone?: CursorTone;
@@ -26,5 +26,3 @@ export function Cursor({ tone = 'ink', className }: CursorProps) {
     />
   );
 }
-
-export default Cursor;

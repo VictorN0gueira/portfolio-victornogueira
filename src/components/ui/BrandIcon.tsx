@@ -21,5 +21,3 @@ export function BrandIcon({ id, className, title }: BrandIconProps) {
     </svg>
   );
 }
-
-export default BrandIcon;

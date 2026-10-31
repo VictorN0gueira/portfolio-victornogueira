@@ -86,5 +86,3 @@ export function ChoicePillPopover<T extends string | number>({
     </Popover.Root>
   );
 }
-
-export default ChoicePillPopover;

@@ -1,22 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-
-export interface A11yState {
-  fontSize: boolean;
-  highContrast: boolean;
-  grayscale: boolean;
-  noAnimations: boolean;
-  underlineLinks: boolean;
-  readableFont: boolean;
-}
-
-/** The keys of the six preferences. */
-export type A11yKey = keyof A11yState;
-
-interface A11yContextValue {
-  state: A11yState;
-  toggle: (key: keyof A11yState) => void;
-  reset: () => void;
-}
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { A11yContext, type A11yKey, type A11yState } from './useAccessibility';
 
 const defaultState: A11yState = {
   fontSize: false,
@@ -27,7 +10,7 @@ const defaultState: A11yState = {
   readableFont: false,
 };
 
-const classMap: Record<keyof A11yState, string> = {
+const classMap: Record<A11yKey, string> = {
   fontSize: 'a11y-font-large',
   highContrast: 'a11y-high-contrast',
   grayscale: 'a11y-grayscale',
@@ -39,9 +22,7 @@ const classMap: Record<keyof A11yState, string> = {
 /** The localStorage key of the preferences. Exported so nothing else repeats the literal. */
 export const A11Y_STORAGE_KEY = 'a11y-preferences';
 
-const A11Y_KEYS = Object.keys(defaultState) as Array<keyof A11yState>;
-
-const A11yContext = createContext<A11yContextValue | null>(null);
+const A11Y_KEYS = Object.keys(defaultState) as Array<A11yKey>;
 
 /**
  * The preferences stored by an earlier visit, kept to the known keys and to the value `true` exactly. Anything
@@ -83,15 +64,9 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
-  const toggle = useCallback((key: keyof A11yState) => setState((prev) => ({ ...prev, [key]: !prev[key] })), []);
+  const toggle = useCallback((key: A11yKey) => setState((prev) => ({ ...prev, [key]: !prev[key] })), []);
   const reset = useCallback(() => setState(defaultState), []);
   const value = useMemo(() => ({ state, toggle, reset }), [state, toggle, reset]);
 
   return <A11yContext.Provider value={value}>{children}</A11yContext.Provider>;
-}
-
-export function useAccessibility() {
-  const ctx = useContext(A11yContext);
-  if (!ctx) throw new Error('useAccessibility deve ser usado dentro de AccessibilityProvider');
-  return ctx;
 }

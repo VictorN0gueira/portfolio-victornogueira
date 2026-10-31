@@ -1,6 +1,6 @@
 import { Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import SEO from '../components/SEO';
+import { SEO } from '../components/SEO';
 import { ErrorBoundary } from '../components/layout/ErrorBoundary';
 import { SectionError } from '../components/layout/SectionError';
 import { SectionSkeleton } from '../components/ui/SectionSkeleton';
@@ -96,7 +96,7 @@ function findFilledMessageField(message: string): (section: HTMLElement) => HTML
  * holds the message and its counter), the page scrolls there, puts focus in the message field once it holds the quote
  * and says so in a polite status.
  */
-export default function HomePage() {
+export function HomePage() {
   useScrollToHash();
   const areSectionsDue = useSectionsDue();
   const [prefill, setPrefill] = useState<PrefillRequest | undefined>();

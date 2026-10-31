@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, vi } from 'vitest';
-import ContactForm from '../components/ContactForm';
+import { ContactForm } from '../components/ContactForm';
 import { contactFormCopy } from '../components/contact/contactFormCopy';
 import { serviceOptions } from '../data/services';
 import { renderWithProviders } from './render';

@@ -83,5 +83,3 @@ export function Button({ intent, tone, size, asChild = false, className, ...rest
     />
   );
 }
-
-export default Button;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '../../test/render';
-import Cursor from './Cursor';
+import { Cursor } from './Cursor';
 
 function renderCursor(tone?: 'ink' | 'white' | 'accent'): HTMLElement {
   const { container } = renderWithProviders(<Cursor tone={tone} />);

@@ -14,7 +14,7 @@ import {
 } from '../test/contactForm';
 import { range } from '../test/range';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 
 // The WhatsApp number is the one thing of a lead that cannot be wrong: a number that passes the validation but is not
 // the one the visitor typed sends the lead to somebody else. These tests pin the two ways it used to go wrong (a caret

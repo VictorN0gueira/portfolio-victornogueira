@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import type { Project } from '../data/projects';
 import { CARD_CTA_TEXT } from './projectLabels';
-import ProjectShotImage from './ProjectShotImage';
+import { ProjectShotImage } from './ProjectShotImage';
 
 // The cover takes a bit more than half of the 1280px page on desktop, the full window width on a phone.
 const COVER_SIZES = '(min-width: 1280px) 720px, (min-width: 1024px) 56vw, 92vw';
@@ -18,7 +18,7 @@ interface FeaturedProjectCardProps {
 /* Large card of a featured project (DizPara, Hub081) on /projetos: the text on one side, the cover and the other two
    shots on the other (under the cover, never over it; on a phone the two small ones are left to the case page).
    The text comes first in the markup, so a screen reader meets the name before the long image descriptions. */
-export default function FeaturedProjectCard({ project, priority = false }: FeaturedProjectCardProps) {
+export function FeaturedProjectCard({ project, priority = false }: FeaturedProjectCardProps) {
   const [cover, ...strip] = project.shots;
   const titleId = `featured-project-${project.slug}`;
   const ctaId = `${titleId}-cta`;

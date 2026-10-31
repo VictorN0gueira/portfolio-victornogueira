@@ -32,7 +32,7 @@ interface ServiceSelectProps {
  * choose, Escape closes and gives the focus back to the button, Tab closes and moves on. The list is rendered inside the
  * field, as wide as the button, and scrolls when it is taller than the room it has.
  */
-export default function ServiceSelect({
+export function ServiceSelect({
   id,
   value,
   onChange,

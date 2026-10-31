@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes } from 'react';
 import { cn } from '../../lib/utils';
 
 /** `dark` for a dark surface (a window title bar), `light` for cream and white sections. */
-export type PauseToggleTone = 'dark' | 'light';
+type PauseToggleTone = 'dark' | 'light';
 
 // The look of each tone: the focus ring that shows on its surface, the icon button inside the hit area and the icon size.
 const TONE_CLASSES: Record<PauseToggleTone, { ring: string; disc: string; icon: string }> = {
@@ -58,5 +58,3 @@ export function PauseToggle({ isPaused, label, onToggle, tone, className, ...res
     </button>
   );
 }
-
-export default PauseToggle;

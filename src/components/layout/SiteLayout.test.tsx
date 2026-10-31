@@ -4,7 +4,7 @@ import { lazy } from 'react';
 import { Link, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../test/render';
-import SiteLayout from './SiteLayout';
+import { SiteLayout } from './SiteLayout';
 
 const EXIT_TIMEOUT_MS = 3000;
 

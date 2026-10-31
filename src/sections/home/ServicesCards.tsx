@@ -52,7 +52,6 @@ function ServiceCard({ service }: ServiceCardProps) {
         <p className="mt-3 text-pretty text-base text-vn-gray-dark">{service.descricao}</p>
         <div className="mt-6 border-t border-vn-gray-light pt-5">
           {/* role="list": Tailwind preflight removes the markers, and Safari then drops the list semantics. */}
-          {/* eslint-disable-next-line jsx-a11y/no-redundant-roles -- Safari drops the list semantics without it */}
           <ul role="list" className="vn-card-includes flex flex-col gap-2.5">
             {service.inclui.map((item) => (
               <li key={item} className="flex items-start gap-2.5 text-sm leading-snug">

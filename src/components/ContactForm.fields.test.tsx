@@ -5,7 +5,7 @@ import { expectNoConsoleOutput } from '../test/consoleGuard';
 import { fieldError, rejectUnexpectedFetch, submitButton, SWAP_WAIT, findWhatsappField, togglePill, whatsappHint } from '../test/contactForm';
 import { offPaletteClasses } from '../test/palette';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 import { contactFormCopy } from './contact/contactFormCopy';
 import { tokensOf } from '../test/dom';
 

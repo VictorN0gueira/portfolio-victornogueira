@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/utils';
 
-export type SectionTone = 'cream' | 'white' | 'black';
+type SectionTone = 'cream' | 'white' | 'black';
 
 interface SectionProps {
   id?: string;
@@ -37,5 +37,3 @@ export function Section({ id, tone = 'cream', children, className, labelledBy }:
     </section>
   );
 }
-
-export default Section;

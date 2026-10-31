@@ -115,5 +115,3 @@ function AnimatedCount({ value, num, suffix, durationMs, className, isInView, ro
     </span>
   );
 }
-
-export default CountUp;

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import Logo, { LOGO_HEIGHT, LOGO_WIDTH } from './Logo';
+import { Logo, LOGO_HEIGHT, LOGO_WIDTH } from './Logo';
 
 describe('Logo', () => {
   it('uses the dark artwork on light backgrounds', () => {

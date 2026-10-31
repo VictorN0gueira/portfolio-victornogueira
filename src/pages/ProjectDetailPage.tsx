@@ -1,9 +1,9 @@
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { m } from 'motion/react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import SEO from '../components/SEO';
+import { SEO } from '../components/SEO';
 import NotFound from '../components/NotFound';
-import ProjectDetail from '../components/ProjectDetail';
+import { ProjectDetail } from '../components/ProjectDetail';
 import { BACK_LABEL, BREADCRUMB_HOME, CONTACT_LABEL, NOT_FOUND_TITLE, PROJECT_CTA_TEXT, PROJECTS_TITLE } from '../components/projectLabels';
 import { coverOf, getProjectBySlug, REMOVED_PROJECT_SLUGS, type Project } from '../data/projects';
 import { SITE } from '../lib/site';

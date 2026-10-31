@@ -49,5 +49,3 @@ export function ContactSubmit({ status, hasConsent }: ContactSubmitProps) {
     </div>
   );
 }
-
-export default ContactSubmit;

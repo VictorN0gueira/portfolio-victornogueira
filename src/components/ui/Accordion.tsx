@@ -1,7 +1,7 @@
 import { Plus } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-export interface AccordionItem {
+interface AccordionItem {
   /** Stable React key of the item: never shown, so a copy edit of the question cannot clash two items. */
   id: string;
   question: string;
@@ -49,5 +49,3 @@ export function Accordion({ items, name, defaultOpenIndex = 0, className }: Acco
     </div>
   );
 }
-
-export default Accordion;

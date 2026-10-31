@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import SEO from '../components/SEO';
+import { SEO } from '../components/SEO';
 import { PROJECTS_PAGE_DESCRIPTION, PROJECTS_TITLE } from '../components/projectLabels';
 import { SectionSkeleton } from '../components/ui/SectionSkeleton';
 

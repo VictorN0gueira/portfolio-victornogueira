@@ -1,8 +1,7 @@
-/// <reference types="vitest/config" />
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import {defineConfig, type Plugin} from 'vite';
-import {configDefaults, coverageConfigDefaults} from 'vitest/config';
+import type {Plugin} from 'vite';
+import {configDefaults, coverageConfigDefaults, defineConfig} from 'vitest/config';
 import {manualChunks} from './config/manualChunks.mjs';
 import {SECURITY_HEADERS, injectCspMeta} from './config/securityHeaders.mjs';
 

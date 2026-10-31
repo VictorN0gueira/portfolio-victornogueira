@@ -21,7 +21,7 @@ const LOGO_SRC: Record<LogoVariant, string> = {
   onDark: assetUrl('/brand/vn-one-logo-chrome.webp'),
 };
 
-export default function Logo({ variant, className, loading = 'eager', decorative = false }: LogoProps) {
+export function Logo({ variant, className, loading = 'eager', decorative = false }: LogoProps) {
   return (
     <img
       src={LOGO_SRC[variant]}

@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { findAccentElements } from '../../test/accent';
 import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { offPaletteClasses, offPaletteInHtml } from '../../test/palette';
-import ServiceSelect from './ServiceSelect';
+import { ServiceSelect } from './ServiceSelect';
 import { tokensOf } from '../../test/dom';
 
 const OPTIONS = ['Automação de processos', 'Agente de IA', 'Site ou landing page', 'Sistema web sob medida'];

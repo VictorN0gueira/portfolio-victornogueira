@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import NewTabHint, { NEW_TAB_HINT } from './NewTabHint';
+import { NewTabHint, NEW_TAB_HINT } from './NewTabHint';
 
 describe('NewTabHint', () => {
   it('is hidden from the reading flow, with the id the links point at', () => {

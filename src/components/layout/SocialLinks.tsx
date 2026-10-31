@@ -37,5 +37,3 @@ export function SocialLinks({ hintId }: SocialLinksProps) {
     </ul>
   );
 }
-
-export default SocialLinks;

@@ -1,6 +1,6 @@
 export type HeroTaskId = 'planilha-whatsapp' | 'atendimento' | 'notas' | 'follow-up';
 
-export interface HeroTaskOption {
+interface HeroTaskOption {
   value: HeroTaskId;
   label: string;
 }

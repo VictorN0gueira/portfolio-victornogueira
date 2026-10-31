@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import SkipLink from './SkipLink';
+import { SkipLink } from './SkipLink';
 
 function renderSkipLink() {
   render(

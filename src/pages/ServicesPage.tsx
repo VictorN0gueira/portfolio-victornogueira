@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { m, useInView } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Check } from 'lucide-react';
-import SEO from '../components/SEO';
+import { SEO } from '../components/SEO';
 import { homeCopy } from '../data/homeCopy';
 import { useScrollToHash } from '../hooks/useScrollToHash';
 import { services, combos } from '../data/services';

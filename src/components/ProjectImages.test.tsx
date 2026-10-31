@@ -2,9 +2,9 @@ import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { coverOf, getProjectBySlug, projects } from '../data/projects';
 import { renderWithProviders } from '../test/render';
-import FeaturedProjectCard from './FeaturedProjectCard';
-import ProjectCard from './ProjectCard';
-import ProjectDetail from './ProjectDetail';
+import { FeaturedProjectCard } from './FeaturedProjectCard';
+import { ProjectCard } from './ProjectCard';
+import { ProjectDetail } from './ProjectDetail';
 
 const CARD_SIZES = '(min-width: 1280px) 368px, 92vw';
 const MAX_PORTRAIT_REM = 32;

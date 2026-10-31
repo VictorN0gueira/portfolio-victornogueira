@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
 import { rejectUnexpectedFetch, stubFetch, submitEmailForm } from '../test/contactForm';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 import { contactFormCopy } from './contact/contactFormCopy';
 
 // Motion warns in development that reduced motion is on, which is exactly what these tests ask for.

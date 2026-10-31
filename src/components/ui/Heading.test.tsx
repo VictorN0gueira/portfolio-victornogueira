@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '../../test/render';
-import Heading from './Heading';
+import { Heading } from './Heading';
 
 describe('Heading', () => {
   it('renders an h2 by default', () => {

@@ -216,5 +216,3 @@ export function RoiControls({
     </div>
   );
 }
-
-export default RoiControls;

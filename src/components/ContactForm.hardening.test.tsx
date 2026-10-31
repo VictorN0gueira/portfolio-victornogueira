@@ -13,7 +13,7 @@ import {
   visibleThanksText,
 } from '../test/contactForm';
 import { renderWithProviders } from '../test/render';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
 import { HONEYPOT_NAME } from './contact/botGuard';
 
 // The lead channel hardening, seen through the rendered form. Every request goes to a mock.

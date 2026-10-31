@@ -44,5 +44,3 @@ export function RouteAnnouncer({ pathname }: RouteAnnouncerProps) {
     </div>
   );
 }
-
-export default RouteAnnouncer;

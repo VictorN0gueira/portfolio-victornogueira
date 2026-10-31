@@ -3,11 +3,11 @@ import { serviceOptions } from '../../data/services';
 import { EMAIL_MAX, MESSAGE_MAX, NAME_MAX, type ContactFields } from '../../lib/contact';
 import { contactFormCopy } from './contactFormCopy';
 import { LABEL_CLASS } from './contactStyles';
-import FieldCapHint from './FieldCapHint';
-import FieldError from './FieldError';
+import { FieldCapHint } from './FieldCapHint';
+import { FieldError } from './FieldError';
 import { useContactIds } from './contactIds';
 import { fieldProps } from './fieldProps';
-import ServiceSelect from './ServiceSelect';
+import { ServiceSelect } from './ServiceSelect';
 import { whatsappInputProps } from './whatsappInput';
 
 const { labels, placeholders } = contactFormCopy;

@@ -10,8 +10,6 @@ import {
   type ChoiceTone,
 } from './choiceListStyles';
 
-export type { ChoiceTone } from './choiceListStyles';
-
 export interface ChoiceOption<T extends string | number> {
   value: T;
   label: string;

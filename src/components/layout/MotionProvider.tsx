@@ -1,6 +1,6 @@
 import { LazyMotion, MotionConfig, domAnimation } from 'motion/react';
 import type { ReactNode } from 'react';
-import { useAccessibility } from '../../contexts/AccessibilityContext';
+import { useAccessibility } from '../../contexts/useAccessibility';
 
 interface MotionProviderProps {
   children: ReactNode;
@@ -26,5 +26,3 @@ export function MotionProvider({ children }: MotionProviderProps) {
     </MotionConfig>
   );
 }
-
-export default MotionProvider;

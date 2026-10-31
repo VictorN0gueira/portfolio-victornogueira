@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { triggerIntersection } from '../../test/intersection';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
-import DefaultCountUp, { CountUp } from './CountUp';
+import { CountUp as DefaultCountUp, CountUp } from './CountUp';
 import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
 const SHORT_DURATION_MS = 60;

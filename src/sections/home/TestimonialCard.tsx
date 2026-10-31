@@ -57,5 +57,3 @@ function TestimonialCardView({ testimonial, onOpen }: TestimonialCardProps) {
  * `onOpen` is stable (useTestimonialDialog), and the testimonials are module constants.
  */
 export const TestimonialCard = memo(TestimonialCardView);
-
-export default TestimonialCard;

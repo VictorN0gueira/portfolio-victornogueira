@@ -1,7 +1,7 @@
 import { m, useInView } from 'motion/react';
 import { useRef } from 'react';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
-import Container from '../ui/Container';
+import { Container } from '../ui/Container';
 import { EASE_OUT } from '../../lib/motion';
 
 const WORDMARK_HIDDEN = 'inset(100% 0% 0% 0%)';
@@ -46,5 +46,3 @@ export function Wordmark() {
     </Container>
   );
 }
-
-export default Wordmark;

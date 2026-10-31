@@ -31,5 +31,3 @@ export function ContactHoneypot({ value, onChange }: ContactHoneypotProps) {
     </div>
   );
 }
-
-export default ContactHoneypot;

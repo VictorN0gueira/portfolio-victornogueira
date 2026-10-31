@@ -181,7 +181,7 @@ function toPosix(path: string): string {
 }
 
 // A CSS function with a division (calc, max, min, clamp) is arithmetic, not text: its slash is masked like a placeholder.
-const CSS_MATH_SLASH = /(\b(?:calc|max|min|clamp)\([^;'"`]*?)[  ]\/[  ]/g;
+const CSS_MATH_SLASH = /(\b(?:calc|max|min|clamp)\([^;'"`]*?)[ \u00A0]\/[ \u00A0]/g;
 
 function withoutPlaceholders(text: string): string {
   return text.replace(/\$\{[^}]*\}/g, PLACEHOLDER_MARK).replace(CSS_MATH_SLASH, `$1${PLACEHOLDER_MARK}/${PLACEHOLDER_MARK}`);

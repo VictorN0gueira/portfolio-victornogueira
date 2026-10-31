@@ -1,5 +1,5 @@
 /** `id` is the React key of the card: never shown, so a copy edit of the number or the label cannot change it. */
-export type Stat = { id: string; value: string; label: string; description: string };
+type Stat = { id: string; value: string; label: string; description: string };
 
 export const stats: Stat[] = [
   {

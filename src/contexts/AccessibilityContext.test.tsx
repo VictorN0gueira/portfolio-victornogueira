@@ -1,7 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AllProviders } from '../test/render';
-import { A11Y_STORAGE_KEY, useAccessibility } from './AccessibilityContext';
+import { A11Y_STORAGE_KEY } from './AccessibilityContext';
+import { useAccessibility } from './useAccessibility';
 
 const ALL_OFF = {
   fontSize: false,

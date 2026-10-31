@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import type { Project } from '../data/projects';
 import { CARD_CTA_TEXT } from './projectLabels';
-import ProjectShotImage from './ProjectShotImage';
-import ProjectTitle from './ProjectTitle';
+import { ProjectShotImage } from './ProjectShotImage';
+import { ProjectTitle } from './ProjectTitle';
 
 interface ProjectCardProps {
   project: Project;
@@ -12,7 +12,7 @@ interface ProjectCardProps {
 }
 
 /* Card of a regular project on the /projetos grid. The whole card is one link to the case page. */
-export default function ProjectCard({ project, imageSizes }: ProjectCardProps) {
+export function ProjectCard({ project, imageSizes }: ProjectCardProps) {
   const titleId = `project-card-${project.slug}`;
   const ctaId = `${titleId}-cta`;
 

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import FieldError from './FieldError';
+import { FieldError } from './FieldError';
 
 describe('FieldError', () => {
   it('renders nothing without a message', () => {

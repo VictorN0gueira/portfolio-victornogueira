@@ -1,11 +1,11 @@
 import { useId } from 'react';
 import { Link } from 'react-router-dom';
-import Container from '../ui/Container';
-import Logo from '../ui/Logo';
-import NewTabHint from '../ui/NewTabHint';
+import { Container } from '../ui/Container';
+import { Logo } from '../ui/Logo';
+import { NewTabHint } from '../ui/NewTabHint';
 import { FooterColumns } from './FooterColumns';
-import SocialLinks from './SocialLinks';
-import Wordmark from './Wordmark';
+import { SocialLinks } from './SocialLinks';
+import { Wordmark } from './Wordmark';
 
 /**
  * Black footer with the sitemap, the contact data and a giant "vn one" wordmark. It reserves extra bottom padding
@@ -46,5 +46,3 @@ export function Footer() {
     </footer>
   );
 }
-
-export default Footer;

@@ -6,8 +6,6 @@ import { PillFace } from './choicePillFace';
 import { loadedChoicePopover, preloadChoicePopover } from './choicePopoverLoader';
 import { TRIGGER_CLASSES } from './choicePillStyles';
 
-export type { ChoiceOption } from './ChoiceList';
-
 /** The popover chunk is requested after an idle moment, and no later than this, if nothing asked for it sooner. */
 const IDLE_LOAD_TIMEOUT_MS = 2000;
 const OPEN_KEYS = new Set(['ArrowDown', 'ArrowUp']);
@@ -86,5 +84,3 @@ export function ChoicePill<T extends string | number>(props: ChoicePillProps<T>)
     </button>
   );
 }
-
-export default ChoicePill;

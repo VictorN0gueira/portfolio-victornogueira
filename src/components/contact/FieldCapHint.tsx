@@ -19,7 +19,7 @@ interface FieldCapHintProps {
  *   the gap under the field, see FieldFrame), so reaching the cap moves nothing below it.
  * Both appear from the cap on and go as soon as the text gets shorter.
  */
-export default function FieldCapHint({ id, length, max }: FieldCapHintProps) {
+export function FieldCapHint({ id, length, max }: FieldCapHintProps) {
   if (max === undefined) return null;
   const text = length >= max ? contactFormCopy.capHint(max) : '';
 

@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { getProjectBySlug, projects } from '../data/projects';
 import { renderWithProviders } from '../test/render';
-import ProjectDetail, { CLEAR_FLOATING_BUTTONS } from './ProjectDetail';
+import { ProjectDetail, CLEAR_FLOATING_BUTTONS } from './ProjectDetail';
 
 function panelOf(container: HTMLElement): HTMLElement {
   return container.querySelector('[class*="overflow-clip"]') as HTMLElement;

@@ -15,7 +15,7 @@ export type BrandIconId =
   | 'instagram'
   | 'googlegemini';
 
-export type BrandIcon = { title: string; path: string };
+type BrandIcon = { title: string; path: string };
 
 /** Paths do Simple Icons (CC0), todos no viewBox 0 0 24 24 */
 export const brandIcons: Record<BrandIconId, BrandIcon> = {

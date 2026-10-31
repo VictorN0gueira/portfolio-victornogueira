@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import App from './App';
+import { App } from './App';
 import { RELOAD_STORAGE_KEY } from './lib/lazyWithRetry';
 import { rejectUnexpectedFetch } from './test/contactForm';
 import { stubMatchMedia } from './test/matchMedia';

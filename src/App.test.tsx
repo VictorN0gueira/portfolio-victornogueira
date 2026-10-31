@@ -1,7 +1,7 @@
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import App from './App';
+import { App } from './App';
 import { shellCopy } from './data/shellCopy';
 import { rejectUnexpectedFetch } from './test/contactForm';
 import { stubMatchMedia } from './test/matchMedia';

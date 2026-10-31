@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { findAccentElements } from '../../test/accent';
 import { renderWithProviders } from '../../test/render';
-import Button from './Button';
+import { Button } from './Button';
 
 describe('Button', () => {
   describe('rendering', () => {

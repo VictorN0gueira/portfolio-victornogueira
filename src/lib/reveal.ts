@@ -7,7 +7,3 @@ export const revealProps: ComponentProps<typeof m.div> = {
   viewport: { once: true, margin: '-100px' },
   transition: { duration: 0.8, ease: 'easeOut' },
 };
-
-// The skeleton and the page fallback moved to their own files; these re-exports keep the old import path working.
-export { SectionSkeleton } from '../components/ui/SectionSkeleton';
-export { PageFallback } from '../components/layout/PageFallback';

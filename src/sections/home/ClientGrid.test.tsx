@@ -4,7 +4,8 @@ import { partners } from '../../data/partners';
 import { findAccentElements } from '../../test/accent';
 import { expectNoConsoleOutput } from '../../test/consoleGuard';
 import { renderWithProviders } from '../../test/render';
-import { ClientGrid, spansLastRow } from './ClientGrid';
+import { ClientGrid } from './ClientGrid';
+import { spansLastRow } from './clientGridLayout';
 import { LOGO_HEIGHT, LOGO_WIDTH } from './LogoImage';
 
 expectNoConsoleOutput();

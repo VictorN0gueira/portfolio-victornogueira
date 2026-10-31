@@ -1,6 +1,6 @@
 import { ALargeSmall, Contrast, Droplet, Pause, Type, Underline, type LucideIcon } from 'lucide-react';
 import type { Ref } from 'react';
-import type { A11yKey } from '../contexts/AccessibilityContext';
+import type { A11yKey } from '../contexts/useAccessibility';
 import { cn } from '../lib/utils';
 import { a11yOptionLabels } from './a11yWidgetCopy';
 

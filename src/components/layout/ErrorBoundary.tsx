@@ -79,5 +79,3 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return this.props.fallback ? this.props.fallback(this.retry) : <ErrorPanel onRetry={this.retry} />;
   }
 }
-
-export default ErrorBoundary;

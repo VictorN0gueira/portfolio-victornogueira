@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { stubMatchMedia } from '../test/matchMedia';
-import About from './About';
+import { About } from './About';
 
 const CV_PUBLIC_PATH = '/cv/cv-joao-victor-nogueira.pdf';
 const CV_DISK_PATH = resolve(process.cwd(), 'public/cv/cv-joao-victor-nogueira.pdf');

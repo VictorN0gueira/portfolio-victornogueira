@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-export interface RevealGroupContextValue {
+interface RevealGroupContextValue {
   isInView: boolean;
   /** Seconds an item waits before it animates: the group delay plus its position in the group times the stagger. */
   getDelay: (item: Element) => number;
