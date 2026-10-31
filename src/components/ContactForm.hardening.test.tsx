@@ -10,6 +10,7 @@ import {
   stubFetch,
   submitButton,
   type User,
+  visibleThanksText,
 } from '../test/contactForm';
 import { renderWithProviders } from '../test/render';
 import ContactForm from './ContactForm';
@@ -103,7 +104,7 @@ describe('the channel the thanks names', () => {
     await act(async () => answer({ ok: true }));
 
     expect(await screen.findByRole('heading', { name: 'Recebemos sua mensagem' })).toBeInTheDocument();
-    expect(screen.getByText('Obrigado! A gente responde pelo e-mail em breve.')).toBeInTheDocument();
+    expect(visibleThanksText('Obrigado! A gente responde pelo e-mail em breve.')).toHaveLength(1);
     expect(screen.getByRole('status')).toHaveTextContent('A gente responde pelo e-mail em breve.');
   });
 });
@@ -162,7 +163,7 @@ describe('the honeypot field', () => {
     await user.click(submitButton());
 
     expect(await screen.findByRole('heading', { name: 'Recebemos sua mensagem' })).toBeInTheDocument();
-    expect(screen.getByText('Obrigado! A gente responde pelo WhatsApp em breve.')).toBeInTheDocument();
+    expect(visibleThanksText('Obrigado! A gente responde pelo WhatsApp em breve.')).toHaveLength(1);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

@@ -60,7 +60,8 @@ describe('src/index.css palette', () => {
 
   it('finds the colors it is supposed to check', () => {
     expect(findHexLiterals(indexCss).length).toBeGreaterThan(5)
-    expect(findRgbLiterals(indexCss).length).toBeGreaterThan(0)
+    // index.css no longer holds an rgb() value; the scanner is proven on a fixed sample instead.
+    expect(findRgbLiterals('a { box-shadow: 0 0 1px rgba(26, 26, 26, 0.2); color: rgb(10, 10, 10); }').length).toBe(2)
   })
 
   it('uses only VN One palette hex values', () => {

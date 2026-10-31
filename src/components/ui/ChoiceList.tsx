@@ -2,29 +2,23 @@ import * as Popover from '@radix-ui/react-popover';
 import { Check } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import { cn } from '../../lib/utils';
+import {
+  COLLISION_PADDING,
+  OPTION_CLASSES,
+  PANEL_CLASSES,
+  PANEL_OFFSET_PX,
+  type ChoiceTone,
+} from './choiceListStyles';
+
+export type { ChoiceTone } from './choiceListStyles';
 
 export interface ChoiceOption<T extends string | number> {
   value: T;
   label: string;
 }
 
-const COLLISION_PADDING_PX = 12;
-const PANEL_OFFSET_PX = 8;
-
-const PANEL_CLASSES = [
-  'vn-choice-panel relative z-[100] w-max min-w-[min(11rem,92vw)] max-w-[min(92vw,20rem)]',
-  'max-h-[var(--radix-popover-content-available-height)] overflow-y-auto overscroll-contain',
-  'rounded-2xl border border-vn-gray-light bg-vn-white p-1.5 font-sans text-base font-medium normal-case',
-  'tracking-normal text-vn-ink shadow-[0_12px_32px_-12px_rgba(10,10,10,.35)] outline-none',
-].join(' ');
-
-const OPTION_CLASSES = [
-  'flex min-h-11 cursor-pointer select-none items-center justify-between gap-3 rounded-xl px-3 py-2 leading-tight',
-  'outline-none data-[active=true]:bg-vn-cream data-[active=true]:outline-2 data-[active=true]:-outline-offset-2',
-  'data-[active=true]:outline-vn-ink',
-].join(' ');
-
 interface ChoiceOptionRowProps {
+  tone: ChoiceTone;
   label: string;
   isSelected: boolean;
   isActive: boolean;
@@ -36,15 +30,17 @@ interface ChoiceOptionRowProps {
 }
 
 /** One option of the list. The active row carries the focus (roving tabindex) and the ring; the chosen one is bold. */
-function ChoiceOptionRow({ label, isSelected, isActive, optionRef, onChoose, onActivate }: ChoiceOptionRowProps) {
+function ChoiceOptionRow({ tone, label, isSelected, isActive, optionRef, onChoose, onActivate }: ChoiceOptionRowProps) {
   return (
+    // The keys of the list are handled once, on the listbox (useListboxNavigation): a click here is the pointer's way in.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events
     <li
       ref={optionRef}
       role="option"
       aria-selected={isSelected}
       tabIndex={isActive ? 0 : -1}
       data-active={isActive}
-      className={cn(OPTION_CLASSES, isSelected && 'font-bold')}
+      className={cn(OPTION_CLASSES[tone], isSelected && 'font-bold')}
       onClick={onChoose}
       onPointerMove={() => {
         if (!isActive) onActivate();
@@ -68,6 +64,12 @@ interface ChoiceListProps {
   onOpenFocus: () => void;
   onChoose: (index: number) => void;
   onActivate: (index: number) => void;
+  /** The list closed: the focus goes back to the trigger unless this prevents it. */
+  onCloseAutoFocus?: (event: Event) => void;
+  /** The surface the list sits on; `dark` is as wide as its trigger. Default `light`. */
+  tone?: ChoiceTone;
+  /** Where the list is rendered. Default is the body; the contact form keeps it inside the form. */
+  portalContainer?: HTMLElement | null;
 }
 
 /**
@@ -85,25 +87,30 @@ export function ChoiceList({
   onOpenFocus,
   onChoose,
   onActivate,
+  onCloseAutoFocus,
+  tone = 'light',
+  portalContainer,
 }: ChoiceListProps) {
   return (
-    <Popover.Portal>
+    <Popover.Portal container={portalContainer}>
       <Popover.Content
         asChild
         side="bottom"
         align="start"
         sideOffset={PANEL_OFFSET_PX}
-        collisionPadding={COLLISION_PADDING_PX}
+        collisionPadding={COLLISION_PADDING[tone]}
         avoidCollisions
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           onOpenFocus();
         }}
+        onCloseAutoFocus={onCloseAutoFocus}
       >
-        <ul role="listbox" aria-label={label} className={PANEL_CLASSES} onKeyDown={onKeyDown}>
+        <ul role="listbox" aria-label={label} className={PANEL_CLASSES[tone]} onKeyDown={onKeyDown}>
           {options.map((option, index) => (
             <ChoiceOptionRow
               key={option.value}
+              tone={tone}
               label={option.label}
               isSelected={index === selectedIndex}
               isActive={index === activeIndex}

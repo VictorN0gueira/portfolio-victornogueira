@@ -444,7 +444,7 @@ describe('a text dropped on an empty field', () => {
   });
 });
 
-// R72 and R75: a country coded number that a spaced separator would cut, or that something with digits follows. The two
+// A country coded number that a spaced separator would cut, or that something with digits follows. The two
 // readings (cut and uncut) cannot be told apart by their structure, so the paste is cancelled and the field is left as it
 // is, in an empty field, before a typed number and over a selected one. A run of 55 and more than 13 digits is never guessed.
 describe('a country coded number with a spaced separator, or followed by something with digits', () => {

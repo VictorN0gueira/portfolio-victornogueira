@@ -87,9 +87,52 @@ describe('useListboxNavigation', () => {
 
     expect(press('ArrowDown')).toHaveBeenCalled();
     expect(press('Enter')).toHaveBeenCalled();
-    expect(press('Tab')).toHaveBeenCalled();
     expect(press('F5')).not.toHaveBeenCalled();
     expect(press('Escape')).not.toHaveBeenCalled();
+  });
+
+  it('lets Tab do its own work: it moves the focus to the trigger first, closes, and never cancels the key', () => {
+    const trigger = document.createElement('button');
+    const focusTrigger = vi.spyOn(trigger, 'focus');
+    const onDismiss = vi.fn();
+    const hook = renderHook(() =>
+      useListboxNavigation({ labels: LABELS, selectedIndex: 1, onChoose: vi.fn(), onDismiss, triggerRef: { current: trigger } }),
+    );
+    const { event, preventDefault } = keyEvent('Tab');
+
+    act(() => hook.result.current.onKeyDown(event));
+
+    expect(focusTrigger).toHaveBeenCalledTimes(1);
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    expect(preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('keeps the focus where Tab put it: only the close that follows a Tab skips the return to the trigger', () => {
+    const { result, press } = setup(1);
+    const closeEvent = () => ({ preventDefault: vi.fn() }) as unknown as Event & { preventDefault: ReturnType<typeof vi.fn> };
+
+    const plainClose = closeEvent();
+    result.current.onCloseAutoFocus(plainClose);
+    expect(plainClose.preventDefault).not.toHaveBeenCalled();
+
+    press('Tab');
+    const afterTab = closeEvent();
+    result.current.onCloseAutoFocus(afterTab);
+    expect(afterTab.preventDefault).toHaveBeenCalledTimes(1);
+
+    const next = closeEvent();
+    result.current.onCloseAutoFocus(next);
+    expect(next.preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('gives the same ref callback for the same option on every render', () => {
+    const { result, rerender } = setup(1);
+    const first = result.current.registerOption(2);
+
+    rerender();
+
+    expect(result.current.registerOption(2)).toBe(first);
+    expect(result.current.registerOption(1)).not.toBe(first);
   });
 
   it('puts the chosen option back as the active one when the list opens again', () => {

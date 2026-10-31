@@ -98,8 +98,8 @@ describe('the Enter key in the rendered form', () => {
     fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Ana Lima' } });
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: TEST_EMAIL } });
     fireEvent.change(screen.getByLabelText('Mensagem'), { target: { value: 'Quero automatizar notas fiscais' } });
-    fireEvent.click(screen.getByRole('button', { name: /selecione um serviço/i }));
-    fireEvent.click(await screen.findByRole('button', { name: serviceOptions[0] }));
+    fireEvent.click(screen.getByRole('button', { name: /escolhe um serviço/i }));
+    fireEvent.click(await screen.findByRole('option', { name: serviceOptions[0] }));
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.keyDown(screen.getByLabelText('Nome'), { key: 'Enter' });
     fireEvent.submit(document.querySelector('form[name="contact"]') as HTMLFormElement);

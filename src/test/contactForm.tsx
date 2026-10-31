@@ -39,12 +39,19 @@ export const SWAP_WAIT = { timeout: 3000 } as const;
 export const findWhatsappField = () => screen.findByLabelText('WhatsApp', undefined, SWAP_WAIT);
 
 export const submitButton = () => screen.getByRole('button', { name: 'Enviar' });
-// The trigger is named by its label and its own text ("Serviço de interesse Selecione um serviço").
-export const serviceTrigger = () => screen.getByRole('button', { name: /selecione um serviço/i });
+// The trigger is named by its label and its own text ("Serviço de interesse Escolhe um serviço").
+export const serviceTrigger = () => screen.getByRole('button', { name: /escolhe um serviço/i });
+
+/**
+ * The visible thanks paragraph. The same sentence also sits in the hidden status region (so a screen reader announces
+ * it), which a plain getByText would find too: this leaves that copy out.
+ */
+export const visibleThanksText = (text: string) =>
+  screen.getAllByText(text).filter((element) => element.closest('[role="status"]') === null);
 
 export async function pickService(user: User) {
   await user.click(serviceTrigger());
-  await user.click(screen.getByRole('button', { name: serviceOptions[0] }));
+  await user.click(await screen.findByRole('option', { name: serviceOptions[0] }));
   // The list animates out; wait until only the trigger (now showing the value) is left.
   await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument(), SWAP_WAIT);
 }

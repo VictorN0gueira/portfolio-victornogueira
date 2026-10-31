@@ -14,9 +14,9 @@ import {
 import { renderWithProviders } from '../test/render';
 import ContactForm from './ContactForm';
 
-const SERVICE_TRIGGER_NAME = /selecione um serviço/i;
-const STATUS_TEXT_EMAIL = 'Recebemos sua mensagem. Obrigado! A gente responde pelo e-mail em breve.';
-const STATUS_TEXT_WHATSAPP = 'Recebemos sua mensagem. Obrigado! A gente responde pelo WhatsApp em breve.';
+const SERVICE_TRIGGER_NAME = /escolhe um serviço/i;
+const STATUS_TEXT_EMAIL = 'Obrigado! A gente responde pelo e-mail em breve.';
+const STATUS_TEXT_WHATSAPP = 'Obrigado! A gente responde pelo WhatsApp em breve.';
 
 expectNoConsoleOutput();
 
@@ -38,7 +38,7 @@ describe('ContactForm success announcement', () => {
     expect(screen.getAllByRole('status')).toHaveLength(1);
   });
 
-  it('announces the title and the text through the same region that was there before the send', async () => {
+  it('announces the text through the same region that was there before the send', async () => {
     stubFetch(() => Promise.resolve({ ok: true }));
     const user = userEvent.setup();
     renderWithProviders(<ContactForm />);
@@ -46,9 +46,13 @@ describe('ContactForm success announcement', () => {
 
     await submitEmailForm(user);
 
-    const heading = await screen.findByRole('heading', { level: 4, name: 'Recebemos sua mensagem' });
+    const heading = await screen.findByRole('heading', { level: 3, name: 'Recebemos sua mensagem' });
     expect(screen.getByRole('status')).toBe(before);
     expect(before).toHaveTextContent(STATUS_TEXT_EMAIL);
+    // The title is read once, from the heading that takes the focus: the region must not say it a second time.
+    expect(heading).toHaveFocus();
+    expect(before.textContent).toBe(STATUS_TEXT_EMAIL);
+    expect(before.textContent).not.toContain(heading.textContent);
     // The region is not inside the success markup: that mounts together with its text, which many readers skip.
     expect(heading.closest('[role="status"]')).toBeNull();
     expect(screen.getAllByRole('status')).toHaveLength(1);
@@ -67,7 +71,7 @@ describe('ContactForm success announcement', () => {
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 
-    await screen.findByRole('heading', { level: 4 });
+    await screen.findByRole('heading', { level: 3 });
     expect(screen.getByRole('status')).toHaveTextContent(STATUS_TEXT_WHATSAPP);
   });
 
@@ -94,14 +98,15 @@ describe('ContactForm success announcement', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 
-  it('keeps the four validation alerts as they were', async () => {
+  it('leaves the four validation messages to the focus and to aria-describedby: no alert of their own', async () => {
     const user = userEvent.setup();
     renderWithProviders(<ContactForm />);
 
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
 
-    expect(screen.getAllByRole('alert')).toHaveLength(4);
+    expect(screen.queryAllByRole('alert')).toHaveLength(0);
+    expect(document.querySelectorAll('[aria-invalid="true"]')).toHaveLength(4);
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 });
@@ -111,7 +116,7 @@ describe('ContactForm service label', () => {
     renderWithProviders(<ContactForm />);
     const trigger = screen.getByRole('button', { name: SERVICE_TRIGGER_NAME });
 
-    expect(trigger).toHaveAccessibleName('Serviço de interesse Selecione um serviço');
+    expect(trigger).toHaveAccessibleName('Serviço de interesse Escolhe um serviço');
     expect(trigger).toHaveAccessibleName(/Serviço de interesse/);
   });
 
@@ -133,6 +138,9 @@ describe('ContactForm service label', () => {
 
     expect(label).toHaveTextContent('Serviço de interesse');
     expect(trigger.id).not.toBe('');
-    expect(trigger).toHaveAttribute('aria-labelledby', `contact-servico-label ${trigger.id}`);
+    // The text of the button is pointed at by its own span, not by the button: the button has the label by `for`, and
+    // pointing at it would read the label twice instead of the text.
+    expect(trigger).toHaveAttribute('aria-labelledby', `contact-servico-label ${trigger.id}-value`);
+    expect(label).toHaveAttribute('for', trigger.id);
   });
 });

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { formatWhatsappDisplay } from '../../lib/phone';
 import { ContactInput, ContactMessage, ContactService } from './ContactFieldControls';
 import ContactHoneypot from './ContactHoneypot';
+import { useContactIds } from './contactIds';
 import FieldError from './FieldError';
 import type { ContactFormState } from './useContactForm';
 
@@ -10,9 +11,6 @@ const SWAP_MOTION = {
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -10 },
 } as const;
-
-/** Id of the cooldown line, the same way a field error has one. */
-const NOTICE_ID = 'contact-notice';
 
 interface ContactFormFieldsProps {
   form: ContactFormState;
@@ -54,6 +52,7 @@ function ContactMethodField({ form }: ContactFormFieldsProps) {
  */
 export function ContactFormFields({ form }: ContactFormFieldsProps) {
   const { formData, servico, errors, setField, chooseService } = form;
+  const ids = useContactIds();
 
   return (
     <div
@@ -72,7 +71,7 @@ export function ContactFormFields({ form }: ContactFormFieldsProps) {
         error={errors.mensagem}
         onChange={(value) => setField('mensagem', value)}
       />
-      <FieldError id={NOTICE_ID} message={form.notice} />
+      <FieldError id={ids.notice} message={form.notice} announce />
       <ContactHoneypot value={form.honeypot} onChange={form.setHoneypot} />
     </div>
   );

@@ -260,8 +260,8 @@ describe('ContactForm WhatsApp caret', () => {
     expect(whatsapp).toHaveValue(TEST_PHONE_DISPLAY);
   });
 
-  // The prefix is protected on purpose (ruling R66): a select all selects the number only, so a copy or a cut gives the
-  // number without "+55 ". It still replaces the whole number when the visitor types over it.
+  // The prefix is protected on purpose: a select all selects the number only, so a copy or a cut gives the number
+  // without "+55 ". It still replaces the whole number when the visitor types over it.
   it('turns a select all of the whole field into the range 4 to the end, so the number is selected and the prefix is not', async () => {
     const { user, whatsapp } = await openWhatsapp();
     await user.type(whatsapp, TEST_PHONE_TYPED);

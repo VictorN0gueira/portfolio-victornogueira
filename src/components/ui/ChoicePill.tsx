@@ -1,7 +1,7 @@
 import * as Popover from '@radix-ui/react-popover';
 import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
-import { useListboxNavigation } from '../../hooks/useListboxNavigation';
+import type { ComponentProps } from 'react';
+import { useChoicePopover } from '../../hooks/useChoicePopover';
 import { cn } from '../../lib/utils';
 import { ChoiceList, type ChoiceOption } from './ChoiceList';
 
@@ -24,22 +24,24 @@ interface ChoicePillProps<T extends string | number> {
 // last line of a pill whose text wrapped (the period after the task pill of the hero sentence does).
 // The right padding is the chevron (0.55em) with its 0.6em margin and the 0.3em gap the pill had before.
 const TRIGGER_CLASSES = [
-  'group relative inline-flex min-h-11 max-w-full items-center rounded-full border border-vn-gray-light bg-vn-white',
+  'group relative inline-flex min-h-11 max-w-full items-center rounded-full border border-vn-gray-mid bg-vn-white',
   'py-[0.04em] pr-[1.45em] pl-[0.6em] text-left align-baseline text-vn-ink cursor-pointer select-none',
   'hover:bg-vn-cream data-[state=open]:bg-vn-cream',
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-ink',
 ].join(' ');
 
 interface ChoiceTriggerProps {
+  /** Ref, key handler and the `aria-controls` rule of the trigger, from useChoicePopover. */
+  triggerProps: Pick<ComponentProps<typeof Popover.Trigger>, 'ref' | 'onKeyDown' | 'aria-controls'>;
   label: string;
   ariaLabel: string;
   className?: string;
 }
 
-/** The pill itself: a button that announces a listbox. Radix adds aria-expanded, aria-controls and data-state. */
-function ChoiceTrigger({ label, ariaLabel, className }: ChoiceTriggerProps) {
+/** The pill itself: a button that announces a listbox. Radix adds aria-expanded, data-state and, while the list is open, aria-controls. */
+function ChoiceTrigger({ triggerProps, label, ariaLabel, className }: ChoiceTriggerProps) {
   return (
-    <Popover.Trigger aria-haspopup="listbox" aria-label={ariaLabel} className={cn(TRIGGER_CLASSES, className)}>
+    <Popover.Trigger {...triggerProps} aria-haspopup="listbox" aria-label={ariaLabel} className={cn(TRIGGER_CLASSES, className)}>
       <span>{label}</span>
       <ChevronDown
         aria-hidden="true"
@@ -64,44 +66,17 @@ export function ChoicePill<T extends string | number>({
   listLabel,
   className,
 }: ChoicePillProps<T>) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedIndex = Math.max(
-    0,
-    options.findIndex((option) => option.value === value),
-  );
-  const selectedLabel = options[selectedIndex]?.label ?? '';
-
-  const choose = (index: number) => {
-    onChange(options[index].value);
-    setIsOpen(false);
-  };
-
-  const navigation = useListboxNavigation({
-    labels: options.map((option) => option.label),
-    selectedIndex,
-    onChoose: choose,
-    onDismiss: () => setIsOpen(false),
-  });
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) navigation.resetActive();
-    setIsOpen(nextOpen);
-  };
+  const { isOpen, handleOpenChange, triggerProps, selectedLabel, listProps } = useChoicePopover({ value, options, onChange });
 
   return (
     <Popover.Root open={isOpen} onOpenChange={handleOpenChange}>
-      <ChoiceTrigger label={selectedLabel} ariaLabel={ariaLabel(selectedLabel)} className={className} />
-      <ChoiceList
-        options={options}
-        selectedIndex={selectedIndex}
-        activeIndex={navigation.activeIndex}
-        label={listLabel}
-        registerOption={navigation.registerOption}
-        onKeyDown={navigation.onKeyDown}
-        onOpenFocus={navigation.focusSelected}
-        onChoose={choose}
-        onActivate={(index) => navigation.focusOption(index, false)}
+      <ChoiceTrigger
+        triggerProps={triggerProps}
+        label={selectedLabel}
+        ariaLabel={ariaLabel(selectedLabel)}
+        className={className}
       />
+      <ChoiceList {...listProps} label={listLabel} />
     </Popover.Root>
   );
 }

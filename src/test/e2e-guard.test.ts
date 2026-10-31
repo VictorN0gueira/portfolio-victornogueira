@@ -16,6 +16,7 @@ import { MOCKED_FEED_HOSTS, MOCKED_HOSTS, MOCKED_IMAGE_HOSTS, N8N_HOST } from '.
 
 const E2E_DIR = resolve(__dirname, '../../e2e');
 const SPEC_FILE = /\.(spec|test)\.ts$/;
+const MAX_SPEC_LINES = 800;
 // `import { ..., test, ... } from './n8nGuard'` (or '../n8nGuard' from a subfolder), over one line or many.
 const TEST_FROM_GUARD = /import\s*\{[^}]*\btest\b[^}]*\}\s*from\s*['"](?:\.\.?\/)+n8nGuard['"]/;
 const TEST_FROM_PLAYWRIGHT = /import\s*\{[^}]*\btest\b[^}]*\}\s*from\s*['"]@playwright\/test['"]/;
@@ -205,6 +206,7 @@ describe('the e2e specs that touch the lead channel', () => {
     const names = Object.keys(readSpecs());
 
     expect(names).toContain('contact-form.spec.ts');
+    expect(names).toContain('contact-form.focus.spec.ts');
     expect(names).toContain('hero.spec.ts');
     expect(names).toContain('home.spec.ts');
     expect(names).toContain('scroll-lock.spec.ts');
@@ -268,11 +270,20 @@ describe('the e2e specs that touch the lead channel', () => {
     expect(findSubmitInHelpers(source)).toEqual([]);
   });
 
-  it('see the guard in the contact form spec', () => {
-    const source = readSpecs()['contact-form.spec.ts'];
+  // The service list and focus specs drive the real form like the webhook spec does (they fill it and press Enviar).
+  it.each(['contact-form.spec.ts', 'contact-form.focus.spec.ts'])('see the guard in %s', (name) => {
+    const source = readSpecs()[name];
 
     expect(touchesTheLeadChannel(source)).toBe(true);
     expect(isGuarded(source)).toBe(true);
+  });
+
+  it('keep every spec under 800 lines, split by behaviour like the unit tests', () => {
+    const tooLong = Object.entries(readSpecs())
+      .map(([name, source]) => [name, source.split('\n').length] as const)
+      .filter(([, lines]) => lines >= MAX_SPEC_LINES);
+
+    expect(tooLong).toEqual([]);
   });
 });
 

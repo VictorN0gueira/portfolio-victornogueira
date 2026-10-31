@@ -77,15 +77,6 @@
 }
 
 @layer utilities {
-  /* Still used by ServiceSelect until the contact form is rebuilt. */
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(26, 26, 26, 0.2);
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(26, 26, 26, 0.35);
-  }
-
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }

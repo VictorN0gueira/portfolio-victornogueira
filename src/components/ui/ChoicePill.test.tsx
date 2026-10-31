@@ -99,13 +99,13 @@ describe('ChoicePill trigger', () => {
     expect(trigger).toHaveClass('pr-[1.45em]');
   });
 
-  it('is a pill on a white surface with a light gray border and an ink focus ring', () => {
+  it('is a pill on a white surface with a mid gray border (3:1 on the cream) and an ink focus ring', () => {
     setup();
 
     expect(getTrigger()).toHaveClass(
       'rounded-full',
       'bg-vn-white',
-      'border-vn-gray-light',
+      'border-vn-gray-mid',
       'hover:bg-vn-cream',
       'focus-visible:outline-vn-ink',
     );
@@ -318,14 +318,14 @@ describe('ChoicePill keyboard', () => {
     await waitFor(() => expect(getTrigger('Horas por semana: 20 horas. Alterar')).toHaveFocus());
   });
 
-  it('closes with Tab and keeps the focus on the trigger, so the next Tab leaves the pill', async () => {
+  it('closes with one Tab that already moves on to the next control', async () => {
     const { user } = setup();
     await openList(user);
 
     await user.keyboard('{Tab}');
 
     await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
-    await waitFor(() => expect(getTrigger()).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'outro botão' })).toHaveFocus());
   });
 
   it('opens from the keyboard with Enter on the trigger', async () => {
@@ -335,6 +335,29 @@ describe('ChoicePill keyboard', () => {
     await user.keyboard('{Enter}');
 
     expect(await screen.findByRole('listbox')).toBeInTheDocument();
+  });
+
+  it.each(['{ArrowDown}', '{ArrowUp}'])('opens from the closed trigger with %s, on the current option', async (key) => {
+    const { user } = setup();
+    getTrigger().focus();
+
+    await user.keyboard(key);
+
+    expect(await screen.findByRole('listbox')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('option', { name: '10 horas' })).toHaveFocus());
+  });
+
+  it('has no aria-controls while closed (it would point at nothing), and the real one while open', async () => {
+    const { user } = setup();
+    expect(getTrigger()).not.toHaveAttribute('aria-controls');
+
+    await user.click(getTrigger());
+    const listbox = await screen.findByRole('listbox');
+    expect(getTrigger()).toHaveAttribute('aria-controls', listbox.id);
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    expect(getTrigger()).not.toHaveAttribute('aria-controls');
   });
 
   it('jumps to the option that starts with the typed character', async () => {

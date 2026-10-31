@@ -3,8 +3,7 @@ import type { ContactMethod } from '../../lib/contact';
 /** Os textos do formulário de contato (o texto legal do consentimento fica em ContactConsent). */
 export const contactFormCopy = {
   method: {
-    legend: 'Escolha o método de contato preferido',
-    groupLabel: 'Método de contato',
+    legend: 'Escolhe como a gente responde',
     email: 'Por e-mail',
     whatsapp: 'Por WhatsApp',
   },
@@ -17,11 +16,18 @@ export const contactFormCopy = {
   },
   placeholders: {
     nome: 'Seu nome',
-    servico: 'Selecione um serviço',
+    servico: 'Escolhe um serviço',
     email: 'voce@empresa.com.br',
     whatsapp: '+55 81 99999-9999',
     mensagem: 'Conta rapidinho o que você precisa',
   },
+  // What a select shows when the caller gives it no placeholder of its own.
+  selectPlaceholder: 'Escolhe uma opção',
+  // Under the WhatsApp field: how the number is typed.
+  whatsappHint: 'Com DDD, por exemplo 81 99999-9999',
+  // Under Enviar while the box of the consent is not ticked: why the button is off.
+  consentHint: 'Marque a caixa acima para enviar',
+  formLabel: 'Formulário de contato',
   // Shown under a field that has reached its cap (see FieldCapHint).
   capHint: (max: number) => `Máximo de ${max} caracteres.`,
   submit: 'Enviar',

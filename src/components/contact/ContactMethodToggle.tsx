@@ -25,14 +25,14 @@ interface ContactMethodToggleProps {
 }
 
 /**
- * The choice between answering by e-mail or by WhatsApp: a group of two toggle buttons (aria-pressed), the
- * active one white on black. Changing it swaps the contact field and drops the errors (see selectMethod).
+ * The choice between answering by e-mail or by WhatsApp: a fieldset (its legend is the one name of the group) with two
+ * toggle buttons (aria-pressed), the active one white on black. Changing it swaps the contact field and drops the errors (see selectMethod).
  */
 export function ContactMethodToggle({ method, onSelect }: ContactMethodToggleProps) {
   return (
     <fieldset className="min-w-0">
       <legend className="sr-only">{contactFormCopy.method.legend}</legend>
-      <div role="group" aria-label={contactFormCopy.method.groupLabel} className={GROUP_CLASS}>
+      <div className={GROUP_CLASS}>
         {METHODS.map(({ id, label, Icon }) => (
           <button
             key={id}

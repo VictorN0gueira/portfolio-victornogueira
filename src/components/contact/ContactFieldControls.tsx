@@ -1,18 +1,16 @@
 import type { ReactNode } from 'react';
 import { serviceOptions } from '../../data/services';
 import { EMAIL_MAX, MESSAGE_MAX, NAME_MAX, type ContactFields } from '../../lib/contact';
-import ServiceSelect from '../ServiceSelect';
 import { contactFormCopy } from './contactFormCopy';
 import { LABEL_CLASS } from './contactStyles';
 import FieldCapHint from './FieldCapHint';
 import FieldError from './FieldError';
-import { errorId, fieldProps } from './fieldProps';
+import { useContactIds } from './contactIds';
+import { fieldProps } from './fieldProps';
+import ServiceSelect from './ServiceSelect';
 import { whatsappInputProps } from './whatsappInput';
 
 const { labels, placeholders } = contactFormCopy;
-
-/** Id of the visible label of the service field: the trigger names itself by it and by its own text. */
-export const SERVICE_LABEL_ID = 'contact-servico-label';
 
 // Which browser autofill and which keyboard each text field asks for.
 // The WhatsApp field has no cap here: its own formatting (whatsappInput.ts) already bounds what it holds.
@@ -26,15 +24,19 @@ interface FieldFrameProps {
   field: keyof ContactFields;
   label: string;
   error?: string;
-  /** Id of the control the label belongs to. The service select has none: it names itself with `labelId`. */
+  /** Id of the control the label belongs to. The service select also names itself with `labelId` (its name is label + text). */
   htmlFor?: string;
   /** Id given to the label, for a control that points at it with aria-labelledby. */
   labelId?: string;
+  /** A visible line under the control that tells how to fill it, ahead of the error (the control describes itself by it). */
+  hint?: { id: string; text: string };
   children: ReactNode;
 }
 
 /** The label, the control and the error message of one field. */
-function FieldFrame({ field, label, error, htmlFor, labelId, children }: FieldFrameProps) {
+function FieldFrame({ field, label, error, htmlFor, labelId, hint, children }: FieldFrameProps) {
+  const ids = useContactIds();
+
   return (
     // `relative`: the cap hint of the field is positioned in the gap under it (see FieldCapHint).
     <div className="relative flex flex-col gap-2">
@@ -42,7 +44,12 @@ function FieldFrame({ field, label, error, htmlFor, labelId, children }: FieldFr
         {label}
       </label>
       {children}
-      <FieldError id={errorId(field)} message={error} />
+      {hint && (
+        <p id={hint.id} className="text-sm text-vn-gray-light">
+          {hint.text}
+        </p>
+      )}
+      <FieldError id={ids.error(field)} message={error} />
     </div>
   );
 }
@@ -59,17 +66,18 @@ interface ContactInputProps {
  * (see whatsappInput.ts); the other two fields have none.
  */
 export function ContactInput({ field, value, error, onChange }: ContactInputProps) {
-  const id = `contact-${field}`;
+  const ids = useContactIds();
+  const id = ids.field(field);
+  const hint = field === 'whatsapp' ? { id: ids.whatsappHint, text: contactFormCopy.whatsappHint } : undefined;
   const config = INPUT_CONFIG[field];
   const extra = field === 'whatsapp' ? whatsappInputProps(onChange) : undefined;
 
   return (
-    <FieldFrame field={field} label={labels[field]} error={error} htmlFor={id}>
+    <FieldFrame field={field} label={labels[field]} error={error} htmlFor={id} hint={hint}>
       <input
         id={id}
         required
-        aria-required="true"
-        {...fieldProps(field, error)}
+        {...fieldProps(ids.error(field), error, '', hint ? [hint.id] : [])}
         type={config.type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -78,7 +86,7 @@ export function ContactInput({ field, value, error, onChange }: ContactInputProp
         maxLength={config.maxLength}
         {...extra}
       />
-      <FieldCapHint id={`${id}-cap`} length={value.length} max={config.maxLength} />
+      <FieldCapHint id={ids.cap(field)} length={value.length} max={config.maxLength} />
     </FieldFrame>
   );
 }
@@ -94,13 +102,14 @@ interface ContactMessageProps {
  * not say "send" (a visitor could believe the message went out). Sending is the Enviar button.
  */
 export function ContactMessage({ value, error, onChange }: ContactMessageProps) {
+  const ids = useContactIds();
+
   return (
-    <FieldFrame field="mensagem" label={labels.mensagem} error={error} htmlFor="contact-mensagem">
+    <FieldFrame field="mensagem" label={labels.mensagem} error={error} htmlFor={ids.field('mensagem')}>
       <textarea
-        id="contact-mensagem"
+        id={ids.field('mensagem')}
         required
-        aria-required="true"
-        {...fieldProps('mensagem', error, 'resize-none')}
+        {...fieldProps(ids.error('mensagem'), error, 'resize-none')}
         rows={4}
         maxLength={MESSAGE_MAX}
         value={value}
@@ -108,7 +117,7 @@ export function ContactMessage({ value, error, onChange }: ContactMessageProps) 
         placeholder={placeholders.mensagem}
         enterKeyHint="enter"
       />
-      <FieldCapHint id="contact-mensagem-cap" length={value.length} max={MESSAGE_MAX} />
+      <FieldCapHint id={ids.cap('mensagem')} length={value.length} max={MESSAGE_MAX} />
     </FieldFrame>
   );
 }
@@ -121,16 +130,25 @@ interface ContactServiceProps {
 
 /** Serviço de interesse, comum a email e WhatsApp. */
 export function ContactService({ value, error, onChange }: ContactServiceProps) {
+  const ids = useContactIds();
+
   return (
-    <FieldFrame field="servico" label={labels.servico} error={error} labelId={SERVICE_LABEL_ID}>
+    <FieldFrame
+      field="servico"
+      label={labels.servico}
+      error={error}
+      htmlFor={ids.servicoTrigger}
+      labelId={ids.servicoLabel}
+    >
       <ServiceSelect
+        id={ids.servicoTrigger}
         value={value}
         onChange={onChange}
         options={serviceOptions}
         placeholder={placeholders.servico}
         invalid={!!error}
-        describedBy={errorId('servico')}
-        labelledBy={SERVICE_LABEL_ID}
+        describedBy={ids.error('servico')}
+        labelledBy={ids.servicoLabel}
       />
     </FieldFrame>
   );

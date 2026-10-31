@@ -31,6 +31,7 @@ const WHATSAPP_PATH = '/webhook/portfolio-vn-whatsapp';
 const EMAIL_KEYS = ['email', 'mensagem', 'nome', 'servico', 'timestamp'];
 const WHATSAPP_KEYS = ['mensagem', 'nome', 'servico', 'timestamp', 'whatsapp'];
 const SUCCESS_TITLE = 'Recebemos sua mensagem';
+const SUCCESS_TEXT = 'Obrigado!';
 const ERROR_TEXT = 'Não deu pra enviar. Tenta de novo ou fala direto pelo WhatsApp.';
 const MIN_TEXT_PX = 16;
 const MIN_TOUCH_PX = 44;
@@ -50,7 +51,7 @@ async function openForm(page: Page): Promise<Locator> {
 }
 
 async function pickService(form: Locator) {
-  await form.getByRole('button', { name: 'Selecione um serviço' }).click();
+  await form.getByRole('button', { name: 'Escolhe um serviço' }).click();
   await form.getByRole('option', { name: SERVICE }).click();
   await expect(form.getByRole('listbox')).toHaveCount(0);
 }
@@ -68,11 +69,11 @@ async function fillEmailForm(form: Locator) {
 }
 
 // The polite status region that says the send worked (the legacy page may have other status regions).
-const announcement = (page: Page): Locator => page.getByRole('status').filter({ hasText: SUCCESS_TITLE });
+const announcement = (page: Page): Locator => page.getByRole('status').filter({ hasText: SUCCESS_TEXT });
 const submit = (form: Locator): Locator => form.getByRole('button', { name: 'Enviar', exact: true });
 const errorAlert = (form: Locator): Locator => form.getByRole('alert').filter({ hasText: 'Não deu pra enviar' });
 
-async function useWhatsapp(page: Page, form: Locator) {
+async function chooseWhatsapp(page: Page, form: Locator) {
   await page.getByRole('button', { name: 'Por WhatsApp' }).click();
   await expect(form.getByLabel('WhatsApp', { exact: true })).toBeVisible();
 }
@@ -85,9 +86,9 @@ test.describe('contact form webhooks', () => {
     await fillEmailForm(form);
     await submit(form).click();
 
-    await expect(page.getByRole('heading', { level: 4, name: SUCCESS_TITLE })).toBeVisible();
-    // The region was mounted before the send, outside the success markup, and now holds the title and the text.
-    await expect(announcement(page)).toHaveText('Recebemos sua mensagem. Obrigado! A gente responde pelo e-mail em breve.');
+    await expect(page.getByRole('heading', { level: 3, name: SUCCESS_TITLE })).toBeVisible();
+    // The region was mounted before the send, outside the success markup, and now holds the second sentence of the thanks (the title is read from the focused heading).
+    await expect(announcement(page)).toHaveText('Obrigado! A gente responde pelo e-mail em breve.');
     expect(network.calls).toHaveLength(1);
     const [call] = network.calls;
     expect(new URL(call.url).pathname).toBe(EMAIL_PATH);
@@ -102,7 +103,7 @@ test.describe('contact form webhooks', () => {
     await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
     const form = await openForm(page);
 
-    await useWhatsapp(page, form);
+    await chooseWhatsapp(page, form);
     await fillCommon(form);
     // A tap at the very start of the field puts the caret before the +55 prefix: the field moves it behind the prefix,
     // so the digits come out in order and the lead goes to the number that was typed.
@@ -113,9 +114,10 @@ test.describe('contact form webhooks', () => {
     await form.getByRole('checkbox').check();
     await submit(form).click();
 
-    await expect(page.getByRole('heading', { level: 4, name: SUCCESS_TITLE })).toBeVisible();
-    await expect(page.getByText('Obrigado! A gente responde pelo WhatsApp em breve.', { exact: true })).toBeVisible();
-    await expect(announcement(page)).toHaveText('Recebemos sua mensagem. Obrigado! A gente responde pelo WhatsApp em breve.');
+    await expect(page.getByRole('heading', { level: 3, name: SUCCESS_TITLE })).toBeVisible();
+    // The same sentence is in the hidden status region too: the visible paragraph is the one outside it.
+    await expect(page.locator('p:not([role="status"])').filter({ hasText: 'Obrigado! A gente responde pelo WhatsApp em breve.' })).toBeVisible();
+    await expect(announcement(page)).toHaveText('Obrigado! A gente responde pelo WhatsApp em breve.');
     expect(network.calls).toHaveLength(1);
     const [call] = network.calls;
     expect(new URL(call.url).pathname).toBe(WHATSAPP_PATH);
@@ -129,7 +131,7 @@ test.describe('contact form webhooks', () => {
     await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
     const form = await openForm(page);
 
-    await useWhatsapp(page, form);
+    await chooseWhatsapp(page, form);
     await fillCommon(form);
     const whatsapp = form.getByLabel('WhatsApp', { exact: true });
     await whatsapp.click({ position: { x: 2, y: 20 } });
@@ -139,7 +141,7 @@ test.describe('contact form webhooks', () => {
     await form.getByRole('checkbox').check();
     await submit(form).click();
 
-    await expect(page.getByRole('heading', { level: 4, name: SUCCESS_TITLE })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: SUCCESS_TITLE })).toBeVisible();
     expect(network.calls).toHaveLength(1);
     const [call] = network.calls;
     expect(new URL(call.url).pathname).toBe(WHATSAPP_PATH);
@@ -171,7 +173,7 @@ test.describe('contact form WhatsApp number integrity', () => {
   const INTERNATIONAL_NUMBER = '+55 11 90000-0000';
 
   async function fillUpToTheNumber(page: Page, form: Locator): Promise<Locator> {
-    await useWhatsapp(page, form);
+    await chooseWhatsapp(page, form);
     await fillCommon(form);
     return form.getByLabel('WhatsApp', { exact: true });
   }
@@ -182,7 +184,7 @@ test.describe('contact form WhatsApp number integrity', () => {
     await form.getByRole('checkbox').check();
     await submit(form).click();
 
-    await expect(page.getByRole('heading', { level: 4, name: SUCCESS_TITLE })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: SUCCESS_TITLE })).toBeVisible();
     expect(network.calls).toHaveLength(1);
     const [call] = network.calls;
     expect(new URL(call.url).pathname).toBe(WHATSAPP_PATH);
@@ -569,12 +571,14 @@ test.describe('contact form validation and failures', () => {
     await form.getByRole('checkbox').check();
     await submit(form).click();
 
-    const alerts = form.getByRole('alert');
-    await expect(alerts).toHaveCount(4);
-    await expect(alerts.filter({ hasText: 'Conta pra gente seu nome' })).toHaveCount(1);
-    await expect(alerts.filter({ hasText: 'Escolhe um serviço' })).toHaveCount(1);
-    await expect(alerts.filter({ hasText: 'Esse e-mail parece incompleto' })).toHaveCount(1);
-    await expect(alerts.filter({ hasText: 'Escreve um pouco mais sobre o que você precisa' })).toHaveCount(1);
+    // The messages are descriptions of their fields (the focus goes to the first one), not alerts of their own.
+    await expect(form.getByRole('alert')).toHaveCount(0);
+    await expect(form.locator('[aria-invalid="true"]')).toHaveCount(4);
+    await expect(form.getByText('Conta pra gente seu nome')).toHaveCount(1);
+    await expect(form.getByText('Escolhe um serviço', { exact: true })).toHaveCount(2);
+    await expect(form.getByText('Esse e-mail parece incompleto')).toHaveCount(1);
+    await expect(form.getByText('Escreve um pouco mais sobre o que você precisa')).toHaveCount(1);
+    await expect(form.getByLabel('Nome', { exact: true })).toBeFocused();
     await expect(form.getByLabel('Nome', { exact: true })).toHaveAttribute('aria-invalid', 'true');
     // The trigger is named by its visible label and its own text, so it is found by the label too.
     await expect(form.getByRole('button', { name: 'Serviço de interesse' })).toHaveAttribute('aria-invalid', 'true');
@@ -597,14 +601,16 @@ test.describe('contact form validation and failures', () => {
       'href',
       new RegExp(WHATSAPP_LINK.replace('.', '\\.')),
     );
-    await expect(submit(form)).toBeDisabled();
+    // A failed send does not lock Enviar, and the focus is on the way out the alert offers.
+    await expect(submit(form)).toBeEnabled();
+    await expect(errorAlert(form).getByRole('link', { name: 'fala direto pelo WhatsApp' })).toBeFocused();
     expect(network.calls).toHaveLength(1);
 
     await errorAlert(form).getByRole('button', { name: 'Fechar' }).click();
     await expect(errorAlert(form)).toHaveCount(0);
     await submit(form).click();
 
-    await expect(page.getByRole('heading', { level: 4, name: SUCCESS_TITLE })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: SUCCESS_TITLE })).toBeVisible();
     expect(network.calls).toHaveLength(2);
     expect(network.calls.map((call) => new URL(call.url).pathname)).toEqual([EMAIL_PATH, EMAIL_PATH]);
   });
@@ -646,7 +652,7 @@ test.describe('contact form on small screens', () => {
     expect(sizes).toHaveLength(4);
     for (const size of sizes) expect(size).toBeGreaterThanOrEqual(MIN_TEXT_PX);
 
-    await useWhatsapp(page, form);
+    await chooseWhatsapp(page, form);
     const phone = await fontSizes(form.getByLabel('WhatsApp', { exact: true }));
     expect(phone).toHaveLength(1);
     expect(phone[0]).toBeGreaterThanOrEqual(MIN_TEXT_PX);
@@ -672,7 +678,7 @@ test.describe('contact form on small screens', () => {
       'Por e-mail': panel.getByRole('button', { name: 'Por e-mail' }),
       'Por WhatsApp': panel.getByRole('button', { name: 'Por WhatsApp' }),
       Nome: form.getByLabel('Nome', { exact: true }),
-      'Serviço de interesse': form.getByRole('button', { name: 'Selecione um serviço' }),
+      'Serviço de interesse': form.getByRole('button', { name: 'Escolhe um serviço' }),
       'E-mail': form.getByLabel('E-mail', { exact: true }),
       Mensagem: form.getByLabel('Mensagem', { exact: true }),
       Consentimento: form.getByRole('checkbox').locator('xpath=ancestor::label'),

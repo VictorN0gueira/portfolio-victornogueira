@@ -91,7 +91,8 @@ describe('ContactForm validation', () => {
     expect(trigger).toHaveAttribute('aria-invalid', 'true');
     expect(trigger).toHaveAttribute('aria-describedby', 'contact-servico-error');
     const error = document.getElementById('contact-servico-error');
-    expect(error).toHaveAttribute('role', 'alert');
+    // The message is the description of the field, which the failed submit focuses: it is not an alert of its own.
+    expect(error).not.toHaveAttribute('role');
     expect(error).toHaveTextContent('Escolhe um serviço');
 
     await pickService(user);
@@ -109,16 +110,16 @@ describe('ContactForm validation', () => {
     await user.click(screen.getByRole('checkbox'));
     await user.click(submitButton());
     expect(document.getElementById('contact-email-error')).not.toBeNull();
-    expect(screen.getAllByRole('alert').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('[aria-invalid="true"]').length).toBeGreaterThan(0);
 
     // The leaving field keeps its last frame while it fades out, so wait for it to go.
     await user.click(screen.getByRole('button', { name: /por whatsapp/i }));
-    await waitFor(() => expect(screen.queryAllByRole('alert')).toHaveLength(0), SWAP_WAIT);
+    await waitFor(() => expect(document.querySelectorAll('[aria-invalid="true"]')).toHaveLength(0), SWAP_WAIT);
     expect(screen.getByLabelText('Nome')).toHaveAttribute('aria-invalid', 'false');
     expect(await findWhatsappField()).toHaveAttribute('aria-invalid', 'false');
 
     await user.click(screen.getByRole('button', { name: /por e-mail/i }));
-    await waitFor(() => expect(screen.queryAllByRole('alert')).toHaveLength(0), SWAP_WAIT);
+    await waitFor(() => expect(document.querySelectorAll('[aria-invalid="true"]')).toHaveLength(0), SWAP_WAIT);
     expect(await screen.findByLabelText('E-mail', undefined, SWAP_WAIT)).toHaveAttribute('aria-invalid', 'false');
     expect(fetch).not.toHaveBeenCalled();
   });

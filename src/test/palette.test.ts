@@ -49,7 +49,7 @@ describe('offPaletteClasses', () => {
   });
 
   it('ignores classes that are not color utilities', () => {
-    expect(offPaletteClasses('flex gap-2 top-full min-h-11 rounded-xl px-4 scheme-dark custom-scrollbar')).toEqual([]);
+    expect(offPaletteClasses('flex gap-2 top-full min-h-11 rounded-xl px-4 scheme-dark')).toEqual([]);
   });
 });
 

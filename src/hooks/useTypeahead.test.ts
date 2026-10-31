@@ -12,6 +12,16 @@ describe('findTypeaheadMatch', () => {
     expect(findTypeaheadMatch(['Beta'], 'be', 0)).toBe(0);
   });
 
+  it('ignores accents and case on both sides, so a long prefix still finds the label', () => {
+    const labels = ['Automação de processos', 'Agente de IA', 'Ónibus'];
+
+    expect(findTypeaheadMatch(labels, 'automac', 0)).toBe(0);
+    expect(findTypeaheadMatch(labels, 'automaç', 0)).toBe(0);
+    expect(findTypeaheadMatch(labels, 'AUTOMAÇÃO D', 1)).toBe(0);
+    expect(findTypeaheadMatch(labels, 'onib', 0)).toBe(2);
+    expect(findTypeaheadMatch(['Automacao'], 'automaç', 0)).toBe(0);
+  });
+
   it('starts after the active option for a single character, so a repeated letter cycles', () => {
     expect(findTypeaheadMatch(LABELS, 'a', 0)).toBe(2);
     expect(findTypeaheadMatch(LABELS, 'a', 2)).toBe(0);

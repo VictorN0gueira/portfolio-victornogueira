@@ -3,19 +3,25 @@ import { useEffect, useRef } from 'react';
 // How long a typed prefix stays alive, so "fo" finds "follow-up" but a pause starts a new search.
 const TYPEAHEAD_RESET_MS = 600;
 
+/** Lower case without accents, so "automac" and "AUTOMAÇ" both start "Automação". */
+function fold(text: string): string {
+  return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+}
+
 /**
- * Index of the label a typed prefix points to, or -1. A single character (or the same character repeated)
+ * Index of the label a typed prefix points to, or -1. Case and accents do not count, on either side. A single character (or the same character repeated)
  * starts looking after the active option, so pressing "a" again moves to the next label that starts with "a".
  * A longer prefix starts at the active option, which may already match.
  */
 export function findTypeaheadMatch(labels: readonly string[], typed: string, activeIndex: number): number {
-  const isRepeat = [...typed].every((character) => character === typed[0]);
-  const query = isRepeat ? typed[0] : typed;
+  const folded = fold(typed);
+  const isRepeat = [...folded].every((character) => character === folded[0]);
+  const query = isRepeat ? folded[0] : folded;
   const start = isRepeat ? activeIndex + 1 : activeIndex;
 
   for (let offset = 0; offset < labels.length; offset += 1) {
     const index = (start + offset) % labels.length;
-    if (labels[index].toLowerCase().startsWith(query)) return index;
+    if (fold(labels[index]).startsWith(query)) return index;
   }
   return -1;
 }
