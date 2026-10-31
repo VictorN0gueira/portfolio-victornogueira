@@ -9,3 +9,19 @@ export function stubScrollIntoView(element: Element) {
   element.scrollIntoView = scrollIntoView;
   return scrollIntoView;
 }
+
+/**
+ * The same stub for every element, also one that does not exist yet (a page that renders its sections later scrolls
+ * to an element the test cannot reach beforehand). It lives on Element.prototype, so the test must call
+ * removeScrollIntoViewStub in an afterEach, or the stub leaks into the next test.
+ */
+export function stubScrollIntoViewEverywhere() {
+  const scrollIntoView = vi.fn();
+  Object.defineProperty(Element.prototype, 'scrollIntoView', { value: scrollIntoView, configurable: true, writable: true });
+  return scrollIntoView;
+}
+
+/** Puts Element.prototype back to what jsdom has: no scrollIntoView. */
+export function removeScrollIntoViewStub(): void {
+  Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+}

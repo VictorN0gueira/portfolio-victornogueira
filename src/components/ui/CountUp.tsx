@@ -1,8 +1,9 @@
 import { animate, useInView } from 'motion/react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import { parseStat } from '../../lib/format';
 import { cn } from '../../lib/utils';
+import { useRevealGroupInView } from './revealGroupContext';
 
 const MS_PER_SECOND = 1000;
 const LOCALE = 'pt-BR';
@@ -38,16 +39,20 @@ interface CountUpProps {
 export function CountUp({ value, durationMs = 1400, className }: CountUpProps) {
   const stat = parseStat(value);
   const isMotionAllowed = useMotionAllowed();
+  const groupInView = useRevealGroupInView();
 
   if (!stat || !isMotionAllowed) {
     // Tabular figures here too, so the plain text is exactly as wide as the text the count settles on.
     return <span className={cn('tabular-nums', className)}>{value}</span>;
   }
 
-  return <AnimatedCount value={value} num={stat.num} suffix={stat.suffix} durationMs={durationMs} className={className} />;
+  const count = { value, num: stat.num, suffix: stat.suffix, durationMs, className };
+  // Inside a RevealGroup the count follows the group (one observer for the whole grid, and the count starts when the card
+  // reveals). Standing alone it observes its own element.
+  return groupInView === null ? <StandaloneCount {...count} /> : <AnimatedCount {...count} isInView={groupInView} />;
 }
 
-interface AnimatedCountProps {
+interface CountProps {
   value: string;
   num: number;
   suffix: string;
@@ -55,10 +60,21 @@ interface AnimatedCountProps {
   className?: string;
 }
 
-function AnimatedCount({ value, num, suffix, durationMs, className }: AnimatedCountProps) {
+function StandaloneCount(props: CountProps) {
   const rootRef = useRef<HTMLSpanElement>(null);
-  const numberRef = useRef<HTMLSpanElement>(null);
   const isInView = useInView(rootRef, { once: true });
+
+  return <AnimatedCount {...props} isInView={isInView} rootRef={rootRef} />;
+}
+
+interface AnimatedCountProps extends CountProps {
+  isInView: boolean;
+  /** The element the standalone count observes; a count inside a group has no observer of its own. */
+  rootRef?: RefObject<HTMLSpanElement | null>;
+}
+
+function AnimatedCount({ value, num, suffix, durationMs, className, isInView, rootRef }: AnimatedCountProps) {
+  const numberRef = useRef<HTMLSpanElement>(null);
   const decimals = countDecimals(value);
   const writtenNumber = value.slice(0, value.length - suffix.length);
   const groupedNumber = formatNumber(num, decimals);

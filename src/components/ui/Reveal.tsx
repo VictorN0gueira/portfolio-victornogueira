@@ -1,6 +1,5 @@
 import { motion, useInView, type Variants } from 'motion/react';
 import {
-  createContext,
   useCallback,
   useContext,
   useMemo,
@@ -10,12 +9,11 @@ import {
   type JSX,
   type ReactNode,
 } from 'react';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
-import { MD_QUERY } from '../../lib/breakpoints';
+import { RevealGroupContext } from './revealGroupContext';
 
 /** `rise-blur` is a shorter rise that also sharpens from a blur, meant for the words of a headline. */
-export type RevealVariant = 'up' | 'left' | 'right' | 'zoom' | 'fade' | 'rise-blur';
+export type RevealVariant = 'up' | 'fade' | 'rise-blur';
 
 const REVEAL_DURATION_S = 0.7;
 // The design system easing, as the cubic bezier points motion expects.
@@ -29,18 +27,12 @@ const ITEM_SELECTOR = '[data-reveal-item]';
 
 const HIDDEN = {
   up: { opacity: 0, y: 32 },
-  left: { opacity: 0, x: -40 },
-  right: { opacity: 0, x: 40 },
-  zoom: { opacity: 0, y: 16, scale: 0.94 },
   fade: { opacity: 0 },
   'rise-blur': { opacity: 0, y: 24, filter: 'blur(8px)' },
 } as const;
 
 const SHOWN = {
   up: { opacity: 1, y: 0 },
-  left: { opacity: 1, x: 0 },
-  right: { opacity: 1, x: 0 },
-  zoom: { opacity: 1, y: 0, scale: 1 },
   fade: { opacity: 1 },
   'rise-blur': { opacity: 1, y: 0, filter: 'blur(0px)' },
 } as const;
@@ -59,24 +51,18 @@ function createVariants(variant: RevealVariant): Variants {
 
 const VARIANTS: Record<RevealVariant, Variants> = {
   up: createVariants('up'),
-  left: createVariants('left'),
-  right: createVariants('right'),
-  zoom: createVariants('zoom'),
   fade: createVariants('fade'),
   'rise-blur': createVariants('rise-blur'),
 };
 
-interface RevealGroupContextValue {
-  isInView: boolean;
-  /** Seconds an item waits before it animates: the group delay plus its position in the group times the stagger. */
-  getDelay: (item: Element) => number;
-}
-
-const RevealGroupContext = createContext<RevealGroupContextValue | null>(null);
-
 /** The items that belong to this group, in document order. Items of a nested group are not counted. */
 function itemsOf(group: Element): Element[] {
   return Array.from(group.querySelectorAll(ITEM_SELECTOR)).filter((item) => item.closest(GROUP_SELECTOR) === group);
+}
+
+/** The position of each item of the group, read from the DOM in one pass. */
+function positionsOf(group: Element): Map<Element, number> {
+  return new Map(itemsOf(group).map((item, position) => [item, position]));
 }
 
 interface RevealGroupProps {
@@ -101,11 +87,15 @@ export function RevealGroup({ as = 'div', stagger = 0.08, delay = 0, className, 
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, IN_VIEW_OPTIONS);
 
+  // The positions are read once, when the first item starts to animate (everything has mounted by then), and shared by
+  // every item after it. An item that mounts later is not in the map: that one miss reads the group again.
+  const positions = useRef<Map<Element, number> | null>(null);
   const getDelay = useCallback(
     (item: Element) => {
       const group = ref.current;
-      const position = group ? itemsOf(group).indexOf(item) : 0;
-      return delay + Math.max(position, 0) * stagger;
+      if (!group) return delay;
+      if (!positions.current?.has(item)) positions.current = positionsOf(group);
+      return delay + (positions.current.get(item) ?? 0) * stagger;
     },
     [delay, stagger],
   );
@@ -138,8 +128,6 @@ interface RevealItemProps {
 export function RevealItem({ variant = 'up', as = 'div', className, children }: RevealItemProps) {
   const group = useContext(RevealGroupContext);
   const isMotionAllowed = useMotionAllowed();
-  // Below md a sideways offset could widen the page and scroll it horizontally, so left and right become up.
-  const isWide = useMediaQuery(MD_QUERY);
   // Typed as the div variant only to keep TypeScript from building a union of both tags: they take the same props here.
   const Tag = (as === 'span' ? motion.span : motion.div) as typeof motion.div;
   const ref = useRef<HTMLDivElement>(null);
@@ -151,19 +139,16 @@ export function RevealItem({ variant = 'up', as = 'div', className, children }: 
 
   const getDelay = useCallback(() => (group && ref.current ? group.getDelay(ref.current) : 0), [group]);
 
-  const isSideways = variant === 'left' || variant === 'right';
-  const effectiveVariant = isSideways && !isWide ? 'up' : variant;
-
   let motionProps: ComponentProps<typeof motion.div> = {};
   if (group && isActive) {
     motionProps = {
-      variants: VARIANTS[effectiveVariant],
+      variants: VARIANTS[variant],
       initial: group.isInView ? false : 'hidden',
       animate: group.isInView ? 'show' : 'hidden',
       custom: getDelay,
     };
   } else if (wasActive) {
-    motionProps = { animate: SHOWN[effectiveVariant], transition: INSTANT };
+    motionProps = { animate: SHOWN[variant], transition: INSTANT };
   }
 
   return (

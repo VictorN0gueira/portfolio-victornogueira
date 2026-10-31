@@ -1,21 +1,17 @@
 // @vitest-environment node
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { blockBody, declarations } from '../test/css';
-
-const css = readFileSync(resolve(__dirname, 'tokens.css'), 'utf8');
+import { allStylesCss as css, stillBody } from '../test/styles';
 
 const BASE = '.vn-card-includes';
 const GATE = '@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)';
 const HOVER = '.vn-spotlight:hover .vn-card-includes';
-const RESET = '.a11y-no-animations .vn-card-includes';
 
 const gated = blockBody(css, GATE, BASE);
 const outsideGate = css.replace(gated, '');
-const rules = [blockBody(css, BASE), blockBody(gated, BASE), blockBody(gated, HOVER), blockBody(css, RESET)];
+const rules = [blockBody(css, BASE), blockBody(gated, BASE), blockBody(gated, HOVER), stillBody(BASE)];
 
-describe('tokens.css card includes list', () => {
+describe('components.css card includes list', () => {
   it('has every rule: the transition, the gated resting offset, the gated hover settle and the animations off reset', () => {
     expect(gated).not.toBe('');
     for (const body of rules) {
@@ -39,8 +35,8 @@ describe('tokens.css card includes list', () => {
     expect(outsideGate).not.toContain(HOVER);
   });
 
-  it('is plain under .a11y-no-animations: no offset and no transition', () => {
-    expect(declarations(blockBody(css, RESET)).sort()).toEqual(['transform: none', 'transition: none']);
+  it('is plain with motion off: no offset and no transition (the list of motion.css)', () => {
+    expect(declarations(stillBody(BASE)).sort()).toEqual(['transform: none', 'transition: none']);
   });
 
   it('declares nothing but transform and its transition: never opacity, display, visibility or a layout property', () => {

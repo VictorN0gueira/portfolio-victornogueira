@@ -1,25 +1,29 @@
 import { screen, waitFor, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { processSteps } from '../data/process';
+import { WARM_UP_HOOK_TIMEOUT_MS, preloadAboutSections, warmUpRender } from '../test/lazyPages';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
+import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../test/scroll';
 import AboutPage from './AboutPage';
 
 const METHOD_HEADING = 'Do primeiro papo ao fluxo rodando';
 
 describe('AboutPage', () => {
-  const scrollIntoView = vi.fn();
+  let scrollIntoView: ReturnType<typeof stubScrollIntoViewEverywhere>;
+
+  beforeAll(async () => {
+    await preloadAboutSections();
+    await warmUpRender(<AboutPage />, () => expect(document.getElementById('metodo')).not.toBeNull());
+  }, WARM_UP_HOOK_TIMEOUT_MS);
 
   beforeEach(() => {
     stubMatchMedia();
-    scrollIntoView.mockClear();
     // jsdom has no scrollIntoView. It is put back to nothing after every test, so a failing one cannot leak it.
-    Object.defineProperty(Element.prototype, 'scrollIntoView', { value: scrollIntoView, configurable: true, writable: true });
+    scrollIntoView = stubScrollIntoViewEverywhere();
   });
 
-  afterEach(() => {
-    Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
-  });
+  afterEach(removeScrollIntoViewStub);
 
   it('shows the method section, id metodo, where the old process section was', async () => {
     const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });

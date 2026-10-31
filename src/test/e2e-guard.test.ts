@@ -33,8 +33,19 @@ const LEAD_CHANNEL_SIGNS = [
   /form\[name=["']contact["']\]/,
   /n8n\.vnone\.com\.br/,
   /\bWEBHOOKS\b/,
-  /\brequest\.post\(/,
+  // The Playwright `request` fixture, `page.request` and `context.request` are not routed by page.route or context.route,
+  // so the catch-all of the guard cannot stop them: any use of a request context, or a bare fetch, is a sign.
+  /\brequest\.(?:post|fetch|put|patch|delete)\(/,
+  /\.request\b/,
+  /\bAPIRequestContext\b/,
+  /\bfetch\(/,
+  // The path of the webhooks, written out (a spec may build the address in a variable).
+  /webhook\//,
 ];
+
+// The one spec that may use plain @playwright/test: it only reads the raw HTML and the image served at "/" with the
+// request fixture, and never opens the form (a test below pins that).
+const UNGUARDED_ALLOW_LIST = ['share-preview.spec.ts'];
 
 function touchesTheLeadChannel(source: string): boolean {
   return LEAD_CHANNEL_SIGNS.some((sign) => sign.test(source));
@@ -45,9 +56,32 @@ function isGuarded(source: string): boolean {
 }
 
 /** The specs that touch the form or the channel without taking their `test` (and so the guard) from ./n8nGuard. */
-export function findUnguardedSpecs(specs: Record<string, string>): string[] {
+export function findUnguardedSpecs(specs: Record<string, string>, allowed: readonly string[] = []): string[] {
   return Object.entries(specs)
-    .filter(([, source]) => touchesTheLeadChannel(source) && !isGuarded(source))
+    .filter(([name, source]) => !allowed.includes(name) && touchesTheLeadChannel(source) && !isGuarded(source))
+    .map(([name]) => name);
+}
+
+/**
+ * Every spec that does not take its `test` from ./n8nGuard, except the allow list. Stricter than findUnguardedSpecs, which
+ * trusts the signs above: a spec that reaches the form only through a helper or a variable address shows no sign, and the
+ * guard is a runtime net that costs nothing, so every spec has it.
+ */
+export function findSpecsWithoutGuard(specs: Record<string, string>, allowed: readonly string[]): string[] {
+  return Object.entries(specs)
+    .filter(([name, source]) => !allowed.includes(name) && !isGuarded(source))
+    .map(([name]) => name);
+}
+
+/** Why a spec of the allow list is safe without the guard: it never opens a page, fills a field or posts. */
+export function findFormAccessInAllowListed(source: string): string[] {
+  return [/\bgoto\(/, /\.fill\(/, /\.post\(/].filter((pattern) => pattern.test(source)).map(String);
+}
+
+/** The files of `dir` (recursively) that name the n8n host, by path relative to it, minus the files allowed to. */
+export function findFilesNamingTheHost(files: Record<string, string>, allowed: readonly string[]): string[] {
+  return Object.entries(files)
+    .filter(([name, source]) => !allowed.includes(name) && source.includes(N8N_HOST))
     .map(([name]) => name);
 }
 
@@ -146,6 +180,26 @@ function readSpecs(): Record<string, string> {
   return Object.fromEntries(names.map((name) => [name, readFileSync(join(E2E_DIR, name), 'utf8')]));
 }
 
+const SRC_DIR = resolve(__dirname, '..');
+// The only files of src that may name the host of the lead channel: the module that posts to it, the shared test form that
+// answers it, their own unit test, this guard (which has to name it to look for it) and the test of the local page check of
+// the measuring scripts (which names the host to prove the script refuses it).
+const SOURCE_FILES_NAMING_THE_HOST = [
+  'lib/contact.ts',
+  'lib/contact.test.ts',
+  'test/contactForm.tsx',
+  'test/e2e-guard.test.ts',
+  'test/localPage.test.ts',
+];
+
+/** Every source file of src, by path relative to it. */
+function readSourceFiles(): Record<string, string> {
+  const names = (readdirSync(SRC_DIR, { recursive: true }) as string[])
+    .map((name) => name.split('\\').join('/'))
+    .filter((name) => /\.(?:ts|tsx)$/.test(name));
+  return Object.fromEntries(names.map((name) => [name, readFileSync(join(SRC_DIR, name), 'utf8')]));
+}
+
 describe('the e2e specs that touch the lead channel', () => {
   it('finds the specs of the repository, so the check is not vacuous', () => {
     const names = Object.keys(readSpecs());
@@ -155,11 +209,28 @@ describe('the e2e specs that touch the lead channel', () => {
     expect(names).toContain('home.spec.ts');
     expect(names).toContain('scroll-lock.spec.ts');
     expect(names).toContain('devices.spec.ts');
-    expect(names).toContain('visual.spec.ts');
+    expect(names).toContain('captures.spec.ts');
   });
 
   it('all take their test from ./n8nGuard, never from @playwright/test', () => {
-    expect(findUnguardedSpecs(readSpecs())).toEqual([]);
+    expect(findUnguardedSpecs(readSpecs(), UNGUARDED_ALLOW_LIST)).toEqual([]);
+  });
+
+  it('every spec but share-preview takes its test from ./n8nGuard, whatever its text shows', () => {
+    expect(findSpecsWithoutGuard(readSpecs(), UNGUARDED_ALLOW_LIST)).toEqual([]);
+  });
+
+  it('keeps the allow listed spec away from the form: no visit, no field filled, no post', () => {
+    const specs = readSpecs();
+
+    for (const name of UNGUARDED_ALLOW_LIST) {
+      expect(specs[name], `${name} exists`).toBeDefined();
+      expect(findFormAccessInAllowListed(specs[name]), name).toEqual([]);
+    }
+  });
+
+  it('keeps every request to the n8n host in the lead channel module and the shared test form', () => {
+    expect(findFilesNamingTheHost(readSourceFiles(), SOURCE_FILES_NAMING_THE_HOST)).toEqual([]);
   });
 
   it('see the guard in the home spec, which mounts the real form', () => {
@@ -179,7 +250,7 @@ describe('the e2e specs that touch the lead channel', () => {
   // These two open the home through the helpers of homeSupport.ts, so the visit to it is not written in the spec: the
   // guard import is what protects them, and this pins it. They may look at the Enviar button (the WhatsApp button must
   // not cover it) but never press it, by hand or through a helper, nor submit the form.
-  it.each(['devices.spec.ts', 'visual.spec.ts'])('see the guard in %s, which opens the home and walks it', (name) => {
+  it.each(['devices.spec.ts', 'captures.spec.ts'])('see the guard in %s, which opens the home and walks it', (name) => {
     const source = readSpecs()[name];
 
     expect(isGuarded(source)).toBe(true);
@@ -240,7 +311,7 @@ describe('findUnguardedSpecs', () => {
     expect(findUnguardedSpecs({ 'a.spec.ts': source })).toEqual(['a.spec.ts']);
   });
 
-  // The false negative the reviewer found: the route helper comes from the guard, but the test (so the catch-all net) does not.
+  // A false negative to keep closed: the route helper comes from the guard, but the test (so the catch-all net) does not.
   it('flags a spec that imports n8nRoute from the guard but test from @playwright/test', () => {
     const source = `import { test, expect } from '@playwright/test';\nimport { n8nRoute } from './n8nGuard';\n${field}`;
 
@@ -260,9 +331,64 @@ describe('findUnguardedSpecs', () => {
   });
 
   it('leaves a spec that never touches the form alone', () => {
-    const plain = "import { test, expect } from '@playwright/test';\ntest('x', async ({ page }) => { await page.goto('/sobre'); await page.request.get('/'); });";
+    const plain = "import { test, expect } from '@playwright/test';\ntest('x', async ({ page }) => { await page.goto('/sobre'); });";
 
     expect(findUnguardedSpecs({ 'plain.spec.ts': plain })).toEqual([]);
+  });
+
+  // The request fixture and page.request are not routed by page.route, so the catch-all of the guard cannot stop them.
+  it.each([
+    ['await request.post(url, { data: {} });', 'the request fixture, post'],
+    ['await request.fetch(url, { method: "POST" });', 'the request fixture, fetch'],
+    ['await request.put(url);', 'the request fixture, put'],
+    ['await page.request.get(url);', 'page.request'],
+    ['await context.request.get(url);', 'context.request'],
+    ['const api: APIRequestContext = await playwright.request.newContext();', 'an APIRequestContext'],
+    ['await fetch(url, { method: "POST" });', 'a bare fetch'],
+    ["const url = base + '/webhook/portfolio-vn-email';", 'the webhook path written out'],
+  ])('flags %s (%s) in a spec with no guard import', (line) => {
+    const source = `import { test } from '@playwright/test';\n${line}`;
+
+    expect(findUnguardedSpecs({ 'a.spec.ts': source })).toEqual(['a.spec.ts']);
+  });
+});
+
+describe('findSpecsWithoutGuard', () => {
+  const guarded = "import { expect, test } from './n8nGuard';\ntest('x', async ({ page }) => { await page.goto('/sobre'); });";
+  const plain = "import { expect, test } from '@playwright/test';\ntest('x', async ({ page }) => { await page.goto('/sobre'); });";
+
+  it('flags a spec that shows no sign of the form but has no guard either', () => {
+    expect(findSpecsWithoutGuard({ 'a.spec.ts': plain }, [])).toEqual(['a.spec.ts']);
+  });
+
+  it('accepts a guarded spec and a spec of the allow list', () => {
+    expect(findSpecsWithoutGuard({ 'a.spec.ts': guarded, 'share-preview.spec.ts': plain }, ['share-preview.spec.ts'])).toEqual([]);
+  });
+
+  it('still flags a spec that takes test from both places', () => {
+    const both = `import { test } from '@playwright/test';\n${guarded}`;
+
+    expect(findSpecsWithoutGuard({ 'a.spec.ts': both }, [])).toEqual(['a.spec.ts']);
+  });
+});
+
+describe('findFormAccessInAllowListed', () => {
+  it('accepts a spec that only reads served files', () => {
+    expect(findFormAccessInAllowListed("await page.request.get('/');")).toEqual([]);
+  });
+
+  it.each(["await page.goto('/');", "await page.getByLabel('Nome').fill('a');", "await request.post('/x');"])('flags %s', (line) => {
+    expect(findFormAccessInAllowListed(line)).toHaveLength(1);
+  });
+});
+
+describe('findFilesNamingTheHost', () => {
+  it('flags a file that names the host and is not allowed to', () => {
+    expect(findFilesNamingTheHost({ 'a.ts': `const url = 'https://${N8N_HOST}/x';`, 'b.ts': 'const x = 1;' }, [])).toEqual(['a.ts']);
+  });
+
+  it('accepts the files of the allow list', () => {
+    expect(findFilesNamingTheHost({ 'lib/contact.ts': `'${N8N_HOST}'` }, ['lib/contact.ts'])).toEqual([]);
   });
 });
 
@@ -316,7 +442,7 @@ await expect(send).toBeVisible();`;
     expect(findEnviarMisuse(source)).toEqual([]);
   });
 
-  // The mutations the reviewer asked for: each way of pressing Enviar that a plain look at `send.click(` would miss.
+  // Each way of pressing Enviar that a plain look at `send.click(` would miss.
   it.each([
     ['a click', `${declare}
 await send.click();`],

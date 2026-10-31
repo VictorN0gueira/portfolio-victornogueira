@@ -1,15 +1,15 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
+@import "./styles/components.css";
+@import "./styles/motion.css";
 @import "./styles/skeleton.css";
 
 /* Legacy dark: utilities are intentionally inert until the old pages are rebuilt. */
 @custom-variant dark (&:where([data-vn-never-dark], [data-vn-never-dark] *));
 
-/* Legacy aliases so old pages keep rendering until they are rebuilt. VN One values, not new colors. */
+/* Legacy alias so old pages keep rendering until they are rebuilt. A VN One value, not a new color. */
 @theme {
   --color-brand-white: #F2F2F2;
-  --color-brand-gray: #C7C7C7;
-  --color-brand-black: #0A0A0A;
 }
 
 /* Legacy values still read by the old ROICalculator of /contato. */
@@ -23,6 +23,8 @@
     -webkit-text-size-adjust: 100%;
     /* Anchors stop below the floating header, which sits at max(12px, notch inset) from the top. */
     scroll-padding-top: max(96px, calc(env(safe-area-inset-top) + 84px));
+    /* The floating buttons (WhatsApp, accessibility) sit at the bottom: a focused field is never left under them. */
+    scroll-padding-bottom: 5rem;
   }
 
   /* The floating header sits 8px higher and is thinner on a phone held sideways. */
@@ -74,17 +76,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  :before,
-  :after {
-    scroll-behavior: auto !important;
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
-  }
-}
-
 @layer utilities {
   /* Still used by ServiceSelect until the contact form is rebuilt. */
   .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -105,7 +96,11 @@
   }
 }
 
-/* Acessibilidade: classes aplicadas ao <html> pelo AccessibilityWidget */
+/*
+ * Acessibilidade: classes aplicadas ao <html> pelo AccessibilityWidget.
+ * "Pausar animações" (.a11y-no-animations) is handled with the system preference in motion.css, and the colors of
+ * "Contraste alto" (.a11y-high-contrast) with prefers-contrast in components.css; the contrast filter below stays.
+ */
 
 .a11y-font-large {
   font-size: 120% !important;
@@ -121,14 +116,6 @@
 
 .a11y-high-contrast.a11y-grayscale {
   filter: contrast(150%) grayscale(100%) !important;
-}
-
-.a11y-no-animations *,
-.a11y-no-animations *::before,
-.a11y-no-animations *::after {
-  animation-duration: 0.001ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.001ms !important;
 }
 
 .a11y-underline-links a {

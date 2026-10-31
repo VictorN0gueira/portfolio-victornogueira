@@ -1,3 +1,5 @@
+import { parseNewsDate, safeHttpUrl, safeImageUrl, sanitizeArticle, sanitizeArticles } from './newsSanitize';
+
 export interface NewsArticle {
   title: string;
   description: string;
@@ -14,7 +16,7 @@ export interface NewsArticle {
 const CACHE_KEY = 'blog_news_cache';
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
 
-// Edge Function no Supabase — proxy seguro (API key nunca exposta no frontend)
+// Edge Function no Supabase, proxy seguro (API key nunca exposta no frontend)
 const EDGE_FUNCTION_URL = 'https://qpcwoioflaxiasmcdfbd.supabase.co/functions/v1/gnews-proxy';
 
 interface CachedData {
@@ -50,7 +52,7 @@ interface TabnewsArticle {
   tabcoins: number;
 }
 
-// Artigos curados de fallback — usados somente quando todas as APIs falham
+// Artigos curados de fallback, usados somente quando todas as APIs falham
 const FALLBACK_ARTICLES: NewsArticle[] = [
   {
     title: 'Como a IA Generativa está transformando empresas em 2025',
@@ -159,11 +161,17 @@ export function detectCategory(article: NewsArticle): string {
   return 'ia';
 }
 
+// O cache vive no localStorage, que qualquer script da origem pode escrever: o que volta de lá passa pela mesma checagem
+// dos artigos que vêm da rede.
 function getCachedArticles(): CachedData | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as CachedData;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) throw new Error('cache is not an object');
+    const { articles, timestamp, source } = parsed as Partial<Record<keyof CachedData, unknown>>;
+    if (typeof timestamp !== 'number') throw new Error('cache has no timestamp');
+    return { articles: sanitizeArticles(articles), timestamp, source: typeof source === 'string' ? source : undefined };
   } catch {
     localStorage.removeItem(CACHE_KEY);
     return null;
@@ -175,7 +183,7 @@ function setCachedArticles(articles: NewsArticle[], source: string): void {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
   } catch {
-    // localStorage cheio — ignora silenciosamente
+    // localStorage cheio, ignora silenciosamente
   }
 }
 
@@ -211,74 +219,57 @@ function pickPlaceholder(seed: string): string {
   return PLACEHOLDER_IMAGES[Math.abs(hash) % PLACEHOLDER_IMAGES.length];
 }
 
-// Busca artigos da Dev.to — inglês (tags de IA/automação) + português (brdev/brasil/ia)
+const DEVTO_EN_TAGS = ['ai', 'machinelearning', 'llm', 'n8n', 'automation'];
+const DEVTO_PT_TAGS = ['brdev', 'ia', 'inteligencia-artificial', 'automacao'];
+const DEVTO_EN_QUERY = 'per_page=4&top=7';
+const DEVTO_PT_QUERY = 'per_page=5&top=30';
+const FEED_TIMEOUT_MS = 8000;
+const DEVTO_LIMIT = 20;
+
+// Um artigo da Dev.to no formato do blog. Links e capas passam pela checagem de newsSanitize (capa fora da lista vira placeholder).
+function devToArticle(item: unknown): NewsArticle | null {
+  // Um item que não é um objeto, ou que não tem link em texto, sai sozinho: as outras matérias da tag ficam.
+  if (typeof item !== 'object' || item === null) return null;
+  const a = item as Partial<DevToArticle>;
+  const url = typeof a.url === 'string' ? a.url : '';
+  return sanitizeArticle({
+    title: a.title,
+    description: a.description || '',
+    url,
+    image: safeImageUrl(a.cover_image) || pickPlaceholder(url),
+    publishedAt: a.published_at,
+    source: { name: a.organization?.name || a.user?.name || 'Dev.to', url: a.user?.website_url || 'https://dev.to' },
+    // Usa o campo language da Dev.to, pode ser 'pt' para devs brasileiros
+    language: a.language === 'pt' ? 'pt' : 'en',
+  });
+}
+
+// Os artigos de uma tag da Dev.to; uma tag que falha não derruba as outras.
+async function fetchDevToTag(tag: string, query: string): Promise<NewsArticle[]> {
+  const res = await fetch(`https://dev.to/api/articles?tag=${tag}&${query}`, { signal: AbortSignal.timeout(FEED_TIMEOUT_MS) });
+  if (!res.ok) return [];
+  const data: unknown = await res.json();
+  if (!Array.isArray(data)) return [];
+  return data.flatMap((item) => devToArticle(item) ?? []);
+}
+
+// Busca artigos da Dev.to, inglês (tags de IA/automação) + português (brdev/brasil/ia)
 async function fetchFromDevTo(): Promise<NewsArticle[]> {
-  const enTags = ['ai', 'machinelearning', 'llm', 'n8n', 'automation'];
-  const ptTags = ['brdev', 'ia', 'inteligencia-artificial', 'automacao'];
+  const results = await Promise.allSettled([
+    ...DEVTO_EN_TAGS.map((tag) => fetchDevToTag(tag, DEVTO_EN_QUERY)),
+    ...DEVTO_PT_TAGS.map((tag) => fetchDevToTag(tag, DEVTO_PT_QUERY)),
+  ]);
 
   const seen = new Set<string>();
-  const articles: NewsArticle[] = [];
-
-  await Promise.allSettled([
-    // Artigos em inglês — busca os mais recentes/relevantes
-    ...enTags.map(async (tag) => {
-      const res = await fetch(
-        `https://dev.to/api/articles?tag=${tag}&per_page=4&top=7`,
-        { signal: AbortSignal.timeout(8000) }
-      );
-      if (!res.ok) return;
-      const data: DevToArticle[] = await res.json();
-      for (const a of data) {
-        if (seen.has(a.url)) continue;
-        seen.add(a.url);
-        articles.push({
-          title: a.title,
-          description: a.description || '',
-          url: a.url,
-          image: a.cover_image || pickPlaceholder(a.url),
-          publishedAt: a.published_at,
-          source: {
-            name: a.organization?.name || a.user.name,
-            url: a.user.website_url || 'https://dev.to',
-          },
-          // Usa o campo language da Dev.to — pode ser 'pt' para devs brasileiros
-          language: a.language === 'pt' ? 'pt' : 'en',
-        });
-      }
-    }),
-
-    // Artigos com tags brasileiras/portuguesas
-    ...ptTags.map(async (tag) => {
-      const res = await fetch(
-        `https://dev.to/api/articles?tag=${tag}&per_page=5&top=30`,
-        { signal: AbortSignal.timeout(8000) }
-      );
-      if (!res.ok) return;
-      const data: DevToArticle[] = await res.json();
-      for (const a of data) {
-        if (seen.has(a.url)) continue;
-        seen.add(a.url);
-        articles.push({
-          title: a.title,
-          description: a.description || '',
-          url: a.url,
-          image: a.cover_image || pickPlaceholder(a.url),
-          publishedAt: a.published_at,
-          source: {
-            name: a.organization?.name || a.user.name,
-            url: a.user.website_url || 'https://dev.to',
-          },
-          language: a.language === 'pt' ? 'pt' : 'en',
-        });
-      }
-    }),
-  ]);
+  const articles = results
+    .flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
+    .filter((article) => !seen.has(article.url) && seen.add(article.url));
 
   if (articles.length === 0) throw new Error('No articles from Dev.to');
 
   return articles
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-    .slice(0, 20);
+    .slice(0, DEVTO_LIMIT);
 }
 
 // Busca artigos em destaque do TabNews (plataforma brasileira de tech)
@@ -290,61 +281,26 @@ async function fetchFromTabnews(): Promise<NewsArticle[]> {
   );
   if (!res.ok) throw new Error(`TabNews error: ${res.status}`);
 
-  const data: TabnewsArticle[] = await res.json();
+  const data: unknown = await res.json();
+  if (!Array.isArray(data)) throw new Error('TabNews answered with another shape');
 
-  return data
-    .filter(a => {
-      const text = a.title.toLowerCase();
-      return TABNEWS_RELEVANCE_KEYWORDS.some(kw => text.includes(kw));
-    })
+  return (data as TabnewsArticle[])
+    .filter((a) => typeof a?.title === 'string' && TABNEWS_RELEVANCE_KEYWORDS.some((kw) => a.title.toLowerCase().includes(kw)))
     .slice(0, 8)
-    .map(a => ({
-      title: a.title,
-      description: tabNewsDescription(a),
-      url: a.source_url || `https://www.tabnews.com.br/${a.owner_username}/${a.slug}`,
-      image: pickPlaceholder(a.slug),
-      publishedAt: a.published_at,
-      source: { name: 'TabNews', url: 'https://www.tabnews.com.br' },
-      language: 'pt' as const,
-    }));
-}
-
-// Busca artigos do GNews diretamente — só funciona se VITE_GNEWS_API_KEY estiver definida
-async function fetchFromGNews(): Promise<NewsArticle[]> {
-  const apiKey = import.meta.env.VITE_GNEWS_API_KEY as string | undefined;
-  if (!apiKey) throw new Error('VITE_GNEWS_API_KEY not set');
-
-  const [ptRes, enRes] = await Promise.all([
-    fetch(
-      `https://gnews.io/api/v4/top-headlines?topic=technology&lang=pt&country=br&max=5&apikey=${apiKey}`,
-      { signal: AbortSignal.timeout(10000) }
-    ),
-    fetch(
-      `https://gnews.io/api/v4/top-headlines?topic=technology&lang=en&max=6&apikey=${apiKey}`,
-      { signal: AbortSignal.timeout(10000) }
-    ),
-  ]);
-
-  const articles: NewsArticle[] = [];
-
-  for (const [res, lang] of [[ptRes, 'pt'], [enRes, 'en']] as [Response, 'pt' | 'en'][]) {
-    if (!res.ok) continue;
-    const data = await res.json();
-    for (const a of data.articles || []) {
-      articles.push({
+    .flatMap((a) => {
+      // O link do autor (source_url) pode ser qualquer coisa: só http e https passam, senão fica a página do TabNews.
+      const url = safeHttpUrl(a.source_url) ?? `https://www.tabnews.com.br/${a.owner_username}/${a.slug}`;
+      const article = sanitizeArticle({
         title: a.title,
-        description: a.description || '',
-        url: a.url,
-        image: a.image || pickPlaceholder(a.url),
-        publishedAt: a.publishedAt,
-        source: { name: a.source.name, url: a.source.url },
-        language: lang,
+        description: tabNewsDescription(a),
+        url,
+        image: pickPlaceholder(a.slug),
+        publishedAt: a.published_at,
+        source: { name: 'TabNews', url: 'https://www.tabnews.com.br' },
+        language: 'pt',
       });
-    }
-  }
-
-  if (articles.length === 0) throw new Error('No articles from GNews');
-  return articles;
+      return article ?? [];
+    });
 }
 
 // Combina Dev.to + TabNews em paralelo e retorna artigos intercalados por idioma
@@ -397,46 +353,40 @@ export async function getNewsArticles(): Promise<{ articles: NewsArticle[]; sour
 
     if (!response.ok) throw new Error(`Edge function error: ${response.status}`);
 
-    const data = await response.json();
-    if (data.articles && Array.isArray(data.articles) && data.articles.length > 0) {
-      setCachedArticles(data.articles, data.source || 'edge-function');
-      return { articles: data.articles, source: data.source || 'edge-function' };
+    // O formato da resposta é checado antes de ir para o cache: o que não passa é descartado.
+    const data: unknown = await response.json();
+    const body = typeof data === 'object' && data !== null ? (data as { articles?: unknown; source?: unknown }) : {};
+    const articles = sanitizeArticles(body.articles);
+    if (articles.length > 0) {
+      const source = typeof body.source === 'string' && body.source !== '' ? body.source : 'edge-function';
+      setCachedArticles(articles, source);
+      return { articles, source };
     }
 
     throw new Error('No articles returned from edge function');
   } catch {
-    // Edge function indisponível — tenta próxima fonte
+    // Edge function indisponível, tenta próxima fonte
   }
 
-  // 3. GNews API direta (se VITE_GNEWS_API_KEY estiver configurada)
-  try {
-    const articles = await fetchFromGNews();
-    setCachedArticles(articles, 'gnews');
-    return { articles, source: 'gnews' };
-  } catch {
-    // Chave ausente ou API falhou — tenta próxima fonte
-  }
-
-  // 4. Dev.to + TabNews (gratuitas, sem autenticação, PT + EN)
+  // 3. Dev.to + TabNews (gratuitas, sem autenticação, PT + EN)
   try {
     const result = await fetchFromPublicAPIs();
     setCachedArticles(result.articles, result.source);
     return result;
   } catch {
-    // APIs públicas indisponíveis — segue para fallback
+    // APIs públicas indisponíveis, segue para fallback
   }
 
-  // 5. Cache expirado (melhor que nada)
+  // 4. Cache expirado (melhor que nada)
   if (cached && cached.articles.length > 0) {
     return { articles: cached.articles, source: 'stale-cache' };
   }
 
-  // 6. Último recurso: artigos estáticos curados
+  // 5. Último recurso: artigos estáticos curados
   return { articles: FALLBACK_ARTICLES, source: 'fallback' };
 }
 
-export function formatDate(dateString: string): string {
-  const date = new Date(dateString);
+function formatDate(date: Date): string {
   return date.toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'long',
@@ -444,9 +394,11 @@ export function formatDate(dateString: string): string {
   });
 }
 
+// Quanto tempo faz que saiu a matéria. Um valor que não é uma data ISO dá um texto vazio, nunca "Invalid Date".
 export function getTimeAgo(dateString: string): string {
+  const date = parseNewsDate(dateString);
+  if (date === null) return '';
   const now = new Date();
-  const date = new Date(dateString);
   const diffMs = now.getTime() - date.getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
@@ -455,5 +407,5 @@ export function getTimeAgo(dateString: string): string {
   if (diffHours < 24) return `${diffHours}h atrás`;
   if (diffDays === 1) return 'Ontem';
   if (diffDays < 7) return `${diffDays} dias atrás`;
-  return formatDate(dateString);
+  return formatDate(date);
 }

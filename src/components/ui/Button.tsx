@@ -1,15 +1,15 @@
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { useCallback, type ComponentPropsWithRef, type PointerEvent, type Ref } from 'react';
-import { useMagnetic } from '../../hooks/useMagnetic';
+import { type ComponentPropsWithRef } from 'react';
 import { cn } from '../../lib/utils';
 
 /**
  * Pill button. Colors swap instantly on hover (only transform properties animate), the press
  * is a short `scale`, and the label may wrap onto two lines on narrow screens.
  * `tone` is the tone of the surface the button sits on: `dark` for black sections.
+ * The border of the secondary intent is gray mid (3.1:1 on the cream), so the shape of the button is visible to low vision.
  */
-export const buttonVariants = cva(
+const buttonVariants = cva(
   [
     'inline-flex items-center justify-center gap-2 rounded-full text-center font-medium',
     'cursor-pointer select-none',
@@ -21,7 +21,7 @@ export const buttonVariants = cva(
     variants: {
       intent: {
         primary: '',
-        secondary: 'border border-vn-gray-light bg-transparent',
+        secondary: 'border border-vn-gray-mid bg-transparent',
       },
       tone: {
         light: '',
@@ -63,27 +63,16 @@ export const buttonVariants = cva(
   },
 );
 
-export type ButtonProps = ComponentPropsWithRef<'button'> &
+type ButtonProps = ComponentPropsWithRef<'button'> &
   VariantProps<typeof buttonVariants> & {
     /** Render the single child (a react-router Link or an anchor) with the button styles. */
     asChild?: boolean;
-    /** Pull the button toward a fine pointer. Needs AccessibilityProvider above it. */
-    isMagnetic?: boolean;
   };
-
-type ButtonBaseProps = Omit<ButtonProps, 'isMagnetic'>;
-
-function assignRef<T>(ref: Ref<T> | undefined, node: T | null): void {
-  if (typeof ref === 'function') {
-    ref(node);
-  } else if (ref) {
-    ref.current = node;
-  }
-}
 
 // A plain button defaults to type="button" so it never submits a form by accident, and a consumer
 // `type` (spread after it) overrides the default. With asChild no type is added to the child.
-function ButtonBase({ intent, tone, size, asChild = false, className, ...rest }: ButtonBaseProps) {
+// Use the native `disabled` attribute; aria-disabled is not enforced here.
+export function Button({ intent, tone, size, asChild = false, className, ...rest }: ButtonProps) {
   const Comp = asChild ? Slot : 'button';
 
   return (
@@ -93,47 +82,6 @@ function ButtonBase({ intent, tone, size, asChild = false, className, ...rest }:
       {...rest}
     />
   );
-}
-
-/**
- * Kept apart from the plain button so that useMagnetic, which reads AccessibilityProvider,
- * only runs when `isMagnetic` is set and a plain Button works without any provider.
- */
-function MagneticButton({ ref, onPointerMove, onPointerLeave, ...rest }: ButtonBaseProps) {
-  const magnetic = useMagnetic<HTMLButtonElement>();
-  const magneticRef = magnetic.ref;
-
-  const setRef = useCallback(
-    (node: HTMLButtonElement | null) => {
-      magneticRef.current = node;
-      assignRef(ref, node);
-    },
-    [magneticRef, ref],
-  );
-
-  const handlePointerMove = (event: PointerEvent<HTMLButtonElement>) => {
-    onPointerMove?.(event);
-    magnetic.onPointerMove(event);
-  };
-
-  const handlePointerLeave = (event: PointerEvent<HTMLButtonElement>) => {
-    onPointerLeave?.(event);
-    magnetic.onPointerLeave();
-  };
-
-  return (
-    <ButtonBase
-      {...rest}
-      ref={setRef}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
-    />
-  );
-}
-
-/** Use the native `disabled` attribute; aria-disabled is not enforced here. */
-export function Button({ isMagnetic = false, ...rest }: ButtonProps) {
-  return isMagnetic ? <MagneticButton {...rest} /> : <ButtonBase {...rest} />;
 }
 
 export default Button;

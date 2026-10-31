@@ -1,11 +1,12 @@
 // @vitest-environment node
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { optimize } from '@tailwindcss/node'
 import { describe, it, expect } from 'vitest'
 import { blockBody } from '../test/css'
+import { offPaletteHex, offPaletteRgb, findHexLiterals, findRgbLiterals } from '../test/paletteCss'
+import { allStylesCss as css, componentsCss, tokensCss } from '../test/styles'
 
-const css = readFileSync(resolve(__dirname, 'tokens.css'), 'utf8')
+const indexCssText = readFileSync(resolve(__dirname, '../index.css'), 'utf8')
 const indexHtml = readFileSync(resolve(__dirname, '../../index.html'), 'utf8')
 const fontsDir = resolve(__dirname, '../../public/fonts')
 
@@ -54,129 +55,6 @@ describe('tokens.css', () => {
   })
 })
 
-const PALETTE = new Set(['#ffffff', '#f2f2f2', '#c7c7c7', '#8a8a8a', '#4d4d4d', '#1a1a1a', '#0a0a0a', '#00e5a0'])
-const HEX_LITERAL = /#[0-9a-fA-F]+\b/g
-const RGB_LITERAL = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/g
-
-/** Lowercase #rrggbb for a hex literal, or null when its length is not a valid color length. */
-function toSixDigitHex(literal: string): string | null {
-  const digits = literal.slice(1).toLowerCase()
-  if (digits.length === 3) return `#${[...digits].map((digit) => digit + digit).join('')}`
-  if (digits.length === 6) return `#${digits}`
-  // 8 digits are 6 color digits plus an alpha pair: only the color part is compared.
-  if (digits.length === 8) return `#${digits.slice(0, 6)}`
-  return null
-}
-
-function findHexLiterals(css: string): string[] {
-  return [...css.matchAll(HEX_LITERAL)].map((match) => match[0])
-}
-
-function findRgbLiterals(css: string): string[] {
-  return [...css.matchAll(RGB_LITERAL)].map((match) => match[0])
-}
-
-function offPaletteHex(css: string): string[] {
-  return findHexLiterals(css).filter((literal) => {
-    const color = toSixDigitHex(literal)
-    return color === null || !PALETTE.has(color)
-  })
-}
-
-function offPaletteRgb(css: string): string[] {
-  return [...css.matchAll(RGB_LITERAL)]
-    .filter((match) => {
-      const color = `#${[match[1], match[2], match[3]].map((channel) => Number(channel).toString(16).padStart(2, '0')).join('')}`
-      return !PALETTE.has(color)
-    })
-    .map((match) => match[0])
-}
-
-describe('tokens.css motion primitives', () => {
-  const rule = (selector: string): string => {
-    const match = new RegExp(`${selector.replace(/[.]/g, '\\.')}\\s*\\{([^}]*)\\}`).exec(css)
-    return match?.[1] ?? ''
-  }
-
-  it('blinks the cursor with vn-blink for 1.1s in one step', () => {
-    expect(rule('.vn-cursor')).toContain('animation: vn-blink 1.1s steps(1) infinite')
-  })
-
-  it('sweeps the scan line with vn-scan for 8s on the compositor', () => {
-    const scanLine = rule('.vn-scan-line')
-    expect(scanLine).toContain('animation: vn-scan 8s linear infinite')
-    expect(scanLine).toContain('will-change: transform')
-  })
-
-  it('makes the scan line a full size layer that draws a 2px line at its bottom edge', () => {
-    const scanLine = rule('.vn-scan-line')
-    expect(scanLine).toMatch(/position:\s*absolute/)
-    expect(scanLine).toMatch(/inset:\s*0/)
-    expect(scanLine).toMatch(/pointer-events:\s*none/)
-    expect(scanLine).toMatch(
-      /background:\s*linear-gradient\(to right, transparent, var\(--vn-scan-line, rgba\([^)]*\)\), transparent\) bottom \/ 100% 2px no-repeat/,
-    )
-  })
-
-  it('moves the scan line by its own height, so one sweep fits the section at any viewport', () => {
-    const keyframes = /@keyframes vn-scan\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? ''
-    expect(keyframes).toMatch(/from\s*\{\s*transform:\s*translateY\(-100%\);\s*\}/)
-    expect(keyframes).toMatch(/to\s*\{\s*transform:\s*translateY\(0\);\s*\}/)
-    expect(keyframes).not.toContain('vh')
-  })
-
-  it('stops the cursor and hides the scan line under prefers-reduced-motion', () => {
-    const reduced = /@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? ''
-    expect(reduced).toMatch(/\.vn-cursor\s*\{\s*animation: none;/)
-    expect(reduced).toMatch(/\.vn-scan-line\s*\{\s*display: none;/)
-  })
-
-  it('stops the cursor and hides the scan line under .a11y-no-animations', () => {
-    expect(rule('.a11y-no-animations .vn-cursor')).toContain('animation: none')
-    expect(rule('.a11y-no-animations .vn-scan-line')).toContain('display: none')
-  })
-
-  it('tints the scan line white on dark grids', () => {
-    expect(rule('@utility vn-scan-grid--dark')).toContain('--vn-scan-line: rgba(255, 255, 255, .16)')
-  })
-})
-
-describe('palette guard helpers', () => {
-  it('accepts a 3 digit hex that expands to a palette color', () => {
-    expect(offPaletteHex('a { color: #fff; }')).toEqual([])
-    expect(offPaletteHex('a { color: #FFF; }')).toEqual([])
-  })
-
-  it('rejects a 3 digit hex that expands to an off palette color', () => {
-    expect(offPaletteHex('a { color: #abc; }')).toEqual(['#abc'])
-  })
-
-  it('accepts an 8 digit hex only when its first 6 digits are a palette color', () => {
-    expect(offPaletteHex('a { color: #1A1A1A80; }')).toEqual([])
-    expect(offPaletteHex('a { color: #12345680; }')).toEqual(['#12345680'])
-  })
-
-  it('rejects hex lengths that are not 3, 6 or 8', () => {
-    expect(offPaletteHex('a { color: #1234; }')).toEqual(['#1234'])
-    expect(offPaletteHex('a { color: #12345; }')).toEqual(['#12345'])
-    expect(offPaletteHex('a { color: #1234567; }')).toEqual(['#1234567'])
-  })
-
-  it('rejects hex literals with 9 or more digits instead of skipping them', () => {
-    expect(offPaletteHex('a { color: #1234567890; }')).toEqual(['#1234567890'])
-    expect(offPaletteHex('a { color: #1A1A1A8080; }')).toEqual(['#1A1A1A8080'])
-  })
-
-  it('still accepts the 6 digit palette values and rejects other 6 digit values', () => {
-    expect(offPaletteHex('a { color: #00E5A0; background: #18181b; }')).toEqual(['#18181b'])
-  })
-
-  it('checks the channels of rgb() and rgba()', () => {
-    expect(offPaletteRgb('a { color: rgba(255, 255, 255, 0.2); }')).toEqual([])
-    expect(offPaletteRgb('a { color: rgba(0, 0, 0, 0.04); }')).toEqual(['rgba(0, 0, 0'])
-  })
-})
-
 describe('src/index.css palette', () => {
   const indexCss = readFileSync(resolve(__dirname, '../index.css'), 'utf8')
 
@@ -216,427 +94,71 @@ describe('index.html', () => {
   })
 })
 
-const FINE_POINTER_MOTION_GATE = '@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
-const REDUCED_MOTION_GATE = '@media (prefers-reduced-motion: reduce)'
-const MARQUEE_MASK = 'linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)'
-
-describe('tokens.css marquee', () => {
-  it('loops the track with vn-marquee on the compositor, the duration coming from --vn-marquee-duration', () => {
-    const track = blockBody(css, '.vn-marquee')
-
-    expect(track).toContain('animation: vn-marquee var(--vn-marquee-duration, 32s) linear infinite')
-    expect(track).toContain('will-change: transform')
-  })
-
-  it('moves the track by half its width so two equal groups loop without a seam', () => {
-    const keyframes = blockBody(css, '@keyframes vn-marquee')
-
-    expect(keyframes).toMatch(/to\s*\{\s*transform:\s*translateX\(-50%\);\s*\}/)
-  })
-
-  it('clips the frame on x so the page never scrolls sideways, and lets the browser handle vertical pans', () => {
-    const frame = blockBody(css, '.vn-marquee-frame')
-
-    expect(frame).toMatch(/overflow-x:\s*clip/)
-    expect(frame).toMatch(/touch-action:\s*pan-y/)
-  })
-
-  it('falls back to overflow-x hidden in an @supports not (overflow-x: clip) block, for browsers before Safari 16', () => {
-    const frame = blockBody(css, '.vn-marquee-frame')
-    const fallback = blockBody(blockBody(css, '@supports not (overflow-x: clip)'), '.vn-marquee-frame')
-
-    expect(frame).toMatch(/overflow-x:\s*clip/)
-    expect(frame).not.toMatch(/overflow-x:\s*hidden/)
-    expect(fallback).toMatch(/overflow-x:\s*hidden/)
-  })
-
-  // The Tailwind Vite build runs every stylesheet through lightningcss (the same optimize() used here,
-  // with its own browser targets), and this needs no build output to exist.
-  describe('through the optimizer of the Tailwind build', () => {
-    const optimized = (source: string): string => optimize(source, { minify: true }).code.trim()
-
-    it('collapses overflow-x hidden followed by overflow-x clip into clip alone, which is why the fallback is an @supports block', () => {
-      const collapsed = optimized('.f { overflow-x: hidden; overflow-x: clip; }')
-
-      expect(collapsed).toContain('clip')
-      expect(collapsed).not.toContain('hidden')
-    })
-
-    it('keeps the @supports not (overflow-x: clip) fallback and the clip declaration in the shipped CSS', () => {
-      const frame = blockBody(css, '.vn-marquee-frame')
-      const fallback = blockBody(css, '@supports not (overflow-x: clip)')
-
-      const shipped = optimized(`.vn-marquee-frame {${frame}}\n@supports not (overflow-x: clip) {${fallback}}`)
-
-      expect(shipped).toMatch(/\.vn-marquee-frame\{[^}]*overflow-x:clip[^}]*\}/)
-      expect(shipped).toContain('@supports not (overflow-x:clip){.vn-marquee-frame{overflow-x:hidden}}')
-    })
-  })
-
-  it('keeps the track width away from ancestors with inline size containment', () => {
-    expect(blockBody(css, '.vn-marquee-frame')).toMatch(/contain:\s*inline-size/)
-  })
-
-  it('leaves width, min-width and max-width of the frame to utilities, because this file is unlayered and would beat a consumer className', () => {
-    const frame = blockBody(css, '.vn-marquee-frame')
-
-    expect(frame).not.toMatch(/(^|[\s;])(min-width|max-width|width):/)
-  })
-
-  it('fades both edges with a mask', () => {
-    const frame = blockBody(css, '.vn-marquee-frame')
-
-    expect(frame).toContain(`mask-image: ${MARQUEE_MASK}`)
-    expect(frame).toContain(`-webkit-mask-image: ${MARQUEE_MASK}`)
-  })
-
-  it('pauses on focus within', () => {
-    expect(blockBody(css, '.vn-marquee:focus-within')).toContain('animation-play-state: paused')
-  })
-
-  it('pauses on hover only where the device can hover', () => {
-    const hoverBlock = blockBody(css, '@media (hover: hover)')
-
-    expect(blockBody(hoverBlock, '.vn-marquee:hover')).toContain('animation-play-state: paused')
-    expect(css.replace(hoverBlock, '')).not.toContain('.vn-marquee:hover')
-  })
-
-  it('stops under prefers-reduced-motion', () => {
-    const reduced = blockBody(css, REDUCED_MOTION_GATE)
-
-    expect(blockBody(reduced, '.vn-marquee')).toContain('animation: none')
-  })
-
-  it('stops under .a11y-no-animations', () => {
-    expect(blockBody(css, '.a11y-no-animations .vn-marquee')).toContain('animation: none')
-  })
-})
-
-describe('tokens.css spotlight card', () => {
-  // The stylesheet has more than one gate with this header: this one is the gate that draws the spotlight layers.
-  const gated = blockBody(css, FINE_POINTER_MOTION_GATE, '.vn-spotlight::before')
-  const outsideGate = css.replace(gated, '')
-
-  it('has a gate that needs hover, a fine pointer and no reduced motion preference', () => {
-    expect(gated).not.toBe('')
-  })
-
-  it('draws the conic ring from var(--vn-angle) in palette gray, masked to a 1px ring', () => {
-    const ring = blockBody(gated, '.vn-spotlight::before')
-
-    expect(ring).toContain('conic-gradient(from var(--vn-angle), transparent 70%, var(--color-vn-gray-mid), transparent)')
-    expect(ring).toMatch(/padding:\s*1px/)
-    expect(ring).toContain('mask-composite: exclude')
-    expect(ring).toContain('-webkit-mask-composite: xor')
-  })
-
-  it('draws the spotlight as a radial gradient at --mx and --my', () => {
-    const glow = blockBody(gated, '.vn-spotlight::after')
-
-    expect(glow).toMatch(/radial-gradient\([^)]*at var\(--mx, 50%\) var\(--my, 50%\), var\(--vn-spot-color\), transparent 70%\)/)
-  })
-
-  it('spins the ring with vn-spin for 4s only on hover and focus within', () => {
-    const spinning = blockBody(gated, '.vn-spotlight:hover::before,\n  .vn-spotlight:focus-within::before')
-
-    expect(spinning).toContain('animation: vn-spin 4s linear infinite')
-    expect(spinning).toMatch(/opacity:\s*1/)
-    expect(gated.match(/vn-spin/g)).toHaveLength(1)
-  })
-
-  it('documents the ring spin as the second exception to compositor only animation, right at the rule', () => {
-    const beforeSpinRule = gated.slice(0, gated.indexOf('.vn-spotlight:hover::before'))
-    const comment = /\/\*(?:(?!\*\/)[\s\S])*\*\/\s*$/.exec(beforeSpinRule)?.[0] ?? ''
-
-    expect(comment).toContain('--vn-angle')
-    expect(comment).toMatch(/second documented exception to compositor only animation/)
-    expect(comment).toMatch(/hover and focus within/)
-    expect(comment).toMatch(/fine pointer, motion allowed/)
-  })
-
-  it('can run the spin only under the gate: nothing outside it applies vn-spin, and inside it only hover and focus within do', () => {
-    const spinningRules = [...gated.matchAll(/([^{}]+)\{[^}]*animation:\s*vn-spin[^}]*\}/g)].map((match) =>
-      match[1].replace(/\/\*[\s\S]*?\*\//g, '').trim(),
-    )
-
-    expect(outsideGate).not.toMatch(/animation[^;]*vn-spin/)
-    expect(spinningRules).toEqual(['.vn-spotlight:hover::before,\n  .vn-spotlight:focus-within::before'])
-  })
-
-  it('shows the spotlight glow on hover', () => {
-    expect(blockBody(gated, '.vn-spotlight:hover::after')).toMatch(/opacity:\s*1/)
-  })
-
-  it('draws nothing at all outside the gate (touch devices and reduced motion get a static card)', () => {
-    expect(outsideGate).not.toMatch(/(?<!\.a11y-no-animations )\.vn-spotlight::(before|after)/)
-    // The includes list of a service card has its own gated hover settle (tokens.includes.test.ts), which is not a spotlight layer.
-    expect(outsideGate.replace(/\.vn-spotlight:hover \.vn-card-includes/g, '')).not.toContain('.vn-spotlight:hover')
-    expect(outsideGate).not.toContain('conic-gradient')
-  })
-
-  it('hides both layers under .a11y-no-animations', () => {
-    const hidden = blockBody(css, '.a11y-no-animations .vn-spotlight::before,\n.a11y-no-animations .vn-spotlight::after')
-
-    expect(hidden).toMatch(/display:\s*none/)
-  })
-
-  it('tints the glow ink on light surfaces and white on dark ones, never the accent', () => {
-    expect(blockBody(css, '.vn-spotlight')).toContain('--vn-spot-color: rgba(26, 26, 26, .08)')
-    expect(blockBody(css, '.vn-spotlight--dark')).toContain('--vn-spot-color: rgba(255, 255, 255, .08)')
-  })
-
-  it('uses palette colors only in the spotlight rules', () => {
-    const spotlightCss = [gated, blockBody(css, '.vn-spotlight'), blockBody(css, '.vn-spotlight--dark')].join('\n')
-
-    expect(findRgbLiterals(spotlightCss).length).toBeGreaterThan(0)
-    expect(offPaletteHex(spotlightCss)).toEqual([])
-    expect(offPaletteRgb(spotlightCss)).toEqual([])
-    expect(spotlightCss.toLowerCase()).not.toContain('accent')
-    expect(spotlightCss.toLowerCase()).not.toContain('00e5a0')
-  })
-})
-
-describe('tokens.css accordion', () => {
-  it('documents grid-template-rows as an exception to compositor only animation', () => {
-    const comment = /\/\*(?:(?!\*\/)[\s\S])*Accordion\.(?:(?!\*\/)[\s\S])*\*\//.exec(css)?.[0] ?? ''
-
-    expect(comment).toContain('grid-template-rows')
-    expect(comment).toMatch(/documented exception to compositor only animation/)
-  })
-
-  it('animates the panel from 0fr to 1fr with an opacity fade, on the shared easing', () => {
-    const panel = blockBody(css, '.vn-accordion-panel')
-    const open = blockBody(css, '.vn-accordion[open] > .vn-accordion-panel')
-
-    expect(panel).toMatch(/display:\s*grid/)
-    expect(panel).toMatch(/grid-template-rows:\s*0fr/)
-    expect(panel).toMatch(/opacity:\s*0/)
-    expect(panel).toContain('transition: grid-template-rows 300ms var(--ease-out), opacity 300ms var(--ease-out)')
-    expect(open).toMatch(/grid-template-rows:\s*1fr/)
-    expect(open).toMatch(/opacity:\s*1/)
-  })
-
-  it('starts the opening animation from the collapsed state with @starting-style', () => {
-    const starting = blockBody(css, '@starting-style')
-
-    expect(blockBody(starting, '.vn-accordion[open] > .vn-accordion-panel')).toMatch(/grid-template-rows:\s*0fr/)
-  })
-
-  it('keeps the content visible while it collapses where ::details-content exists', () => {
-    const supported = blockBody(css, '@supports selector(::details-content)')
-
-    expect(blockBody(supported, '.vn-accordion::details-content')).toContain('transition: content-visibility 300ms allow-discrete')
-  })
-
-  it('rotates the plus icon 45 degrees with a transform when the item is open', () => {
-    expect(blockBody(css, '.vn-accordion-icon')).toContain('transition: transform 300ms var(--ease-out)')
-    expect(blockBody(css, '.vn-accordion[open] > summary .vn-accordion-icon')).toContain('transform: rotate(45deg)')
-  })
-
-  it('is instant under prefers-reduced-motion', () => {
-    const reduced = blockBody(css, REDUCED_MOTION_GATE)
-
-    expect(blockBody(reduced, '.vn-accordion-panel')).toContain('transition: none')
-    expect(blockBody(reduced, '.vn-accordion-icon')).toContain('transition: none')
-    expect(blockBody(reduced, '@supports selector(::details-content)')).toContain('transition: none')
-  })
-
-  it('is instant under .a11y-no-animations', () => {
-    expect(blockBody(css, '.a11y-no-animations .vn-accordion-panel')).toContain('transition: none')
-    expect(blockBody(css, '.a11y-no-animations .vn-accordion-icon')).toContain('transition: none')
-    const supported = blockBody(css, '@supports selector(::details-content)')
-
-    expect(blockBody(supported, '.a11y-no-animations .vn-accordion::details-content')).toContain('transition: none')
-  })
-})
-
 describe('tokens.css copy rules', () => {
   it('has no em or en dash', () => {
     expect(css).not.toMatch(/[\u2013\u2014]/)
   })
 })
 
-describe('tokens.css cable pulse', () => {
-  it('runs a short dash along the path with vn-cable, 2.8s, linear, on a stagger delay that defaults to none', () => {
-    const pulse = blockBody(css, '.vn-cable-pulse')
-
-    expect(pulse).toContain('animation: vn-cable 2.8s linear var(--vn-cable-delay, 0s) infinite')
-    expect(pulse).toMatch(/stroke-dasharray:\s*12 100/)
+describe('tokens.css values the components share', () => {
+  it('declares the fluid radii the components use, so rounded-card and rounded-shell match them', () => {
+    expect(tokensCss).toContain('--radius-card: clamp(20px, 3vw, 28px)')
+    expect(tokensCss).toContain('--radius-shell: clamp(24px, 4vw, 40px)')
   })
 
-  it('moves only stroke-dashoffset, from just before the start of the path to just past its end', () => {
-    const keyframes = blockBody(css, '@keyframes vn-cable')
-
-    expect(keyframes).toMatch(/0%\s*\{\s*stroke-dashoffset:\s*12;\s*\}/)
-    expect(keyframes).toMatch(/70%,\s*100%\s*\{\s*stroke-dashoffset:\s*-100;\s*\}/)
-    expect(keyframes.replace(/stroke-dashoffset/g, '')).not.toMatch(/(transform|width|height|top|left|margin|opacity):/)
+  it('declares the xs breakpoint of the smallest phones', () => {
+    expect(tokensCss).toContain('--breakpoint-xs: 360px')
   })
 
-  it('keeps the pulse at rest before the animation runs, so a gated animation shows no dash on the cable', () => {
-    expect(blockBody(css, '.vn-cable-pulse')).toMatch(/stroke-dashoffset:\s*12/)
+  it('declares the landscape phone variant on the short viewport every component used to write out', () => {
+    expect(tokensCss).toContain('@custom-variant vn-landscape (@media (max-height: 480px))')
   })
 
-  it('is not drawn under prefers-reduced-motion', () => {
-    const reduced = blockBody(css, REDUCED_MOTION_GATE)
+  it('declares the z index scale in rising order, one named layer each', () => {
+    const layers = [...tokensCss.matchAll(/--vn-z-([a-z]+): (\d+);/g)].map((match) => [match[1], Number(match[2])] as const)
 
-    expect(blockBody(reduced, '.vn-cable-pulse')).toContain('display: none')
+    expect(layers.map(([name]) => name)).toEqual(['header', 'progress', 'popover', 'widget', 'overlay', 'dialog', 'skip'])
+    expect(layers.map(([, value]) => value)).toEqual([...layers.map(([, value]) => value)].sort((a, b) => a - b))
+    expect(new Set(layers.map(([, value]) => value)).size).toBe(layers.length)
   })
 
-  it('is not drawn under .a11y-no-animations', () => {
-    expect(blockBody(css, '.a11y-no-animations .vn-cable-pulse')).toContain('display: none')
+  it('declares the two focus ring utilities, white for dark surfaces and ink for light ones', () => {
+    expect(blockBody(componentsCss, '@utility vn-focus-ring')).toContain('outline: 2px solid var(--color-vn-white)')
+    expect(blockBody(componentsCss, '@utility vn-focus-ring-ink')).toContain('outline: 2px solid var(--color-vn-ink)')
+    expect(blockBody(componentsCss, '@utility vn-focus-ring')).toContain('outline-offset: 2px')
   })
 
-  it('holds the dash where it is while the window is paused, keyed on data-paused', () => {
-    const paused = blockBody(css, '[data-flow-window][data-paused="true"] .vn-cable-pulse')
-
-    expect(paused).toContain('animation-play-state: paused')
-    expect(paused).not.toMatch(/animation:/)
+  it('has dropped the safe area utilities and the brand colors that nothing uses', () => {
+    expect(css).not.toMatch(/@utility (pb|pr|pl)-safe/)
+    expect(css).toContain('@utility pt-safe')
+    expect(indexCssText).not.toContain('--color-brand-gray')
+    expect(indexCssText).not.toContain('--color-brand-black')
   })
 
-  it('pauses nothing without data-paused: the play state is never set on the pulse itself', () => {
-    expect(blockBody(css, '.vn-cable-pulse')).not.toContain('animation-play-state')
-  })
-
-  it('uses no color of its own: the stroke comes from the element, so the palette guard has nothing to check here', () => {
-    const pulse = blockBody(css, '.vn-cable-pulse')
-
-    expect(offPaletteHex(pulse)).toEqual([])
-    expect(pulse).not.toMatch(/stroke:/)
+  it('keeps the floating buttons from covering a focused field: the page scrolls with room at the bottom', () => {
+    expect(blockBody(indexCssText, '@layer base', 'scroll-padding-bottom')).toContain('scroll-padding-bottom: 5rem')
   })
 })
 
-describe('tokens.css tab progress', () => {
-  it('grows the fill with transform alone, from scaleX(0) to scaleX(1), and animates nothing else', () => {
-    const keyframes = blockBody(css, '@keyframes vn-tab-progress')
+// A filter does not raise the ratio of a mid gray against its background: the colors change.
+describe('components.css more contrast', () => {
+  const contrast = blockBody(componentsCss, '@variant vn-contrast')
 
-    expect(keyframes.replace(/\s+/g, ' ').trim()).toBe('from { transform: scaleX(0); } to { transform: scaleX(1); }')
-    expect(keyframes).not.toMatch(/(width|height|top|left|margin|opacity|filter):/)
+  it('lives in one variant: the system preference and the widget class share the rules', () => {
+    const variant = blockBody(tokensCss, '@custom-variant vn-contrast')
+
+    expect(blockBody(variant, '@media (prefers-contrast: more)')).toContain('@slot')
+    expect(blockBody(variant, '&:where(.a11y-high-contrast, .a11y-high-contrast *)')).toContain('@slot')
   })
 
-  it('grows from the left edge, over the duration the component passes, linear, and stays full at the end', () => {
-    const fill = blockBody(css, '.vn-tab-progress')
+  it('darkens the pale borders on light surfaces and leaves the ones on black surfaces alone', () => {
+    const header = '.border-vn-gray-light:not(:where(.bg-vn-black, .bg-vn-ink) *)'
 
-    expect(fill).toContain('transform-origin: left center')
-    expect(fill).toContain('animation: vn-tab-progress var(--vn-tab-duration) linear forwards')
+    expect(blockBody(contrast, header)).toContain('border-color: var(--color-vn-gray-dark)')
   })
 
-  it('has no literal duration of its own: the variable has no fallback, so the number lives in the component alone', () => {
-    const fill = blockBody(css, '.vn-tab-progress')
-
-    expect(fill).not.toMatch(/var\(--vn-tab-duration\s*,/)
-    expect(fill).not.toMatch(/\d+m?s\b/)
-  })
-
-  it('never sets the play state on the fill itself: the component unmounts the bar instead of pausing it', () => {
-    expect(blockBody(css, '.vn-tab-progress')).not.toContain('animation-play-state')
-  })
-
-  it('is not drawn under prefers-reduced-motion', () => {
-    const reduced = blockBody(css, REDUCED_MOTION_GATE)
-
-    expect(blockBody(reduced, '.vn-tab-progress')).toContain('display: none')
-  })
-
-  it('is not drawn under .a11y-no-animations', () => {
-    expect(blockBody(css, '.a11y-no-animations .vn-tab-progress')).toContain('display: none')
-  })
-})
-
-describe('tokens.css range slider', () => {
-  const TRACK_SELECTORS = ['.vn-range::-webkit-slider-runnable-track', '.vn-range::-moz-range-track']
-  const THUMB_SELECTORS = ['.vn-range::-webkit-slider-thumb', '.vn-range::-moz-range-thumb']
-  // The forced colors block repeats the part selectors, so each lookup names a declaration that only the main rule holds.
-  const slider = (): string => blockBody(css, '.vn-range', 'appearance')
-  const track = (selector: string): string => blockBody(css, selector, 'linear-gradient')
-  const thumb = (selector: string): string => blockBody(css, selector, 'width: 28px')
-  const focusRing = (selector: string): string => blockBody(css, selector, 'box-shadow')
-  const rangeCss = [
-    slider(),
-    ...TRACK_SELECTORS.map(track),
-    ...THUMB_SELECTORS.map(thumb),
-    blockBody(css, '.vn-range:focus-visible', 'outline'),
-    focusRing('.vn-range:focus-visible::-webkit-slider-thumb'),
-    focusRing('.vn-range:focus-visible::-moz-range-thumb'),
-  ].join('\n')
-
-  it('styles the WebKit and the Firefox parts in separate rules, since one unknown pseudo element voids a whole selector list', () => {
-    for (const selector of TRACK_SELECTORS) expect(track(selector), selector).not.toBe('')
-    for (const selector of THUMB_SELECTORS) expect(thumb(selector), selector).not.toBe('')
-    expect(css).not.toMatch(/::-webkit-slider-thumb,\s*\.vn-range::-moz-range-thumb/)
-  })
-
-  it('removes the native look and starts the fill at 0 until the input sets --vn-range-fill', () => {
-    expect(slider()).toMatch(/appearance:\s*none/)
-    expect(slider()).toContain('--vn-range-fill: 0%')
-    expect(thumb('.vn-range::-webkit-slider-thumb')).toMatch(/appearance:\s*none/)
-  })
-
-  it('draws a 28px round thumb for a finger in both engines', () => {
-    for (const selector of THUMB_SELECTORS) {
-      const rule = thumb(selector)
-
-      expect(rule, selector).toMatch(/width:\s*28px/)
-      expect(rule, selector).toMatch(/height:\s*28px/)
-      expect(rule, selector).toMatch(/border-radius:\s*50%/)
-    }
-  })
-
-  it('centers the WebKit thumb on the track: Firefox does it by itself', () => {
-    expect(thumb('.vn-range::-webkit-slider-thumb')).toContain('margin-top: calc((var(--vn-range-track) - 28px) * 0.5)')
-  })
-
-  it('fills the track from --vn-range-fill in white over a gray mid rest, in both engines', () => {
-    for (const selector of TRACK_SELECTORS) {
-      const rule = track(selector)
-
-      expect(rule, selector).toContain(
-        'linear-gradient(to right, var(--color-vn-white) var(--vn-range-fill), var(--color-vn-gray-mid) var(--vn-range-fill))',
-      )
-    }
-  })
-
-  it('documents the track fill as a paint, an exception to compositor only animation, in one line at the rule', () => {
-    const comment = /\/\*(?:(?!\*\/)[\s\S])*\*\/\s*\.vn-range \{/.exec(css)?.[0] ?? ''
-
-    expect(comment).toContain('--vn-range-fill')
-    expect(comment).toMatch(/exception to compositor only animation/)
-  })
-
-  it('uses palette tokens only and never the accent', () => {
-    expect(rangeCss).toContain('var(--color-vn-white)')
-    expect(offPaletteHex(rangeCss)).toEqual([])
-    expect(offPaletteRgb(rangeCss)).toEqual([])
-    expect(rangeCss.toLowerCase()).not.toContain('accent')
-    expect(rangeCss.toLowerCase()).not.toContain('00e5a0')
-  })
-
-  it('shows the focus on the thumb as a white ring, and keeps a transparent outline that forced colors turns visible', () => {
-    const focus = blockBody(css, '.vn-range:focus-visible', 'outline')
-
-    expect(focus).toMatch(/outline:\s*2px solid transparent/)
-    for (const selector of ['.vn-range:focus-visible::-webkit-slider-thumb', '.vn-range:focus-visible::-moz-range-thumb']) {
-      expect(focusRing(selector), selector).toMatch(/box-shadow:\s*0 0 0 3px var\(--color-vn-white\)/)
-    }
-  })
-
-  it('leaves width and height to utilities (w-full h-11), because this file is unlayered and would beat a consumer className', () => {
-    expect(slider()).not.toMatch(/(^|[\s;])(min-width|max-width|width|height|min-height):/)
-  })
-
-  it('lets a vertical drag scroll the page while a horizontal one moves the slider', () => {
-    expect(slider()).toMatch(/touch-action:\s*pan-y/)
-  })
-
-  it('has no transition or animation, so there is nothing to switch off for reduced motion', () => {
-    expect(rangeCss).not.toMatch(/transition|animation/)
-  })
-
-  it('keeps the thumb and the track visible in forced colors', () => {
-    const forced = blockBody(css, '@media (forced-colors: active)', '.vn-range::-webkit-slider-thumb')
-
-    for (const selector of [...THUMB_SELECTORS, ...TRACK_SELECTORS]) {
-      expect(blockBody(forced, selector), selector).not.toBe('')
-    }
-    expect(blockBody(forced, '.vn-range::-webkit-slider-thumb')).toContain('ButtonText')
+  it('draws the dimmed logos and the faded answers at full strength and the focus ring thicker', () => {
+    expect(blockBody(contrast, '.vn-logo-tone,\n  .opacity-80')).toContain('opacity: 1')
+    expect(blockBody(contrast, ':focus-visible')).toContain('outline-width: 3px !important')
   })
 })

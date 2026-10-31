@@ -6,7 +6,8 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
-const SOURCE_FILES = ['**/*.{ts,tsx,mjs,js}'];
+// .mts covers the generated declaration files next to the scripts (a .d.mts needs the TypeScript parser).
+const SOURCE_FILES = ['**/*.{ts,tsx,mts,mjs,js}'];
 
 /** A rule value (a severity, or an array that starts with one) with an error turned into a warning. */
 function toWarning(value) {

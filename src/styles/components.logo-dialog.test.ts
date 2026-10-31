@@ -1,14 +1,9 @@
 // @vitest-environment node
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, it, expect } from 'vitest'
-import { blockBody, declarations, ruleWithSelector } from '../test/css'
+import { blockBody, declarations } from '../test/css'
+import { allStylesCss as css, stillBody } from '../test/styles'
 
-const css = readFileSync(resolve(__dirname, 'tokens.css'), 'utf8')
-
-const REDUCED_MOTION_GATE = '@media (prefers-reduced-motion: reduce)'
-
-describe('tokens.css logo tone', () => {
+describe('components.css logo tone', () => {
   const HOVER_GATE = '@media (hover: hover)'
   const BASE = '.vn-logo-tone'
   const WOKEN = '.vn-logo-host:hover .vn-logo-tone,\n  .vn-logo-host:focus-within .vn-logo-tone'
@@ -55,18 +50,21 @@ describe('tokens.css logo tone', () => {
     expect(rules.join('\n')).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|accent/i)
   })
 
-  it('has no transition under prefers-reduced-motion', () => {
-    const reduced = blockBody(css, REDUCED_MOTION_GATE, BASE)
-
-    expect(declarations(blockBody(reduced, BASE))).toEqual(['transition: none'])
+  it('has no transition with motion off (the list of motion.css)', () => {
+    expect(declarations(stillBody(BASE))).toEqual(['transition: none'])
   })
 
-  it('has no transition under .a11y-no-animations', () => {
-    expect(declarations(blockBody(css, `.a11y-no-animations ${BASE}`))).toEqual(['transition: none'])
+  // A logo that fails to load shows its name as text at this opacity: below 0.7 it would lose its contrast (1.4.3).
+  it('keeps the resting opacity at 0.7 or more, so the text of a logo that failed to load stays readable', () => {
+    const rest = declarations(blockBody(gated, BASE)).find((line) => line.startsWith('opacity'))
+    const opacity = Number(rest?.split(':')[1])
+
+    expect(opacity).toBeGreaterThanOrEqual(0.7)
+    expect(opacity).toBeLessThanOrEqual(1)
   })
 })
 
-describe('tokens.css dialog', () => {
+describe('components.css dialog', () => {
   const PANEL = '.vn-dialog-panel'
   const OVERLAY = '.vn-dialog-overlay'
 
@@ -106,15 +104,8 @@ describe('tokens.css dialog', () => {
     expect(panelRules.join('\n')).not.toMatch(/translate\(-50%/)
   })
 
-  it('stops under prefers-reduced-motion', () => {
-    const reduced = blockBody(css, REDUCED_MOTION_GATE, PANEL)
-
-    expect(ruleWithSelector(reduced, PANEL)).toContain('animation: none !important')
-    expect(ruleWithSelector(reduced, OVERLAY)).toContain('animation: none !important')
-  })
-
-  it('stops under .a11y-no-animations', () => {
-    expect(ruleWithSelector(css, `.a11y-no-animations ${PANEL}`)).toContain('animation: none !important')
-    expect(ruleWithSelector(css, `.a11y-no-animations ${OVERLAY}`)).toContain('animation: none !important')
+  it('stops with motion off, so Radix unmounts it at once (the list of motion.css)', () => {
+    expect(stillBody(PANEL)).toContain('animation: none !important')
+    expect(stillBody(OVERLAY)).toContain('animation: none !important')
   })
 })

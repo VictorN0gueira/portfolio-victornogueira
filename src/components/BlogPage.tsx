@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import {
@@ -140,6 +140,9 @@ function FeaturedCard({ article }: { article: NewsArticle }) {
           src={imgError || !article.image ? FALLBACK_IMAGE : article.image}
           onError={() => setImgError(true)}
           loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          alt=""
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/60 hidden md:block" />
@@ -228,6 +231,9 @@ function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
           src={imgError || !article.image ? FALLBACK_IMAGE : article.image}
           onError={() => setImgError(true)}
           loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          alt=""
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -293,10 +299,9 @@ export default function BlogPage() {
   const [catFilter, setCatFilter]     = useState<CatFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchNews = useCallback(async (forceRefresh = false, signal?: AbortSignal) => {
-    setLoading(true);
-    setError(null);
-    if (forceRefresh) localStorage.removeItem('blog_news_cache');
+  // The answer of the sources goes into the state only after the await, so the first load (the state starts as loading)
+  // never sets state inside the effect that starts it.
+  const loadNews = useCallback(async (signal?: AbortSignal) => {
     try {
       const result = await getNewsArticles();
       if (signal?.aborted) return;
@@ -310,11 +315,30 @@ export default function BlogPage() {
     }
   }, []);
 
-  useEffect(() => {
+  // One load is current at a time: starting another (the first one, a refresh) aborts the one before, so a slower answer of an
+  // older load never lands on top of a newer one, and nothing is set after the page is gone.
+  const currentLoad = useRef<AbortController | null>(null);
+  const startLoad = useCallback(() => {
+    currentLoad.current?.abort();
     const controller = new AbortController();
-    fetchNews(false, controller.signal);
-    return () => controller.abort();
-  }, [fetchNews]);
+    currentLoad.current = controller;
+    void loadNews(controller.signal);
+  }, [loadNews]);
+
+  // The refresh button: drops the cache and asks the sources again.
+  const refreshNews = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    localStorage.removeItem('blog_news_cache');
+    startLoad();
+  }, [startLoad]);
+
+  useEffect(() => {
+    // The state is set after the await (the first render is already loading), never in the body of this effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    startLoad();
+    return () => currentLoad.current?.abort();
+  }, [startLoad]);
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const filteredArticles = useMemo(() => {
@@ -390,7 +414,7 @@ export default function BlogPage() {
 
             <div className="flex items-center gap-3 flex-wrap">
               <button
-                onClick={() => fetchNews(true)}
+                onClick={refreshNews}
                 disabled={loading}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.1] hover:border-white/[0.15] transition-all text-sm text-zinc-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >

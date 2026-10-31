@@ -1,18 +1,13 @@
-import { act, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { IntersectionObserverMock, triggerIntersection } from '../../test/intersection';
 import { renderWithProviders } from '../../test/render';
-import { useAccessibility } from '../../contexts/AccessibilityContext';
-import { MD_QUERY } from '../../lib/breakpoints';
 import { RevealGroup, RevealItem, type RevealVariant } from './Reveal';
 
-const A11Y_STORAGE_KEY = 'a11y-preferences';
-const WIDE_QUERY = MD_QUERY;
+const ITEM_SELECTOR = '[data-reveal-item]';
 const REVEALED_TIMEOUT_MS = 3000;
 const NO_DELAY_TIMEOUT_MS = 500;
-const MOTION_BACK_ON_WINDOW_MS = 1000;
 // How far from its end value (opacity 1, blur and offset 0) an animated style may still be and count as arrived.
 const SETTLED_TOLERANCE = 0.01;
 
@@ -33,7 +28,7 @@ function getItem(testId: string): HTMLElement {
 describe('RevealItem with motion allowed', () => {
   beforeEach(() => {
     localStorage.clear();
-    stubMatchMedia({ [WIDE_QUERY]: true });
+    stubMatchMedia();
   });
 
   afterEach(() => {
@@ -112,9 +107,6 @@ describe('RevealItem with motion allowed', () => {
 
   it.each<[RevealVariant, string | null]>([
     ['up', 'translateY(32px)'],
-    ['left', 'translateX(-40px)'],
-    ['right', 'translateX(40px)'],
-    ['zoom', 'translateY(16px) scale(0.94)'],
     ['fade', null],
     ['rise-blur', 'translateY(24px)'],
   ])('starts the %s variant hidden at its offset', (variant, transform) => {
@@ -218,7 +210,7 @@ describe('RevealItem with motion allowed', () => {
   });
 
   it('shows a span item in its final state, without a hidden style, when motion is reduced', () => {
-    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true, [WIDE_QUERY]: true });
+    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
 
     renderWithProviders(
       <RevealGroup>
@@ -344,205 +336,70 @@ describe('RevealItem with motion allowed', () => {
   });
 });
 
-describe('RevealItem below the md breakpoint', () => {
-  beforeEach(() => {
-    stubMatchMedia({ [WIDE_QUERY]: false });
-  });
-
-  it.each<RevealVariant>(['left', 'right'])('turns %s into up so no sideways offset can scroll the page', (variant) => {
-    renderWithProviders(
-      <RevealGroup>
-        <RevealItem variant={variant}>
-          <p data-testid="item">oi</p>
-        </RevealItem>
-      </RevealGroup>,
-    );
-
-    expect((getItem('item').parentElement as HTMLElement).style.transform).toBe('translateY(32px)');
-  });
-
-  it('keeps zoom and fade as they are', () => {
-    renderWithProviders(
-      <RevealGroup>
-        <RevealItem variant="zoom">
-          <p data-testid="zoom">oi</p>
-        </RevealItem>
-        <RevealItem variant="fade">
-          <p data-testid="fade">oi</p>
-        </RevealItem>
-      </RevealGroup>,
-    );
-
-    expect((getItem('zoom').parentElement as HTMLElement).style.transform).toBe('translateY(16px) scale(0.94)');
-    expect((getItem('fade').parentElement as HTMLElement).style.transform).toBe('');
-  });
-});
-
-describe('RevealItem with reduced motion', () => {
-  afterEach(() => {
-    localStorage.clear();
-  });
-
-  it('renders the child in its final state at once when the system asks for reduced motion', () => {
-    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true, [WIDE_QUERY]: true });
+// The sideways and zoom variants were used by no section, and the query that turned the sideways ones into "up" below md
+// was read by every item for nothing. Items now read no breakpoint at all.
+describe('RevealItem and the viewport width', () => {
+  it('reads no media query of its own: the only one asked for is the motion preference', () => {
+    const media = stubMatchMedia();
 
     renderWithProviders(
       <RevealGroup>
-        <RevealItem variant="left">
-          <p data-testid="item">oi</p>
-        </RevealItem>
-      </RevealGroup>,
-    );
-    const wrapper = getItem('item').parentElement as HTMLElement;
-
-    expect(wrapper.style.opacity).not.toBe('0');
-    expect(wrapper).not.toHaveAttribute('style');
-  });
-
-  it('renders the child in its final state at once when the accessibility toggle paused animations', () => {
-    stubMatchMedia({ [WIDE_QUERY]: true });
-    localStorage.setItem(A11Y_STORAGE_KEY, JSON.stringify({ noAnimations: true }));
-
-    renderWithProviders(
-      <RevealGroup>
-        <RevealItem variant="zoom" className="card">
-          <p data-testid="item">oi</p>
-        </RevealItem>
-      </RevealGroup>,
-    );
-    const wrapper = getItem('item').parentElement as HTMLElement;
-
-    expect(wrapper).not.toHaveAttribute('style');
-    expect(wrapper).toHaveClass('card');
-  });
-});
-
-describe('RevealItem when motion is switched on or off while the page is open', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
-  afterEach(() => {
-    localStorage.clear();
-  });
-
-  function PauseAnimationsButton() {
-    const { toggle } = useAccessibility();
-    return (
-      <button type="button" onClick={() => toggle('noAnimations')}>
-        pausar animações
-      </button>
-    );
-  }
-
-  function renderFormItem() {
-    return renderWithProviders(
-      <>
-        <PauseAnimationsButton />
-        <RevealGroup>
-          <RevealItem>
-            <input aria-label="nome" data-testid="field" />
+        {[0, 1, 2].map((index) => (
+          <RevealItem key={index}>
+            <p>{index}</p>
           </RevealItem>
-        </RevealGroup>
-      </>,
+        ))}
+      </RevealGroup>,
     );
-  }
 
-  function getFormGroup(container: HTMLElement): HTMLElement {
-    return container.querySelector('[data-reveal-group]') as HTMLElement;
-  }
+    const asked = new Set(media.matchMedia.mock.calls.map(([query]) => query as string));
+    expect([...asked]).toEqual([REDUCED_MOTION_QUERY]);
+  });
+});
 
-  it('keeps the same element and the typed text of its children when reduced motion turns on', async () => {
-    const user = userEvent.setup();
-    const media = stubMatchMedia({ [WIDE_QUERY]: true });
-    const { container } = renderFormItem();
-    triggerIntersection(getFormGroup(container));
-    const wrapper = getItem('field').parentElement as HTMLElement;
-    await waitFor(() => expect(wrapper.style.opacity).toBe('1'), { timeout: REVEALED_TIMEOUT_MS });
-    const field = getItem('field') as HTMLInputElement;
-    await user.type(field, 'Ana');
+// Where each item sits among its siblings is read from the DOM once for the whole group, not once per item.
+describe('RevealGroup positions', () => {
+  const countItemQueries = () => {
+    const original = Element.prototype.querySelectorAll;
+    const spy = vi.spyOn(Element.prototype, 'querySelectorAll').mockImplementation(function (this: Element, selector: string) {
+      return original.call(this, selector);
+    });
+    return () => spy.mock.calls.filter(([selector]) => selector === ITEM_SELECTOR).length;
+  };
 
-    act(() => media.set(REDUCED_MOTION_QUERY, true));
+  it('looks up the items of the group once, however many items it holds', async () => {
+    const queries = countItemQueries();
+    const { container } = renderWithProviders(
+      <RevealGroup stagger={0.01}>
+        {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => (
+          <RevealItem key={index}>
+            <p data-testid={`item-${index}`}>{index}</p>
+          </RevealItem>
+        ))}
+      </RevealGroup>,
+    );
 
-    expect(getItem('field')).toBe(field);
-    expect(getItem('field').parentElement).toBe(wrapper);
-    expect(field).toHaveValue('Ana');
+    triggerIntersection(getGroup(container));
+    await waitFor(() => expect(getItem('item-7').parentElement?.style.opacity).toBe('1'), { timeout: REVEALED_TIMEOUT_MS });
+
+    expect(queries()).toBe(1);
   });
 
-  it('keeps the same element and the typed text when the accessibility toggle pauses animations', async () => {
-    const user = userEvent.setup();
-    stubMatchMedia({ [WIDE_QUERY]: true });
-    const { container } = renderFormItem();
-    triggerIntersection(getFormGroup(container));
-    const wrapper = getItem('field').parentElement as HTMLElement;
-    await waitFor(() => expect(wrapper.style.opacity).toBe('1'), { timeout: REVEALED_TIMEOUT_MS });
-    const field = getItem('field') as HTMLInputElement;
-    await user.type(field, 'Ana');
+  it('still staggers by position after the lookup is shared', async () => {
+    const { container } = renderWithProviders(
+      <RevealGroup stagger={1}>
+        <RevealItem>
+          <p data-testid="first">um</p>
+        </RevealItem>
+        <RevealItem>
+          <p data-testid="second">dois</p>
+        </RevealItem>
+      </RevealGroup>,
+    );
 
-    await user.click(screen.getByRole('button', { name: 'pausar animações' }));
+    triggerIntersection(getGroup(container));
 
-    expect(getItem('field')).toBe(field);
-    expect(field).toHaveValue('Ana');
-  });
-
-  it('reveals an item that was still hidden when reduced motion turns on, instead of leaving it invisible', async () => {
-    const media = stubMatchMedia({ [WIDE_QUERY]: true });
-    renderFormItem();
-    const wrapper = getItem('field').parentElement as HTMLElement;
-    expect(wrapper.style.opacity).toBe('0');
-
-    act(() => media.set(REDUCED_MOTION_QUERY, true));
-
-    await waitFor(() => expect(wrapper.style.opacity).toBe('1'));
-    expect(wrapper.style.transform).toMatch(/^(none|translateY\(0(px)?\))?$/);
-  });
-
-  it('does not hide an item again when motion turns back on after its group was revealed', async () => {
-    const media = stubMatchMedia({ [WIDE_QUERY]: true });
-    const { container } = renderFormItem();
-    triggerIntersection(getFormGroup(container));
-    const wrapper = getItem('field').parentElement as HTMLElement;
-    await waitFor(() => expect(wrapper.style.opacity).toBe('1'), { timeout: REVEALED_TIMEOUT_MS });
-    act(() => media.set(REDUCED_MOTION_QUERY, true));
-    await waitFor(() => expect(wrapper.style.opacity).toBe('1'));
-    // The element has been driven by motion before, so motion knows where it is. A regression that
-    // animates it toward hidden when motion comes back would show up as an opacity below 1 in the window.
-    const opacities: string[] = [];
-    const observer = new MutationObserver(() => opacities.push(wrapper.style.opacity));
-    observer.observe(wrapper, { attributes: true, attributeFilter: ['style'] });
-
-    act(() => media.set(REDUCED_MOTION_QUERY, false));
-    // Longer than the 0.7s reveal: an item that started to animate toward hidden would be well on its way.
-    await new Promise((resolve) => setTimeout(resolve, MOTION_BACK_ON_WINDOW_MS));
-    observer.disconnect();
-
-    expect(getItem('field').parentElement).toBe(wrapper);
-    expect(opacities.filter((opacity) => opacity !== '' && opacity !== '1')).toEqual([]);
-    expect(wrapper.style.opacity).toBe('1');
-    expect(wrapper.style.transform).toMatch(/^(none|translateY\(0(px)?\))?$/);
-  });
-
-  // jsdom has no computed opacity, so motion cannot tell where an element it never drove is: this can check the
-  // element identity and that nothing hides it at the flip, and the test above checks the animation window.
-  it('keeps the element of an item that was revealed while motion was off, and visible, when motion turns on', () => {
-    const media = stubMatchMedia({ [WIDE_QUERY]: true, [REDUCED_MOTION_QUERY]: true });
-    const { container } = renderFormItem();
-    triggerIntersection(getFormGroup(container));
-    const wrapper = getItem('field').parentElement as HTMLElement;
-    expect(wrapper).not.toHaveAttribute('style');
-
-    act(() => media.set(REDUCED_MOTION_QUERY, false));
-
-    expect(getItem('field').parentElement).toBe(wrapper);
-    expect(wrapper.style.opacity).not.toBe('0');
-  });
-
-  it('accepts only intrinsic tags for as, because a component might not forward the ref', () => {
-    const NotATag = () => null;
-
-    // @ts-expect-error a component is not an intrinsic tag
-    const rejected = <RevealGroup as={NotATag} />;
-
-    expect(rejected).toBeDefined();
+    await waitFor(() => expect((getItem('first').parentElement as HTMLElement).style.opacity).not.toBe('0'), { timeout: REVEALED_TIMEOUT_MS });
+    expect((getItem('second').parentElement as HTMLElement).style.opacity).toBe('0');
   });
 });

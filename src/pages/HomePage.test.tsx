@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { contactFormCopy } from '../components/contact/contactFormCopy';
 import { faqs } from '../data/faqs';
 import { homeCopy } from '../data/homeCopy';
@@ -8,11 +8,12 @@ import { DEFAULT_HOURLY_RATE, buildQuoteMessage } from '../lib/roi';
 import { SITE } from '../lib/site';
 import { expectNoConsoleOutput } from '../test/consoleGuard';
 import { rejectUnexpectedFetch } from '../test/contactForm';
+import { WARM_UP_HOOK_TIMEOUT_MS, preloadHomeSections, warmUpRender } from '../test/lazyPages';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
+import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../test/scroll';
 import HomePage from './HomePage';
 
-const LAZY_WAIT = { timeout: 20_000 } as const;
 const FINAL_HEADING = homeCopy.finalCta.heading;
 const QUOTE_BUTTON = homeCopy.roi.cta;
 // The words the quote opens with, up to the numbers. They come from the builder, so a new wording is one change.
@@ -31,30 +32,30 @@ const SECTION_HEADINGS = [
   FINAL_HEADING,
 ];
 
-// Eight lazy chunks are fetched and rendered in jsdom on every render of the page: slow on a busy machine.
-vi.setConfig({ testTimeout: 30_000 });
-
 expectNoConsoleOutput();
 
-const scrollIntoView = vi.fn();
+let scrollIntoView: ReturnType<typeof stubScrollIntoViewEverywhere>;
+
+// The eight lazy chunks are loaded once, here, and the first render is paid here too, so a test waits for nothing slow.
+beforeAll(async () => {
+  await preloadHomeSections();
+  await warmUpRender(<HomePage />, () => expect(document.querySelectorAll('h2')).toHaveLength(SECTION_HEADINGS.length + 1));
+}, WARM_UP_HOOK_TIMEOUT_MS);
 
 beforeEach(() => {
   stubMatchMedia();
   // The form must never reach the network from a test.
   rejectUnexpectedFetch();
-  scrollIntoView.mockClear();
   // jsdom has no scrollIntoView. It is put back to nothing after every test, so a failing one cannot leak it.
-  Object.defineProperty(Element.prototype, 'scrollIntoView', { value: scrollIntoView, configurable: true, writable: true });
+  scrollIntoView = stubScrollIntoViewEverywhere();
 });
 
-afterEach(() => {
-  Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
-});
+afterEach(removeScrollIntoViewStub);
 
 /** Renders the home and waits until every lazy section (the statement, the seven headings and the form) is in. */
 async function renderHome(route = '/') {
   const view = renderWithProviders(<HomePage />, { route });
-  await waitFor(() => expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(SECTION_HEADINGS.length + 1), LAZY_WAIT);
+  await waitFor(() => expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(SECTION_HEADINGS.length + 1));
   return view;
 }
 

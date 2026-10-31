@@ -1,29 +1,11 @@
 import { createRef } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { findAccentElements } from '../../test/accent';
-import { FINE_POINTER_QUERY, REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import Button from './Button';
-
-const ELEMENT_WIDTH = 100;
-const ELEMENT_HEIGHT = 40;
-
-function stubRectAtOrigin(el: HTMLElement): void {
-  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
-    left: 0,
-    top: 0,
-    right: ELEMENT_WIDTH,
-    bottom: ELEMENT_HEIGHT,
-    width: ELEMENT_WIDTH,
-    height: ELEMENT_HEIGHT,
-    x: 0,
-    y: 0,
-    toJSON: () => ({}),
-  });
-}
 
 describe('Button', () => {
   describe('rendering', () => {
@@ -34,7 +16,7 @@ describe('Button', () => {
       expect(button).toHaveClass('bg-vn-ink', 'text-vn-white', 'rounded-full');
     });
 
-    it('renders without any provider when it is not magnetic', () => {
+    it('renders without any provider', () => {
       render(<Button>falar com a gente</Button>);
 
       expect(screen.getByRole('button')).toBeInTheDocument();
@@ -68,7 +50,7 @@ describe('Button', () => {
       renderWithProviders(<Button intent="secondary">ver projetos</Button>);
 
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('border', 'border-vn-gray-light', 'bg-transparent', 'text-vn-ink');
+      expect(button).toHaveClass('border', 'border-vn-gray-mid', 'bg-transparent', 'text-vn-ink');
       expect(button).not.toHaveClass('bg-vn-ink');
     });
 
@@ -79,7 +61,7 @@ describe('Button', () => {
         </Button>,
       );
 
-      expect(screen.getByRole('button')).toHaveClass('border-vn-gray-light', 'bg-transparent', 'text-vn-white');
+      expect(screen.getByRole('button')).toHaveClass('border-vn-gray-mid', 'bg-transparent', 'text-vn-white');
     });
 
     it('is never painted with the accent color', () => {
@@ -211,7 +193,7 @@ describe('Button', () => {
 
       const link = screen.getByRole('link', { name: 'projetos' });
       expect(link).toHaveAttribute('href', '/projetos');
-      expect(link).toHaveClass('border-vn-gray-light');
+      expect(link).toHaveClass('border-vn-gray-mid');
     });
   });
 
@@ -268,12 +250,6 @@ describe('Button', () => {
       expect(screen.getByRole('button')).toHaveAttribute('type', 'submit');
     });
 
-    it('keeps type="button" on a magnetic button', () => {
-      renderWithProviders(<Button isMagnetic>enviar</Button>);
-
-      expect(screen.getByRole('button')).toHaveAttribute('type', 'button');
-    });
-
     it('does not submit a surrounding form by default and submits with type="submit"', async () => {
       const onSubmit = vi.fn((event: { preventDefault: () => void }) => event.preventDefault());
       const user = userEvent.setup();
@@ -291,6 +267,13 @@ describe('Button', () => {
       expect(onSubmit).toHaveBeenCalledTimes(1);
     });
 
+    it('hands the ref of the consumer to the button itself', () => {
+      const ref = createRef<HTMLButtonElement>();
+      renderWithProviders(<Button ref={ref}>enviar</Button>);
+
+      expect(ref.current).toBe(screen.getByRole('button'));
+    });
+
     it('adds no type attribute to the child when asChild is set', () => {
       renderWithProviders(
         <Button asChild>
@@ -299,145 +282,6 @@ describe('Button', () => {
       );
 
       expect(screen.getByRole('link')).not.toHaveAttribute('type');
-    });
-  });
-
-  describe('isMagnetic', () => {
-    beforeEach(() => {
-      localStorage.clear();
-    });
-
-    it('does not break without a fine pointer and leaves the transform alone', () => {
-      stubMatchMedia();
-      renderWithProviders(<Button isMagnetic>enviar</Button>);
-      const button = screen.getByRole('button');
-      stubRectAtOrigin(button);
-
-      fireEvent.pointerMove(button, { clientX: 100, clientY: 20 });
-      fireEvent.pointerLeave(button);
-
-      expect(button).toBeInTheDocument();
-      expect(button.style.transform).toBe('');
-    });
-
-    it('stays still when the visitor asks for reduced motion', () => {
-      stubMatchMedia({ [FINE_POINTER_QUERY]: true, [REDUCED_MOTION_QUERY]: true });
-      renderWithProviders(<Button isMagnetic>enviar</Button>);
-      const button = screen.getByRole('button');
-      stubRectAtOrigin(button);
-
-      fireEvent.pointerMove(button, { clientX: 100, clientY: 20 });
-
-      expect(button.style.transform).toBe('');
-    });
-
-    it('pulls toward the pointer with a fine pointer and releases on leave', () => {
-      stubMatchMedia({ [FINE_POINTER_QUERY]: true });
-      renderWithProviders(<Button isMagnetic>enviar</Button>);
-      const button = screen.getByRole('button');
-      stubRectAtOrigin(button);
-
-      fireEvent.pointerMove(button, { clientX: 100, clientY: 20 });
-      expect(button.style.transform).toBe('translate(9px, 0px)');
-
-      fireEvent.pointerLeave(button);
-      expect(button.style.transform).toBe('');
-    });
-
-    it('composes a consumer onPointerMove and onPointerLeave instead of replacing them', () => {
-      stubMatchMedia({ [FINE_POINTER_QUERY]: true });
-      const onPointerMove = vi.fn();
-      const onPointerLeave = vi.fn();
-      renderWithProviders(
-        <Button isMagnetic onPointerMove={onPointerMove} onPointerLeave={onPointerLeave}>
-          enviar
-        </Button>,
-      );
-      const button = screen.getByRole('button');
-      stubRectAtOrigin(button);
-
-      fireEvent.pointerMove(button, { clientX: 100, clientY: 20 });
-      expect(onPointerMove).toHaveBeenCalledTimes(1);
-      expect(button.style.transform).toBe('translate(9px, 0px)');
-
-      fireEvent.pointerLeave(button);
-      expect(onPointerLeave).toHaveBeenCalledTimes(1);
-      expect(button.style.transform).toBe('');
-    });
-
-    it('still calls the consumer handlers when the pull is inactive', () => {
-      stubMatchMedia();
-      const onPointerMove = vi.fn();
-      renderWithProviders(
-        <Button isMagnetic onPointerMove={onPointerMove}>
-          enviar
-        </Button>,
-      );
-
-      fireEvent.pointerMove(screen.getByRole('button'), { clientX: 10, clientY: 10 });
-
-      expect(onPointerMove).toHaveBeenCalledTimes(1);
-    });
-
-    it('does not attach pull handlers when it is not magnetic', () => {
-      stubMatchMedia({ [FINE_POINTER_QUERY]: true });
-      renderWithProviders(<Button>enviar</Button>);
-      const button = screen.getByRole('button');
-      stubRectAtOrigin(button);
-
-      fireEvent.pointerMove(button, { clientX: 100, clientY: 20 });
-
-      expect(button.style.transform).toBe('');
-    });
-
-    it('merges an object ref from the consumer with the magnetic ref', () => {
-      stubMatchMedia({ [FINE_POINTER_QUERY]: true });
-      const ref = createRef<HTMLButtonElement>();
-      renderWithProviders(
-        <Button isMagnetic ref={ref}>
-          enviar
-        </Button>,
-      );
-      const button = screen.getByRole('button');
-      stubRectAtOrigin(button);
-
-      fireEvent.pointerMove(button, { clientX: 100, clientY: 20 });
-
-      expect(ref.current).toBe(button);
-      expect(button.style.transform).toBe('translate(9px, 0px)');
-    });
-
-    it('merges a callback ref from the consumer with the magnetic ref', () => {
-      stubMatchMedia({ [FINE_POINTER_QUERY]: true });
-      const callbackRef = vi.fn();
-      renderWithProviders(
-        <Button isMagnetic ref={callbackRef}>
-          enviar
-        </Button>,
-      );
-      const button = screen.getByRole('button');
-      stubRectAtOrigin(button);
-
-      fireEvent.pointerMove(button, { clientX: 100, clientY: 20 });
-
-      expect(callbackRef).toHaveBeenCalledWith(button);
-      expect(button.style.transform).toBe('translate(9px, 0px)');
-    });
-
-    it('pulls a wrapped anchor when asChild is set', () => {
-      stubMatchMedia({ [FINE_POINTER_QUERY]: true });
-      renderWithProviders(
-        <Button asChild isMagnetic>
-          <a href="/x">ir para x</a>
-        </Button>,
-      );
-      const link = screen.getByRole('link');
-      stubRectAtOrigin(link);
-
-      fireEvent.pointerMove(link, { clientX: 100, clientY: 20 });
-
-      expect(link.style.transform).toBe('translate(9px, 0px)');
-      expect(link).toHaveClass('bg-vn-ink');
     });
   });
 });

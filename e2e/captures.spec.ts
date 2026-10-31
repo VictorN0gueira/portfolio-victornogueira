@@ -59,7 +59,7 @@ for (const { width, height, isTouch } of CAPTURES) {
       await walkPage(page);
       await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
       await waitForSettledMotion(page);
-      await page.screenshot({ fullPage: true, path: `${SHOTS_DIR}/home-${width}x${height}.png` });
+      await page.screenshot({ fullPage: true, path: `${SHOTS_DIR}/home-${testInfo.project.name}-${width}x${height}.png` });
       const overflow = await measureOverflow(page, width);
 
       expect.soft(pageErrors, 'errors thrown on the page').toEqual([]);

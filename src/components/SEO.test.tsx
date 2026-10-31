@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { HelmetProvider } from 'react-helmet-async';
 import { describe, expect, it } from 'vitest';
+import { SOCIAL_LINKS } from '../lib/constants';
 import SEO from './SEO';
 
 const DASH_PATTERN = /[\u2014\u2013]/;
@@ -69,6 +70,47 @@ describe('SEO', () => {
     expect(website).toMatchObject({ name: 'VN One', url: 'https://vnone.com.br' });
   });
 
+  describe('JSON-LD text', () => {
+    const BREAKOUT = '</script><img src=x onerror=alert(1)>';
+
+    function rawJsonLdTexts(): string[] {
+      return Array.from(document.querySelectorAll('script[type="application/ld+json"]')).map((node) => node.textContent ?? '');
+    }
+
+    it('holds no "<" in any script, an FAQ answer with markup included', () => {
+      const faq = { '@type': 'FAQPage', mainEntity: [{ acceptedAnswer: { text: BREAKOUT } }] };
+
+      renderSeo({ path: '/contato', jsonLd: [faq] });
+
+      const texts = rawJsonLdTexts();
+      expect(texts.length).toBeGreaterThan(0);
+      expect(texts.some((text) => text.includes('\\u003c/script>'))).toBe(true);
+      for (const text of texts) expect(text).not.toContain('<');
+    });
+
+    it('still parses back to the same schema', () => {
+      const faq = { '@type': 'FAQPage', text: `a${BREAKOUT}b\u2028c` };
+
+      renderSeo({ path: '/contato', jsonLd: [faq] });
+
+      expect(readJsonLd()).toContainEqual(faq);
+    });
+
+    it('holds no "<" on the home either, where the Organization and the WebSite are written', () => {
+      renderSeo();
+
+      for (const text of rawJsonLdTexts()) expect(text).not.toContain('<');
+    });
+  });
+
+  it('lists the Instagram of VN One in the Organization sameAs, from the constants', () => {
+    renderSeo();
+
+    const organization = readJsonLd().find((schema) => schema['@type'] === 'Organization');
+
+    expect(organization?.sameAs).toEqual([SOCIAL_LINKS.find((link) => link.label === 'Instagram')?.href]);
+  });
+
   it('skips the entity schemas on inner routes', () => {
     renderSeo({ title: 'Contato', path: '/contato' });
 
@@ -102,6 +144,7 @@ describe('SEO', () => {
       'founder',
       'logo',
       'name',
+      'sameAs',
       'telephone',
       'url',
     ]);
