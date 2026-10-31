@@ -8,12 +8,12 @@ import { a11yWidgetCopy, activeSummaryText } from './a11yWidgetCopy';
 import { AccessibilityPanel } from './AccessibilityPanel';
 import { useBackdropIsDark } from './useBackdropIsDark';
 
-// Mobile: the trigger sits right above the WhatsApp button (its offset, max(16px, safe area), plus the 52px button and a
-// 12px gap) and the panel grows upward from it. From sm up it is centred on the right edge. A phone on its side (height
-// under 30rem, 480px; the rem of the media query is the browser's, so the larger font does not move it) is centred too,
-// because there the list would be 8px tall; the panel then sits on the side of the WhatsApp button, in the corner.
+// Mobile: the trigger sits on the right edge, 96px over the safe area (the owner wanted it well clear of the corner), and
+// the panel grows upward from it. The WhatsApp button has the opposite side, the bottom left corner. From sm up the
+// trigger is centred on the right edge. A phone on its side (height under 30rem, 480px; the rem of the media query is
+// the browser's, so the larger font does not move it) is centred too, because there the list would be 8px tall.
 // The wrapper takes no pointer (pointer-events-none): the 60px bottom margin of the panel on a short window is a
-// transparent strip of this box and would cover the WhatsApp button. Only the panel and the trigger take it.
+// transparent strip of this box. Only the panel and the trigger take the pointer.
 const WRAPPER_CLASSES =
   `${KEEPS_PLACE_UNDER_SCROLL_LOCK} pointer-events-none fixed right-0 bottom-[calc(max(16px,env(safe-area-inset-bottom))+96px)] z-[150] flex flex-row-reverse items-end sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:items-center [@media(max-height:30rem)]:bottom-auto [@media(max-height:30rem)]:top-1/2 [@media(max-height:30rem)]:-translate-y-1/2 [@media(max-height:30rem)]:items-center`;
 

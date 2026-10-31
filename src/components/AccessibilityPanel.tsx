@@ -6,10 +6,10 @@ import { a11yWidgetCopy, activeBadgeText } from './a11yWidgetCopy';
 import { AccessibilityOptions, PANEL_FOCUS_RING } from './AccessibilityOptions';
 import { EASE_OUT } from '../lib/motion';
 
-// Below sm the panel grows upward from the trigger, which sits above the WhatsApp button: 112px keeps 16px under the top
-// and leaves the trigger and the WhatsApp button below it. In px and not rem on purpose: the larger font grows the rem and
-// would leave the list shorter than two options. A window shorter than 30rem (a phone on its side) centres the panel, and
-// its 60px bottom margin lifts the panel clear of the WhatsApp button, which sits in the corner.
+// Below sm the panel grows upward from the trigger on the right edge: 112px keeps 16px under the top and leaves the
+// trigger below it. In px and not rem on purpose: the larger font grows the rem and would leave the list shorter than two
+// options. A window shorter than 30rem (a phone on its side) centres the panel, and its 60px bottom margin keeps it
+// off the bottom edge. The WhatsApp button has the bottom left corner, the opposite side.
 const PANEL_CLASSES =
   'pointer-events-auto mr-2 flex w-[min(13rem,calc(100vw-3.5rem))] max-h-[calc(100svh-112px-env(safe-area-inset-bottom))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/98 shadow-2xl backdrop-blur-none sm:max-h-[calc(100svh-8rem)] md:bg-zinc-950/95 md:backdrop-blur-xl [@media(max-height:30rem)]:mb-[60px] [@media(max-height:30rem)]:max-h-[calc(100svh-92px)]';
 

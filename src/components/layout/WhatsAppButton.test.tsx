@@ -31,7 +31,9 @@ describe('WhatsAppButton', () => {
   it('keeps 16px from the edges, or the safe area when it is larger, through inline styles', () => {
     const link = renderButton();
 
-    expect(link.style.right).toBe('calc(max(16px, env(safe-area-inset-right)) + var(--removed-body-scroll-bar-size, 0px))');
+    // In the bottom left corner: the accessibility tab has the right edge, and the scrollbar a modal removes is on the right.
+    expect(link.style.left).toBe('max(16px, env(safe-area-inset-left))');
+    expect(link.style.right).toBe('');
     expect(link.style.bottom).toBe('max(16px, env(safe-area-inset-bottom))');
   });
 

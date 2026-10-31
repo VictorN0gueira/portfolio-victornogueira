@@ -12,8 +12,6 @@ const MARQUEE_PAUSE_NAME = 'Pausar faixa de integrações';
 const TABS_PAUSE_NAME = 'Pausar troca automática';
 const TOUCH_AGENT = devices['Pixel 7'].userAgent;
 const MIN_GAP_PX = 8;
-// The owner asked for the trigger to sit clearly above the WhatsApp button (it was 12 px, too tight): about 44 px now.
-const MAX_GAP_PX = 56;
 
 interface Box {
   x: number;
@@ -171,7 +169,7 @@ for (const width of [320, 390]) {
   test.describe(`the accessibility trigger at ${width}px`, () => {
     test.use({ viewport: { width, height: 800 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1, userAgent: TOUCH_AGENT });
 
-    test('sits right above the WhatsApp button without touching it, with the panel closed and open, and clear of the first heading', async ({
+    test('has the WhatsApp button in the left corner and the trigger on the right edge, never touching, with the panel closed and open, and clear of the first heading', async ({
       page,
     }) => {
       test.slow();
@@ -185,9 +183,10 @@ for (const width of [320, 390]) {
         const widgetBox = await boxOf(trigger(page));
         const whatsApp = await boxOf(whatsAppLink(page));
         expect(overlapArea(widgetBox, whatsApp), 'trigger and WhatsApp button').toBe(0);
-        expect(whatsApp.y - (widgetBox.y + widgetBox.height), 'gap between the trigger and the WhatsApp button').toBeGreaterThanOrEqual(MIN_GAP_PX);
-        expect(whatsApp.y - (widgetBox.y + widgetBox.height), 'the trigger is above the WhatsApp button, with room between them').toBeLessThanOrEqual(MAX_GAP_PX);
-        expect(whatsApp.y - (widgetBox.y + widgetBox.height), 'room between the trigger and the WhatsApp button').toBeGreaterThanOrEqual(3 * MIN_GAP_PX);
+        expect(whatsApp.x, 'the WhatsApp button keeps its margin from the left edge').toBeGreaterThanOrEqual(MIN_GAP_PX);
+        expect(whatsApp.x + whatsApp.width, 'the WhatsApp button is in the left half').toBeLessThan(width / 2);
+        expect(widgetBox.x, 'the trigger is in the right half').toBeGreaterThan(width / 2);
+        expect(widgetBox.x + widgetBox.width, 'the trigger stays inside the window').toBeLessThanOrEqual(width + 0.5);
         if (isOpen) {
           const panel = await boxOf(page.getByRole('dialog', { name: PANEL_NAME }));
           expect(overlapArea(panel, whatsApp), 'panel and WhatsApp button').toBe(0);

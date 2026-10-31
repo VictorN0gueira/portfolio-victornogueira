@@ -1,15 +1,14 @@
 import { useId } from 'react';
 import { WHATSAPP_GREETING, whatsappUrl } from '../../lib/constants';
-import { SCROLL_LOCK_BAR_SIZE } from '../../lib/scrollLock';
 import BrandIcon from '../ui/BrandIcon';
 import NewTabHint from '../ui/NewTabHint';
 
 // The offsets are inline because the safe area inset has to be compared with the 16px margin:
 // the pt-safe family of utilities replaces the padding instead of taking the larger of the two.
-// The right one adds the width of the scrollbar a modal removes (0 when none is open), so the button keeps its place
-// under the scroll lock: the class of lib/scrollLock.ts would replace the whole offset instead of adding to it.
+// The button sits in the bottom left corner, opposite the accessibility tab on the right edge. A modal removes the page
+// scrollbar on the right, so nothing anchored on the left needs the scroll lock compensation the right edge needs.
 const POSITION = {
-  right: `calc(max(16px, env(safe-area-inset-right)) + ${SCROLL_LOCK_BAR_SIZE})`,
+  left: 'max(16px, env(safe-area-inset-left))',
   bottom: 'max(16px, env(safe-area-inset-bottom))',
 } as const;
 
