@@ -345,6 +345,21 @@ describe('getNewsArticles with odd answers', () => {
     }
   });
 
+  it('still loads the articles when localStorage is blocked and refuses to read (cookies off, in-app browsers)', async () => {
+    stubFeeds({ articles: [article()] });
+    const blocked = () => {
+      throw new DOMException('blocked', 'SecurityError');
+    };
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(blocked);
+    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(blocked);
+
+    try {
+      expect((await getNewsArticles()).articles).toHaveLength(1);
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
   it('ignores a dev.to tag that fails and one that answers with another shape', async () => {
     let calls = 0;
     vi.stubGlobal(

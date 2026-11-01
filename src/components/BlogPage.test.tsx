@@ -76,6 +76,22 @@ describe('BlogPage states', () => {
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
   });
 
+  it('loads again when the visitor presses Atualizar even if localStorage refuses to remove the cache', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+    await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
+    const remove = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    });
+
+    await user.click(screen.getByRole('button', { name: /Atualizar/ }));
+
+    await waitFor(() => expect(getNewsArticles).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Atualizar/ })).toBeEnabled());
+    expect(articlesText().length).toBeGreaterThan(0);
+    remove.mockRestore();
+  });
+
   it('shows the fallback cover when a cover image fails to load', async () => {
     renderWithProviders(<BlogPage />, { route: '/blog' });
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
@@ -102,16 +118,26 @@ describe('BlogPage cards and labels', () => {
   });
 
   it.each([
-    ['cache', /Cache local/],
-    ['edge-function', /Atualizado agora/],
-    ['devto', /Dev.to ao vivo/],
-    ['stale-cache', /Cache anterior/],
-    ['fallback', /Artigos curados/],
+    ['cache', /Lista salva neste navegador/],
+    ['edge-function', /Lista atualizada agora/],
+    ['gnews', /Lista atualizada agora/],
+    ['devto', /Lista atualizada agora/],
+    ['tabnews+devto', /Lista atualizada agora/],
+    ['stale-cache', /As fontes não responderam\. Esta é a última lista salva neste navegador\./],
+    ['fallback', /As fontes não responderam\. Esta é uma lista fixa de artigos\./],
   ])('tells where the articles came from: %s', async (source, label) => {
     getNewsArticles.mockResolvedValue({ articles: [newsArticle(1)], source });
     renderWithProviders(<BlogPage />, { route: '/blog' });
 
     expect(await screen.findByText(label)).toBeInTheDocument();
+  });
+
+  it.each(['cache', 'stale-cache', 'fallback'])('does not claim an update when the list is not fresh: %s', async (source) => {
+    getNewsArticles.mockResolvedValue({ articles: [newsArticle(1)], source });
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+
+    await screen.findAllByText('Artigo de teste 1');
+    expect(document.body.textContent).not.toMatch(/atualizad|diariamente|ao vivo/i);
   });
 
   it('shows a generic message when a source fails with something that is not an Error', async () => {

@@ -173,8 +173,17 @@ function getCachedArticles(): CachedData | null {
     if (typeof timestamp !== 'number') throw new Error('cache has no timestamp');
     return { articles: sanitizeArticles(articles), timestamp, source: typeof source === 'string' ? source : undefined };
   } catch {
-    localStorage.removeItem(CACHE_KEY);
+    clearNewsCache();
     return null;
+  }
+}
+
+// localStorage pode estar bloqueado (cookies desligados, navegadores embutidos): lançar aqui derrubaria o blog inteiro.
+export function clearNewsCache(): void {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch {
+    // Sem acesso ao armazenamento: não há cache para limpar.
   }
 }
 

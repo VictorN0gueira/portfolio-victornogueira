@@ -6,6 +6,7 @@ import { ErrorBoundary, ErrorPanel } from './components/layout/ErrorBoundary';
 import { ScrollProgress } from './components/layout/ScrollProgress';
 import { SiteLayout } from './components/layout/SiteLayout';
 import { pageTransition } from './components/layout/pageTransition';
+import { shellCopy } from './data/shellCopy';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 import { whenIdle } from './lib/whenIdle';
 import { HomePage } from './pages/HomePage';
@@ -55,6 +56,21 @@ function NotFoundRoute() {
   );
 }
 
+/**
+ * What the blog shows while its chunk loads: a status with a text (a live region announces its content, not its name), in
+ * a main landmark so the page never has content outside one. The spinner is the picture.
+ */
+function BlogFallback() {
+  return (
+    <main className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div role="status" aria-label={shellCopy.pageLoading}>
+        <div aria-hidden="true" className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <span className="sr-only">{shellCopy.pageLoading}</span>
+      </div>
+    </main>
+  );
+}
+
 /** The blog keeps its own layout, outside SiteLayout, until a later plan rebuilds it. */
 function BlogRoute() {
   return (
@@ -62,17 +78,15 @@ function BlogRoute() {
       {/* The blog background is dark, so its progress bar is white. */}
       <ScrollProgress tone="dark" />
       <m.div initial={pageTransition.initial} animate={pageTransition.animate} transition={pageTransition.transition}>
-        <ErrorBoundary fallback={(retry) => <ErrorPanel onRetry={retry} isFullScreen />}>
-          <Suspense
-            fallback={
-              <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-              </div>
-            }
-          >
+        <ErrorBoundary fallback={(retry) => (
+            <main>
+              <ErrorPanel onRetry={retry} isFullScreen />
+            </main>
+          )}>
+          <Suspense fallback={<BlogFallback />}>
             <SEO
-              title="Blog e insights"
-              description="Notícias curadas sobre Inteligência Artificial, Automação e os benefícios que essas tecnologias trazem para o mundo."
+              title="Blog"
+              description="Artigos sobre inteligência artificial e automação, em português e em inglês, de fontes públicas."
               path="/blog"
             />
             <BlogPage />

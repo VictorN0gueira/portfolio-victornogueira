@@ -330,15 +330,21 @@ test.describe('blog route', () => {
 
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
     await expect(mainNav(page)).toHaveCount(0);
-    await expect(page.getByRole('link', { name: SKIP_LINK_NAME })).toHaveCount(0);
     await expect(menuButton(page)).toHaveCount(0);
+  });
+
+  test('has a main landmark and its own skip link', async ({ page }) => {
+    await page.goto('/blog');
+
+    await expect(page.getByRole('main')).toHaveCount(1);
+    await expect(page.getByRole('link', { name: SKIP_LINK_NAME })).toHaveCount(1);
   });
 
   // The blog and the site have different layouts, so going back is a layout swap and SiteLayout never sees
   // the old scroll position: App resets it. (The blog resets its own scroll when it mounts.)
   test('the site starts at the top when the visitor comes back from a scrolled blog', async ({ page }) => {
     await page.goto('/blog');
-    const backLink = page.getByRole('link', { name: 'Voltar ao portfólio' });
+    const backLink = page.getByRole('link', { name: 'Voltar para a VN One' }).last();
     await backLink.scrollIntoViewIfNeeded();
     expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
 
