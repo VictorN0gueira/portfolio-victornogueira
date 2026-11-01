@@ -62,6 +62,15 @@ describe('AboutPage', () => {
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
+  it('has one h1, the Sobre mim heading, and the other sections stay below it', async () => {
+    renderWithProviders(<AboutPage />, { route: '/sobre' });
+    await screen.findByRole('region', { name: METHOD_HEADING });
+
+    const titles = screen.getAllByRole('heading', { level: 1 });
+    expect(titles.map((title) => title.textContent)).toEqual(['Sobre mim']);
+    expect(titles[0]).toHaveClass('text-4xl', 'md:text-6xl');
+  });
+
   it('keeps the rest of the page: the closing call to action still links to /contato', async () => {
     renderWithProviders(<AboutPage />, { route: '/sobre' });
     await screen.findByRole('region', { name: METHOD_HEADING });

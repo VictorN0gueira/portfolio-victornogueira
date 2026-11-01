@@ -27,7 +27,9 @@ export function AnimatedText({
 
   return (
     <span ref={containerRef} className={`relative inline-block ${className}`}>
-      <span className="inline-flex flex-wrap gap-x-[0.25em]">
+      {/* The letters are split for the animation: a screen reader gets the whole text from the line below, once. */}
+      <span className="sr-only">{text}</span>
+      <span aria-hidden="true" className="inline-flex flex-wrap gap-x-[0.25em]">
         {words.map((word, wi) => (
           <span key={wi} className="inline-flex">
             {word.split('').map((char) => {
@@ -58,6 +60,7 @@ export function AnimatedText({
 
       {underline && (
         <m.span
+          aria-hidden="true"
           className="absolute -bottom-1 left-0 h-0.5 rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-300"
           initial={{ width: '0%' }}
           animate={isInView ? { width: '100%' } : { width: '0%' }}

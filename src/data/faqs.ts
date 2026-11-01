@@ -10,7 +10,7 @@ export const faqs: Faq[] = [
     id: 'negocio-pequeno',
     question: 'Meu negócio é pequeno demais para automação?',
     answer:
-      'Não. Se a sua equipe gasta mais de 5 horas por semana em tarefas repetitivas, já dá para automatizar, e em empresa pequena essas horas pesam mais.',
+      'Não. Se a sua equipe repete as mesmas tarefas toda semana, já dá para automatizar, e em empresa pequena essas horas pesam mais.',
   },
   {
     id: 'prazo-de-entrega',
@@ -28,7 +28,7 @@ export const faqs: Faq[] = [
     id: 'depois-da-entrega',
     question: 'E se o sistema parar de funcionar depois?',
     answer:
-      'Todo projeto inclui monitoramento, documentação e suporte depois da entrega. Se algo parar de funcionar, a gente corrige.',
+      'Os projetos de automação incluem monitoramento e documentação de uso, e o agente de IA tem ajustes de comportamento depois da entrega. O que cada projeto cobre depois de entregue a gente combina na consulta, antes de fechar.',
   },
   {
     id: 'consulta-gratuita',

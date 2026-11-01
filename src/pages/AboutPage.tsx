@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { Suspense } from 'react';
 import { m } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
@@ -7,11 +7,12 @@ import { About } from '../components/About';
 import { SectionSkeleton } from '../components/ui/SectionSkeleton';
 import { revealProps } from '../lib/reveal';
 import { useScrollToHash } from '../hooks/useScrollToHash';
+import { lazyWithRetry } from '../lib/lazyWithRetry';
 import MethodSteps from '../sections/home/MethodSteps';
 
 // Only what sits below #metodo is lazy: this page is already a lazy route chunk, and a lazy section above the anchor
 // would grow when its chunk arrived and push #metodo away from where the hash scroll put it.
-const Skills = lazy(() => import('../components/Skills'));
+const Skills = lazyWithRetry(() => import('../components/Skills'));
 
 export default function AboutPage() {
   // A page that is opened with /sobre#metodo is not in the DOM yet when the browser looks for the anchor.
@@ -21,7 +22,7 @@ export default function AboutPage() {
     <>
       <SEO
         title="Sobre"
-        description="Quem é Victor Nogueira, como trabalho e a stack que uso para trocar processos manuais por fluxos automatizados e inteligentes."
+        description="Quem é Victor Nogueira, como a gente trabalha e a stack que usa para trocar processos manuais por fluxos automatizados e inteligentes."
         path="/sobre"
       />
       <div className="pt-24 md:pt-28">

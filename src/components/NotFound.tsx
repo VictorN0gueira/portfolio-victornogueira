@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { m } from 'motion/react';
+import { useMotionAllowed } from '../hooks/useMotionAllowed';
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&!?';
 const ACCENTS = new Set(['ã', 'â', 'á', 'à', 'ê', 'é', 'í', 'ó', 'ô', 'ú', 'ç', 'ñ']);
@@ -9,13 +10,15 @@ const ACCENTS = new Set(['ã', 'â', 'á', 'à', 'ê', 'é', 'í', 'ó', 'ô', '
 function useScramble(text: string) {
   const [display, setDisplay] = useState('');
   const [active, setActive] = useState(false);
+  const isMotionAllowed = useMotionAllowed();
 
   useEffect(() => {
-    // Reduced motion: the title stays as it is (the hook returns the text while display is empty), with no scramble.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // Reduced motion (the system, or the widget's "Pausar animações"): the title stays as it is (the hook returns the
+    // text while display is empty), with no scramble.
+    if (!isMotionAllowed) return;
     const timer = setTimeout(() => setActive(true), 400);
     return () => clearTimeout(timer);
-  }, [text]);
+  }, [text, isMotionAllowed]);
 
   useEffect(() => {
     if (!active) return;
@@ -102,7 +105,7 @@ export default function NotFound() {
           {titleDisplay}
         </h1>
 
-        <p className="text-zinc-500 text-sm md:text-base font-light max-w-sm mb-10 leading-relaxed">
+        <p className="text-vn-gray-light text-sm md:text-base font-light max-w-sm mb-10 leading-relaxed">
           A página que você procura não existe ou foi movida para outro endereço.
         </p>
 
@@ -114,8 +117,8 @@ export default function NotFound() {
           Voltar ao início
         </Link>
 
-        <p className="mt-8 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-700">
-          © 2026 Victor Nogueira
+        <p className="mt-8 text-[10px] font-bold uppercase tracking-[0.3em] text-vn-gray-mid">
+          &copy; {new Date().getFullYear()} VN One
         </p>
       </m.div>
     </div>

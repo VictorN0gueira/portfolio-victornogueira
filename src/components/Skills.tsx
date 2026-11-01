@@ -167,10 +167,10 @@ export default function Skills() {
           className="text-center mb-24"
         >
           <h2 className="text-4xl md:text-6xl font-bold font-display italic mb-6">
-            <AnimatedText text="Stack Tecnológica" delay={0.1} />
+            <AnimatedText text="Stack tecnológica" delay={0.1} />
           </h2>
-          <p className="text-zinc-500 text-lg md:text-xl font-light max-w-2xl mx-auto">
-            Soluções completas, da automação de fluxos à entrega de interfaces rápidas.
+          <p className="text-vn-gray-dark text-lg md:text-xl font-light max-w-2xl mx-auto">
+            Da automação de fluxos às interfaces rápidas.
           </p>
         </m.div>
 
@@ -188,11 +188,11 @@ export default function Skills() {
                   <h3 className="text-2xl md:text-3xl font-bold font-display uppercase tracking-tight mb-2">
                     {category.title}
                   </h3>
-                  <p className="text-zinc-500 font-light italic">
+                  <p className="text-vn-gray-dark font-light italic">
                     {category.description}
                   </p>
                 </div>
-                <div className="text-zinc-200 text-6xl font-bold font-display opacity-50 hidden md:block">
+                <div aria-hidden="true" className="text-zinc-200 text-6xl font-bold font-display opacity-50 hidden md:block">
                   0{catIndex + 1}
                 </div>
               </m.div>

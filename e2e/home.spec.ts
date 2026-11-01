@@ -488,7 +488,7 @@ test.describe('hash anchors into the home', () => {
 
   test('goes from /sobre to #metodo on the home when "Como funciona" is clicked in the header', async ({ page }) => {
     await page.goto('/sobre');
-    await expect(page.getByRole('heading', { level: 2, name: 'Sobre mim' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Sobre mim' })).toBeVisible();
     const isDesktop = (page.viewportSize()?.width ?? 0) >= DESKTOP_NAV_MIN_WIDTH;
     if (isDesktop) {
       await page.getByRole('navigation', { name: 'Navegação principal' }).getByRole('link', { name: 'Como funciona' }).click();

@@ -15,7 +15,7 @@ describe('About CV download', () => {
     stubMatchMedia();
     render(<About />);
 
-    const link = screen.getByRole('link', { name: 'Baixar Currículo' });
+    const link = screen.getByRole('link', { name: 'Baixa o currículo' });
 
     expect(link.getAttribute('href')).toMatch(/\/cv\/cv-joao-victor-nogueira\.pdf$/);
     expect(link).toHaveAttribute('download', 'CV-Joao-Victor-Nogueira.pdf');

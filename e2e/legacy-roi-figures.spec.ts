@@ -17,7 +17,8 @@ for (const width of WIDTHS) {
       setter?.call(range, value);
       range.dispatchEvent(new Event('input', { bubbles: true }));
     }, MAX_HOURS);
-    await page.getByRole('button', { name: /mais de 10/ }).first().click();
+    // The option is a native radio hidden behind its label, so the click goes to the label that draws it.
+    await page.locator('label').filter({ hasText: /mais de 10 pessoas/ }).first().click();
     await page.getByLabel('Custo médio por hora da equipe em reais').fill(MAX_RATE);
 
     const figures = page.locator('p.tabular-nums').filter({ hasText: /mi$/ });

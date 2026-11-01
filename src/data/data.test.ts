@@ -355,10 +355,23 @@ describe('faqs', () => {
     expect(answers).not.toMatch(/video call|sprint|soluções|implementação|valor|rapidamente|a longo prazo|De jeito nenhum/i);
   });
 
-  it('keeps the figures the old FAQ already had: 5 horas, 1 a 2 semanas and 30 minutos', () => {
-    expect(faqs[0].answer).toContain('5 horas');
+  it('keeps the figures it can stand behind: 1 a 2 semanas and 30 minutos, with no hour threshold that has no assumption', () => {
+    expect(faqs[0].answer).not.toMatch(/\d+ horas/);
     expect(faqs[1].answer).toContain('1 a 2 semanas');
     expect(faqs[4].answer).toContain('30 minutos');
+  });
+
+  it('promises after the delivery only what the services list: monitoring and docs for automation, adjustments for the agent', () => {
+    const answer = faqs.find((faq) => faq.id === 'depois-da-entrega')?.answer ?? '';
+    const listed = services.flatMap((service) => service.inclui).join(' ');
+
+    expect(listed).toMatch(/monitoramento/i);
+    expect(listed).toMatch(/Documentação de uso/);
+    expect(listed).toMatch(/pós-entrega/);
+    expect(answer).toMatch(/automação/i);
+    expect(answer).toMatch(/agente de IA/);
+    expect(answer).not.toMatch(/todo projeto|suporte|a gente corrige/i);
+    expect(answer).toMatch(/combina na consulta/);
   });
 
   it('offers the free consultation by videochamada or WhatsApp, with no commitment', () => {

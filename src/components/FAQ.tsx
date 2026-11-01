@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { m, useInView, AnimatePresence } from 'motion/react';
 import { Plus, Minus } from 'lucide-react';
 import { AnimatedText } from './AnimatedText';
@@ -16,6 +16,7 @@ const listItem = {
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const baseId = useId();
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, margin: "0px 0px -100px 0px" });
 
@@ -28,7 +29,7 @@ export default function FAQ() {
           transition={{ duration: 0.8 }}
           className="mb-12 md:mb-16 text-center"
         >
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-vn-gray-dark mb-4">
             Dúvidas frequentes
           </p>
           <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter font-display italic">
@@ -50,9 +51,11 @@ export default function FAQ() {
             >
               <button
                 type="button"
+                id={`${baseId}-question-${faq.id}`}
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
                 className="w-full flex items-center justify-between px-5 md:px-6 py-5 text-left gap-4"
                 aria-expanded={openIndex === i}
+                aria-controls={`${baseId}-answer-${faq.id}`}
               >
                 <span className="font-medium text-zinc-900 dark:text-zinc-100 text-sm md:text-base">
                   {faq.question}
@@ -69,13 +72,16 @@ export default function FAQ() {
               <AnimatePresence initial={false}>
                 {openIndex === i && (
                   <m.div
+                    id={`${baseId}-answer-${faq.id}`}
+                    role="region"
+                    aria-labelledby={`${baseId}-question-${faq.id}`}
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.28, ease: EASE_OUT }}
                     className="overflow-hidden"
                   >
-                    <p className="px-5 md:px-6 pb-5 text-zinc-500 text-sm md:text-base leading-relaxed font-light">
+                    <p className="px-5 md:px-6 pb-5 text-vn-gray-dark text-sm md:text-base leading-relaxed font-light">
                       {faq.answer}
                     </p>
                   </m.div>

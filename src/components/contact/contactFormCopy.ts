@@ -23,6 +23,8 @@ export const contactFormCopy = {
   },
   // What a select shows when the caller gives it no placeholder of its own.
   selectPlaceholder: 'Escolhe uma opção',
+  // Above the first field: every field of the form is required (the form is described by this line).
+  requiredNote: 'Todos os campos são obrigatórios',
   // Under the WhatsApp field: how the number is typed.
   whatsappHint: 'Com DDD, por exemplo 81 99999-9999',
   // Under Enviar while the box of the consent is not ticked: why the button is off.

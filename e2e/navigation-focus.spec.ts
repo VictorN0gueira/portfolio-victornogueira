@@ -69,7 +69,7 @@ test.describe('focus after the ROI quote hand off', () => {
 test.describe('focus and announcement on a route change', () => {
   test('does not move focus on the first load of a page', async ({ page }) => {
     await page.goto('/sobre');
-    await expect(page.getByRole('heading', { level: 2, name: 'Sobre mim' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Sobre mim' })).toBeVisible();
 
     expect(await activeId(page)).not.toBe(MAIN_ID);
   });

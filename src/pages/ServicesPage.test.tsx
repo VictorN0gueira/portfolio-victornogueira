@@ -66,4 +66,29 @@ describe('ServicesPage', () => {
     }
     expect(screen.getAllByText(/^\d+% de desconto$/)).toHaveLength(combos.length);
   });
+
+  it('invites to the consultation in the informal imperative, not the infinitive', () => {
+    renderWithProviders(<ServicesPage />, { route: '/servicos' });
+
+    expect(screen.getByRole('link', { name: 'Agenda uma consulta gratuita' })).toHaveAttribute('href', '/contato');
+    expect(screen.queryByText('Agendar consulta gratuita')).toBeNull();
+  });
+
+  it('keeps the kickers, the lead, the term labels and the combo notes at readable contrast', () => {
+    renderWithProviders(<ServicesPage />, { route: '/servicos' });
+
+    const lowContrast = /zinc-[3-5]00/;
+    const lines = [
+      screen.getByText('O que a gente entrega'),
+      screen.getByText(/Escopo claro e prazo definido, do primeiro/),
+      screen.getByText('Pacotes com desconto'),
+      screen.getByText(/Na consulta gratuita a gente identifica/),
+      screen.getByText(combos[0].composicao),
+      ...screen.getAllByText(services[0].categoria, { selector: 'p' }),
+      ...screen.getAllByText('Prazo estimado'),
+    ];
+    for (const line of lines) {
+      expect(line.className, line.textContent ?? '').not.toMatch(lowContrast);
+    }
+  });
 });

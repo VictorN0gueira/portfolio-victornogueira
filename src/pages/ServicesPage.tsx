@@ -40,13 +40,13 @@ export default function ServicesPage() {
           transition={{ duration: 0.8, ease: 'easeOut' }}
           className="max-w-7xl mx-auto px-6 md:px-12 mb-16 md:mb-20"
         >
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-vn-gray-dark mb-5">
             O que a gente entrega
           </p>
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter font-display italic leading-none mb-5">
             Serviços
           </h1>
-          <p className="text-zinc-500 text-base md:text-lg font-light max-w-xl">
+          <p className="text-vn-gray-dark text-base md:text-lg font-light max-w-xl">
             Escopo claro e prazo definido, do primeiro fluxo automatizado ao sistema completo.
           </p>
         </m.div>
@@ -67,7 +67,7 @@ export default function ServicesPage() {
                 variants={gridItem}
                 className="scroll-mt-28 group bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-3xl p-7 md:p-8 flex flex-col hover:border-zinc-300 dark:hover:border-zinc-500 transition-colors duration-300"
               >
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-400 mb-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-vn-gray-dark mb-4">
                   {service.categoria}
                 </p>
                 <h2 className="text-xl md:text-2xl font-bold tracking-tight mb-3 font-display">
@@ -87,7 +87,7 @@ export default function ServicesPage() {
                 </ul>
 
                 <div className="mt-auto pt-6 border-t border-zinc-200 dark:border-zinc-700">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">{homeCopy.services.term}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-vn-gray-dark mb-1">{homeCopy.services.term}</p>
                   <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{service.prazo}</p>
                 </div>
               </m.div>
@@ -104,7 +104,7 @@ export default function ServicesPage() {
             animate={combosInView ? 'show' : 'hidden'}
           >
             <m.div variants={gridItem} className="mb-10">
-              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-vn-gray-dark mb-4">
                 Pacotes com desconto
               </p>
               <h2 className="text-3xl md:text-5xl font-bold tracking-tighter font-display italic">
@@ -124,8 +124,8 @@ export default function ServicesPage() {
                     {combo.desconto}
                   </p>
                   <h3 className="text-xl font-bold text-white mb-2 font-display relative z-10">{combo.nome}</h3>
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider mb-4 relative z-10">{combo.composicao}</p>
-                  <p className="text-sm text-zinc-400 leading-relaxed relative z-10">{combo.descricao}</p>
+                  <p className="text-xs text-vn-gray-light uppercase tracking-wider mb-4 relative z-10">{combo.composicao}</p>
+                  <p className="text-sm text-vn-gray-light leading-relaxed relative z-10">{combo.descricao}</p>
                 </m.div>
               ))}
             </div>
@@ -144,14 +144,14 @@ export default function ServicesPage() {
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter font-display italic mb-6">
               Não sabe por onde começar?
             </h2>
-            <p className="text-zinc-500 text-lg font-light mb-10">
+            <p className="text-vn-gray-dark text-lg font-light mb-10">
               Na consulta gratuita a gente identifica qual serviço resolve o seu gargalo, sem compromisso.
             </p>
             <Link
               to="/contato"
               className="group inline-flex items-center gap-3 bg-black text-white dark:bg-white dark:text-black px-10 py-5 rounded-full font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all shadow-2xl shadow-black/20 active:scale-95"
             >
-              Agendar consulta gratuita
+              Agenda uma consulta gratuita
               <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
             </Link>
           </div>

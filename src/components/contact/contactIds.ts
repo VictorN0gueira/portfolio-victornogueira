@@ -15,6 +15,8 @@ export function contactIds(prefix: string) {
     servicoTrigger: `${prefix}-servico`,
     whatsappHint: `${prefix}-whatsapp-hint`,
     submitHint: `${prefix}-submit-hint`,
+    /** Id of the line that says every field is required, the one the form is described by. */
+    requiredNote: `${prefix}-required-note`,
     notice: `${prefix}-notice`,
   };
 }

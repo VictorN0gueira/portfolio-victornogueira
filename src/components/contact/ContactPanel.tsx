@@ -4,6 +4,7 @@ import { ContactErrorAlert } from './ContactErrorAlert';
 import { ContactFormFields } from './ContactFormFields';
 import { ContactMethodToggle } from './ContactMethodToggle';
 import { ContactSubmit } from './ContactSubmit';
+import { useContactIds } from './contactIds';
 import { contactFormCopy } from './contactFormCopy';
 import { PANEL_CLASS } from './contactStyles';
 import type { ContactFormState } from './useContactForm';
@@ -19,6 +20,7 @@ interface ContactPanelProps {
  * draws no ring: it is not a control. The submit is the one of the form, called as it always was; this only counts it.
  */
 export function ContactPanel({ form }: ContactPanelProps) {
+  const ids = useContactIds();
   const panelRef = useRef<HTMLDivElement>(null);
   const [submitCount, setSubmitCount] = useState(0);
   useContactFocus(panelRef, form.status, form.errors, submitCount);
@@ -40,10 +42,14 @@ export function ContactPanel({ form }: ContactPanelProps) {
       <form
         name="contact"
         aria-label={contactFormCopy.formLabel}
+        aria-describedby={ids.requiredNote}
         onSubmit={handleSubmit}
         className="flex flex-col gap-5"
         noValidate
       >
+        <p id={ids.requiredNote} className="text-sm text-vn-gray-light">
+          {contactFormCopy.requiredNote}
+        </p>
         <ContactFormFields form={form} />
         <ContactConsent checked={form.consent} onChange={form.setConsent} />
         {form.status === 'error' && <ContactErrorAlert onClose={form.dismissError} />}

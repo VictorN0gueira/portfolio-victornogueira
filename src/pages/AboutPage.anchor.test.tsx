@@ -18,7 +18,7 @@ describe('AboutPage anchor', () => {
     const about = container.querySelector('#sobre') as HTMLElement;
 
     // Found at once, with no findBy: a lazy About would still be a skeleton here.
-    expect(screen.getByRole('heading', { level: 2, name: 'Sobre mim' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Sobre mim' })).toBeInTheDocument();
     expect(method.compareDocumentPosition(about) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
     // Whatever is still loading (the skills) sits below the method section.
     for (const skeleton of screen.queryAllByText('Carregando...')) {

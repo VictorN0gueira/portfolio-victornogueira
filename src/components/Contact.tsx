@@ -1,6 +1,8 @@
+import { useId } from 'react';
 import { m } from 'motion/react';
 import { MessageCircle } from 'lucide-react';
 import { ContactForm } from './ContactForm';
+import { NewTabHint } from './ui/NewTabHint';
 
 interface ContactProps {
   /** Mensagem vinda do ROICalculator para pré-preencher o formulário */
@@ -8,6 +10,8 @@ interface ContactProps {
 }
 
 export default function Contact({ prefillMessage }: ContactProps) {
+  const newTabHintId = useId();
+
   return (
     <section id="contato" className="py-32 px-6 md:px-12 bg-black text-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
@@ -18,7 +22,7 @@ export default function Contact({ prefillMessage }: ContactProps) {
           transition={{ duration: 0.8 }}
         >
           <h2 className="text-4xl sm:text-6xl md:text-8xl font-bold tracking-tighter mb-10 font-display italic">
-            Vamos criar <br/> <span className="not-italic text-zinc-400">algo juntos.</span>
+            Conta o que <br/> <span className="not-italic text-vn-gray-light">você precisa.</span>
           </h2>
           <p className="text-zinc-400 text-lg md:text-xl mb-12 max-w-md font-light leading-relaxed">
             A gente conversa sobre o seu projeto e mostra por onde começar.
@@ -26,15 +30,17 @@ export default function Contact({ prefillMessage }: ContactProps) {
           
           <div className="space-y-6">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Email</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-vn-gray-light mb-2">E-mail</p>
               <a href="mailto:contato@vnone.com.br" className="text-xl md:text-2xl font-light hover:text-zinc-400 transition-colors">contato@vnone.com.br</a>
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">WhatsApp</p>
-              <a 
+              <p className="text-xs font-bold uppercase tracking-widest text-vn-gray-light mb-2">WhatsApp</p>
+              <NewTabHint id={newTabHintId} />
+              <a
                 href="https://wa.me/5581984451243"
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-describedby={newTabHintId}
                 className="flex items-center gap-2 text-xl md:text-2xl font-light text-zinc-400 hover:text-white transition-colors"
               >
                 +55 (81) 98445-1243
@@ -42,8 +48,8 @@ export default function Contact({ prefillMessage }: ContactProps) {
               </a>
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Localização</p>
-              <p className="text-xl md:text-2xl font-light">Recife, Brasil & Remoto</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-vn-gray-light mb-2">Localização</p>
+              <p className="text-xl md:text-2xl font-light">Recife e remoto</p>
             </div>
           </div>
         </m.div>
