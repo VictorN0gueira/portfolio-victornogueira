@@ -236,13 +236,13 @@ describe('serviceOptions', () => {
 });
 
 describe('services', () => {
-  it('keeps the service names as the owner approved them (decision O-K8: no change)', () => {
+  it('keeps the service names as the owner approved them (decision O-K8; the owner later swapped Landing Page Complexa for Super Agente)', () => {
     expect(services.map((service) => service.nome)).toEqual([
       'Automação Essencial',
       'Automação Avançada',
       'Agente de IA Sob Medida',
+      'Super Agente',
       'Landing Page ou Site',
-      'Landing Page Complexa',
       'Sistema Web Sob Medida',
     ]);
   });
@@ -250,7 +250,7 @@ describe('services', () => {
   it('keeps the approximate lead time wording', () => {
     expect(services.filter((service) => service.prazo.includes('~'))).toEqual([]);
     expect(services[0].prazo).toBe('cerca de 1 semana');
-    expect(services[3].prazo).toBe('cerca de 1 semana');
+    expect(services.find((service) => service.slug === 'landing-page-ou-site')?.prazo).toBe('cerca de 1 semana');
   });
 
   it('describes the services without sales adjectives', () => {

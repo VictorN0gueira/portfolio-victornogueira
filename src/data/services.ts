@@ -69,6 +69,20 @@ export const services: Service[] = [
     prazo: '2 a 3 semanas',
   },
   {
+    slug: 'super-agente',
+    nome: 'Super Agente',
+    categoria: 'Inteligência Artificial',
+    descricao:
+      'Uma IA que trabalha para você e sua equipe: recebe o pedido, faz o serviço nos sistemas que vocês já usam e só chama quando terminou.',
+    inclui: [
+      'Memória do que foi pedido e combinado',
+      'Consulta aos documentos da empresa, com a fonte',
+      'Conexão com agenda, e-mail, planilhas e tarefas',
+      'Conversa pelo WhatsApp, em texto e áudio',
+    ],
+    prazo: '3 a 4 semanas',
+  },
+  {
     slug: 'landing-page-ou-site',
     nome: 'Landing Page ou Site',
     categoria: 'Desenvolvimento Web',
@@ -81,20 +95,6 @@ export const services: Service[] = [
       'Publicação no ar inclusa',
     ],
     prazo: 'cerca de 1 semana',
-  },
-  {
-    slug: 'landing-page-complexa',
-    nome: 'Landing Page Complexa',
-    categoria: 'Desenvolvimento Web',
-    descricao:
-      'Páginas para produtos que exigem mais do que um site comum.',
-    inclui: [
-      'Animações e interações avançadas',
-      'Integrações com APIs e formulários',
-      'Seções sob medida',
-      'Site rápido de carregar',
-    ],
-    prazo: '1 a 2 semanas',
   },
   {
     slug: 'sistema-web-sob-medida',
