@@ -21,8 +21,8 @@
   --vn-skeleton-method: 101rem;
   --vn-skeleton-roi: 76.8rem;
   --vn-skeleton-testimonials: 209.8rem;
-  --vn-skeleton-faq: 59.1rem;
-  --vn-skeleton-final-cta: 83.7rem;
+  --vn-skeleton-faq: 57.7rem;
+  --vn-skeleton-final-cta: 86.2rem;
 }
 
 @media (min-width: 375px) {
@@ -39,7 +39,7 @@
 
 @media (min-width: 412px) {
   :root {
-    --vn-skeleton-faq: 54.4rem;
+    --vn-skeleton-faq: 53.7rem;
   }
 }
 
@@ -64,7 +64,7 @@
 
 @media (min-width: 560px) {
   :root {
-    --vn-skeleton-final-cta: 81.9rem;
+    --vn-skeleton-final-cta: 84.4rem;
   }
 }
 
@@ -99,18 +99,13 @@
 @media (min-width: 940px) {
   :root {
     --vn-skeleton-roi: 77rem;
+    --vn-skeleton-faq: 57.5rem;
   }
 }
 
 @media (min-width: 960px) {
   :root {
-    --vn-skeleton-final-cta: 85.6rem;
-  }
-}
-
-@media (min-width: 980px) {
-  :root {
-    --vn-skeleton-faq: 57.8rem;
+    --vn-skeleton-final-cta: 88.1rem;
   }
 }
 
@@ -122,8 +117,8 @@
     --vn-skeleton-method: 60.6rem;
     --vn-skeleton-roi: 61rem;
     --vn-skeleton-testimonials: 120.9rem;
-    --vn-skeleton-faq: 40.4rem;
-    --vn-skeleton-final-cta: 63.5rem;
+    --vn-skeleton-faq: 39.6rem;
+    --vn-skeleton-final-cta: 66rem;
   }
 }
 
@@ -154,8 +149,8 @@ html.a11y-font-large {
   --vn-skeleton-method: 111.1rem;
   --vn-skeleton-roi: 85.9rem;
   --vn-skeleton-testimonials: 230.3rem;
-  --vn-skeleton-faq: 63.9rem;
-  --vn-skeleton-final-cta: 90.5rem;
+  --vn-skeleton-faq: 64.8rem;
+  --vn-skeleton-final-cta: 94.2rem;
 }
 
 @media (min-width: 330px) {
@@ -173,7 +168,7 @@ html.a11y-font-large {
 @media (min-width: 350px) {
   html.a11y-font-large {
     --vn-skeleton-testimonials: 219.9rem;
-    --vn-skeleton-final-cta: 87.5rem;
+    --vn-skeleton-final-cta: 91.7rem;
   }
 }
 
@@ -183,6 +178,7 @@ html.a11y-font-large {
     --vn-skeleton-use-cases: 65.4rem;
     --vn-skeleton-services: 112.7rem;
     --vn-skeleton-method: 102.7rem;
+    --vn-skeleton-faq: 58.9rem;
   }
 }
 
@@ -195,13 +191,13 @@ html.a11y-font-large {
 @media (min-width: 400px) {
   html.a11y-font-large {
     --vn-skeleton-testimonials: 209rem;
+    --vn-skeleton-final-cta: 85.5rem;
   }
 }
 
 @media (min-width: 420px) {
   html.a11y-font-large {
     --vn-skeleton-services: 107.6rem;
-    --vn-skeleton-final-cta: 81rem;
   }
 }
 
@@ -209,7 +205,6 @@ html.a11y-font-large {
   html.a11y-font-large {
     --vn-skeleton-method: 97.2rem;
     --vn-skeleton-roi: 74.4rem;
-    --vn-skeleton-faq: 56.3rem;
   }
 }
 
@@ -220,15 +215,15 @@ html.a11y-font-large {
   }
 }
 
-@media (min-width: 520px) {
+@media (min-width: 480px) {
   html.a11y-font-large {
-    --vn-skeleton-testimonials: 207.4rem;
+    --vn-skeleton-faq: 52.9rem;
   }
 }
 
-@media (min-width: 540px) {
+@media (min-width: 520px) {
   html.a11y-font-large {
-    --vn-skeleton-faq: 53.6rem;
+    --vn-skeleton-testimonials: 207.4rem;
   }
 }
 
@@ -246,6 +241,12 @@ html.a11y-font-large {
   }
 }
 
+@media (min-width: 660px) {
+  html.a11y-font-large {
+    --vn-skeleton-final-cta: 81.7rem;
+  }
+}
+
 @media (min-width: 680px) {
   html.a11y-font-large {
     --vn-skeleton-method: 94.5rem;
@@ -260,7 +261,7 @@ html.a11y-font-large {
     --vn-skeleton-method: 72.3rem;
     --vn-skeleton-roi: 74.7rem;
     --vn-skeleton-testimonials: 145.7rem;
-    --vn-skeleton-final-cta: 83.9rem;
+    --vn-skeleton-final-cta: 86.4rem;
   }
 }
 
@@ -273,6 +274,12 @@ html.a11y-font-large {
 @media (min-width: 860px) {
   html.a11y-font-large {
     --vn-skeleton-method: 68.6rem;
+  }
+}
+
+@media (min-width: 980px) {
+  html.a11y-font-large {
+    --vn-skeleton-faq: 55.7rem;
   }
 }
 
@@ -290,8 +297,8 @@ html.a11y-font-large {
     --vn-skeleton-method: 58.7rem;
     --vn-skeleton-roi: 60.4rem;
     --vn-skeleton-testimonials: 125.3rem;
-    --vn-skeleton-faq: 39.7rem;
-    --vn-skeleton-final-cta: 63.3rem;
+    --vn-skeleton-faq: 38.9rem;
+    --vn-skeleton-final-cta: 65.8rem;
   }
 }
 
@@ -336,7 +343,7 @@ html.a11y-font-large {
   html.a11y-font-large {
     --vn-skeleton-method: 67.8rem;
     --vn-skeleton-roi: 64.6rem;
-    --vn-skeleton-final-cta: 67.1rem;
+    --vn-skeleton-final-cta: 69.6rem;
   }
 }
 
