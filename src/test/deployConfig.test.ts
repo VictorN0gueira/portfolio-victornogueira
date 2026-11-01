@@ -122,10 +122,18 @@ describe('the workflows', () => {
     const text = read('.github/workflows/ci.yml');
     expect(text).toMatch(/pull_request:/);
     expect(text).toMatch(/workflow_call:/);
-    // A pushed branch with an open pull request must not run the whole suite twice: push only for the integration branches.
-    expect(text).toMatch(/push:\n\s+branches: \["redesign\/\*\*"\]/);
+    // A pushed branch with an open pull request must not run the whole suite twice: push only for main and the
+    // integration branches. main is there because the Pages deploy is manual and no longer calls ci on every push.
+    expect(text).toMatch(/push:\n\s+branches: \["main", "redesign\/\*\*"\]/);
     expect(text).not.toMatch(/branches-ignore/);
     expect(text).toMatch(/permissions:\n {2}contents: read/);
+  });
+
+  it('the Pages copy runs only by hand, so a merge to main never fails on a repository without Pages', () => {
+    const text = read('.github/workflows/deploy.yml');
+    expect(text).toMatch(/\non:\n\s+workflow_dispatch:/);
+    expect(text).not.toMatch(/\n\s+push:/);
+    expect(text).not.toMatch(/\n\s+pull_request:/);
   });
 
   it('deploy waits for ci, builds for Pages, copies index.html to 404.html and holds the Pages permissions', () => {
