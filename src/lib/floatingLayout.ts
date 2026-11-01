@@ -140,6 +140,11 @@ export function placePanel({ side, trigger, panel, viewport, insets }: PanelInpu
   return { dx: left - naturalLeft, dy: top - trigger.top };
 }
 
+/** The tallest the panel may be beside a tab on a side: the window minus 16px under the top and the bottom limit. */
+export function panelMaxHeight(side: TabSide, viewportHeight: number, insets: Insets): number {
+  return Math.max(0, viewportHeight - edgeOffset(insets.top) - bottomLimit(side, insets));
+}
+
 /** The edge of the window a focused control has to stay clear of, and how far from that edge, for a tab at `top`. */
 export function scrollBand(top: number, viewportHeight: number): { edge: 'top' | 'bottom'; pad: number } {
   const isLower = top + TAB_SIZE_PX / 2 > viewportHeight / 2;
