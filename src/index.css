@@ -36,7 +36,7 @@
   }
 
   /* The floating header sits 8px higher and is thinner on a phone held sideways. */
-  @media (max-height: 480px) {
+  @variant vn-landscape {
     html {
       scroll-padding-top: max(72px, calc(env(safe-area-inset-top) + 60px));
     }

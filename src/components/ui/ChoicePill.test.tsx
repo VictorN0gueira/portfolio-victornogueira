@@ -107,7 +107,7 @@ describe('ChoicePill trigger', () => {
       'bg-vn-white',
       'border-vn-gray-mid',
       'hover:bg-vn-cream',
-      'focus-visible:outline-vn-ink',
+      'vn-focus-ring-ink',
     );
   });
 
@@ -200,7 +200,7 @@ describe('ChoicePill opening', () => {
 
     expect(container.contains(list)).toBe(false);
     expect(document.body.contains(list)).toBe(true);
-    expect(list).toHaveClass('z-[100]');
+    expect(list).toHaveClass('z-(--vn-z-popover)');
   });
 
   it('is not wider than 92vw or 20rem, and scrolls when the screen is short', async () => {

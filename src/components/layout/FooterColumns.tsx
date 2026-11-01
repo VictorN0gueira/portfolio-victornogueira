@@ -40,7 +40,7 @@ function ServicesColumn() {
 function ContactColumn({ newTabHintId }: { newTabHintId: string }) {
   return (
     // Two columns from 360px leave this one about 160px, which breaks the e-mail address in the middle until 420px.
-    <FooterColumn title="Contato" className="min-[360px]:max-[419px]:col-span-2">
+    <FooterColumn title="Contato" className="xs:max-[419px]:col-span-2">
       <li>
         <a
           href={whatsappUrl(WHATSAPP_GREETING)}
@@ -82,7 +82,7 @@ function LegalColumn() {
 /** The four columns of the footer: navigation, services, contact and legal. */
 export function FooterColumns({ newTabHintId }: { newTabHintId: string }) {
   return (
-    <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-10 min-[360px]:grid-cols-2 lg:grid-cols-4 lg:gap-x-8">
+    <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-10 xs:grid-cols-2 lg:grid-cols-4 lg:gap-x-8">
       <NavigationColumn />
       <ServicesColumn />
       <ContactColumn newTabHintId={newTabHintId} />

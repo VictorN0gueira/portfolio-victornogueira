@@ -180,7 +180,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
               <p className="text-xs text-zinc-500 mb-2 uppercase tracking-widest font-medium">
                 Custo anual atual
               </p>
-              <p className="text-3xl min-[360px]:text-4xl md:text-5xl font-bold text-white tabular-nums leading-none">
+              <p className="text-3xl xs:text-4xl md:text-5xl font-bold text-white tabular-nums leading-none">
                 {formatBRLCompact(displayCost)}
               </p>
               <p className="text-zinc-600 text-xs mt-1.5 tabular-nums">
@@ -195,7 +195,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
               <p className="text-xs text-zinc-500 mb-2 uppercase tracking-widest font-medium">
                 Economia com automação
               </p>
-              <p className="text-3xl min-[360px]:text-4xl md:text-5xl font-bold text-emerald-400 tabular-nums leading-none">
+              <p className="text-3xl xs:text-4xl md:text-5xl font-bold text-emerald-400 tabular-nums leading-none">
                 {formatBRLCompact(displaySavings)}
               </p>
               <p className="text-zinc-600 text-xs mt-1.5">/ano estimados</p>

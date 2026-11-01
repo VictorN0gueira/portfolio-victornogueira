@@ -41,21 +41,21 @@ describe('Footer', () => {
       const footer = renderFooter();
 
       expect(footer).toHaveAttribute('id', 'rodape');
-      expect(footer).toHaveClass('bg-vn-black', 'text-vn-white', 'rounded-t-[clamp(24px,4vw,40px)]');
+      expect(footer).toHaveClass('bg-vn-black', 'text-vn-white', 'rounded-t-shell');
     });
 
     // The corners of the round top edge used to show the page behind the footer: cream wedges beside the black CTA.
     it('reaches up by the radius of its corners, over the end of the section above, and closes its top with a 1px rule', () => {
       const footer = renderFooter();
 
-      expect(footer).toHaveClass('relative', '-mt-[clamp(24px,4vw,40px)]', 'border-t', 'border-vn-gray-dark');
+      expect(footer).toHaveClass('relative', '-mt-(--radius-shell)', 'border-t', 'border-vn-gray-dark');
     });
 
     it('lays the columns out as 4 at lg, 2 from 360px and 1 below that', () => {
       const footer = renderFooter();
 
       const grid = column(footer, 'Navegação').parentElement as HTMLElement;
-      expect(grid).toHaveClass('grid', 'grid-cols-1', 'min-[360px]:grid-cols-2', 'lg:grid-cols-4');
+      expect(grid).toHaveClass('grid', 'grid-cols-1', 'xs:grid-cols-2', 'lg:grid-cols-4');
       expect(grid.children).toHaveLength(4);
     });
 
@@ -63,7 +63,7 @@ describe('Footer', () => {
     it('gives the contact column both columns from 360px to 419px, where the e-mail address would not fit in one', () => {
       const footer = renderFooter();
 
-      expect(column(footer, 'Contato')).toHaveClass('min-[360px]:max-[419px]:col-span-2');
+      expect(column(footer, 'Contato')).toHaveClass('xs:max-[419px]:col-span-2');
       for (const title of ['Navegação', 'Serviços']) {
         expect(column(footer, title).className).not.toContain('col-span');
       }

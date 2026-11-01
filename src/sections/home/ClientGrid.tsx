@@ -12,7 +12,7 @@ import { LOGO_HEIGHT, LOGO_WIDTH, LogoImage } from './LogoImage';
 // grid draws the line of the top and left edges, so a row of any length ends with a line.
 const LIST_CLASSES = 'mt-6 grid grid-cols-2 border-t border-l border-vn-gray-light md:grid-cols-3';
 const CELL_CLASSES =
-  'vn-logo-host flex min-h-24 min-w-0 items-center justify-center border-r border-b border-vn-gray-light bg-vn-white p-3 min-[360px]:p-4 md:min-h-32';
+  'vn-logo-host flex min-h-24 min-w-0 items-center justify-center border-r border-b border-vn-gray-light bg-vn-white p-3 xs:p-4 md:min-h-32';
 // The slot is the 2:1 canvas of the logo files, so every logo takes the same box (the files hold each drawing already
 // trimmed and sized to the same weight). It never grows past the 1x size of the files.
 const LOGO_CLASSES = 'aspect-[2/1] w-full max-w-56 vn-logo-tone';

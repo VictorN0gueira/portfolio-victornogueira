@@ -135,25 +135,21 @@ describe('Button', () => {
     it('draws an ink outline on light tones', () => {
       renderWithProviders(<Button>enviar</Button>);
 
-      expect(screen.getByRole('button')).toHaveClass(
-        'focus-visible:outline-2',
-        'focus-visible:outline-offset-2',
-        'focus-visible:outline-vn-ink',
-      );
+      expect(screen.getByRole('button')).toHaveClass('vn-focus-ring-ink');
     });
 
     it('draws a white outline on the dark tone', () => {
       renderWithProviders(<Button tone="dark">enviar</Button>);
 
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('focus-visible:outline-2', 'focus-visible:outline-offset-2', 'focus-visible:outline-vn-white');
-      expect(button).not.toHaveClass('focus-visible:outline-vn-ink');
+      expect(button).toHaveClass('vn-focus-ring');
+      expect(button).not.toHaveClass('vn-focus-ring-ink');
     });
 
     it('keeps the outline on the secondary intent too', () => {
       renderWithProviders(<Button intent="secondary">enviar</Button>);
 
-      expect(screen.getByRole('button')).toHaveClass('focus-visible:outline-2', 'focus-visible:outline-vn-ink');
+      expect(screen.getByRole('button')).toHaveClass('vn-focus-ring-ink');
     });
   });
 

@@ -26,7 +26,7 @@ const CONTENT_TOP_VARS = {
   '--hero-top': `calc(${HEADER_TOP_OFFSET} + ${HEADER_HEIGHT} + ${BREATHING_ROOM})`,
   '--hero-top-landscape': `calc(${HEADER_TOP_OFFSET} - ${HEADER_LANDSCAPE_LIFT} + ${HEADER_HEIGHT_LANDSCAPE} + ${BREATHING_ROOM})`,
 } as CSSProperties;
-const CONTENT_TOP_CLASSES = 'pt-[var(--hero-top)] [@media(max-height:480px)]:pt-[var(--hero-top-landscape)]';
+const CONTENT_TOP_CLASSES = 'pt-[var(--hero-top)] vn-landscape:pt-[var(--hero-top-landscape)]';
 
 // The panel lies flat in the reading position, so this is the column the sentence and the panel live in.
 const COLUMN_CLASSES = 'w-full max-w-5xl';
@@ -45,7 +45,7 @@ export function HeroSection() {
   return (
     <Section
       tone="cream"
-      className="mx-2 mt-2 overflow-hidden rounded-[clamp(24px,4vw,40px)] border border-vn-gray-light py-0 min-[360px]:mx-3 min-[360px]:mt-3 md:mx-6 md:mt-6"
+      className="mx-2 mt-2 overflow-hidden rounded-shell border border-vn-gray-light py-0 xs:mx-3 xs:mt-3 md:mx-6 md:mt-6"
     >
       <ScanGrid />
       <div style={CONTENT_TOP_VARS} className={`${CONTENT_TOP_CLASSES} pb-[clamp(2rem,1rem+4vw,5rem)]`}>

@@ -99,7 +99,7 @@ export function RoiSimulator({ onQuoteRequest }: RoiSimulatorProps) {
   };
 
   return (
-    <div className="isolate mx-2 overflow-hidden rounded-[clamp(24px,4vw,40px)] min-[360px]:mx-3 md:mx-6">
+    <div className="isolate mx-2 overflow-hidden rounded-shell xs:mx-3 md:mx-6">
       <Section tone="black" labelledBy={headingId}>
         <Container>
           <RoiHeader headingId={headingId} />

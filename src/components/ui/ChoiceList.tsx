@@ -72,8 +72,8 @@ interface ChoiceListProps {
 
 /**
  * The popover panel of a ChoicePill, in a portal: a listbox opened below the trigger, aligned to its start, that
- * flips and shifts to stay 12px inside the screen and scrolls when it is too tall. It sits at z-[100], above the
- * header (z-50) and below the dialog menu (z-[160]). Must be rendered inside a Radix Popover.Root.
+ * flips and shifts to stay 12px inside the screen and scrolls when it is too tall. It sits at --vn-z-popover, above the
+ * header (--vn-z-header) and below the menu overlay (--vn-z-overlay). Must be rendered inside a Radix Popover.Root.
  */
 export function ChoiceList({
   options,

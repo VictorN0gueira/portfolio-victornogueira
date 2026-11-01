@@ -153,7 +153,7 @@ describe('ContactForm field sizing', () => {
       expect(tokens.filter((token) => /(^|:)text-(xs|sm)$/.test(token))).toEqual([]);
       expect(tokens).toContain('min-h-11');
       expect(tokens).toContain('text-vn-white');
-      expect(tokens).toContain('focus-visible:outline-vn-white');
+      expect(tokens).toContain('vn-focus-ring');
       expect(offPaletteClasses(control.className)).toEqual([]);
     }
   });
@@ -163,7 +163,7 @@ describe('ContactForm field sizing', () => {
 
     for (const control of [screen.getByLabelText('Nome'), screen.getByLabelText('Mensagem')]) {
       expect(tokensOf(control)).toEqual(
-        expect.arrayContaining(['rounded-xl', 'bg-vn-white/5', 'px-3.5', 'min-[360px]:px-4', 'text-ellipsis']),
+        expect.arrayContaining(['rounded-xl', 'bg-vn-white/5', 'px-3.5', 'xs:px-4', 'text-ellipsis']),
       );
     }
   });

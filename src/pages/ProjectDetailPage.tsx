@@ -77,7 +77,7 @@ export default function ProjectDetailPage() {
             transition={{ duration: 0.6 }}
             className="mt-16 text-center"
           >
-            <p className="mb-6 pr-16 text-left text-lg text-vn-gray-dark min-[360px]:px-14 min-[360px]:text-center md:px-0">{PROJECT_CTA_TEXT}</p>
+            <p className="mb-6 pr-16 text-left text-lg text-vn-gray-dark xs:px-14 xs:text-center md:px-0">{PROJECT_CTA_TEXT}</p>
             <Link
               to="/contato"
               className="group inline-flex items-center gap-3 rounded-full bg-black px-10 py-5 font-medium text-white shadow-2xl shadow-black/20 transition-colors hover:bg-zinc-800 motion-safe:active:scale-95"

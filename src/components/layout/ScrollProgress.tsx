@@ -21,7 +21,7 @@ interface BarProps {
   tone: ScrollProgressTone;
 }
 
-const BAR_CLASSES = `${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed inset-x-0 top-0 z-[60] h-0.5 origin-left`;
+const BAR_CLASSES = `${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed inset-x-0 top-0 z-(--vn-z-progress) h-0.5 origin-left`;
 
 /** The bar follows the scroll position exactly. */
 function PlainBar({ tone }: BarProps) {

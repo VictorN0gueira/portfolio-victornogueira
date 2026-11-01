@@ -13,7 +13,7 @@ const { kicker: KICKER, heading: STATEMENT, sub: SUB } = homeCopy.statement;
 
 const GRID_CLASSES = 'mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 md:mt-14 md:gap-5 lg:grid-cols-4';
 const CARD_CLASSES =
-  'flex-1 min-w-0 rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6';
+  'flex-1 min-w-0 rounded-card border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6';
 // The number is sized from the width of its own box (cqi), so "500h+" fits the narrowest card, a 4 column card at
 // 1024px with the large font on, and the 1 column card of a 280px screen alike, without a breakpoint per case.
 // leading-none comes after the font size on purpose: CountUp merges this with twMerge, which drops a leading

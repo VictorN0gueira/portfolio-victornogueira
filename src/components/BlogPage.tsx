@@ -373,7 +373,7 @@ export default function BlogPage() {
       {/* Back button */}
       <Link
         to="/"
-        className="fixed top-6 left-6 z-50 flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900 md:bg-white/[0.06] backdrop-blur-none md:backdrop-blur-xl border border-white/[0.1] text-sm text-zinc-300 hover:text-white hover:bg-white/[0.1] hover:border-white/[0.2] transition-all duration-300 group shadow-lg shadow-black/20"
+        className="fixed top-6 left-6 z-(--vn-z-header) flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900 md:bg-white/[0.06] backdrop-blur-none md:backdrop-blur-xl border border-white/[0.1] text-sm text-zinc-300 hover:text-white hover:bg-white/[0.1] hover:border-white/[0.2] transition-all duration-300 group shadow-lg shadow-black/20"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         <span className="font-medium">Portfólio</span>

@@ -82,7 +82,7 @@ describe('src/index.css palette', () => {
   })
 
   it('keeps the same safe-area logic for the shorter header of a phone held sideways', () => {
-    const landscape = blockBody(indexCss, '@media (max-height: 480px)')
+    const landscape = blockBody(indexCss, '@variant vn-landscape')
 
     expect(landscape).toContain('scroll-padding-top: max(72px, calc(env(safe-area-inset-top) + 60px))')
   })
@@ -118,7 +118,7 @@ describe('tokens.css values the components share', () => {
   it('declares the z index scale in rising order, one named layer each', () => {
     const layers = [...tokensCss.matchAll(/--vn-z-([a-z]+): (\d+);/g)].map((match) => [match[1], Number(match[2])] as const)
 
-    expect(layers.map(([name]) => name)).toEqual(['header', 'progress', 'popover', 'widget', 'overlay', 'dialog', 'skip'])
+    expect(layers.map(([name]) => name)).toEqual(['float', 'header', 'progress', 'popover', 'widget', 'overlay', 'dialog', 'skip'])
     expect(layers.map(([, value]) => value)).toEqual([...layers.map(([, value]) => value)].sort((a, b) => a - b))
     expect(new Set(layers.map(([, value]) => value)).size).toBe(layers.length)
   })

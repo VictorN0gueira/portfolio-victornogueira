@@ -20,14 +20,14 @@ export function Footer() {
   return (
     <footer
       id="rodape"
-      className="relative -mt-[clamp(24px,4vw,40px)] rounded-t-[clamp(24px,4vw,40px)] border-t border-vn-gray-dark bg-vn-black text-vn-white"
+      className="relative -mt-(--radius-shell) rounded-t-shell border-t border-vn-gray-dark bg-vn-black text-vn-white"
     >
       <NewTabHint id={newTabHintId} />
       <Container className="pt-14 md:pt-20">
         <Link
           to="/"
           aria-label="VN One, página inicial"
-          className="inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-white"
+          className="inline-flex min-h-11 items-center vn-focus-ring"
         >
           <Logo variant="onDark" loading="lazy" className="h-10 w-auto" />
         </Link>

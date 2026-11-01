@@ -136,7 +136,7 @@ describe('UseCaseTabs pause toggle', () => {
     expect(getPauseToggle()).toHaveAccessibleName('Pausar troca automática');
     expect(getPauseToggle()).toHaveAttribute('aria-pressed', 'false');
     expect(getPauseToggle()).toHaveAttribute('data-hold-exempt');
-    expect(getPauseToggle()).toHaveClass('focus-visible:outline-vn-ink');
+    expect(getPauseToggle()).toHaveClass('vn-focus-ring-ink');
   });
 
   it('keeps one constant name and carries the state in aria-pressed alone', () => {

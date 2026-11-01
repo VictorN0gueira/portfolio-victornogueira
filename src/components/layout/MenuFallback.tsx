@@ -17,7 +17,7 @@ interface MenuFallbackProps {
 const PANEL =
   'pointer-events-auto absolute inset-x-0 top-full mt-2 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain rounded-3xl bg-vn-black p-3 text-vn-white';
 const LINK =
-  'flex min-h-11 items-center rounded-full px-4 font-display text-lg font-bold lowercase text-vn-gray-light hover:text-vn-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-white';
+  'flex min-h-11 items-center rounded-full px-4 font-display text-lg font-bold lowercase text-vn-gray-light hover:text-vn-white vn-focus-ring';
 
 /** Closes on Escape while the panel is open, and hands the focus back to the button that opened it. */
 function useCloseOnEscape(open: boolean, onClose: () => void, returnFocusTo: RefObject<HTMLElement | null>) {

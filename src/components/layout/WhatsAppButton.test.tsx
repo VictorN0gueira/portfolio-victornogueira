@@ -40,7 +40,7 @@ describe('WhatsAppButton', () => {
   it('is a fixed 52px black circle that sits below the header and the menu dialog', () => {
     const link = renderButton();
 
-    expect(link).toHaveClass('fixed', 'size-[52px]', 'rounded-full', 'bg-vn-black', 'z-40');
+    expect(link).toHaveClass('fixed', 'size-[52px]', 'rounded-full', 'bg-vn-black', 'z-(--vn-z-float)');
   });
 
   it('shows the white WhatsApp mark, hidden from assistive tech', () => {

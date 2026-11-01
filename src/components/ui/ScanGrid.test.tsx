@@ -65,7 +65,7 @@ describe('ScanGrid', () => {
       const mask = line.getAttribute('style') ?? '';
       expect(mask).toContain('1216px');
       expect(mask).toContain('var(--scan-pad)');
-      expect(grid).toHaveClass('[--scan-pad:1rem]', 'min-[360px]:[--scan-pad:1.25rem]', 'md:[--scan-pad:3rem]');
+      expect(grid).toHaveClass('[--scan-pad:1rem]', 'xs:[--scan-pad:1.25rem]', 'md:[--scan-pad:3rem]');
     });
 
     it('is off by default: no mask and no pad on the plain grid', () => {

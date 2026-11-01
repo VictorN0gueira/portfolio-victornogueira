@@ -27,7 +27,7 @@ const SUBGRID_CLASSES = 'md:row-span-5 md:grid md:grid-cols-[minmax(0,1fr)] md:g
 // it draws the surface (radius, border, background). min-w-0 lets the card shrink below its longest word, so nothing
 // widens a 280px page.
 const ARTICLE_CLASSES = `flex min-w-0 flex-1 ${SUBGRID_CLASSES}`;
-const SURFACE_CLASSES = `flex w-full min-w-0 flex-col rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6 ${SUBGRID_CLASSES}`;
+const SURFACE_CLASSES = `flex w-full min-w-0 flex-col rounded-card border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6 ${SUBGRID_CLASSES}`;
 
 interface ServiceCardProps {
   service: Service;

@@ -13,7 +13,6 @@ const buttonVariants = cva(
   [
     'inline-flex items-center justify-center gap-2 rounded-full text-center font-medium',
     'cursor-pointer select-none',
-    'focus-visible:outline-2 focus-visible:outline-offset-2',
     'transition-[scale] duration-150 ease-out active:scale-[0.97]',
     'disabled:pointer-events-none disabled:opacity-50',
   ],
@@ -37,22 +36,22 @@ const buttonVariants = cva(
       {
         intent: 'primary',
         tone: 'light',
-        class: 'bg-vn-ink text-vn-white hover:bg-vn-gray-dark focus-visible:outline-vn-ink',
+        class: 'bg-vn-ink text-vn-white hover:bg-vn-gray-dark vn-focus-ring-ink',
       },
       {
         intent: 'primary',
         tone: 'dark',
-        class: 'bg-vn-white text-vn-black hover:bg-vn-gray-light focus-visible:outline-vn-white',
+        class: 'bg-vn-white text-vn-black hover:bg-vn-gray-light vn-focus-ring',
       },
       {
         intent: 'secondary',
         tone: 'light',
-        class: 'text-vn-ink hover:border-vn-ink focus-visible:outline-vn-ink',
+        class: 'text-vn-ink hover:border-vn-ink vn-focus-ring-ink',
       },
       {
         intent: 'secondary',
         tone: 'dark',
-        class: 'text-vn-white hover:border-vn-white focus-visible:outline-vn-white',
+        class: 'text-vn-white hover:border-vn-white vn-focus-ring',
       },
     ],
     defaultVariants: {

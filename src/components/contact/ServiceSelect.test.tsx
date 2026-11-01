@@ -285,7 +285,7 @@ describe('ServiceSelect colors on the dark surface', () => {
     render(<Harness />);
     const tokens = tokensOf(trigger());
 
-    expect(tokens).toEqual(expect.arrayContaining(['bg-vn-white/5', 'text-base', 'min-h-11', 'focus-visible:outline-vn-white']));
+    expect(tokens).toEqual(expect.arrayContaining(['bg-vn-white/5', 'text-base', 'min-h-11', 'vn-focus-ring']));
     expect(tokens.filter((token) => /(^|:)text-(xs|sm)$/.test(token))).toEqual([]);
     expect(offPaletteInHtml(trigger().innerHTML)).toEqual([]);
     expect(findAccentElements(trigger())).toEqual([]);

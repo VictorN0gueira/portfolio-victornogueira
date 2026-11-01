@@ -27,7 +27,7 @@ export function SocialLinks({ hintId }: SocialLinksProps) {
               rel="noopener noreferrer"
               aria-label={label}
               aria-describedby={hintId}
-              className="grid size-11 place-items-center rounded-full text-vn-gray-light hover:bg-vn-ink hover:text-vn-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-white"
+              className="grid size-11 place-items-center rounded-full text-vn-gray-light hover:bg-vn-ink hover:text-vn-white vn-focus-ring"
             >
               <Icon className="size-5" aria-hidden="true" />
             </a>

@@ -164,7 +164,7 @@ describe('ContactForm sending, success and error', () => {
     expect(link.getAttribute('href')).toContain('https://wa.me/5581984451243');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link.getAttribute('rel')).toBe('noopener noreferrer');
-    expect(link).toHaveClass('underline', 'focus-visible:outline-2', 'focus-visible:outline-vn-white');
+    expect(link).toHaveClass('underline', 'vn-focus-ring');
   });
 
   it('shows the error with an icon and no red', async () => {

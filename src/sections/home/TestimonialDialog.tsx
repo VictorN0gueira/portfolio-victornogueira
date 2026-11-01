@@ -7,7 +7,7 @@ import { cn } from '../../lib/utils';
 import { describeAuthor } from './describeAuthor';
 import { LogoPlate } from './LogoImage';
 
-const OVERLAY_CLASSES = 'fixed inset-0 z-[160] bg-vn-black/70';
+const OVERLAY_CLASSES = 'fixed inset-0 z-(--vn-z-overlay) bg-vn-black/70';
 // The panel keeps at least 1rem from every edge of the screen and more where the safe area needs it (a notch, the home
 // indicator, a notch on the side of a phone held sideways): each side is max(1rem, inset). With the four insets set,
 // auto margins center the panel and its height is the one of its content. The max-height is 90dvh, also held between the
@@ -17,8 +17,7 @@ const PANEL_INSET_CLASSES =
   'top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] bottom-[max(1rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))]';
 const PANEL_MAX_HEIGHT_CLASS =
   'max-h-[min(90dvh,calc(100dvh_-_max(1rem,env(safe-area-inset-top))_-_max(1rem,env(safe-area-inset-bottom))))]';
-const PANEL_CLASSES = `fixed z-[170] m-auto h-fit max-w-2xl overflow-y-auto overscroll-contain rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-white text-vn-ink outline-none ${PANEL_INSET_CLASSES} ${PANEL_MAX_HEIGHT_CLASS}`;
-const FOCUS_RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-ink';
+const PANEL_CLASSES = `fixed z-(--vn-z-dialog) m-auto h-fit max-w-2xl overflow-y-auto overscroll-contain rounded-card border border-vn-gray-light bg-vn-white text-vn-ink outline-none ${PANEL_INSET_CLASSES} ${PANEL_MAX_HEIGHT_CLASS}`;
 
 interface TestimonialDialogProps {
   /** What the dialog shows. It is kept after the dialog closes, so the content does not vanish during the exit animation. */
@@ -37,7 +36,7 @@ function CloseButton() {
         <button
           type="button"
           aria-label={homeCopy.testimonials.close}
-          className={`mr-3 mt-3 grid size-11 shrink-0 place-items-center rounded-full border border-vn-gray-light bg-vn-white text-vn-ink hover:border-vn-ink ${FOCUS_RING}`}
+          className={`mr-3 mt-3 grid size-11 shrink-0 place-items-center rounded-full border border-vn-gray-light bg-vn-white text-vn-ink hover:border-vn-ink vn-focus-ring-ink`}
         >
           <X aria-hidden="true" className="size-5" />
         </button>

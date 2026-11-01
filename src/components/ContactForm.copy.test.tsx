@@ -36,7 +36,7 @@ describe('ContactForm consent', () => {
     renderWithProviders(<ContactForm />);
     const link = screen.getByRole('link', { name: 'Política de Privacidade' });
 
-    expect(link).toHaveClass('underline', 'text-vn-white', 'focus-visible:outline-2', 'focus-visible:outline-vn-white');
+    expect(link).toHaveClass('underline', 'text-vn-white', 'vn-focus-ring');
   });
 
   it('draws the checkbox in white, with no green', () => {

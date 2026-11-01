@@ -9,7 +9,7 @@ const GROUP_CLASS =
 const PILL_CLASS = [
   'flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5',
   'text-sm font-medium leading-tight',
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-white',
+  'vn-focus-ring',
 ].join(' ');
 const ACTIVE_CLASS = 'bg-vn-white text-vn-black';
 const IDLE_CLASS = 'text-vn-gray-light hover:text-vn-white';

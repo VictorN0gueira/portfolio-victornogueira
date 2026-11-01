@@ -109,7 +109,7 @@ describe('PauseToggle tones', () => {
   it('draws the light tone for a light section: an ink focus ring held off the button, a 36px icon button', () => {
     render(<PauseToggle isPaused={false} label={LABEL} onToggle={vi.fn()} tone="light" />);
 
-    expect(getToggle()).toHaveClass('focus-visible:outline-2', 'focus-visible:outline-offset-2', 'focus-visible:outline-vn-ink');
+    expect(getToggle()).toHaveClass('vn-focus-ring-ink');
     expect(getToggle().firstElementChild).toHaveClass('size-9', 'border-vn-gray-light', 'text-vn-ink');
     expect(getIcon()).toHaveClass('size-4');
   });

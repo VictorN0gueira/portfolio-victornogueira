@@ -14,8 +14,6 @@ import { MenuFallback } from './MenuFallback';
 import { loadMobileMenu } from './menuLoader';
 import { useScrolled } from './useScrolled';
 
-const FOCUS_RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-ink';
-
 // The menu is a Radix dialog: it loads on the first tap, or earlier when the pointer or the focus reaches the button.
 // A failed load must not leave an unhandled rejection (the prefetch) nor blank the page (MenuBoundary, below).
 // One retry for a transient failure; the menu never reloads the page (canReload off), its boundary shows the links.
@@ -71,7 +69,7 @@ function MenuButton({ ref, isOpen, controlsId, onToggle }: MenuButtonProps) {
       onClick={onToggle}
       onPointerEnter={prefetchMobileMenu}
       onFocus={prefetchMobileMenu}
-      className={`pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full text-vn-ink hover:bg-vn-cream lg:hidden ${FOCUS_RING}`}
+      className={`pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full text-vn-ink hover:bg-vn-cream lg:hidden vn-focus-ring-ink`}
     >
       <Menu className="size-5" aria-hidden="true" />
     </button>
@@ -90,7 +88,7 @@ function DesktopNav() {
             <Link
               to={item.to}
               aria-current={isNavCurrent(item.to, pathname) ? 'page' : undefined}
-              className={`relative inline-flex min-h-11 items-center rounded-full px-3 text-sm font-medium lowercase text-vn-gray-dark after:absolute after:inset-x-3 after:bottom-2 after:h-0.5 after:origin-left after:scale-x-0 after:bg-vn-ink after:transition-transform after:duration-300 after:ease-out hover:text-vn-ink hover:after:scale-x-100 aria-[current=page]:text-vn-ink aria-[current=page]:after:scale-x-100 ${FOCUS_RING}`}
+              className={`relative inline-flex min-h-11 items-center rounded-full px-3 text-sm font-medium lowercase text-vn-gray-dark after:absolute after:inset-x-3 after:bottom-2 after:h-0.5 after:origin-left after:scale-x-0 after:bg-vn-ink after:transition-transform after:duration-300 after:ease-out hover:text-vn-ink hover:after:scale-x-100 aria-[current=page]:text-vn-ink aria-[current=page]:after:scale-x-100 vn-focus-ring-ink`}
             >
               {item.label}
             </Link>
@@ -158,14 +156,14 @@ export function Header() {
       // The header is the wide pill, up to 68.75rem (1100px). Scrolled, the background is clipped to 53.75rem (860px)
       // and the logo and the right side slide in by the same cut, so only clip-path and translate move. It is its own
       // size container to read its width (cqw) and lets the pointer through where the pill is cut away.
-      className={`group/header ${KEEPS_PLACE_UNDER_SCROLL_LOCK} pointer-events-none fixed inset-x-0 z-50 mx-auto max-w-[68.75rem] ${SLIDE} [container-type:inline-size] [@media(max-height:480px)]:-translate-y-2 ${CUT_VAR}`}
+      className={`group/header ${KEEPS_PLACE_UNDER_SCROLL_LOCK} pointer-events-none fixed inset-x-0 z-(--vn-z-header) mx-auto max-w-[68.75rem] ${SLIDE} [container-type:inline-size] vn-landscape:-translate-y-2 ${CUT_VAR}`}
     >
       <PillBackground />
-      <div className="relative flex items-center justify-between gap-2 border border-transparent py-1.5 pr-1.5 pl-4 min-[360px]:pl-5 [@media(max-height:480px)]:py-0.5">
+      <div className="relative flex items-center justify-between gap-2 border border-transparent py-1.5 pr-1.5 pl-4 xs:pl-5 vn-landscape:py-0.5">
         <Link
           to="/"
           aria-label="VN One, página inicial"
-          className={`pointer-events-auto inline-flex min-h-11 shrink-0 items-center rounded-full group-data-[scrolled=true]/header:translate-x-[var(--cut)] ${SLIDE} ${FOCUS_RING}`}
+          className={`pointer-events-auto inline-flex min-h-11 shrink-0 items-center rounded-full group-data-[scrolled=true]/header:translate-x-[var(--cut)] ${SLIDE} vn-focus-ring-ink`}
         >
           <Logo variant="onLight" className="h-8 w-auto" />
         </Link>

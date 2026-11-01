@@ -14,7 +14,7 @@ interface ScanGridProps {
 }
 
 // The Container gutters (px-4, 360px: px-5, md: px-12) as a custom property, so the clear zone follows the same steps.
-const CLEAR_PAD_CLASSES = '[--scan-pad:1rem] min-[360px]:[--scan-pad:1.25rem] md:[--scan-pad:3rem]';
+const CLEAR_PAD_CLASSES = '[--scan-pad:1rem] xs:[--scan-pad:1.25rem] md:[--scan-pad:3rem]';
 // The side of the page that is not content: the space beside a 1216px Container, plus its gutter.
 const CLEAR_EDGE = 'calc(max(0px, (100% - 1216px) / 2) + var(--scan-pad))';
 const CLEAR_MASK = `linear-gradient(to right, #000 ${CLEAR_EDGE}, transparent ${CLEAR_EDGE}, transparent calc(100% - ${CLEAR_EDGE}), #000 calc(100% - ${CLEAR_EDGE}))`;

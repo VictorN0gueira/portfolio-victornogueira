@@ -12,7 +12,7 @@ describe('Container', () => {
       'w-full',
       'max-w-[1216px]',
       'px-4',
-      'min-[360px]:px-5',
+      'xs:px-5',
       'md:px-12',
     );
   });

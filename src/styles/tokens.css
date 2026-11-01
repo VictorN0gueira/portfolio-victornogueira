@@ -69,9 +69,11 @@
 
   /*
    * The z index scale, from the lowest layer to the highest. Use it as z-(--vn-z-header) and the like, never a number:
-   * the order of the layers is decided here, in one place. Header, then the page progress bar, then the popover of a
+   * the order of the layers is decided here, in one place. Float, then header, then the page progress bar, then the popover of a
    * list (above the header), then the accessibility widget, then the menu overlay and its panel, then the skip link.
+   * "Float" is the WhatsApp button: just above the page content, under every other layer.
    */
+  --vn-z-float: 40;
   --vn-z-header: 50;
   --vn-z-progress: 60;
   --vn-z-popover: 100;

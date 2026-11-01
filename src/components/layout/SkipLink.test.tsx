@@ -35,8 +35,8 @@ describe('SkipLink', () => {
   it('stays out of sight until it has focus, then shows with a focus ring', () => {
     const link = renderSkipLink();
 
-    expect(link).toHaveClass('sr-only', 'focus:not-sr-only', 'focus:fixed', 'focus:z-[200]');
-    expect(link).toHaveClass('focus-visible:outline-2', 'focus-visible:outline-vn-ink');
+    expect(link).toHaveClass('sr-only', 'focus:not-sr-only', 'focus:fixed', 'focus:z-(--vn-z-skip)');
+    expect(link).toHaveClass('vn-focus-ring-ink');
   });
 
   it('moves the focus to the main landmark without changing the URL hash', async () => {

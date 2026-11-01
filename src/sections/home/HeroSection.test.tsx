@@ -119,8 +119,8 @@ describe('HeroSection card', () => {
   it('is a rounded cream card inset from the screen edges, growing from 8px to 24px', () => {
     const { section } = renderHero();
 
-    expect(section).toHaveClass('bg-vn-cream', 'rounded-[clamp(24px,4vw,40px)]');
-    expect(section).toHaveClass('mx-2', 'min-[360px]:mx-3', 'md:mx-6');
+    expect(section).toHaveClass('bg-vn-cream', 'rounded-shell');
+    expect(section).toHaveClass('mx-2', 'xs:mx-3', 'md:mx-6');
   });
 
   it('clips its own corners and the grid, so nothing of the tilted panel widens the page', () => {
@@ -158,7 +158,7 @@ describe('HeroSection card', () => {
     const top = content.style.getPropertyValue('--hero-top-landscape');
     expect(top).toContain(HEADER_HEIGHT_LANDSCAPE);
     expect(top).toContain(`- ${HEADER_LANDSCAPE_LIFT}`);
-    expect(content).toHaveClass('[@media(max-height:480px)]:pt-[var(--hero-top-landscape)]');
+    expect(content).toHaveClass('vn-landscape:pt-[var(--hero-top-landscape)]');
   });
 
   it('has no minimum height of a whole screen, so a phone held sideways sees the panel right under the sentence', () => {

@@ -13,7 +13,7 @@ const TONE_CLASSES: Record<PauseToggleTone, { ring: string; disc: string; icon: 
     icon: 'size-3.5',
   },
   light: {
-    ring: 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-ink',
+    ring: 'vn-focus-ring-ink',
     disc: 'size-9 border-vn-gray-light text-vn-ink group-hover:border-vn-ink group-hover:bg-vn-cream',
     icon: 'size-4',
   },

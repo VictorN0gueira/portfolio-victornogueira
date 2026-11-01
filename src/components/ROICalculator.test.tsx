@@ -34,7 +34,7 @@ describe('ROICalculator (the old calculator of /contato)', () => {
     const figures = document.querySelectorAll('p.tabular-nums.leading-none');
     expect(figures).toHaveLength(2);
     for (const figure of figures) {
-      expect(figure).toHaveClass('text-3xl', 'min-[360px]:text-4xl', 'md:text-5xl');
+      expect(figure).toHaveClass('text-3xl', 'xs:text-4xl', 'md:text-5xl');
     }
   });
 });

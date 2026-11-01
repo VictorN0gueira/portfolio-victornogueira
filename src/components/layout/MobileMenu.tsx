@@ -26,24 +26,22 @@ const PANEL_PADDING = {
   paddingLeft: '20px',
 } as const;
 
-const FOCUS_RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-white';
-
 const NAV_LINK =
-  'flex min-h-14 items-center font-display text-[clamp(1.75rem,8vw,2.25rem)] font-bold lowercase leading-none tracking-[-0.03em] text-vn-gray-mid decoration-2 underline-offset-[0.18em] hover:text-vn-white aria-[current=page]:text-vn-white aria-[current=page]:underline [@media(max-height:480px)]:min-h-11 [@media(max-height:480px)]:text-2xl';
+  'flex min-h-14 items-center font-display text-[clamp(1.75rem,8vw,2.25rem)] font-bold lowercase leading-none tracking-[-0.03em] text-vn-gray-mid decoration-2 underline-offset-[0.18em] hover:text-vn-white aria-[current=page]:text-vn-white aria-[current=page]:underline vn-landscape:min-h-11 vn-landscape:text-2xl';
 
 /** The big links. The current page is white and underlined: the underline carries it for those who miss the color. */
 function MenuNav() {
   const { pathname } = useLocation();
 
   return (
-    <nav aria-label="Menu principal" className="mt-6 [@media(max-height:480px)]:mt-2">
+    <nav aria-label="Menu principal" className="mt-6 vn-landscape:mt-2">
       <ul>
         {MAIN_NAV.map((item) => (
           <li key={item.to}>
             <Link
               to={item.to}
               aria-current={isNavCurrent(item.to, pathname) ? 'page' : undefined}
-              className={`${NAV_LINK} ${FOCUS_RING}`}
+              className={`${NAV_LINK} vn-focus-ring`}
             >
               {item.label}
             </Link>
@@ -57,10 +55,10 @@ function MenuNav() {
 /** The e-mail and the call to action, at the bottom of the panel. */
 function MenuActions() {
   return (
-    <div className="mt-auto flex flex-col gap-3 pt-8 [@media(max-height:480px)]:pt-4">
+    <div className="mt-auto flex flex-col gap-3 pt-8 vn-landscape:pt-4">
       <a
         href={`mailto:${CONTACT_EMAIL}`}
-        className={`inline-flex min-h-11 items-center font-mono text-sm text-vn-gray-light hover:text-vn-white [overflow-wrap:anywhere] ${FOCUS_RING}`}
+        className={`inline-flex min-h-11 items-center font-mono text-sm text-vn-gray-light hover:text-vn-white [overflow-wrap:anywhere] vn-focus-ring`}
       >
         {CONTACT_EMAIL}
       </a>
@@ -80,7 +78,7 @@ function MenuTop() {
         <button
           type="button"
           aria-label="Fechar menu"
-          className={`-mr-2 grid size-11 place-items-center rounded-full text-vn-white hover:bg-vn-ink ${FOCUS_RING}`}
+          className={`-mr-2 grid size-11 place-items-center rounded-full text-vn-white hover:bg-vn-ink vn-focus-ring`}
         >
           <X className="size-6" aria-hidden="true" />
         </button>
@@ -117,7 +115,7 @@ function MobileMenu({ open, onOpenChange, id, returnFocusTo }: MobileMenuProps) 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="vn-menu-overlay fixed inset-0 z-[160] bg-vn-black/70" />
+        <Dialog.Overlay className="vn-menu-overlay fixed inset-0 z-(--vn-z-overlay) bg-vn-black/70" />
         <Dialog.Content
           id={id}
           style={PANEL_PADDING}
@@ -125,7 +123,7 @@ function MobileMenu({ open, onOpenChange, id, returnFocusTo }: MobileMenuProps) 
             event.preventDefault();
             returnFocusTo.current?.focus();
           }}
-          className="vn-menu-panel fixed right-0 top-0 z-[170] flex h-dvh w-full min-[420px]:w-[24rem] flex-col overflow-y-auto overscroll-contain bg-vn-black text-vn-white outline-none"
+          className="vn-menu-panel fixed right-0 top-0 z-(--vn-z-dialog) flex h-dvh w-full min-[420px]:w-[24rem] flex-col overflow-y-auto overscroll-contain bg-vn-black text-vn-white outline-none"
         >
           <Dialog.Title className="sr-only">Menu de navegação</Dialog.Title>
           <Dialog.Description className="sr-only">

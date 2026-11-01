@@ -202,8 +202,8 @@ describe('Header', () => {
     it('moves 8px up and gets thinner on a phone held sideways', () => {
       const header = renderHeader();
 
-      expect(header).toHaveClass('[@media(max-height:480px)]:-translate-y-2');
-      expect(header.querySelector('[class*="max-height:480px)]:py-0.5"]')).not.toBeNull();
+      expect(header).toHaveClass('vn-landscape:-translate-y-2');
+      expect(header.querySelector('[class*="vn-landscape:py-0.5"]')).not.toBeNull();
     });
   });
 
@@ -375,7 +375,7 @@ describe('Header geometry', () => {
     // A phone held sideways: 0.125rem of padding instead of 0.375rem, and the pill lifted by 0.5rem.
     expect(HEADER_HEIGHT_LANDSCAPE).toBe('calc(3rem + 2px)');
     expect(HEADER_LANDSCAPE_LIFT).toBe('0.5rem');
-    expect(header).toHaveClass('[@media(max-height:480px)]:-translate-y-2');
-    expect(header.querySelector('[class*="max-height:480px)]:py-0.5"]')).not.toBeNull();
+    expect(header).toHaveClass('vn-landscape:-translate-y-2');
+    expect(header.querySelector('[class*="vn-landscape:py-0.5"]')).not.toBeNull();
   });
 });

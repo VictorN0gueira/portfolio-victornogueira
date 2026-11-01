@@ -7,8 +7,6 @@ import { useCases, type UseCase } from '../../data/useCases';
 import { cn } from '../../lib/utils';
 import { HOLD_EXEMPT_ATTRIBUTE, tabIdFor, type TabListControls } from './useTabsBehavior';
 
-const FOCUS_RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-ink';
-
 interface TabProgressProps {
   /** How long the fill takes to grow, as the rotation interval: one number for the bar and the timer. */
   durationMs: number;
@@ -63,7 +61,7 @@ function UseCaseTab({ label, id, panelId, isSelected, isRunning, durationMs, onS
       onClick={onSelect}
       className={cn(
         'relative inline-flex min-h-11 shrink-0 snap-start cursor-pointer items-center justify-center rounded-full border px-5 text-sm font-medium sm:text-base',
-        FOCUS_RING,
+        'vn-focus-ring-ink',
         isSelected
           ? 'border-vn-ink bg-vn-ink text-vn-white'
           : 'border-vn-gray-mid bg-vn-white text-vn-ink hover:border-vn-ink hover:bg-vn-cream',
@@ -183,7 +181,7 @@ function StepsCard({ steps, Item }: StepsCardProps) {
   const labelId = useId();
 
   return (
-    <div className="min-w-0 rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-cream p-5 md:p-6">
+    <div className="min-w-0 rounded-card border border-vn-gray-light bg-vn-cream p-5 md:p-6">
       <Item variant="fade">
         <p id={labelId} className="font-mono text-xs uppercase tracking-[.18em]">
           {homeCopy.useCases.stepsTitle}
@@ -287,7 +285,7 @@ export function UseCasePanel({ useCase, isAuto, panelId, tabId }: UseCasePanelPr
         id={panelId}
         aria-labelledby={tabId}
         tabIndex={0}
-        className={cn('col-start-1 row-start-1 min-w-0 rounded-2xl', FOCUS_RING)}
+        className={cn('col-start-1 row-start-1 min-w-0 rounded-2xl', 'vn-focus-ring-ink')}
       >
         <UseCaseContent key={isAuto ? AUTO_KEY : useCase.id} useCase={useCase} />
       </div>

@@ -161,7 +161,7 @@ describe('ServicesCards layout', () => {
       const surface = card.querySelector('.vn-spotlight') as HTMLElement;
 
       expect(card.className).not.toMatch(/rounded|border|bg-|outline|ring|shadow/);
-      expect(surface).toHaveClass('rounded-[clamp(20px,3vw,28px)]', 'border', 'bg-vn-white');
+      expect(surface).toHaveClass('rounded-card', 'border', 'bg-vn-white');
     }
   });
 

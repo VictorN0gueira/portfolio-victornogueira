@@ -18,7 +18,7 @@ const LIST_CLASSES = 'grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-col
 // so the staircase is the tops and the 3px rules share one baseline.
 const STAIRCASE = ['lg:mt-24', 'lg:mt-16', 'lg:mt-8', 'lg:mt-0'] as const;
 const CARD_CLASSES =
-  'flex min-w-0 flex-1 flex-col rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-cream p-5 text-vn-ink md:p-6';
+  'flex min-w-0 flex-1 flex-col rounded-card border border-vn-gray-light bg-vn-cream p-5 text-vn-ink md:p-6';
 const NUMBER_CLASSES =
   'font-display font-bold text-[length:clamp(3rem,2rem+3vw,4.5rem)] leading-none tracking-[-0.03em]';
 // The title is sized from the width of its own card (cqi, relative to the @container wrapper around it), at most

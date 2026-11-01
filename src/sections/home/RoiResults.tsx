@@ -74,7 +74,7 @@ export function RoiResults({ cost, savings, rateCapNote = null, rateIssueNote = 
   const announcement = useDebouncedValue(sentence, STATUS_DEBOUNCE_MS);
 
   return (
-    <div className="flex flex-col gap-6 rounded-[clamp(20px,3vw,28px)] border border-vn-white/10 bg-vn-white/5 p-5 min-[360px]:p-6 md:p-8">
+    <div className="flex flex-col gap-6 rounded-card border border-vn-white/10 bg-vn-white/5 p-5 xs:p-6 md:p-8">
       <div aria-hidden="true" className="flex flex-col gap-6">
         <ResultFigure
           label={results.cost}

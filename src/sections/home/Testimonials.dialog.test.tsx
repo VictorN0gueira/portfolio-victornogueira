@@ -190,7 +190,7 @@ describe('Testimonials dialog', () => {
     const close = within(dialog).getByRole('button', { name: 'Fechar' });
 
     expect(close.getAttribute('aria-label') ?? close.textContent).toBe('Fechar');
-    expect(close).toHaveClass('size-11', 'focus-visible:outline-2', 'focus-visible:outline-offset-2');
+    expect(close).toHaveClass('size-11', 'vn-focus-ring-ink');
     expect(close.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
   });
 

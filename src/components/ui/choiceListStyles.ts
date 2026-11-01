@@ -4,7 +4,7 @@
 export type ChoiceTone = 'light' | 'dark';
 
 const COLLISION_PADDING_PX = 12;
-// The dark list stays inside the form, below the page's fixed header (z-50) in stacking order, so it must not open under
+// The dark list stays inside the form, below the page's fixed header (--vn-z-header) in stacking order, so it must not open under
 // it: the top edge keeps clear of the header (12px offset plus its height, with room for the larger font).
 const FIXED_HEADER_CLEARANCE_PX = 96;
 export const COLLISION_PADDING: Record<ChoiceTone, number | { top: number; right: number; bottom: number; left: number }> = {
@@ -15,7 +15,7 @@ export const PANEL_OFFSET_PX = 8;
 
 // The dark panel is as wide as the field that opened it, so a long service name wraps instead of leaving the form.
 const PANEL_BASE = [
-  'vn-choice-panel relative z-[100] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto',
+  'vn-choice-panel relative z-(--vn-z-popover) max-h-[var(--radix-popover-content-available-height)] overflow-y-auto',
   'overscroll-contain font-sans text-base normal-case tracking-normal',
 ].join(' ');
 

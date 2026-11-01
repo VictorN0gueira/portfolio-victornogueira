@@ -7,7 +7,7 @@ import { excerptOf } from './excerpt';
 import { LogoPlate } from './LogoImage';
 
 const CARD_CLASSES =
-  'vn-logo-host flex min-w-0 flex-1 flex-col rounded-[clamp(20px,3vw,28px)] border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6';
+  'vn-logo-host flex min-w-0 flex-1 flex-col rounded-card border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6';
 
 interface TestimonialCardProps {
   testimonial: Testimonial;

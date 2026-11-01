@@ -20,7 +20,7 @@ export function SkipLink() {
     <a
       href={`#${MAIN_CONTENT_ID}`}
       onClick={handleClick}
-      className="sr-only focus:not-sr-only focus:fixed focus:left-[max(16px,env(safe-area-inset-left))] focus:top-[max(16px,env(safe-area-inset-top))] focus:z-[200] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-full focus:border-2 focus:border-vn-ink focus:bg-vn-white focus:px-6 focus:text-sm focus:font-medium focus:text-vn-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-ink"
+      className="sr-only focus:not-sr-only focus:fixed focus:left-[max(16px,env(safe-area-inset-left))] focus:top-[max(16px,env(safe-area-inset-top))] focus:z-(--vn-z-skip) focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-full focus:border-2 focus:border-vn-ink focus:bg-vn-white focus:px-6 focus:text-sm focus:font-medium focus:text-vn-ink vn-focus-ring-ink"
     >
       Pular para o conteúdo
     </a>

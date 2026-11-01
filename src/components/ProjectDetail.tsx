@@ -11,7 +11,7 @@ interface ProjectDetailProps {
 
 // The floating WhatsApp and accessibility buttons sit at the right edge of a phone: the text stays clear of them
 // (48 px up to 320 px, where the page and the panel are tighter, 36 px under 360 px, 56 px up to the tablet layout, none from md up).
-export const CLEAR_FLOATING_BUTTONS = 'pr-12 min-[321px]:pr-9 min-[360px]:pr-14 md:pr-0';
+export const CLEAR_FLOATING_BUTTONS = 'pr-12 min-[321px]:pr-9 xs:pr-14 md:pr-0';
 const LABEL_CLASSES = `mb-3 text-xs font-bold uppercase tracking-widest text-zinc-400 ${CLEAR_FLOATING_BUTTONS}`;
 
 function Features({ items }: { items: readonly string[] }) {
@@ -81,7 +81,7 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
     >
       {isFeatured ? <HeroGallery project={project} /> : <StackedGallery project={project} />}
 
-      <div className="min-w-0 flex-1 bg-zinc-950 p-3 pb-8 min-[321px]:p-4 min-[360px]:p-6 min-[360px]:pb-10 md:bg-zinc-900 md:p-10 xl:p-16">
+      <div className="min-w-0 flex-1 bg-zinc-950 p-3 pb-8 min-[321px]:p-4 xs:p-6 xs:pb-10 md:bg-zinc-900 md:p-10 xl:p-16">
         <div className={textLayout}>
           <Heading project={project} large={isFeatured} />
           <div className={`space-y-6 md:space-y-8 ${isFeatured ? '' : 'mt-8'}`}>

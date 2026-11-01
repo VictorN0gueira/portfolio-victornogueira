@@ -277,7 +277,7 @@ interface FlowBodyProps {
 /** The white body of the window: the steps, the sources with the cable, the rows and the footnote. Left aligned. */
 export function FlowBody({ rows, doneCount, activeStep, mode }: FlowBodyProps) {
   return (
-    <div className="bg-vn-white p-3 text-left text-vn-ink min-[360px]:p-4 md:p-6">
+    <div className="bg-vn-white p-3 text-left text-vn-ink xs:p-4 md:p-6">
       <StepPills activeIndex={activeStep} mode={mode} />
       <div
         data-flow-grid=""

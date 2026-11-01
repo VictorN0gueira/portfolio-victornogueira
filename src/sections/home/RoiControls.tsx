@@ -9,7 +9,7 @@ const LABEL_CLASSES = 'text-base font-medium text-vn-white';
 const RATE_FIELD_CLASSES = [
   'mt-3 block min-h-11 w-full rounded-xl border border-vn-gray-mid bg-transparent px-4 py-2.5',
   'text-base tabular-nums text-vn-white scheme-dark',
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vn-white',
+  'vn-focus-ring',
 ].join(' ');
 // A radio is a native input, visually hidden, and the span after it draws the option: peer-checked and
 // peer-focus-visible style it from the state of the input, so the keyboard and the screen reader get a real radio.

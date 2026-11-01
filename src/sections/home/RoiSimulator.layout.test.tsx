@@ -21,7 +21,7 @@ describe('RoiSimulator wrapper', () => {
     const { container } = renderSimulator();
     const wrapper = container.firstElementChild as HTMLElement;
 
-    expect(wrapper).toHaveClass('mx-2', 'min-[360px]:mx-3', 'md:mx-6', 'rounded-[clamp(24px,4vw,40px)]');
+    expect(wrapper).toHaveClass('mx-2', 'xs:mx-3', 'md:mx-6', 'rounded-shell');
     expect(wrapper.querySelector('section')).toHaveAttribute('data-tone', 'black');
     expect(wrapper.children).toHaveLength(1);
   });
