@@ -1,11 +1,11 @@
 name: CI
 
-# Pull requests and pushes to the integration branches. A branch with an open pull request runs once, through
-# pull_request, not twice. main is covered by deploy.yml, which calls this workflow before it publishes, so a
-# broken build or a failing test never reaches Pages.
+# Pull requests and pushes to main and to the integration branches. A branch with an open pull request runs once,
+# through pull_request, not twice. main runs it on every push because deploy.yml (the GitHub Pages copy) is manual
+# only: EasyPanel builds main from the Dockerfile, so this is the only automatic gate on main.
 on:
   push:
-    branches: ["redesign/**"]
+    branches: ["main", "redesign/**"]
   pull_request:
   workflow_call:
 
