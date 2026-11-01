@@ -7,9 +7,11 @@ import { NewTabHint } from './ui/NewTabHint';
 interface ContactProps {
   /** Mensagem vinda do ROICalculator para pré-preencher o formulário */
   prefillMessage?: string;
+  /** Counts the requests, so the same message sent again still replaces what the visitor typed */
+  prefillNonce?: number;
 }
 
-export default function Contact({ prefillMessage }: ContactProps) {
+export default function Contact({ prefillMessage, prefillNonce }: ContactProps) {
   const newTabHintId = useId();
 
   return (
@@ -61,7 +63,7 @@ export default function Contact({ prefillMessage }: ContactProps) {
           transition={{ duration: 0.8 }}
           className="relative z-10"
         >
-          <ContactForm initialMessage={prefillMessage} />
+          <ContactForm initialMessage={prefillMessage} prefillNonce={prefillNonce} />
         </m.div>
       </div>
 

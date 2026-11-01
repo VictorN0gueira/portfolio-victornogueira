@@ -73,7 +73,7 @@ export default function ServicesPage() {
                 <h2 className="text-xl md:text-2xl font-bold tracking-tight mb-3 font-display">
                   {service.nome}
                 </h2>
-                <p className="text-sm text-zinc-500 leading-relaxed mb-6">
+                <p className="text-sm text-vn-gray-dark leading-relaxed mb-6">
                   {service.descricao}
                 </p>
 

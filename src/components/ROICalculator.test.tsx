@@ -1,7 +1,8 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { homeCopy } from '../data/homeCopy';
+import { NEW_TAB_HINT } from './ui/NewTabHint';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import ROICalculator from './ROICalculator';
@@ -84,6 +85,47 @@ describe('ROICalculator team size', () => {
     await user.keyboard('{Home}');
     expect(screen.getByRole('radio', { name: '1 pessoa' })).toBeChecked();
     expect(screen.getByRole('radio', { name: '1 pessoa' })).toHaveFocus();
+  });
+
+  it.each([
+    ['ctrlKey', 'End'],
+    ['metaKey', 'Home'],
+    ['altKey', 'End'],
+    ['shiftKey', 'Home'],
+  ])('leaves %s plus %s to the browser: the choice does not move and the key is not cancelled', async (modifier, key) => {
+    const user = userEvent.setup();
+    renderWithProviders(<ROICalculator onQuoteRequest={() => undefined} />);
+    const radio = screen.getByRole('radio', { name: '2 a 3 pessoas' });
+    await user.click(radio);
+
+    // fireEvent, not user.keyboard: jsdom cannot run the default action of Home or End on a radio.
+    const wasNotCancelled = fireEvent.keyDown(radio, { key, [modifier]: true });
+
+    expect(wasNotCancelled).toBe(true);
+    expect(radio).toBeChecked();
+    expect(radio).toHaveFocus();
+  });
+});
+
+describe('ROICalculator without a quote handler', () => {
+  beforeEach(() => {
+    stubMatchMedia();
+  });
+
+  it('falls back to a WhatsApp link that tells a screen reader it opens in a new tab', () => {
+    renderWithProviders(<ROICalculator />);
+
+    const link = screen.getByRole('link', { name: /Quero automatizar esse processo/ });
+
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAccessibleDescription(NEW_TAB_HINT);
+  });
+
+  it('shows no new tab hint when the button is the quote request', () => {
+    renderWithProviders(<ROICalculator onQuoteRequest={() => undefined} />);
+
+    expect(screen.getByRole('button', { name: /Quero automatizar esse processo/ })).not.toHaveAccessibleDescription();
+    expect(document.body.textContent).not.toContain(NEW_TAB_HINT);
   });
 });
 

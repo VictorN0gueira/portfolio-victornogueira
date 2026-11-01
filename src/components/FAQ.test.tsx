@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { faqs } from '../data/faqs';
@@ -25,7 +25,9 @@ describe('FAQ (the old accordion of /contato)', () => {
 
     expect(panelId).toBeTruthy();
     expect(button).toHaveAttribute('aria-expanded', 'false');
-    expect(document.getElementById(panelId as string)).toBeNull();
+    // The panel exists while collapsed, so aria-controls never points at nothing, but it is hidden.
+    const collapsedPanel = document.getElementById(panelId as string) as HTMLElement;
+    expect(collapsedPanel).toHaveAttribute('hidden');
 
     await user.click(button);
 
@@ -50,5 +52,31 @@ describe('FAQ (the old accordion of /contato)', () => {
 
     expect(screen.getByText('Dúvidas frequentes').className).not.toMatch(/zinc-[3-6]00/);
     expect(screen.getByText(faqs[0].answer).className).not.toMatch(/zinc-[3-6]00/);
+  });
+
+  it('keeps every answer out of the accessibility tree and the tab order while collapsed', () => {
+    renderWithProviders(<FAQ />);
+
+    expect(screen.queryAllByRole('region')).toHaveLength(0);
+    for (const button of screen.getAllByRole('button')) {
+      const panel = document.getElementById(button.getAttribute('aria-controls') as string) as HTMLElement;
+      expect(panel).toHaveAttribute('hidden');
+      expect(panel).not.toBeVisible();
+    }
+  });
+
+  it('hides the panel again after it closes, and the id stays in the page the whole time', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<FAQ />);
+    const button = screen.getByRole('button', { name: faqs[0].question });
+    const panelId = button.getAttribute('aria-controls') as string;
+
+    await user.click(button);
+    expect(document.getElementById(panelId)).not.toHaveAttribute('hidden');
+    await user.click(button);
+
+    expect(document.getElementById(panelId)).not.toBeNull();
+    await waitFor(() => expect(document.getElementById(panelId)).toHaveAttribute('hidden'));
+    expect(button).toHaveAttribute('aria-expanded', 'false');
   });
 });

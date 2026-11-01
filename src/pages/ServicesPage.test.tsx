@@ -91,4 +91,15 @@ describe('ServicesPage', () => {
       expect(line.className, line.textContent ?? '').not.toMatch(lowContrast);
     }
   });
+
+  it('keeps the service descriptions readable on the zinc 50 card: zinc 500 is 4.6 to 1, the dark gray is far above 4.5', () => {
+    renderWithProviders(<ServicesPage />, { route: '/servicos' });
+
+    for (const service of services) {
+      const description = screen.getByText(service.descricao);
+
+      expect(description.className, service.slug).not.toMatch(/zinc-[3-5]00/);
+      expect(description, service.slug).toHaveClass('text-vn-gray-dark');
+    }
+  });
 });

@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from 'react';
-import { m, useInView, AnimatePresence } from 'motion/react';
+import { m, useInView } from 'motion/react';
 import { Plus, Minus } from 'lucide-react';
 import { AnimatedText } from './AnimatedText';
 import { faqs } from '../data/faqs';
@@ -13,6 +13,38 @@ const listItem = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
+
+interface FaqPanelProps {
+  id: string;
+  labelledBy: string;
+  isOpen: boolean;
+  children: string;
+}
+
+/**
+ * The answer is always in the page, so aria-controls of its question never points at nothing. While it is collapsed it
+ * carries the hidden attribute (display none: not read, not tabbable). The attribute is taken off as soon as it opens and
+ * put back only when the closing animation has ended, so the height still animates both ways.
+ */
+function FaqPanel({ id, labelledBy, isOpen, children }: FaqPanelProps) {
+  const [isCollapsed, setIsCollapsed] = useState(true);
+
+  return (
+    <m.div
+      id={id}
+      role="region"
+      aria-labelledby={labelledBy}
+      hidden={!isOpen && isCollapsed}
+      initial={false}
+      animate={isOpen ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+      transition={{ duration: 0.28, ease: EASE_OUT }}
+      onAnimationComplete={() => setIsCollapsed(!isOpen)}
+      className="overflow-hidden"
+    >
+      <p className="px-5 md:px-6 pb-5 text-vn-gray-dark text-sm md:text-base leading-relaxed font-light">{children}</p>
+    </m.div>
+  );
+}
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -69,24 +101,13 @@ export default function FAQ() {
                 </span>
               </button>
 
-              <AnimatePresence initial={false}>
-                {openIndex === i && (
-                  <m.div
-                    id={`${baseId}-answer-${faq.id}`}
-                    role="region"
-                    aria-labelledby={`${baseId}-question-${faq.id}`}
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.28, ease: EASE_OUT }}
-                    className="overflow-hidden"
-                  >
-                    <p className="px-5 md:px-6 pb-5 text-vn-gray-dark text-sm md:text-base leading-relaxed font-light">
-                      {faq.answer}
-                    </p>
-                  </m.div>
-                )}
-              </AnimatePresence>
+              <FaqPanel
+                id={`${baseId}-answer-${faq.id}`}
+                labelledBy={`${baseId}-question-${faq.id}`}
+                isOpen={openIndex === i}
+              >
+                {faq.answer}
+              </FaqPanel>
             </m.div>
           ))}
         </m.div>

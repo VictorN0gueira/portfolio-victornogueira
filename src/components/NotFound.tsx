@@ -21,7 +21,8 @@ function useScramble(text: string) {
   }, [text, isMotionAllowed]);
 
   useEffect(() => {
-    if (!active) return;
+    // Animations paused while it runs: the interval ends here and the title is the real text (see the return below).
+    if (!active || !isMotionAllowed) return;
     let iteration = 0;
 
     const interval = setInterval(() => {
@@ -46,9 +47,9 @@ function useScramble(text: string) {
     }, 28);
 
     return () => clearInterval(interval);
-  }, [text, active]);
+  }, [text, active, isMotionAllowed]);
 
-  return display || text;
+  return isMotionAllowed ? display || text : text;
 }
 
 export default function NotFound() {

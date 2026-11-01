@@ -2,6 +2,7 @@ import { useState, useEffect, useId, useRef, type KeyboardEvent } from 'react';
 import { m } from 'motion/react';
 import { TrendingUp, ArrowUpRight, Sparkles } from 'lucide-react';
 import { homeCopy } from '../data/homeCopy';
+import { NewTabHint } from './ui/NewTabHint';
 import { useMotionAllowed } from '../hooks/useMotionAllowed';
 import { formatBRL, formatBRLCompact } from '../lib/format';
 import {
@@ -52,7 +53,7 @@ function useAnimatedNumber(target: number) {
 }
 
 const TEAM_OPTION_BASE =
-  'flex w-full items-center justify-center rounded-xl border px-4 py-3.5 text-center text-sm font-medium transition-all duration-200';
+  'flex w-full items-center justify-center rounded-xl border px-2 xs:px-4 py-3.5 text-center text-sm font-medium transition-all duration-200';
 // The native radio is visually hidden and the span after it draws the option: peer-checked and peer-focus-visible style
 // it from the input, so the keyboard and the screen reader get a real radio. Forced colors drop the dark fill, so the
 // chosen option is also underlined there.
@@ -79,6 +80,8 @@ function TeamSizeRadios({ selectedIndex, onChange }: TeamSizeRadiosProps) {
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== 'Home' && event.key !== 'End') return;
+    // Ctrl, Meta, Alt or Shift with Home or End belong to the browser (scroll, select, history), not to the group.
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
     if (!(event.target instanceof HTMLInputElement)) return;
 
     const radios = event.currentTarget.querySelectorAll<HTMLInputElement>('input[type="radio"]');
@@ -117,6 +120,7 @@ interface ROICalculatorProps {
 }
 
 export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
+  const newTabHintId = useId();
   const [hours, setHours] = useState(12);
   const [teamIndex, setTeamIndex] = useState(1);
   const [hourlyRate, setHourlyRate] = useState(DEFAULT_HOURLY_RATE);
@@ -279,10 +283,13 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
                 <ArrowUpRight className="w-4 h-4" />
               </m.button>
             ) : (
+              <>
+              <NewTabHint id={newTabHintId} />
               <m.a
                 href={WA_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-describedby={newTabHintId}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
                 className="mt-auto w-full bg-white hover:bg-zinc-100 text-zinc-900 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors relative z-10 shadow-lg"
@@ -290,6 +297,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
                 Quero automatizar esse processo
                 <ArrowUpRight className="w-4 h-4" />
               </m.a>
+              </>
             )}
 
             <p className="text-center text-vn-gray-mid text-[11px] leading-relaxed relative z-10">

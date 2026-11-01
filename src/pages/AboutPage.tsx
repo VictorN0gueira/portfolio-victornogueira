@@ -41,7 +41,7 @@ export default function AboutPage() {
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter font-display italic mb-6">
               Pronto para automatizar?
             </h2>
-            <p className="text-zinc-500 text-lg font-light mb-10">
+            <p className="text-vn-gray-dark text-lg font-light mb-10">
               Uma conversa de 30 minutos para mapear onde a automação mais ajuda no seu negócio.
             </p>
             <Link

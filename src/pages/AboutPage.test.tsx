@@ -77,4 +77,26 @@ describe('AboutPage', () => {
 
     expect(screen.getByRole('link', { name: /Vamos conversar/ })).toHaveAttribute('href', '/contato');
   });
+
+  it('keeps the closing call to action text readable: 18px light text on the page white needs a dark gray, not zinc 500 (4.3 to 1)', async () => {
+    renderWithProviders(<AboutPage />, { route: '/sobre' });
+    await screen.findByRole('region', { name: METHOD_HEADING });
+
+    const line = screen.getByText(/Uma conversa de 30 minutos/);
+
+    expect(line.className).not.toMatch(/zinc-[3-5]00/);
+    expect(line).toHaveClass('text-vn-gray-dark');
+  });
+
+  it('never jumps a heading level on the way down: h1, then h2, then h3 (axe heading-order)', async () => {
+    const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
+    await screen.findByRole('region', { name: METHOD_HEADING });
+
+    const levels = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6')).map((heading) => Number(heading.tagName[1]));
+
+    expect(levels[0]).toBe(1);
+    levels.slice(1).forEach((level, index) => {
+      expect(level - levels[index], 'heading ' + (index + 2) + ' of ' + levels.join(",")).toBeLessThanOrEqual(1);
+    });
+  });
 });

@@ -47,7 +47,7 @@ export function About() {
             </div>
           </div>
 
-          <div className="space-y-8 text-lg md:text-xl text-zinc-500 leading-relaxed font-light mb-12">
+          <div className="space-y-8 text-lg md:text-xl text-vn-gray-dark leading-relaxed font-light mb-12">
             <p>
               Especialista em montar fluxos <span className="text-black dark:text-white font-medium">automatizados e inteligentes</span>, sem precisar de equipes grandes.
             </p>
@@ -78,7 +78,7 @@ export function About() {
           className="relative"
         >
           <div className="bg-[#F8F9FA] dark:bg-zinc-800 p-6 sm:p-10 md:p-16 rounded-[2rem] md:rounded-[3rem] border border-zinc-100 dark:border-zinc-700 relative z-10">
-            <h3 className="text-2xl font-bold mb-10 font-display">Minhas Especialidades</h3>
+            <h2 className="text-2xl font-bold mb-10 font-display">Minhas Especialidades</h2>
             <div className="space-y-8">
               {specialties.map((skill) => (
                 <div key={skill.id} className="group flex items-start gap-5 border-b border-zinc-200 dark:border-zinc-700 pb-8 last:border-0 last:pb-0">
@@ -91,7 +91,7 @@ export function About() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span aria-hidden="true" className="text-vn-gray-dark font-mono text-xs">{skill.id}</span>
-                      <h4 className="font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors">{skill.title}</h4>
+                      <h3 className="font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors">{skill.title}</h3>
                     </div>
                     <p className="text-sm text-vn-gray-dark leading-relaxed">{skill.desc}</p>
                   </div>

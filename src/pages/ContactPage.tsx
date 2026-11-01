@@ -1,4 +1,4 @@
-import { Suspense, useState, useCallback } from 'react';
+import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
 import { m } from 'motion/react';
 import { SEO } from '../components/SEO';
 import { SectionSkeleton } from '../components/ui/SectionSkeleton';
@@ -21,15 +21,26 @@ function findMessageField(section: HTMLElement): HTMLElement | null {
   return section.querySelector<HTMLElement>('textarea');
 }
 
+interface PrefillRequest {
+  message: string;
+  /** Counts the requests: a second click with the same figures still restores the quote in an edited message. */
+  nonce: number;
+}
+
 export default function ContactPage() {
   useScrollToHash();
-  const [prefillMessage, setPrefillMessage] = useState<string | undefined>();
+  const [prefill, setPrefill] = useState<PrefillRequest | undefined>();
+
+  // The form is in a lazy section: the scroll may wait for it, so it is cancelled when the page goes or a new request starts.
+  const cancelScroll = useRef<(() => void) | undefined>(undefined);
+  useEffect(() => () => cancelScroll.current?.(), []);
 
   const handleQuoteRequest = useCallback((message: string) => {
-    setPrefillMessage(message);
+    setPrefill((previous) => ({ message, nonce: (previous?.nonce ?? 0) + 1 }));
     // No behavior given, so the page decides: smooth only when neither the system nor the widget asked for less motion.
     // Focus goes to the message, the field the quote fills in, so the next Tab continues from the form.
-    scrollToIdWhenMounted('contato', { focus: findMessageField });
+    cancelScroll.current?.();
+    cancelScroll.current = scrollToIdWhenMounted('contato', { focus: findMessageField });
   }, []);
 
   return (
@@ -49,7 +60,7 @@ export default function ContactPage() {
 
         <Suspense fallback={<SectionSkeleton />}>
           <m.div {...revealProps}>
-            <Contact prefillMessage={prefillMessage} />
+            <Contact prefillMessage={prefill?.message} prefillNonce={prefill?.nonce} />
           </m.div>
         </Suspense>
 

@@ -45,4 +45,21 @@ describe('About', () => {
       expect(line.className).not.toMatch(/zinc-[3-5]00/);
     }
   });
+
+  it('keeps the intro text readable on white: zinc 500 is 4.8 to 1 at best, the dark gray is 7.5', () => {
+    renderWithProviders(<About />);
+
+    const intro = screen.getByText(/Especialista em montar fluxos/).parentElement as HTMLElement;
+
+    expect(intro.className).not.toMatch(/zinc-[3-5]00/);
+    expect(intro).toHaveClass('text-vn-gray-dark');
+  });
+
+  it('puts the specialties title at h2 and each specialty at h3, so nothing skips a level below the h1', () => {
+    renderWithProviders(<About />);
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Minhas Especialidades' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Automação de Processos' })).toBeInTheDocument();
+    expect(screen.queryAllByRole('heading', { level: 4 })).toHaveLength(0);
+  });
 });

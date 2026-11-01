@@ -69,4 +69,51 @@ describe('ContactPage', () => {
     const section = document.getElementById('contato') as HTMLElement;
     expect(options.focus(section)).toBe(screen.getByRole('textbox', { name: 'Mensagem' }));
   }, 20_000);
+
+  it('cancels the pending scroll when the visitor leaves the page, so Back within seconds cannot scroll the next page', async () => {
+    const cancel = vi.fn();
+    scrollToIdWhenMounted.mockReturnValueOnce(cancel);
+    const user = userEvent.setup();
+    const { unmount } = renderWithProviders(<ContactPage />, { route: '/contato' });
+    await user.click(await screen.findByRole('button', { name: 'Quero automatizar esse processo' }, LAZY_WAIT));
+    expect(cancel).not.toHaveBeenCalled();
+
+    unmount();
+
+    expect(cancel).toHaveBeenCalledTimes(1);
+  }, 20_000);
+
+  it('cancels the previous scroll before starting the next one when the quote is requested twice', async () => {
+    const firstCancel = vi.fn();
+    const secondCancel = vi.fn();
+    scrollToIdWhenMounted.mockReturnValueOnce(firstCancel).mockReturnValueOnce(secondCancel);
+    const user = userEvent.setup();
+    renderWithProviders(<ContactPage />, { route: '/contato' });
+    const button = await screen.findByRole('button', { name: 'Quero automatizar esse processo' }, LAZY_WAIT);
+
+    await user.click(button);
+    expect(firstCancel).not.toHaveBeenCalled();
+    await user.click(button);
+
+    expect(firstCancel).toHaveBeenCalledTimes(1);
+    expect(secondCancel).not.toHaveBeenCalled();
+    expect(scrollToIdWhenMounted).toHaveBeenCalledTimes(2);
+  }, 20_000);
+
+  it('puts the quote back in the message on a second click with the same figures, after the visitor changed the text', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ContactPage />, { route: '/contato' });
+    const button = await screen.findByRole('button', { name: 'Quero automatizar esse processo' }, LAZY_WAIT);
+    const message = await screen.findByRole('textbox', { name: 'Mensagem' }, LAZY_WAIT);
+
+    await user.click(button);
+    const quote = (message as HTMLTextAreaElement).value;
+    expect(quote).not.toBe('');
+    await user.clear(message);
+    await user.type(message, 'outro texto');
+    expect(message).toHaveValue('outro texto');
+    await user.click(button);
+
+    expect(message).toHaveValue(quote);
+  }, 20_000);
 });

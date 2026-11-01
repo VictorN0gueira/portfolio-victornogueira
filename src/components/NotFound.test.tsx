@@ -1,6 +1,7 @@
-import { act, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { A11Y_STORAGE_KEY } from '../contexts/AccessibilityContext';
+import { useAccessibility } from '../contexts/useAccessibility';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import NotFound from './NotFound';
@@ -91,5 +92,31 @@ describe('NotFound', () => {
     for (const line of [screen.getByText(/não existe ou foi movida/), screen.getByText(/VN One$/)]) {
       expect(line.className).not.toMatch(/zinc-[567]00/);
     }
+  });
+
+  it('stops the scramble and shows the real title when animations are paused while it is running', () => {
+    stubMatchMedia();
+    function PauseButton() {
+      const { toggle } = useAccessibility();
+      return <button type="button" onClick={() => toggle('noAnimations')}>Pausar animações</button>;
+    }
+    renderWithProviders(<><NotFound /><PauseButton /></>);
+    // Two acts: the interval of the scramble only starts after the render that the first timer causes.
+    act(() => {
+      vi.advanceTimersByTime(SCRAMBLE_START_MS);
+    });
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.getByRole('heading', { level: 1 }).textContent).not.toBe(TITLE);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pausar animações' }));
+
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(TITLE);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(TITLE);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
