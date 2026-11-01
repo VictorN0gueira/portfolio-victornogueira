@@ -31,4 +31,10 @@ describe('scroll padding at the bottom of the window', () => {
     expect(widgetSource).toContain('sm:top-1/2');
     expect(widgetSource).toContain('[@media(max-height:30rem)]:top-1/2');
   });
+
+  // The tab can be moved (src/components/useTabPlacement.ts sets the band on the root): the padding follows it.
+  it('follows a tab the visitor moved, at the bottom or the top edge, without touching the default rules', () => {
+    expect(blockBody(indexCss, "html[data-vn-tab-band='bottom']")).toContain('scroll-padding-bottom: max(var(--vn-tab-pad), 5rem)');
+    expect(blockBody(indexCss, "html[data-vn-tab-band='top']")).toContain('scroll-padding-top: max(var(--vn-tab-pad), 96px, calc(env(safe-area-inset-top) + 84px))');
+  });
 });

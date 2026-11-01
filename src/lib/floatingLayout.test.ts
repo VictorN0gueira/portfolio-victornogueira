@@ -7,6 +7,7 @@ import {
   FLOAT_GAP_PX,
   FLOAT_MARGIN_PX,
   nearestSide,
+  PANEL_GAP_PX,
   placePanel,
   ratioFromTop,
   releasePosition,
@@ -180,5 +181,8 @@ describe('shared geometry', () => {
     expect(WHATSAPP_SIZE_PX).toBe(52);
     expect(whatsApp).toContain('size-[52px]');
     expect(whatsApp).toContain('FLOAT_MARGIN_PX');
+    expect(PANEL_GAP_PX).toBe(8);
+    expect(widget).toContain('right-[calc(100%+8px)]');
+    expect(widget).toContain('left-[calc(100%+8px)]');
   });
 });

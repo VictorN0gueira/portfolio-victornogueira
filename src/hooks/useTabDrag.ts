@@ -21,6 +21,8 @@ interface UseTabDragOptions {
   /** The fixed box that moves: it gets the transform while the pointer drags. */
   wrapperRef: RefObject<HTMLElement | null>;
   readView: () => DragView;
+  /** The first move past the tap slop, with the box the tab had when the press began. */
+  onStart?: (rect: Box) => void;
   /** While dragging: where the tab is drawn now and the side it would snap to, so the panel can follow. */
   onLive: (rect: Box, side: TabSide) => void;
   /** On release after a drag: the place to keep, and where the tab was drawn at that moment (for the slide). */
@@ -125,7 +127,10 @@ export function useTabDrag(options: UseTabDragOptions): TabDrag {
     const rawX = event.clientX - state.startX;
     const rawY = event.clientY - state.startY;
     if (!state.moved && Math.hypot(rawX, rawY) < TAP_SLOP_PX) return;
-    if (!state.moved && triggerRef.current) triggerRef.current.dataset.dragging = 'true';
+    if (!state.moved) {
+      if (triggerRef.current) triggerRef.current.dataset.dragging = 'true';
+      optionsRef.current.onStart?.(state.rect);
+    }
     state.moved = true;
     const { dx, dy } = clampDragOffset({ rect: state.rect, dx: rawX, dy: rawY, ...state.view });
     if (wrapperRef.current) {

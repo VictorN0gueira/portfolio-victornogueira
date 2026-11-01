@@ -35,6 +35,17 @@
     }
   }
 
+  /* A tab the visitor moved: the widget sets the edge its band is nearest to and how far the band reaches from it
+     (src/components/useTabPlacement.ts), so the browser scrolls a focused control clear of the tab wherever it sits.
+     With the tab at its default place the attribute is absent and the rules above are all that apply. */
+  html[data-vn-tab-band='bottom'] {
+    scroll-padding-bottom: max(var(--vn-tab-pad), 5rem);
+  }
+
+  html[data-vn-tab-band='top'] {
+    scroll-padding-top: max(var(--vn-tab-pad), 96px, calc(env(safe-area-inset-top) + 84px));
+  }
+
   /* The floating header sits 8px higher and is thinner on a phone held sideways. */
   @variant vn-landscape {
     html {

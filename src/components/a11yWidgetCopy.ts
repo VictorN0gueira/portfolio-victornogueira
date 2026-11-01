@@ -9,6 +9,13 @@ export const a11yWidgetCopy = {
   panelLabel: 'Opções de acessibilidade',
   panelTitle: 'Acessibilidade',
   resetLabel: 'Resetar tudo',
+  // O botão também se arrasta; estes botões são a outra via (WCAG 2.5.7), sem arrastar.
+  positionGroupLabel: 'Posição do botão',
+  moveLeftLabel: 'Mover o botão para a esquerda',
+  moveRightLabel: 'Mover o botão para a direita',
+  moveUpLabel: 'Mover o botão para cima',
+  moveDownLabel: 'Mover o botão para baixo',
+  resetPositionLabel: 'Voltar ao padrão',
 } as const;
 
 export const a11yOptionLabels: Readonly<Record<A11yKey, string>> = {

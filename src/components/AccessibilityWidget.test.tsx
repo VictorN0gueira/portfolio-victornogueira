@@ -33,7 +33,8 @@ describe('AccessibilityWidget', () => {
     const { panel } = await openPanel();
 
     const options = within(panel).getAllByRole('button');
-    expect(options).toHaveLength(6);
+    // The six options plus the five buttons of the position group, which must be 44px too.
+    expect(options).toHaveLength(11);
     for (const option of options) {
       expect(option, option.textContent ?? '').toHaveClass('min-h-11');
     }
@@ -72,7 +73,7 @@ describe('AccessibilityWidget', () => {
 
   it('centres the panel on the window when it is short (a phone on its side) and keeps it above the WhatsApp button', async () => {
     const { panel } = await openPanel();
-    const wrapper = panel.parentElement as HTMLElement;
+    const wrapper = panel.closest('aside') as HTMLElement;
 
     expect(wrapper).toHaveClass(
       '[@media(max-height:30rem)]:bottom-auto',
@@ -91,7 +92,7 @@ describe('AccessibilityWidget', () => {
   it('lets the pointer through the wrapper, and takes it only on the panel and on the trigger', async () => {
     const { panel } = await openPanel();
 
-    expect(panel.parentElement).toHaveClass('pointer-events-none');
+    expect(panel.closest('aside')).toHaveClass('pointer-events-none');
     expect(panel).toHaveClass('pointer-events-auto');
     expect(screen.getByRole('button', { name: TRIGGER_NAME })).toHaveClass('pointer-events-auto');
   });
