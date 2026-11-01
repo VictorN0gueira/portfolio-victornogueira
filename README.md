@@ -38,6 +38,7 @@ Nenhuma. O site compila e roda sem `.env`. Tudo que começa com `VITE_` vai para
 
 ## Deploy
 
+- EasyPanel: o serviço é um App com origem no GitHub e build pelo `Dockerfile`, domínio com proxy na porta 80 e nenhuma variável de ambiente. O passo a passo, a conferência depois de publicar e as decisões do dono estão em [docs/deploy-easypanel.md](docs/deploy-easypanel.md).
 - Docker: `docker build -t vnone .` gera uma imagem nginx na porta 80, com os cabeçalhos de segurança e o cache definidos em `nginx.conf`. A imagem foi feita para rodar atrás do proxy que termina o TLS (é ele que envia o HSTS). A política de segurança manda o navegador trocar `http` por `https`, então para um teste local abra por `localhost`: por um IP da rede, a página carrega sem estilo.
 - O processo mestre do nginx roda como root, como na imagem oficial. Trocar para `nginx-unprivileged` (porta 8080) muda a porta e o proxy, por isso fica como decisão do dono.
 - GitHub Pages: `.github/workflows/deploy.yml` roda o CI e publica o build com `GITHUB_PAGES=true`. As Pages não enviam cabeçalhos, então a política de segurança vai como `<meta>`.

@@ -41,8 +41,8 @@ jobs:
         run: npm ci
 
       # The Pages build lives under /portfolio-victornogueira/ and carries its security policy as a meta tag.
-      # The router needs a basename for that path (fix plan item B.11): until it lands, this site shows the not
-      # found page. Do not let main receive the build before B.11. The canonical site is the Docker image.
+      # The router gets that path as its basename (src/lib/routerBasename.ts). This is a secondary publication:
+      # the canonical site is the Docker image (see docs/deploy-easypanel.md).
       - name: Build
         run: npm run build
         env:
