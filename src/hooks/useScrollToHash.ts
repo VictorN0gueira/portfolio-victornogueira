@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { scrollToIdWhenMounted } from '../lib/scrollToIdWhenMounted';
 
@@ -9,10 +9,13 @@ import { scrollToIdWhenMounted } from '../lib/scrollToIdWhenMounted';
  */
 export function useScrollToHash() {
   // `key` changes on every navigation, so following the same hash link a second time scrolls again.
-  const { hash, key } = useLocation();
+  const { hash, key, pathname } = useLocation();
+  // The page this hook belongs to. A page that is fading out still sees the new location: it must not chase the hash
+  // of the page that arrives (it would focus its own section of the same id before the new page mounts).
+  const [ownPathname] = useState(pathname);
 
   useEffect(() => {
-    if (!hash) return;
+    if (!hash || pathname !== ownPathname) return;
     return scrollToIdWhenMounted(hash.slice(1), { focus: 'heading' });
-  }, [hash, key]);
+  }, [hash, key, pathname, ownPathname]);
 }

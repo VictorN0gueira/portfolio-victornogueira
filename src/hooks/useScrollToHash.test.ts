@@ -131,6 +131,23 @@ describe('useScrollToHash', () => {
     expect(scrollIntoView).toHaveBeenCalledTimes(2);
   });
 
+  it('ignores a hash on another page: the page that is leaving does not chase the anchor of the page that arrives', () => {
+    const scrollIntoView = mountTarget('x');
+    const { result } = renderHook(
+      () => {
+        useScrollToHash();
+        return useNavigate();
+      },
+      { wrapper: routerAt('/sobre') },
+    );
+
+    act(() => result.current('/#x'));
+    vi.advanceTimersByTime(RETRY_WINDOW_MS);
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('does not scroll again on a re-render that is not a navigation', () => {
     const scrollIntoView = mountTarget('x');
     const { rerender } = renderHook(() => useScrollToHash(), { wrapper: routerAt('/#x') });
