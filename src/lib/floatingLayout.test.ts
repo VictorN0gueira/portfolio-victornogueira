@@ -8,6 +8,7 @@ import {
   FLOAT_MARGIN_PX,
   nearestSide,
   PANEL_GAP_PX,
+  panelMaxHeight,
   placePanel,
   ratioFromTop,
   releasePosition,
@@ -156,9 +157,32 @@ describe('placePanel', () => {
     expect(700 + dy + 100).toBeLessThanOrEqual(844 - 84);
   });
 
+  it('keeps the panel over the WhatsApp button on a narrow phone when the tab is low on the right, because it reaches that column', () => {
+    const { dy } = placePanel({ side: 'right', trigger: trigger(276, 508), panel: { width: 208, height: 200 }, viewport: { width: 320, height: 568 }, insets: NO_INSETS });
+    // The panel spans 60 to 268, and WhatsApp ends at 68: its bottom stays over the WhatsApp top minus the gap.
+    expect(508 + dy + 200).toBeLessThanOrEqual(568 - 84);
+  });
+
+  it('lets the panel go down to the margin on the right when it does not reach the WhatsApp column', () => {
+    const { dy } = placePanel({ side: 'right', trigger: trigger(1396, 840), panel: { width: 208, height: 100 }, viewport: { width: 1440, height: 900 }, insets: NO_INSETS });
+    // Bottom aligned with the tab, whose bottom is on the 16px margin: 784 is the top, 56 px over the tab top.
+    expect(dy).toBe(-56);
+  });
+
   it('pulls the panel back inside the window sideways while the tab is mid drag on a narrow phone', () => {
     const { dx } = placePanel({ side: 'right', trigger: trigger(138, 400), panel, viewport: { width: 320, height: 568 }, insets: NO_INSETS });
     expect(138 - 8 - 208 + dx).toBe(16);
+  });
+});
+
+describe('panelMaxHeight', () => {
+  it('is the window minus the top margin and the bottom limit of the side', () => {
+    expect(panelMaxHeight('right', { width: 1440, height: 900 }, NO_INSETS)).toBe(900 - 16 - 16);
+    expect(panelMaxHeight('left', { width: 1440, height: 900 }, NO_INSETS)).toBe(900 - 16 - 84);
+  });
+
+  it('keeps the WhatsApp stack on a narrow window even on the right, where the panel reaches that column', () => {
+    expect(panelMaxHeight('right', { width: 320, height: 568 }, NO_INSETS)).toBe(568 - 16 - 84);
   });
 });
 

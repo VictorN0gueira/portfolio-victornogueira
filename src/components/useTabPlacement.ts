@@ -188,7 +188,7 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
     position,
     shownSide,
     topPx,
-    panelMaxHeightPx: position ? panelMaxHeight(shownSide, view.viewport.height, view.insets) : null,
+    panelMaxHeightPx: position ? panelMaxHeight(shownSide, view.viewport, view.insets) : null,
     drag,
     actions,
   };

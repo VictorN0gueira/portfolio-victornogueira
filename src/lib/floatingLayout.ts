@@ -16,6 +16,8 @@ export const TAB_DEFAULT_BOTTOM_OFFSET_PX = 96;
 export const TAP_SLOP_PX = 8;
 /** One press of Subir or Descer moves the tab by this share of the window height. */
 export const STEP_RATIO = 0.1;
+/** The panel is w-[min(13rem,...)]: 208px at the default font size. */
+export const PANEL_WIDTH_PX = 208;
 /** The gap between the tab and the panel that opens beside it. */
 export const PANEL_GAP_PX = 8;
 /** Air kept between the tab and a focused control the browser scrolls into view. */
@@ -132,17 +134,24 @@ interface PanelInput {
  * aligned with the tab, growing upward, and always inside the window: 16px under the top, over the WhatsApp stack on the left.
  */
 export function placePanel({ side, trigger, panel, viewport, insets }: PanelInput): Offset {
-  const minTop = edgeOffset(insets.top);
-  const maxTop = Math.max(minTop, viewport.height - bottomLimit(side, insets) - panel.height);
-  const top = clamp(trigger.top + trigger.height - panel.height, minTop, maxTop);
   const naturalLeft = side === 'right' ? trigger.left - PANEL_GAP_PX - panel.width : trigger.left + trigger.width + PANEL_GAP_PX;
   const left = clamp(naturalLeft, FLOAT_MARGIN_PX, Math.max(FLOAT_MARGIN_PX, viewport.width - FLOAT_MARGIN_PX - panel.width));
+  // A panel that reaches the WhatsApp column (a narrow phone, or a tab on the left) stays over the WhatsApp stack.
+  const reachesWhatsApp = left < FLOAT_MARGIN_PX + WHATSAPP_SIZE_PX;
+  const minTop = edgeOffset(insets.top);
+  const maxTop = Math.max(minTop, viewport.height - bottomLimit(reachesWhatsApp ? 'left' : 'right', insets) - panel.height);
+  const top = clamp(trigger.top + trigger.height - panel.height, minTop, maxTop);
   return { dx: left - naturalLeft, dy: top - trigger.top };
 }
 
-/** The tallest the panel may be beside a tab on a side: the window minus 16px under the top and the bottom limit. */
-export function panelMaxHeight(side: TabSide, viewportHeight: number, insets: Insets): number {
-  return Math.max(0, viewportHeight - edgeOffset(insets.top) - bottomLimit(side, insets));
+/**
+ * The tallest the panel may be beside a tab on a side: the window minus 16px under the top and the bottom limit. A panel
+ * that reaches the WhatsApp column (always on the left, and on a window so narrow that 13rem of panel gets there from the
+ * right) has to stay over the WhatsApp stack, like placePanel keeps it.
+ */
+export function panelMaxHeight(side: TabSide, viewport: Size, insets: Insets): number {
+  const reachesWhatsApp = side === 'left' || viewport.width - TAB_SIZE_PX - PANEL_GAP_PX - PANEL_WIDTH_PX < FLOAT_MARGIN_PX + WHATSAPP_SIZE_PX;
+  return Math.max(0, viewport.height - edgeOffset(insets.top) - bottomLimit(reachesWhatsApp ? 'left' : 'right', insets));
 }
 
 /** The edge of the window a focused control has to stay clear of, and how far from that edge, for a tab at `top`. */
