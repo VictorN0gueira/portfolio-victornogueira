@@ -336,3 +336,35 @@ test.describe('the panel opens toward the inside and stays in the window', () =>
     }
   }
 });
+
+test.describe('the scroll padding follows the tab', () => {
+  test('a tab the visitor moved keeps a focused control clear of it, low or high, and the default rules come back with the default place', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'measured with the phone window');
+    test.slow();
+    const size = { width: 390, height: 844 };
+    await startAt(page, size);
+    const padding = () =>
+      page.evaluate(() => ({
+        top: Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop),
+        bottom: Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingBottom),
+      }));
+    const base = await padding();
+
+    await page.evaluate(([key, value]) => window.localStorage.setItem(key, value), [TAB_POSITION_STORAGE_KEY, JSON.stringify({ side: 'right', ratio: 0.9 })]);
+    await page.reload();
+    await expect(trigger(page)).toBeVisible();
+    const low = await settled(page);
+    expect((await padding()).bottom, 'the bottom band reaches the top of the tab').toBeGreaterThanOrEqual(size.height - low.top);
+
+    await page.evaluate(([key, value]) => window.localStorage.setItem(key, value), [TAB_POSITION_STORAGE_KEY, JSON.stringify({ side: 'right', ratio: 0.1 })]);
+    await page.reload();
+    await expect(trigger(page)).toBeVisible();
+    const high = await settled(page);
+    expect((await padding()).top, 'the top band reaches the bottom of the tab').toBeGreaterThanOrEqual(high.bottom);
+
+    await page.evaluate((key) => window.localStorage.removeItem(key), TAB_POSITION_STORAGE_KEY);
+    await page.reload();
+    await expect(trigger(page)).toBeVisible();
+    expect(await padding()).toEqual(base);
+  });
+});
