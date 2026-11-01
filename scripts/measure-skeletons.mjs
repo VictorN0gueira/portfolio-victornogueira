@@ -92,6 +92,8 @@ async function measureAt(browser, url, width, isLarge) {
     );
     return await page.evaluate(() =>
       Array.from(document.querySelector('main > *').children)
+        // Script tags and visually hidden live regions sit among the blocks and are not sections.
+        .filter((block) => block.tagName !== 'SCRIPT' && !block.classList.contains('sr-only'))
         .slice(-8)
         .map((block) => block.getBoundingClientRect().height),
     );

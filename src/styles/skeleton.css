@@ -3,7 +3,7 @@
  * section it stands for, so a chunk that arrives late moves little of what is under it. The heights were measured in
  * Chromium at 56 widths from 320 to 2560px, once with the normal font and once with the larger font option (the text
  * wraps differently, section by section, so the larger font has bands of its own and one scale cannot fit them all).
- * Each band spans at most about 64px of height and holds the middle of it. Normal font values are in rem of 16px, the
+ * Each band spans at most about 96px of height and holds the middle of it. Normal font values are in rem of 16px, the
  * larger font ones in rem of 19.2px (120%), so both are the measured pixels. The larger font rules come after the normal
  * ones and are more specific, so they win at every width. skeleton.test.ts checks that every section has both.
  *
@@ -15,461 +15,334 @@
 
 /* Normal font */
 :root {
-  --vn-skeleton-statement: 81.3rem;
-  --vn-skeleton-use-cases: 64.8rem;
-  --vn-skeleton-services: 112.1rem;
-  --vn-skeleton-method: 102.3rem;
-  --vn-skeleton-roi: 74.1rem;
-  --vn-skeleton-testimonials: 220.8rem;
-  --vn-skeleton-faq: 64.6rem;
+  --vn-skeleton-statement: 79.3rem;
+  --vn-skeleton-use-cases: 64.1rem;
+  --vn-skeleton-services: 109.9rem;
+  --vn-skeleton-method: 101rem;
+  --vn-skeleton-roi: 76.8rem;
+  --vn-skeleton-testimonials: 209.8rem;
+  --vn-skeleton-faq: 59.1rem;
   --vn-skeleton-final-cta: 83.7rem;
-}
-
-@media (min-width: 340px) {
-  :root {
-    --vn-skeleton-services: 107.3rem;
-  }
 }
 
 @media (min-width: 375px) {
   :root {
-    --vn-skeleton-use-cases: 60.8rem;
-    --vn-skeleton-services: 101.4rem;
-    --vn-skeleton-method: 98.2rem;
-    --vn-skeleton-faq: 58.8rem;
+    --vn-skeleton-services: 102rem;
   }
 }
 
 @media (min-width: 390px) {
   :root {
-    --vn-skeleton-testimonials: 216rem;
+    --vn-skeleton-use-cases: 57.3rem;
   }
 }
 
-@media (min-width: 420px) {
+@media (min-width: 412px) {
   :root {
-    --vn-skeleton-final-cta: 78.9rem;
+    --vn-skeleton-faq: 54.4rem;
+  }
+}
+
+@media (min-width: 440px) {
+  :root {
+    --vn-skeleton-testimonials: 208.2rem;
   }
 }
 
 @media (min-width: 460px) {
   :root {
-    --vn-skeleton-use-cases: 56.4rem;
-    --vn-skeleton-roi: 71.8rem;
-    --vn-skeleton-faq: 54.4rem;
+    --vn-skeleton-method: 95.9rem;
+    --vn-skeleton-roi: 72.8rem;
   }
 }
 
 @media (min-width: 480px) {
   :root {
-    --vn-skeleton-services: 98rem;
-    --vn-skeleton-testimonials: 213.6rem;
-  }
-}
-
-@media (min-width: 520px) {
-  :root {
-    --vn-skeleton-method: 95.4rem;
+    --vn-skeleton-services: 97.3rem;
   }
 }
 
 @media (min-width: 560px) {
   :root {
-    --vn-skeleton-testimonials: 216.6rem;
+    --vn-skeleton-final-cta: 81.9rem;
   }
 }
 
 @media (min-width: 640px) {
   :root {
-    --vn-skeleton-statement: 56.4rem;
+    --vn-skeleton-statement: 58.1rem;
   }
 }
 
-@media (min-width: 660px) {
+@media (min-width: 767px) {
   :root {
-    --vn-skeleton-testimonials: 207.5rem;
+    --vn-skeleton-testimonials: 202.7rem;
   }
 }
 
 @media (min-width: 768px) {
   :root {
-    --vn-skeleton-statement: 62.1rem;
     --vn-skeleton-use-cases: 62.8rem;
-    --vn-skeleton-services: 84.1rem;
+    --vn-skeleton-services: 84.7rem;
     --vn-skeleton-method: 67.4rem;
-    --vn-skeleton-testimonials: 140.8rem;
-    --vn-skeleton-faq: 58.5rem;
-    --vn-skeleton-final-cta: 82.9rem;
-  }
-}
-
-@media (min-width: 800px) {
-  :root {
-    --vn-skeleton-roi: 75.1rem;
+    --vn-skeleton-testimonials: 135.3rem;
   }
 }
 
 @media (min-width: 860px) {
   :root {
+    --vn-skeleton-statement: 62.2rem;
     --vn-skeleton-services: 80.8rem;
   }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 940px) {
   :root {
-    --vn-skeleton-testimonials: 136.5rem;
+    --vn-skeleton-roi: 77rem;
   }
 }
 
-@media (min-width: 1023px) {
+@media (min-width: 960px) {
   :root {
-    --vn-skeleton-testimonials: 132.9rem;
+    --vn-skeleton-final-cta: 85.6rem;
+  }
+}
+
+@media (min-width: 980px) {
+  :root {
+    --vn-skeleton-faq: 57.8rem;
   }
 }
 
 @media (min-width: 1024px) {
   :root {
-    --vn-skeleton-statement: 54rem;
-    --vn-skeleton-use-cases: 56.7rem;
-    --vn-skeleton-services: 65rem;
-    --vn-skeleton-method: 56.5rem;
-    --vn-skeleton-roi: 58.9rem;
-    --vn-skeleton-testimonials: 126.4rem;
-    --vn-skeleton-faq: 41.6rem;
-    --vn-skeleton-final-cta: 61.1rem;
+    --vn-skeleton-statement: 55.1rem;
+    --vn-skeleton-use-cases: 57.4rem;
+    --vn-skeleton-services: 65.3rem;
+    --vn-skeleton-method: 60.6rem;
+    --vn-skeleton-roi: 61rem;
+    --vn-skeleton-testimonials: 120.9rem;
+    --vn-skeleton-faq: 40.4rem;
+    --vn-skeleton-final-cta: 63.5rem;
   }
 }
 
-@media (min-width: 1060px) {
+@media (min-width: 1600px) {
   :root {
-    --vn-skeleton-method: 61.6rem;
-  }
-}
-
-@media (min-width: 1320px) {
-  :root {
-    --vn-skeleton-statement: 64.1rem;
-  }
-}
-
-@media (min-width: 1480px) {
-  :root {
-    --vn-skeleton-roi: 62.4rem;
-  }
-}
-
-@media (min-width: 1536px) {
-  :root {
-    --vn-skeleton-testimonials: 129.9rem;
+    --vn-skeleton-statement: 59.4rem;
   }
 }
 
 @media (min-width: 1800px) {
   :root {
-    --vn-skeleton-use-cases: 59.6rem;
-    --vn-skeleton-faq: 44.5rem;
-    --vn-skeleton-final-cta: 64rem;
+    --vn-skeleton-roi: 64.7rem;
   }
 }
 
 @media (min-width: 1920px) {
   :root {
-    --vn-skeleton-services: 67.5rem;
     --vn-skeleton-method: 64.3rem;
+    --vn-skeleton-testimonials: 124.6rem;
   }
 }
 
 /* Larger font (a11y-font-large) */
 html.a11y-font-large {
-  --vn-skeleton-statement: 88.6rem;
-  --vn-skeleton-use-cases: 72.8rem;
+  --vn-skeleton-statement: 86.6rem;
+  --vn-skeleton-use-cases: 71.2rem;
   --vn-skeleton-services: 127.3rem;
-  --vn-skeleton-method: 110.5rem;
-  --vn-skeleton-roi: 82.8rem;
-  --vn-skeleton-testimonials: 247rem;
-  --vn-skeleton-faq: 70.5rem;
-  --vn-skeleton-final-cta: 88.9rem;
+  --vn-skeleton-method: 111.1rem;
+  --vn-skeleton-roi: 85.9rem;
+  --vn-skeleton-testimonials: 230.3rem;
+  --vn-skeleton-faq: 63.9rem;
+  --vn-skeleton-final-cta: 90.5rem;
 }
 
 @media (min-width: 330px) {
   html.a11y-font-large {
-    --vn-skeleton-services: 121.7rem;
+    --vn-skeleton-services: 119.1rem;
   }
 }
 
 @media (min-width: 340px) {
   html.a11y-font-large {
-    --vn-skeleton-roi: 79rem;
-    --vn-skeleton-testimonials: 241.2rem;
+    --vn-skeleton-roi: 81rem;
   }
 }
 
 @media (min-width: 350px) {
   html.a11y-font-large {
-    --vn-skeleton-statement: 86.7rem;
-    --vn-skeleton-use-cases: 67.5rem;
-    --vn-skeleton-services: 116.9rem;
-    --vn-skeleton-testimonials: 232.9rem;
-    --vn-skeleton-final-cta: 84.5rem;
-  }
-}
-
-@media (min-width: 360px) {
-  html.a11y-font-large {
-    --vn-skeleton-final-cta: 86.9rem;
+    --vn-skeleton-testimonials: 219.9rem;
+    --vn-skeleton-final-cta: 87.5rem;
   }
 }
 
 @media (min-width: 375px) {
   html.a11y-font-large {
-    --vn-skeleton-statement: 81.9rem;
-    --vn-skeleton-method: 104.1rem;
-    --vn-skeleton-faq: 65.2rem;
-  }
-}
-
-@media (min-width: 380px) {
-  html.a11y-font-large {
-    --vn-skeleton-services: 113rem;
+    --vn-skeleton-statement: 79.7rem;
+    --vn-skeleton-use-cases: 65.4rem;
+    --vn-skeleton-services: 112.7rem;
+    --vn-skeleton-method: 102.7rem;
   }
 }
 
 @media (min-width: 390px) {
   html.a11y-font-large {
-    --vn-skeleton-roi: 75rem;
-    --vn-skeleton-testimonials: 225.6rem;
+    --vn-skeleton-testimonials: 215.9rem;
   }
 }
 
 @media (min-width: 400px) {
   html.a11y-font-large {
-    --vn-skeleton-use-cases: 63.5rem;
-    --vn-skeleton-testimonials: 220.4rem;
-    --vn-skeleton-final-cta: 82rem;
+    --vn-skeleton-testimonials: 209rem;
   }
 }
 
 @media (min-width: 420px) {
   html.a11y-font-large {
-    --vn-skeleton-services: 105.8rem;
-    --vn-skeleton-method: 99.4rem;
+    --vn-skeleton-services: 107.6rem;
+    --vn-skeleton-final-cta: 81rem;
   }
 }
 
 @media (min-width: 440px) {
   html.a11y-font-large {
-    --vn-skeleton-faq: 60.4rem;
+    --vn-skeleton-method: 97.2rem;
+    --vn-skeleton-roi: 74.4rem;
+    --vn-skeleton-faq: 56.3rem;
   }
 }
 
 @media (min-width: 460px) {
   html.a11y-font-large {
-    --vn-skeleton-services: 101.2rem;
-  }
-}
-
-@media (min-width: 480px) {
-  html.a11y-font-large {
-    --vn-skeleton-use-cases: 60.1rem;
-    --vn-skeleton-testimonials: 215.3rem;
-  }
-}
-
-@media (min-width: 500px) {
-  html.a11y-font-large {
-    --vn-skeleton-statement: 79.8rem;
-    --vn-skeleton-faq: 56.7rem;
+    --vn-skeleton-use-cases: 58.7rem;
+    --vn-skeleton-services: 100.4rem;
   }
 }
 
 @media (min-width: 520px) {
   html.a11y-font-large {
-    --vn-skeleton-roi: 71rem;
-    --vn-skeleton-final-cta: 78.5rem;
+    --vn-skeleton-testimonials: 207.4rem;
   }
 }
 
 @media (min-width: 540px) {
   html.a11y-font-large {
-    --vn-skeleton-method: 96rem;
-    --vn-skeleton-testimonials: 217.8rem;
+    --vn-skeleton-faq: 53.6rem;
   }
 }
 
-@media (min-width: 560px) {
+@media (min-width: 580px) {
   html.a11y-font-large {
-    --vn-skeleton-use-cases: 56.7rem;
-    --vn-skeleton-services: 97.4rem;
-    --vn-skeleton-testimonials: 211.7rem;
-    --vn-skeleton-faq: 53.8rem;
-  }
-}
-
-@media (min-width: 639px) {
-  html.a11y-font-large {
-    --vn-skeleton-testimonials: 215.4rem;
+    --vn-skeleton-use-cases: 57.1rem;
+    --vn-skeleton-services: 96.2rem;
   }
 }
 
 @media (min-width: 640px) {
   html.a11y-font-large {
-    --vn-skeleton-statement: 59.2rem;
-  }
-}
-
-@media (min-width: 660px) {
-  html.a11y-font-large {
-    --vn-skeleton-use-cases: 57.9rem;
+    --vn-skeleton-statement: 56.1rem;
+    --vn-skeleton-roi: 70.4rem;
   }
 }
 
 @media (min-width: 680px) {
   html.a11y-font-large {
-    --vn-skeleton-roi: 69.4rem;
-  }
-}
-
-@media (min-width: 767px) {
-  html.a11y-font-large {
-    --vn-skeleton-statement: 55.2rem;
-    --vn-skeleton-method: 94.1rem;
+    --vn-skeleton-method: 94.5rem;
   }
 }
 
 @media (min-width: 768px) {
   html.a11y-font-large {
-    --vn-skeleton-statement: 63rem;
+    --vn-skeleton-statement: 60rem;
     --vn-skeleton-use-cases: 61.6rem;
-    --vn-skeleton-services: 86.2rem;
-    --vn-skeleton-method: 73rem;
-    --vn-skeleton-roi: 74rem;
-    --vn-skeleton-testimonials: 148.9rem;
-    --vn-skeleton-faq: 57.7rem;
-    --vn-skeleton-final-cta: 82.1rem;
+    --vn-skeleton-services: 84.3rem;
+    --vn-skeleton-method: 72.3rem;
+    --vn-skeleton-roi: 74.7rem;
+    --vn-skeleton-testimonials: 145.7rem;
+    --vn-skeleton-final-cta: 83.9rem;
   }
 }
 
 @media (min-width: 800px) {
   html.a11y-font-large {
-    --vn-skeleton-testimonials: 143.7rem;
+    --vn-skeleton-testimonials: 138.5rem;
   }
 }
 
 @media (min-width: 860px) {
   html.a11y-font-large {
-    --vn-skeleton-method: 68.4rem;
-    --vn-skeleton-testimonials: 140.6rem;
-  }
-}
-
-@media (min-width: 940px) {
-  html.a11y-font-large {
-    --vn-skeleton-statement: 60.7rem;
-  }
-}
-
-@media (min-width: 960px) {
-  html.a11y-font-large {
-    --vn-skeleton-services: 82.7rem;
+    --vn-skeleton-method: 68.6rem;
   }
 }
 
 @media (min-width: 1023px) {
   html.a11y-font-large {
     --vn-skeleton-services: 79.8rem;
-    --vn-skeleton-testimonials: 138.6rem;
   }
 }
 
 @media (min-width: 1024px) {
   html.a11y-font-large {
-    --vn-skeleton-statement: 52.7rem;
-    --vn-skeleton-use-cases: 56.1rem;
-    --vn-skeleton-services: 66.8rem;
-    --vn-skeleton-method: 60.3rem;
-    --vn-skeleton-roi: 57.8rem;
-    --vn-skeleton-testimonials: 133.3rem;
-    --vn-skeleton-faq: 43.7rem;
-    --vn-skeleton-final-cta: 61rem;
+    --vn-skeleton-statement: 53.5rem;
+    --vn-skeleton-use-cases: 56.8rem;
+    --vn-skeleton-services: 67.5rem;
+    --vn-skeleton-method: 58.7rem;
+    --vn-skeleton-roi: 60.4rem;
+    --vn-skeleton-testimonials: 125.3rem;
+    --vn-skeleton-faq: 39.7rem;
+    --vn-skeleton-final-cta: 63.3rem;
   }
 }
 
 @media (min-width: 1100px) {
   html.a11y-font-large {
-    --vn-skeleton-testimonials: 126.5rem;
-  }
-}
-
-@media (min-width: 1140px) {
-  html.a11y-font-large {
-    --vn-skeleton-method: 56.6rem;
-  }
-}
-
-@media (min-width: 1180px) {
-  html.a11y-font-large {
-    --vn-skeleton-faq: 42.2rem;
-  }
-}
-
-@media (min-width: 1220px) {
-  html.a11y-font-large {
-    --vn-skeleton-testimonials: 124rem;
+    --vn-skeleton-testimonials: 120.3rem;
   }
 }
 
 @media (min-width: 1280px) {
   html.a11y-font-large {
-    --vn-skeleton-method: 61.7rem;
-    --vn-skeleton-testimonials: 129.5rem;
+    --vn-skeleton-method: 63.8rem;
   }
 }
 
-@media (min-width: 1400px) {
+@media (min-width: 1366px) {
   html.a11y-font-large {
-    --vn-skeleton-statement: 60.7rem;
-    --vn-skeleton-use-cases: 59.4rem;
+    --vn-skeleton-testimonials: 125.6rem;
+    --vn-skeleton-faq: 44.8rem;
   }
 }
 
 @media (min-width: 1536px) {
   html.a11y-font-large {
-    --vn-skeleton-roi: 60.7rem;
-  }
-}
-
-@media (min-width: 1600px) {
-  html.a11y-font-large {
-    --vn-skeleton-statement: 64.6rem;
-    --vn-skeleton-services: 70.4rem;
-    --vn-skeleton-faq: 45.7rem;
+    --vn-skeleton-statement: 64.3rem;
   }
 }
 
 @media (min-width: 1700px) {
   html.a11y-font-large {
-    --vn-skeleton-method: 65.3rem;
+    --vn-skeleton-use-cases: 61.3rem;
   }
 }
 
-@media (min-width: 1800px) {
+@media (min-width: 1920px) {
   html.a11y-font-large {
-    --vn-skeleton-testimonials: 132.7rem;
-    --vn-skeleton-final-cta: 64.3rem;
+    --vn-skeleton-services: 71.5rem;
   }
 }
 
 @media (min-width: 2200px) {
   html.a11y-font-large {
-    --vn-skeleton-use-cases: 62.6rem;
-    --vn-skeleton-roi: 63.4rem;
+    --vn-skeleton-method: 67.8rem;
+    --vn-skeleton-roi: 64.6rem;
+    --vn-skeleton-final-cta: 67.1rem;
   }
 }
 
 @media (min-width: 2560px) {
   html.a11y-font-large {
-    --vn-skeleton-statement: 66.7rem;
-    --vn-skeleton-services: 72.5rem;
+    --vn-skeleton-testimonials: 128.4rem;
     --vn-skeleton-faq: 47.8rem;
   }
 }
