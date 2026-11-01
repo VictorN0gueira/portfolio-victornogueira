@@ -1,19 +1,25 @@
-import { motion } from 'motion/react';
+import { useId } from 'react';
+import { m } from 'motion/react';
 import { Download, Workflow, BrainCircuit, Globe } from 'lucide-react';
+import { assetUrl } from '../lib/asset';
+import { NewTabHint } from './ui/NewTabHint';
 
-const CV_URL = import.meta.env.VITE_CV_URL || "https://minio.vnone.com.br/api/v1/buckets/victornogueira/objects/download?preview=true&prefix=portfolio%2FCV%20-%20Jo%C3%A3o%20Victor%20-%20att.pdf&version_id=null";
+const CV_URL = assetUrl('/cv/cv-joao-victor-nogueira.pdf');
+const CV_FILE_NAME = 'CV-Joao-Victor-Nogueira.pdf';
 
 const specialties = [
-  { id: '01', title: 'Automação de Processos', desc: 'Fluxos automáticos que eliminam retrabalho e escalam sem esforço manual', icon: Workflow, color: '#8B5CF6' },
-  { id: '02', title: 'Inteligência Artificial', desc: 'LLMs e agentes inteligentes integrados às operações do negócio', icon: BrainCircuit, color: '#3B82F6' },
-  { id: '03', title: 'Desenvolvimento Web', desc: 'Interfaces rápidas, modernas e focadas em conversão', icon: Globe, color: '#10B981' }
+  { id: '01', title: 'Automação de Processos', desc: 'Fluxos automáticos que tiram o retrabalho da rotina.', icon: Workflow, color: '#8B5CF6' },
+  { id: '02', title: 'Inteligência Artificial', desc: 'LLMs e agentes inteligentes integrados às operações do negócio.', icon: BrainCircuit, color: '#3B82F6' },
+  { id: '03', title: 'Desenvolvimento Web', desc: 'Interfaces rápidas, feitas para o visitante virar contato.', icon: Globe, color: '#10B981' }
 ];
 
-export default function About() {
+export function About() {
+  const newTabHintId = useId();
+
   return (
     <section id="sobre" className="py-32 px-6 md:px-12 bg-white dark:bg-zinc-900 overflow-hidden">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 md:gap-16 lg:gap-24 items-center">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, x: -30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -36,32 +42,35 @@ export default function About() {
               <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-black dark:bg-white rounded-full border-4 border-white dark:border-zinc-900" />
             </div>
             <div>
-              <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 font-display italic">Sobre mim</h2>
-              <p className="text-sm text-zinc-400 font-medium uppercase tracking-widest">Recife, PE · Remoto Global</p>
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 font-display italic">Sobre mim</h1>
+              <p className="text-sm text-vn-gray-dark font-medium uppercase tracking-widest">Recife e remoto</p>
             </div>
           </div>
 
-          <div className="space-y-8 text-lg md:text-xl text-zinc-500 leading-relaxed font-light mb-12">
+          <div className="space-y-8 text-lg md:text-xl text-vn-gray-dark leading-relaxed font-light mb-12">
             <p>
-              Especialista em transformar processos manuais em fluxos <span className="text-black dark:text-white font-medium">automatizados e inteligentes</span> — sem projetos de meses ou equipes grandes.
+              Especialista em montar fluxos <span className="text-black dark:text-white font-medium">automatizados e inteligentes</span>, sem precisar de equipes grandes.
             </p>
             <p>
-              Foco total em <span className="text-black dark:text-white font-medium">Inteligência Artificial e Desenvolvimento Web</span> para escalar operações de negócios de forma rápida e mensurável.
+              Foco em <span className="text-black dark:text-white font-medium">Inteligência Artificial e Desenvolvimento Web</span>, para a operação gastar menos tempo com tarefa manual.
             </p>
           </div>
 
-          <a 
+          <NewTabHint id={newTabHintId} />
+          <a
             href={CV_URL}
+            download={CV_FILE_NAME}
             target="_blank"
             rel="noopener noreferrer"
+            aria-describedby={newTabHintId}
             className="inline-flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white px-8 py-4 rounded-full font-bold uppercase tracking-widest text-xs hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black transition-all shadow-sm hover:shadow-xl"
           >
             <Download className="w-4 h-4" />
-            Baixar Currículo
+            Baixa o currículo
           </a>
-        </motion.div>
+        </m.div>
         
-        <motion.div
+        <m.div
           initial={{ opacity: 0, x: 30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -69,7 +78,7 @@ export default function About() {
           className="relative"
         >
           <div className="bg-[#F8F9FA] dark:bg-zinc-800 p-6 sm:p-10 md:p-16 rounded-[2rem] md:rounded-[3rem] border border-zinc-100 dark:border-zinc-700 relative z-10">
-            <h3 className="text-2xl font-bold mb-10 font-display">Minhas Especialidades</h3>
+            <h2 className="text-2xl font-bold mb-10 font-display">Minhas Especialidades</h2>
             <div className="space-y-8">
               {specialties.map((skill) => (
                 <div key={skill.id} className="group flex items-start gap-5 border-b border-zinc-200 dark:border-zinc-700 pb-8 last:border-0 last:pb-0">
@@ -81,10 +90,10 @@ export default function About() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-zinc-300 font-mono text-xs transition-colors group-hover:text-zinc-500">{skill.id}</span>
-                      <h4 className="font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors">{skill.title}</h4>
+                      <span aria-hidden="true" className="text-vn-gray-dark font-mono text-xs">{skill.id}</span>
+                      <h3 className="font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors">{skill.title}</h3>
                     </div>
-                    <p className="text-sm text-zinc-400 leading-relaxed">{skill.desc}</p>
+                    <p className="text-sm text-vn-gray-dark leading-relaxed">{skill.desc}</p>
                   </div>
                 </div>
               ))}
@@ -92,7 +101,7 @@ export default function About() {
           </div>
           {/* Decorative mesh gradient background */}
           <div className="absolute -inset-10 bg-linear-to-br from-zinc-100 dark:from-zinc-800 to-white dark:to-zinc-900 z-0 rounded-full blur-3xl opacity-50"></div>
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

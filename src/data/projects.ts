@@ -1,155 +1,154 @@
-export interface Project {
-  id: number;
-  slug: string;
-  featured?: boolean;
-  title: string;
-  category: string;
-  description: string;
-  image: string;
-  link: string;
-  tags: string[];
-  gallery?: string[];
-  type?: 'personal' | 'client';
-  impact?: { label: string; value: string }[];
+import { projectImage, type ProjectImage } from '../lib/projectImage';
+
+/** One of the (exactly three) screenshots of a project: the file and what it shows, in words. */
+export interface ProjectShot {
+  readonly image: ProjectImage;
+  readonly alt: string;
 }
 
-export const projects: Project[] = [
-  {
-    id: 5,
-    slug: "troco",
-    featured: true,
-    title: "Trocô",
-    category: "Gestão Financeira + IA",
-    description: "Gestão Inteligente via WhatsApp com automação e Supabase. Processamento automático de áudios e notas fiscais.",
-    image: "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2Fportfolio%2Ftroco%2FLogin-Troco.png&version_id=null",
-    link: '#',
-    tags: ["Automação de Fluxos", "Supabase", "API's Financeiras", "Evolution API"],
-    type: 'client',
-    impact: [{ label: "Operação", value: "24/7 automática" }],
-    gallery: [
-      "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2Fportfolio%2Ftroco%2FDashboard-Troco.png&version_id=null",
-      "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2Fportfolio%2Ftroco%2FLembretes-Troco.png&version_id=null",
-      "https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2Fportfolio%2Ftroco%2FInvestimentos-Troco.png&version_id=null"
-    ]
-  },
+export interface Project {
+  readonly slug: string;
+  /** DizPara and Hub081: they get the large cards and the large gallery. */
+  readonly featured?: boolean;
+  readonly title: string;
+  readonly category: string;
+  readonly description: string;
+  /** Featured only: one short line shown on the large card. */
+  readonly highlight?: string;
+  /** Featured only: what the product does, as seen on its screens. */
+  readonly features?: readonly string[];
+  readonly tags: readonly string[];
+  /**
+   * The screenshots, three of them. The first one is the cover: the card image, the large image of the case
+   * page and the image shared on social networks.
+   */
+  readonly shots: readonly ProjectShot[];
+}
 
-  {
-    id: 7,
-    slug: 'dashboard-consumo-crm',
-    title: 'Dashboard de Consumo CRM',
-    category: 'BI / Dashboards de Vendas',
-    description: 'Centralização de dados de consumo e histórico de compras com gráficos dinâmicos e lista de produtos, integrando APIs de CRM via Webhooks.',
-    image: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2FProplast%2Fsite1-resumocliente.png&version_id=null',
-    tags: ['CRM API', 'Automação de Fluxos', 'Webhook', 'Data Visualization'],
-    link: '#',
-    type: 'client',
-    impact: [{ label: "Visibilidade", value: "100% tempo real" }],
-    gallery: [
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2FProplast%2Fsite2-resumocliente.png&version_id=null',
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2FProplast%2Ffluxo-resumocliente.png&version_id=null'
-    ]
-  },
-  {
-    id: 8,
-    slug: 'importacao-massiva-nfe',
-    title: 'Importação Massiva de NF-e',
-    category: 'Logística / Integração ERP',
-    description: 'Sincronização de milhares de Notas Fiscais/dia da Tiny API para Supabase, com monitoramento de status e comparativos automatizados.',
-    image: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2FProplast%2Ffluxo-importacaodevendas.png&version_id=null',
-    tags: ['Tiny API', 'Supabase', 'Automação de Fluxos', 'Google Sheets'],
-    link: '#',
-    type: 'client',
-    impact: [{ label: "Volume", value: "Milhares de NFs/dia" }],
-  },
+/** A screenshot of the generated manifest ("<project>/<name>") and what it shows. */
+function shot(key: string, alt: string): ProjectShot {
+  return { image: projectImage(key), alt };
+}
 
+/** The cover of a project is its first shot. */
+export function coverOf(project: Project): ProjectImage {
+  return project.shots[0].image;
+}
+
+export const projects: readonly Project[] = [
   {
-    id: 11,
-    slug: 'diagnostico-empresarial',
-    featured: true,
-    title: 'Diagnóstico Empresarial',
-    category: 'Captura de Leads / Consultoria',
-    description: 'Sistema completo de captura de leads com WhatsApp integrado, formulário inteligente, pipeline visual (Kanban), qualificação por IA e gestão de oportunidades.',
-    image: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2FProjetos%2Fempresarial-insight%2FLandingpage.png&version_id=null',
-    tags: ['WhatsApp API', 'IA', 'Pipeline', 'Lead Capture'],
-    link: '#',
-    type: 'client',
-    impact: [{ label: "Qualificação", value: "IA automática" }],
-    gallery: [
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2FProjetos%2Fempresarial-insight%2Flogin.png&version_id=null',
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2FProjetos%2Fempresarial-insight%2Fdashboard.png&version_id=null',
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2FProjetos%2Fempresarial-insight%2Fwhatsapp.png&version_id=null',
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=Henrique%20Fran%C3%A7a%2FProjetos%2Fempresarial-insight%2Fkanbam.png&version_id=null'
-    ]
-  },
-  {
-    id: 12,
     slug: 'dizpara',
     featured: true,
     title: 'DizPara',
-    category: 'Automação de Marketing / SaaS',
-    description: 'Sistema de captura e disparo de leads via WhatsApp e E-mail, com automação inteligente e IA de qualificação automática de contatos.',
-    image: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FDizPara%2FLandingpage.png&version_id=null',
-    tags: ['WhatsApp API', 'SMTP', 'IA', 'Lead Qualification'],
-    link: 'https://dizpara.com/',
-    type: 'personal',
-    impact: [{ label: "Leads", value: "Qualificação por IA" }],
-    gallery: [
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FDizPara%2Flogin.png&version_id=null',
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FDizPara%2Fdashboard.png&version_id=null',
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FDizPara%2Fleads.png&version_id=null',
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FDizPara%2Fcampanhas.png&version_id=null'
-    ]
+    category: 'Captação e disparo de leads',
+    description:
+      'Painel para captar leads no Google Maps, importar de CSV e do Google Sheets e disparar campanhas por e-mail e por WhatsApp.',
+    highlight: 'Da busca no Google Maps ao disparo no WhatsApp e no e-mail, no mesmo painel.',
+    features: [
+      'Busca empresas no Google Maps por nicho e cidade e transforma o resultado em leads.',
+      'Importa leads de CSV e do Google Sheets, aceita cadastro manual e detecta duplicados.',
+      'Mostra cada lead com pontuação e status: novo, em contato, qualificado ou descartado.',
+      'Dispara campanhas por e-mail e por WhatsApp, em um passo a passo de criação.',
+      'Mostra a cota de leads do mês e o aviso de base legal da LGPD.',
+    ],
+    tags: ['WhatsApp', 'SMTP', 'Google Maps', 'Google Sheets'],
+    shots: [
+      shot('dizpara/lista-de-leads', 'Lista de leads do DizPara, com filtros por status, importação de CSV e do Google Sheets e a busca no Maps'),
+      shot('dizpara/captura-de-leads', 'Janela de captura de leads do DizPara ao fim de uma busca no Google Maps, com os leads adicionados'),
+      shot('dizpara/nova-campanha', 'Assistente de nova campanha do DizPara, para escolher o canal, e-mail ou WhatsApp, e o objetivo'),
+    ],
   },
   {
-    id: 2,
-    slug: 'travel-ia',
-    title: 'Travel IA',
-    category: 'Roteiro Inteligente',
-    description: 'Roteirização baseada em IA para guias personalizados. Planejamento completo de viagens com automação de ponta.',
-    image: 'https://minio.vnone.com.br/api/v1/buckets/victornogueira/objects/download?preview=true&prefix=portfolio%2FRoteiro%20Inteligente%2FTela_Site.png&version_id=null',
-    tags: ['Automação de Fluxos', 'APIs', 'SMTP', 'OpenAI'],
-    link: 'https://vupt.site/travel-ia',
-    type: 'personal',
-    impact: [{ label: "Roteiro", value: "Gerado em segundos" }],
-    gallery: [
-      'https://minio.vnone.com.br/api/v1/buckets/victornogueira/objects/download?preview=true&prefix=portfolio%2FRoteiro%20Inteligente%2FTela_Email.png&version_id=null'
-    ]
+    slug: 'hub081',
+    featured: true,
+    title: 'Hub081',
+    category: 'Central de atendimento e CRM no WhatsApp',
+    description: 'Painel com as conversas do WhatsApp, contatos, agentes de IA, pipelines, propostas, produtos e financeiro.',
+    highlight: 'O atendimento no WhatsApp e a gestão comercial no mesmo painel.',
+    features: [
+      'Lista as conversas do WhatsApp em abas: ativas, pendentes, pausadas e concluídas.',
+      'Reúne atendimento, chat interno, contatos, agentes de IA e canais.',
+      'Tem a área comercial com pipelines, turmas, propostas e produtos.',
+      'Tem a área financeira com visão geral, contas a pagar, contas a receber e repasses.',
+      'Mostra dashboards por área, em abas, com filtro de período e exportação para Excel.',
+    ],
+    tags: ['WhatsApp', 'CRM', 'Agentes de IA', 'Pipelines'],
+    shots: [
+      shot('hub081/dashboards', 'Dashboards do Hub081, com as abas visão geral, comercial, financeiro, produtos e turmas, atendimento e IA'),
+      shot('hub081/conversas', 'Lista de conversas do WhatsApp no Hub081, com as abas ativas, pendentes, pausadas e concluídas'),
+      shot('hub081/login', 'Tela de login do Hub081, com os campos de e-mail e senha e o logotipo do Hub081'),
+    ],
   },
   {
-    id: 3,
-    slug: 'ai-playlist-maker',
-    title: 'AI Playlist Maker',
-    category: 'Curadoria Musical',
-    description: 'Curadoria musical inteligente via API do Spotify. Crie playlists personalizadas baseadas em seu gosto e humor usando IA.',
-    image: 'https://minio.vnone.com.br/api/v1/buckets/victornogueira/objects/download?preview=true&prefix=portfolio%2FSpotify%2FTela_principal.png&version_id=null',
-    tags: ['Spotify API', 'Automação de Fluxos', 'SMTP', 'Inteligência Artificial'],
-    link: 'https://vupt.site/spotify-ia',
-    type: 'personal',
-    impact: [{ label: "Curadoria", value: "IA personalizada" }],
-    gallery: [
-      'https://minio.vnone.com.br/api/v1/buckets/victornogueira/objects/download?preview=true&prefix=portfolio%2FSpotify%2FTela_email.png&version_id=null'
-    ]
+    slug: 'diagnostico-empresarial',
+    title: 'Diagnóstico Empresarial',
+    category: 'Diagnóstico online e painel de leads',
+    description:
+      'Página com um diagnóstico de 5 minutos para o dono da empresa e painel de leads com login, indicadores e funil.',
+    tags: ['Diagnóstico online', 'Painel de leads', 'Funil de leads'],
+    shots: [
+      shot('diagnostico-empresarial/cover', 'Página do diagnóstico empresarial, com a chamada para descobrir em 5 minutos qual pilar está travando a empresa'),
+      shot('diagnostico-empresarial/dashboard', 'Painel de leads do diagnóstico, com os indicadores zerados, o gráfico de leads capturados e o funil por etapa'),
+      shot('diagnostico-empresarial/login', 'Tela de login do painel do diagnóstico, com os campos de e-mail e senha e o botão de entrar'),
+    ],
   },
   {
-    id: 4,
+    slug: 'dashboard-consumo-crm',
+    title: 'Dashboard de Consumo CRM',
+    category: 'Histórico de compras e dashboards',
+    description:
+      'Formulário em que se informa o CNPJ e o e-mail de uma empresa. Um agente de IA consulta o histórico de compras no Supabase e monta o dashboard do cliente.',
+    tags: ['Supabase', 'OpenAI', 'Webhook', 'Chart.js'],
+    shots: [
+      shot('dashboard-consumo-crm/cover', 'Tela inicial dos sistemas Proplast, com o agente de histórico que gera o resumo estratégico do cliente'),
+      shot('dashboard-consumo-crm/site2-resumocliente', 'Formulário para gerar o dashboard de um cliente a partir do CNPJ da empresa e do e-mail corporativo'),
+      shot('dashboard-consumo-crm/fluxo-resumocliente', 'Fluxo de automação em três etapas: página de acesso, agente de análise com ferramentas no Supabase e dashboard'),
+    ],
+  },
+  {
     slug: 'portal-link-in-bio',
     title: 'Portal Link-in-Bio',
-    category: 'Marketing e Conversão',
-    description: 'Hub de links personalizado com alta conversão. Centralize sua presença digital com um design otimizado e automação.',
-    image: 'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2Fportfolio%2Flink%20in%20bio%2Fvn.png&version_id=null',
-    tags: ['Automação de Fluxos', 'Webhook', 'HTML', 'CSS'],
-    link: 'https://vupt.site/vn',
-    type: 'personal',
-    impact: [{ label: "Conversão", value: "Hub otimizado" }],
-    gallery: [
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2Fportfolio%2Flink%20in%20bio%2Firmaocruz.png&version_id=null',
-      'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FSite-VN%2Fportfolio%2Flink%20in%20bio%2Fkarlaalvares.png&version_id=null'
-    ]
-  }
+    category: 'Páginas de links para negócios',
+    description:
+      'Páginas de links para o celular, com botões de contato, endereço e horários e destaques de ofertas ou de coleção. Aqui estão a da VN One, a de um mercadinho e a de uma loja de roupas.',
+    tags: ['HTML', 'CSS', 'WhatsApp', 'Instagram'],
+    shots: [
+      shot('portal-link-in-bio/cover', 'Página de links da VN One em fundo escuro, com os ícones das redes e os botões Solicitar Projeto e Nossas Soluções'),
+      shot('portal-link-in-bio/irmaocruz', 'Página de links de um mercadinho, com botões de pedido, endereço e horários e as ofertas em destaque'),
+      shot('portal-link-in-bio/karlaalvares', 'Página de links de uma loja de roupas, com botões de localização e dúvidas e o carrossel de destaques da coleção'),
+    ],
+  },
+  {
+    slug: 'ai-playlist-maker',
+    title: 'AI Playlist Maker',
+    category: 'Playlists com IA',
+    description:
+      'Formulário em que a pessoa descreve a playlist, escolhe o número de faixas e informa o e-mail da conta Spotify. A playlist chega por e-mail, com o botão para ouvir no Spotify.',
+    tags: ['Spotify API', 'IA', 'E-mail'],
+    shots: [
+      shot('ai-playlist-maker/tela-email', 'E-mail que avisa que a playlist ficou pronta, com o botão para ouvir no Spotify'),
+      shot('ai-playlist-maker/formulario', 'Formulário do AI Playlist Maker, com o pedido da playlist, o número de faixas e o e-mail da conta Spotify'),
+      shot('ai-playlist-maker/tela-mobile', 'Cabeçalho do AI Playlist Maker no celular, com o logotipo do Spotify e o título'),
+    ],
+  },
+  {
+    slug: 'travel-ia',
+    title: 'Travel IA',
+    category: 'Roteiro com IA',
+    description:
+      'Formulário em que se escolhe o destino, a duração e o estilo da viagem. O roteiro chega por e-mail, dia a dia, com a previsão do tempo.',
+    tags: ['IA', 'E-mail', 'Previsão do tempo'],
+    shots: [
+      shot('travel-ia/cover', 'Formulário do Travel IA, para escolher destino, duração, estilo da viagem e o e-mail que recebe o roteiro'),
+      shot('travel-ia/tela-email', 'E-mail com o roteiro de viagem dia a dia, com previsão do tempo e sugestões de manhã e tarde'),
+      shot('travel-ia/tela-mobile', 'Cabeçalho do Travel IA no celular, com o ícone de clima, o título em duas linhas e o texto de apresentação'),
+    ],
+  },
 ];
 
-export const featuredProjects: Project[] = projects.filter((p) => p.featured);
+/** Projects that left the list. Their old addresses still work: they send the visitor to /projetos. */
+export const REMOVED_PROJECT_SLUGS: readonly string[] = ['troco', 'importacao-massiva-nfe'];
 
 export function getProjectBySlug(slug: string): Project | undefined {
-  return projects.find((p) => p.slug === slug);
+  return projects.find((project) => project.slug === slug);
 }

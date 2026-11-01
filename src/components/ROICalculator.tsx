@@ -1,23 +1,33 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
+import { useState, useEffect, useId, useRef, type KeyboardEvent } from 'react';
+import { m } from 'motion/react';
 import { TrendingUp, ArrowUpRight, Sparkles } from 'lucide-react';
+import { homeCopy } from '../data/homeCopy';
+import { NewTabHint } from './ui/NewTabHint';
+import { useMotionAllowed } from '../hooks/useMotionAllowed';
+import { formatBRL, formatBRLCompact } from '../lib/format';
+import {
+  DEFAULT_HOURLY_RATE,
+  TEAM_OPTIONS,
+  annualManualCost,
+  annualSavings,
+  buildQuoteMessage,
+} from '../lib/roi';
 
 const WA_LINK =
   "https://wa.me/5581984451243?text=Ol%C3%A1%2C+Victor!+Quero+automatizar+meus+processos.";
-
-const TEAM_OPTIONS = [
-  { label: '1 pessoa', value: 1 },
-  { label: '2–3 pessoas', value: 2.5 },
-  { label: '4–10 pessoas', value: 7 },
-  { label: '10+ pessoas', value: 15 },
-];
 
 function useAnimatedNumber(target: number) {
   const [display, setDisplay] = useState(target);
   const fromRef = useRef(target);
   const rafRef = useRef(0);
+  const isMotionAllowed = useMotionAllowed();
 
   useEffect(() => {
+    // Reduced motion (the system or the widget's "Pausar animações"): no counting frames, the figure is the target.
+    if (!isMotionAllowed) {
+      fromRef.current = target;
+      return;
+    }
     const from = fromRef.current;
     const duration = 550;
     let start: number | null = null;
@@ -37,23 +47,71 @@ function useAnimatedNumber(target: number) {
     });
 
     return () => cancelAnimationFrame(rafRef.current);
-  }, [target]);
+  }, [target, isMotionAllowed]);
 
-  return display;
+  return isMotionAllowed ? display : target;
 }
 
-function formatBRL(value: number): string {
-  if (value >= 1_000_000) {
-    return `R$ ${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (value >= 1_000) {
-    return `R$ ${(value / 1_000).toFixed(0)}K`;
-  }
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+const TEAM_OPTION_BASE =
+  'flex w-full items-center justify-center rounded-xl border px-2 xs:px-4 py-3.5 text-center text-sm font-medium transition-all duration-200';
+// The native radio is visually hidden and the span after it draws the option: peer-checked and peer-focus-visible style
+// it from the input, so the keyboard and the screen reader get a real radio. Forced colors drop the dark fill, so the
+// chosen option is also underlined there.
+const TEAM_OPTION_CLASSES = [
+  TEAM_OPTION_BASE,
+  'border-zinc-200 bg-white text-vn-gray-dark hover:border-vn-gray-mid hover:text-vn-ink',
+  'peer-checked:border-vn-ink peer-checked:bg-vn-ink peer-checked:text-white peer-checked:shadow-md',
+  'forced-colors:peer-checked:underline forced-colors:peer-checked:decoration-2 forced-colors:peer-checked:underline-offset-4',
+  'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-vn-ink',
+].join(' ');
+
+interface TeamSizeRadiosProps {
+  selectedIndex: number;
+  onChange: (index: number) => void;
 }
 
-function formatBRLFull(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+/**
+ * How many people do the task: a radio group of native radios (one name, so the group is one tab stop and the arrow
+ * keys move the choice). Home and End jump to the first and the last option. The chosen option is announced as checked.
+ */
+function TeamSizeRadios({ selectedIndex, onChange }: TeamSizeRadiosProps) {
+  const labelId = useId();
+  const groupName = useId();
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Home' && event.key !== 'End') return;
+    // Ctrl, Meta, Alt or Shift with Home or End belong to the browser (scroll, select, history), not to the group.
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    if (!(event.target instanceof HTMLInputElement)) return;
+
+    const radios = event.currentTarget.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+    const index = event.key === 'Home' ? 0 : radios.length - 1;
+    event.preventDefault();
+    radios[index].focus();
+    onChange(index);
+  };
+
+  return (
+    <div>
+      <p id={labelId} className="text-sm font-semibold text-vn-ink mb-3">Pessoas que executam essa tarefa</p>
+      {/* eslint-disable-next-line jsx-a11y/interactive-supports-focus -- the native radios inside are the tab stop */}
+      <div role="radiogroup" aria-labelledby={labelId} onKeyDown={handleKeyDown} className="grid grid-cols-2 gap-2">
+        {TEAM_OPTIONS.map((opt, i) => (
+          <label key={opt.label} className="relative flex min-h-11 cursor-pointer">
+            <input
+              type="radio"
+              name={groupName}
+              value={opt.label}
+              checked={i === selectedIndex}
+              onChange={() => onChange(i)}
+              className="peer sr-only"
+            />
+            <span className={TEAM_OPTION_CLASSES}>{opt.label}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 interface ROICalculatorProps {
@@ -62,13 +120,14 @@ interface ROICalculatorProps {
 }
 
 export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
+  const newTabHintId = useId();
   const [hours, setHours] = useState(12);
   const [teamIndex, setTeamIndex] = useState(1);
-  const [hourlyRate, setHourlyRate] = useState(50);
+  const [hourlyRate, setHourlyRate] = useState(DEFAULT_HOURLY_RATE);
 
-  const teamMultiplier = TEAM_OPTIONS[teamIndex].value;
-  const annualCost = Math.round(hours * teamMultiplier * hourlyRate * 52);
-  const savings = Math.round(annualCost * 0.8);
+  const roiInput = { hoursPerWeek: hours, teamMultiplier: TEAM_OPTIONS[teamIndex].value, hourlyRate };
+  const annualCost = annualManualCost(roiInput);
+  const savings = annualSavings(roiInput);
 
   const displayCost = useAnimatedNumber(annualCost);
   const displaySavings = useAnimatedNumber(savings);
@@ -82,26 +141,26 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
           className="mb-12 md:mb-16"
         >
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-5">
-            Calcule o impacto
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-vn-gray-dark mb-5">
+            Calcula o impacto
           </p>
-          <h2 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter font-display italic leading-none mb-5">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter font-display italic leading-none mb-5">
             Quanto sua empresa<br className="hidden sm:block" /> perde por ano?
-          </h2>
-          <p className="text-zinc-500 text-base md:text-lg font-light max-w-xl">
-            Descubra o custo real dos seus processos manuais — e o quanto você pode recuperar.
+          </h1>
+          <p className="text-vn-gray-dark text-base md:text-lg font-light max-w-xl">
+            Descobre o custo real dos seus processos manuais e quanto você pode recuperar.
           </p>
-        </motion.div>
+        </m.div>
 
         {/* Main card */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -114,7 +173,7 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
             {/* Slider */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-sm font-semibold text-zinc-700">Horas/semana em tarefas manuais</p>
+                <p className="text-sm font-semibold text-vn-ink">Horas por semana em tarefas manuais</p>
                 <span className="text-3xl font-bold tabular-nums leading-none text-zinc-900 dark:text-white">{hours}h</span>
               </div>
               <input
@@ -129,46 +188,27 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
                 }}
                 aria-label="Horas por semana em tarefas manuais"
               />
-              <div className="flex justify-between text-xs text-zinc-400 mt-2">
+              <div className="flex justify-between text-xs text-vn-gray-dark mt-2">
                 <span>1h</span>
                 <span>80h</span>
               </div>
             </div>
 
             {/* Team size */}
-            <div>
-              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Pessoas que executam essa tarefa</p>
-              <div className="grid grid-cols-2 gap-2">
-                {TEAM_OPTIONS.map((opt, i) => (
-                  <motion.button
-                    key={opt.label}
-                    type="button"
-                    onClick={() => setTeamIndex(i)}
-                    whileTap={{ scale: 0.96 }}
-                    className={`py-3.5 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
-                      teamIndex === i
-                        ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md'
-                        : 'bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400 dark:hover:border-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
-                    }`}
-                  >
-                    {opt.label}
-                  </motion.button>
-                ))}
-              </div>
-            </div>
+            <TeamSizeRadios selectedIndex={teamIndex} onChange={setTeamIndex} />
 
             {/* Hourly rate */}
             <div>
-              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Custo médio/hora da equipe (R$)</p>
+              <p className="text-sm font-semibold text-vn-ink mb-3">Custo médio por hora da equipe (R$)</p>
               <label className="flex items-center bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 rounded-xl px-4 py-3.5 gap-2 focus-within:border-zinc-500 dark:focus-within:border-zinc-400 focus-within:ring-2 focus-within:ring-zinc-100 dark:focus-within:ring-zinc-700 transition-all cursor-text">
-                <span className="text-zinc-400 text-sm font-medium shrink-0">R$</span>
+                <span className="text-vn-gray-dark text-sm font-medium shrink-0">R$</span>
                 <input
                   type="number"
                   min={1}
                   max={5000}
                   value={hourlyRate}
                   onChange={e => setHourlyRate(Math.max(1, Number(e.target.value)))}
-                  className="flex-1 outline-none text-xl font-bold text-zinc-900 dark:text-white bg-transparent min-w-0 tabular-nums"
+                  className="flex-1 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vn-ink text-xl font-bold text-zinc-900 dark:text-white bg-transparent min-w-0 tabular-nums"
                   aria-label="Custo médio por hora da equipe em reais"
                 />
               </label>
@@ -189,14 +229,14 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
 
             {/* Annual cost */}
             <div className="relative z-10">
-              <p className="text-xs text-zinc-500 mb-2 uppercase tracking-widest font-medium">
+              <p className="text-xs text-vn-gray-light mb-2 uppercase tracking-widest font-medium">
                 Custo anual atual
               </p>
-              <p className="text-4xl md:text-5xl font-bold text-white tabular-nums leading-none">
-                {formatBRL(displayCost)}
+              <p className="text-3xl xs:text-4xl md:text-5xl font-bold text-white tabular-nums leading-none">
+                {formatBRLCompact(displayCost)}
               </p>
-              <p className="text-zinc-600 text-xs mt-1.5 tabular-nums">
-                {formatBRLFull(displayCost)} por ano
+              <p className="text-vn-gray-mid text-xs mt-1.5 tabular-nums">
+                {formatBRL(displayCost)} por ano
               </p>
             </div>
 
@@ -204,19 +244,19 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
 
             {/* Savings */}
             <div className="relative z-10">
-              <p className="text-xs text-zinc-500 mb-2 uppercase tracking-widest font-medium">
+              <p className="text-xs text-vn-gray-light mb-2 uppercase tracking-widest font-medium">
                 Economia com automação
               </p>
-              <p className="text-4xl md:text-5xl font-bold text-emerald-400 tabular-nums leading-none">
-                {formatBRL(displaySavings)}
+              <p className="text-3xl xs:text-4xl md:text-5xl font-bold text-emerald-400 tabular-nums leading-none">
+                {formatBRLCompact(displaySavings)}
               </p>
-              <p className="text-zinc-600 text-xs mt-1.5">/ano estimados</p>
+              <p className="text-vn-gray-mid text-xs mt-1.5">estimados por ano</p>
             </div>
 
             {/* ROI bar */}
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-2.5">
-                <p className="text-xs text-zinc-500 uppercase tracking-widest font-medium">ROI estimado</p>
+                <p className="text-xs text-vn-gray-light uppercase tracking-widest font-medium">ROI estimado</p>
                 <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                   <TrendingUp className="w-3.5 h-3.5" />
                   {roiLabel}
@@ -230,42 +270,41 @@ export default function ROICalculator({ onQuoteRequest }: ROICalculatorProps) {
               </div>
             </div>
 
-            {/* CTA — com onQuoteRequest pré-preenche o form; sem, abre o WhatsApp */}
+            {/* CTA: com onQuoteRequest pré-preenche o form; sem, abre o WhatsApp */}
             {onQuoteRequest ? (
-              <motion.button
+              <m.button
                 type="button"
-                onClick={() =>
-                  onQuoteRequest(
-                    `Olá, Victor! Usei a calculadora do site: minha empresa perde cerca de ${formatBRLFull(annualCost)} por ano com tarefas manuais (${hours}h/semana). Quero automatizar esse processo.`,
-                    savings
-                  )
-                }
+                onClick={() => onQuoteRequest(buildQuoteMessage(roiInput), savings)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
                 className="mt-auto w-full bg-white hover:bg-zinc-100 text-zinc-900 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors relative z-10 shadow-lg"
               >
                 Quero automatizar esse processo
                 <ArrowUpRight className="w-4 h-4" />
-              </motion.button>
+              </m.button>
             ) : (
-              <motion.a
+              <>
+              <NewTabHint id={newTabHintId} />
+              <m.a
                 href={WA_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-describedby={newTabHintId}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
                 className="mt-auto w-full bg-white hover:bg-zinc-100 text-zinc-900 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors relative z-10 shadow-lg"
               >
                 Quero automatizar esse processo
                 <ArrowUpRight className="w-4 h-4" />
-              </motion.a>
+              </m.a>
+              </>
             )}
 
-            <p className="text-center text-zinc-600 text-[11px] leading-relaxed relative z-10">
-              Estimativa baseada em projetos anteriores.<br />Consulta gratuita e sem compromisso.
+            <p className="text-center text-vn-gray-mid text-[11px] leading-relaxed relative z-10">
+              {homeCopy.roi.note}<br />Consulta gratuita e sem compromisso.
             </p>
           </div>
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

@@ -1,129 +1,163 @@
-import { Helmet } from 'react-helmet-async';
+import { useEffect } from 'react';
+import { SOCIAL_LINKS } from '../lib/constants';
+import { serializeJsonLd } from '../lib/jsonLd';
+import { SITE, pageTitle } from '../lib/site';
 
 interface SEOProps {
   title?: string;
   description?: string;
   path?: string;
   image?: string;
+  /** Texto alternativo da imagem de compartilhamento. Padrão: o do banner do site */
+  imageAlt?: string;
+  /** Tamanho da imagem própria, quando conhecido (as imagens de compartilhamento dos projetos têm 1200x630) */
+  imageWidth?: number;
+  imageHeight?: number;
   /** Bloqueia indexação (ex.: 404, slug inválido) */
   noindex?: boolean;
   /** Schemas JSON-LD específicos da página (ex.: FAQPage em /contato) */
   jsonLd?: object[];
 }
 
-const BASE_URL = 'https://vnone.com.br';
+const LOGO_URL = `${SITE.url}/brand/vn-one-logo-dark.webp`;
+// O banner padrão tem 1200x630. Uma imagem própria pode ter outro tamanho.
+const DEFAULT_IMAGE_WIDTH = 1200;
+const DEFAULT_IMAGE_HEIGHT = 630;
 
-const DESCRIPTION =
-  'Automações inteligentes com IA que eliminam processos manuais e escalam operações — sem equipe de TI. Fluxos que geram resultado real.';
+/** The profile links of the constants for these networks. A network with no link (an empty href) is left out, never written as "". */
+function profileUrls(...labels: Array<'LinkedIn' | 'GitHub' | 'Instagram'>): string[] {
+  return labels.flatMap((label) => SOCIAL_LINKS.find((link) => link.label === label)?.href || []);
+}
 
-const defaults = {
-  title: 'Victor Nogueira | Automação Inteligente & IA',
-  description: DESCRIPTION,
-};
+const organizationProfiles = profileUrls('Instagram');
 
-export default function SEO({
-  title,
-  description,
-  path = '/',
-  image,
-  noindex,
-  jsonLd,
-}: SEOProps) {
-  const pageTitle = title ? `${title} | Victor Nogueira` : defaults.title;
-  const pageDescription = description || defaults.description;
-  const pageUrl = `${BASE_URL}${path}`;
-  const pageImage = image || 'https://vnone.com.br/og-banner.png?v=2';
-
-  // Schema: Person
-  const personSchema = {
-    '@context': 'https://schema.org',
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: SITE.name,
+  url: SITE.url,
+  logo: LOGO_URL,
+  email: SITE.email,
+  telephone: SITE.telephone,
+  areaServed: 'BR',
+  ...(organizationProfiles.length > 0 ? { sameAs: organizationProfiles } : {}),
+  founder: {
     '@type': 'Person',
     name: 'Victor Nogueira',
-    jobTitle: 'Especialista em Automação Inteligente e IA',
-    description: DESCRIPTION,
-    url: BASE_URL,
-    image: pageImage,
-    sameAs: [
-      'https://www.linkedin.com/in/victornogueira-vn',
-      'https://github.com/VictorN0gueira',
-    ],
-    knowsAbout: [
-      'Automação de Processos',
-      'Inteligência Artificial',
-      'Agentes de IA',
-      'Integração de Sistemas',
-      'Eliminação de Processos Manuais',
-      'Desenvolvimento Web',
-    ],
-    hasOccupation: {
-      '@type': 'Occupation',
-      name: 'Especialista em Automação Inteligente e IA',
-      occupationLocation: { '@type': 'Country', name: 'Brasil' },
-    },
-    offers: {
-      '@type': 'Offer',
-      name: 'Serviços de Automação e Inteligência Artificial',
-      description:
-        'Criação de fluxos automatizados com IA para eliminar processos manuais, integrar sistemas e escalar operações sem equipe de TI.',
-    },
-  };
+    sameAs: profileUrls('LinkedIn', 'GitHub'),
+  },
+};
 
-  // Schema: WebSite
-  const websiteSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'Victor Nogueira — Portfólio',
-    url: BASE_URL,
-    description: DESCRIPTION,
-  };
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE.name,
+  url: SITE.url,
+  description: SITE.description,
+};
 
+// React hoists the title, meta and link elements into the document head, so these builders are plain functions that return
+// elements (arrays are flattened), never components.
+
+/** One JSON-LD script. The text goes through serializeJsonLd, so no value can close the element. */
+function jsonLdScript(schema: object, key: string | number) {
   return (
-    <Helmet>
-      <title>{pageTitle}</title>
-      <meta name="description" content={pageDescription} />
-      <meta
-        name="keywords"
-        content="automação de processos, automação inteligente, inteligência artificial, agentes de IA, integração de sistemas, automação empresarial, eliminar processos manuais, fluxos automatizados"
-      />
-      <link rel="canonical" href={pageUrl} />
-      {noindex && <meta name="robots" content="noindex, nofollow" />}
-
-      {/* Open Graph */}
-      <meta property="og:type" content="website" />
-      <meta property="og:url" content={pageUrl} />
-      <meta property="og:title" content={pageTitle} />
-      <meta property="og:description" content={pageDescription} />
-      <meta property="og:image" content={pageImage} />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta
-        property="og:image:alt"
-        content="Victor Nogueira — Especialista em Automação Inteligente e IA"
-      />
-      <meta property="og:locale" content="pt_BR" />
-      <meta property="og:site_name" content="Victor Nogueira" />
-
-      {/* Twitter Card */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:url" content={pageUrl} />
-      <meta name="twitter:title" content={pageTitle} />
-      <meta name="twitter:description" content={pageDescription} />
-      <meta name="twitter:image" content={pageImage} />
-      <meta
-        name="twitter:image:alt"
-        content="Victor Nogueira — Especialista em Automação Inteligente e IA"
-      />
-
-      {/* Structured Data — Person/WebSite só na home para evitar entidade duplicada */}
-      {path === '/' && (
-        <script type="application/ld+json">{JSON.stringify(personSchema)}</script>
-      )}
-      {path === '/' && (
-        <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
-      )}
-      {jsonLd?.map((schema, i) => (
-        <script key={i} type="application/ld+json">{JSON.stringify(schema)}</script>
-      ))}
-    </Helmet>
+    <script key={key} type="application/ld+json">
+      {serializeJsonLd(schema)}
+    </script>
   );
 }
+
+interface ShareTags {
+  fullTitle: string;
+  description: string;
+  pageUrl: string;
+  image: string;
+  imageAlt: string;
+  imageWidth: number | undefined;
+  imageHeight: number | undefined;
+}
+
+/** What the head says about the page, with the site defaults filled in. */
+function resolveShareTags({ title, description, path = '/', image, imageAlt, imageWidth, imageHeight }: SEOProps): ShareTags {
+  const isDefaultImage = !image;
+  return {
+    fullTitle: pageTitle(title),
+    description: description || SITE.description,
+    pageUrl: `${SITE.url}${path}`,
+    image: image || SITE.ogImage,
+    imageAlt: imageAlt || SITE.ogImageAlt,
+    imageWidth: isDefaultImage ? DEFAULT_IMAGE_WIDTH : imageWidth,
+    imageHeight: isDefaultImage ? DEFAULT_IMAGE_HEIGHT : imageHeight,
+  };
+}
+
+function openGraphMeta(tags: ShareTags, noindex?: boolean) {
+  const { fullTitle, description, pageUrl, image, imageAlt, imageWidth, imageHeight } = tags;
+  return [
+    <meta key="og:type" property="og:type" content="website" />,
+    !noindex && <meta key="og:url" property="og:url" content={pageUrl} />,
+    <meta key="og:title" property="og:title" content={fullTitle} />,
+    <meta key="og:description" property="og:description" content={description} />,
+    <meta key="og:image" property="og:image" content={image} />,
+    imageWidth && <meta key="og:image:width" property="og:image:width" content={String(imageWidth)} />,
+    imageHeight && <meta key="og:image:height" property="og:image:height" content={String(imageHeight)} />,
+    <meta key="og:image:alt" property="og:image:alt" content={imageAlt} />,
+    <meta key="og:locale" property="og:locale" content="pt_BR" />,
+    <meta key="og:site_name" property="og:site_name" content={SITE.name} />,
+  ];
+}
+
+function twitterMeta(tags: ShareTags, noindex?: boolean) {
+  const { fullTitle, description, pageUrl, image, imageAlt } = tags;
+  return [
+    <meta key="twitter:card" name="twitter:card" content="summary_large_image" />,
+    !noindex && <meta key="twitter:url" name="twitter:url" content={pageUrl} />,
+    <meta key="twitter:title" name="twitter:title" content={fullTitle} />,
+    <meta key="twitter:description" name="twitter:description" content={description} />,
+    <meta key="twitter:image" name="twitter:image" content={image} />,
+    <meta key="twitter:image:alt" name="twitter:image:alt" content={imageAlt} />,
+  ];
+}
+
+/** The attribute of the static tags of index.html that this component takes over (see the comment there). */
+const STATIC_TAG_ATTR = 'data-static-seo';
+
+/**
+ * index.html carries the home tags for the crawlers that do not run JavaScript. React hoists the tags of the page into
+ * the head next to them instead of replacing them, so once the page is running the static ones are removed: a page then
+ * has one description, one og:title and one og:url, and a noindex page does not keep the og:url of the home.
+ */
+function useDropStaticTags(): void {
+  useEffect(() => {
+    document.head.querySelectorAll(`[${STATIC_TAG_ATTR}]`).forEach((tag) => tag.remove());
+  }, []);
+}
+
+export function SEO(props: SEOProps) {
+  const { path = '/', noindex, jsonLd } = props;
+  useDropStaticTags();
+  const tags = resolveShareTags(props);
+  // Uma página noindex (404, projeto removido) não declara canonical, og:url nem entidades da home.
+  const isHome = path === '/' && !noindex;
+
+  return (
+    <>
+      <title>{tags.fullTitle}</title>
+      <meta name="description" content={tags.description} />
+      {!noindex && <link rel="canonical" href={tags.pageUrl} />}
+      {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+      {openGraphMeta(tags, noindex)}
+      {twitterMeta(tags, noindex)}
+
+      {/* Dados estruturados: Organization e WebSite só na home para evitar entidade duplicada */}
+      {isHome && jsonLdScript(organizationSchema, 'organization')}
+      {isHome && jsonLdScript(websiteSchema, 'website')}
+      {!noindex && jsonLd?.map((schema, index) => jsonLdScript(schema, index))}
+    </>
+  );
+}
+
+// PrivacyPage and LgpdPage are kept byte identical and still import this default.
+export default SEO;

@@ -1,0 +1,173 @@
+/*
+ * Everything that moves, in one place: the keyframes, and the single list of what each component does when motion is off.
+ * The components.css rules apply the keyframes. This file is imported after components.css, so the list at the bottom
+ * comes later in the cascade and wins at equal specificity.
+ */
+
+@keyframes vn-spin {
+  to { --vn-angle: 360deg; }
+}
+
+@keyframes vn-marquee {
+  to { transform: translateX(-50%); }
+}
+
+@keyframes vn-blink {
+  50% { opacity: 0; }
+}
+
+/* Percentages are of the element's own height, so a full size layer sweeps top to bottom of its parent. */
+@keyframes vn-scan {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+/* The scan line fades out once its sweeps are over, so it does not rest at the bottom edge of the grid. */
+@keyframes vn-scan-hide {
+  to { opacity: 0; }
+}
+
+/* WhatsApp button pulse: grows and fades once. */
+@keyframes vn-pulse-once {
+  from { transform: scale(1); opacity: .9; }
+  to { transform: scale(1.9); opacity: 0; }
+}
+
+/* Mobile menu: the panel slides in from the right, the overlay fades. */
+@keyframes vn-menu-slide-in {
+  from { transform: translateX(100%); }
+}
+
+@keyframes vn-menu-slide-out {
+  to { transform: translateX(100%); }
+}
+
+@keyframes vn-menu-fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes vn-menu-fade-out {
+  to { opacity: 0; }
+}
+
+/* Cable pulse: stroke-dashoffset from just before the start of a pathLength 100 path to just past its end. */
+@keyframes vn-cable {
+  0% { stroke-dashoffset: 12; }
+  70%, 100% { stroke-dashoffset: -100; }
+}
+
+/* Use case tab progress: grows from the left edge. */
+@keyframes vn-tab-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Choice pill panel: fades and scales in. */
+@keyframes vn-choice-in {
+  from { opacity: 0; transform: scale(.96); }
+}
+
+/* Testimonial dialog: rises 12px and fades in, and returns along the same path on close. */
+@keyframes vn-dialog-in {
+  from { opacity: 0; transform: translateY(12px) scale(.98); }
+}
+
+@keyframes vn-dialog-out {
+  to { opacity: 0; transform: translateY(12px) scale(.98); }
+}
+
+/*
+ * MOTION OFF. The one list. `vn-still` is the system preference for reduced motion or "Pausar animações" in the widget
+ * (tokens.css), so every line below holds for both, with one near zero duration. A new animated component adds its stop
+ * here, once. The first rule is the safety net for everything that is not listed (a library, a utility class): no
+ * animation or transition lasts, and the page does not glide on its own when it scrolls to an anchor.
+ */
+@variant vn-still {
+  *,
+  :before,
+  :after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* The root carries the class itself, which the rule above (its descendants) does not reach. */
+html.a11y-no-animations {
+  scroll-behavior: auto !important;
+}
+
+.vn-cursor {
+  @variant vn-still {
+    animation: none;
+  }
+}
+
+.vn-scan-line {
+  @variant vn-still {
+    display: none;
+  }
+}
+
+.vn-marquee {
+  @variant vn-still {
+    animation: none;
+  }
+}
+
+.vn-accordion-panel,
+.vn-accordion-icon,
+.vn-logo-tone {
+  @variant vn-still {
+    transition: none;
+  }
+}
+
+.vn-card-includes {
+  @variant vn-still {
+    transform: none;
+    transition: none;
+  }
+}
+
+.vn-pulse-once,
+.vn-cable-pulse,
+.vn-tab-progress {
+  @variant vn-still {
+    display: none;
+  }
+}
+
+/* Radix unmounts these at once when there is no animation, so the dialogs and the popover close without waiting. */
+.vn-menu-panel,
+.vn-menu-overlay,
+.vn-choice-panel,
+.vn-dialog-panel,
+.vn-dialog-overlay {
+  @variant vn-still {
+    animation: none !important;
+  }
+}
+
+/*
+ * Pseudo elements: a nested selector never matches one, so `@variant` cannot follow them. These two are written out,
+ * once for the system preference and once for the widget class.
+ */
+@supports selector(::details-content) {
+  @media (prefers-reduced-motion: reduce) {
+    .vn-accordion::details-content {
+      transition: none;
+    }
+  }
+
+  .a11y-no-animations .vn-accordion::details-content {
+    transition: none;
+  }
+}
+
+/* The spotlight layers exist only under the gate of components.css (no reduced motion preference): the widget class hides them. */
+.a11y-no-animations .vn-spotlight::before,
+.a11y-no-animations .vn-spotlight::after {
+  display: none;
+}

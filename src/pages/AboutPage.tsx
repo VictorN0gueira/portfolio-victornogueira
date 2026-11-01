@@ -1,47 +1,48 @@
-import { Suspense, lazy } from 'react';
-import { motion } from 'motion/react';
+import { Suspense } from 'react';
+import { m } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
-import Header from '../components/Header';
-import SEO from '../components/SEO';
-import { revealProps, SectionSkeleton } from '../lib/reveal';
+import { SEO } from '../components/SEO';
+import { About } from '../components/About';
+import { SectionSkeleton } from '../components/ui/SectionSkeleton';
+import { revealProps } from '../lib/reveal';
+import { useScrollToHash } from '../hooks/useScrollToHash';
+import { lazyWithRetry } from '../lib/lazyWithRetry';
+import MethodSteps from '../sections/home/MethodSteps';
 
-const About = lazy(() => import('../components/About'));
-const Process = lazy(() => import('../components/Process'));
-const Skills = lazy(() => import('../components/Skills'));
-const Footer = lazy(() => import('../components/Footer'));
-const Chatbot = lazy(() => import('../components/Chatbot'));
+// Only what sits below #metodo is lazy: this page is already a lazy route chunk, and a lazy section above the anchor
+// would grow when its chunk arrived and push #metodo away from where the hash scroll put it.
+const Skills = lazyWithRetry(() => import('../components/Skills'));
 
 export default function AboutPage() {
+  // A page that is opened with /sobre#metodo is not in the DOM yet when the browser looks for the anchor.
+  useScrollToHash();
+
   return (
     <>
       <SEO
         title="Sobre"
-        description="Quem é Victor Nogueira, como trabalho e a stack que uso para transformar processos manuais em fluxos automatizados e inteligentes."
+        description="Quem é Victor Nogueira, como a gente trabalha e a stack que usa para trocar processos manuais por fluxos automatizados e inteligentes."
         path="/sobre"
       />
-      <Header />
-      <main id="main-content" className="pt-24 md:pt-28">
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><About /></motion.div>
-        </Suspense>
+      <div className="pt-24 md:pt-28">
+        <m.div {...revealProps}><About /></m.div>
+
+        {/* It reveals its own header and cards, so it needs neither the lazy boundary nor the page reveal around it. */}
+        <MethodSteps />
 
         <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><Process /></motion.div>
-        </Suspense>
-
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><Skills /></motion.div>
+          <m.div {...revealProps}><Skills /></m.div>
         </Suspense>
 
         {/* CTA final → /contato */}
-        <motion.section {...revealProps} className="py-24 px-6 md:px-12 bg-brand-white">
+        <m.section {...revealProps} className="py-24 px-6 md:px-12 bg-brand-white">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter font-display italic mb-6">
               Pronto para automatizar?
             </h2>
-            <p className="text-zinc-500 text-lg font-light mb-10">
-              Uma conversa de 30 minutos para mapear onde a automação gera mais valor no seu negócio.
+            <p className="text-vn-gray-dark text-lg font-light mb-10">
+              Uma conversa de 30 minutos para mapear onde a automação mais ajuda no seu negócio.
             </p>
             <Link
               to="/contato"
@@ -51,13 +52,8 @@ export default function AboutPage() {
               <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
             </Link>
           </div>
-        </motion.section>
-      </main>
-
-      <Suspense fallback={null}>
-        <Footer />
-        <Chatbot />
-      </Suspense>
+        </m.section>
+      </div>
     </>
   );
 }

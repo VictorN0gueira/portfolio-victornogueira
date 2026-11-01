@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useCallback, useId, useMemo, useRef } from 'react';
+import { m, AnimatePresence } from 'motion/react';
+import { Link, useNavigationType } from 'react-router-dom';
 import {
   ArrowLeft,
   ExternalLink,
@@ -18,23 +18,47 @@ import {
   BookOpen,
 } from 'lucide-react';
 import {
+  clearNewsCache,
   getNewsArticles,
   getTimeAgo,
   detectCategory,
   type NewsArticle,
+  type NewsOrigin,
 } from '../utils/newsService';
+import { MAIN_CONTENT_ID, SkipLink } from './layout/SkipLink';
+import { NewTabHint } from './ui/NewTabHint';
+
+const LOADING_LABEL = 'Carregando artigos';
+/** The one hint that tells a screen reader every article link opens a new tab (see NewTabHint). */
+const NEW_TAB_HINT_ID = 'blog-new-tab-hint';
+
+/**
+ * The name of a card link is the title of the article. The rest of the card (language and topic, summary, time and source)
+ * is its description, together with the new tab hint, so the name stays short and nothing is lost.
+ */
+function cardDescribedBy(...ids: Array<string | false>): string {
+  return [...ids, NEW_TAB_HINT_ID].filter(Boolean).join(' ');
+}
+
+// The pills sit on a cover that is somebody else's picture, light or dark: they carry their own opaque dark surface.
+const TAG_PILL = 'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-vn-black/80 border border-white/20 shadow-lg';
 
 const FALLBACK_IMAGE =
-  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400" fill="%2318181b"%3E%3Crect width="800" height="400"/%3E%3Ctext x="400" y="200" fill="%2371717a" font-family="sans-serif" font-size="24" text-anchor="middle" alignment-baseline="middle"%3EImagem indispon%C3%ADvel%3C/text%3E%3C/svg%3E';
+  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400" fill="%2318181b"%3E%3Crect width="800" height="400"/%3E%3Ctext x="400" y="200" fill="%23a1a1aa" font-family="sans-serif" font-size="24" text-anchor="middle" alignment-baseline="middle"%3EImagem indispon%C3%ADvel%3C/text%3E%3C/svg%3E';
 
 type LangFilter = 'all' | 'pt' | 'en';
 type CatFilter  = 'all' | 'ia' | 'automação' | 'n8n' | 'agentes' | 'llms' | 'ml';
 
-const LANG_LABELS: Record<LangFilter, string> = {
-  all: 'Todos idiomas',
-  pt:  '🇧🇷 Português',
-  en:  '🇺🇸 English',
+// The flags are decoration: the name of a filter is its word.
+const LANG_LABELS: Record<LangFilter, { text: string; flag?: string; lang?: string }> = {
+  all: { text: 'Todos idiomas' },
+  pt:  { text: 'Português', flag: '🇧🇷' },
+  en:  { text: 'English', flag: '🇺🇸', lang: 'en' },
 };
+
+const FILTER_CHIP_BASE = 'px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all vn-focus-ring';
+const FILTER_CHIP_ON = 'bg-white text-black';
+const FILTER_CHIP_OFF = 'bg-white/[0.05] text-vn-gray-light border border-white/[0.08] hover:border-white/20 hover:text-white';
 
 const CAT_LABELS: Record<CatFilter, string> = {
   all:       'Todos tópicos',
@@ -45,6 +69,17 @@ const CAT_LABELS: Record<CatFilter, string> = {
   llms:      'LLMs',
   ml:        'Machine Learning',
 };
+
+/**
+ * Says where the list on screen comes from, and only what is true of it: a list that is not fresh never says it was loaded now.
+ * It goes by the origin the browser knows (see NewsOrigin), never by the source name a server reports, which can be any string.
+ */
+function describeDataSource(origin: NewsOrigin): string {
+  if (origin === 'browser-cache') return 'Lista salva neste navegador';
+  if (origin === 'stale-browser-cache') return 'As fontes não responderam. Esta é a última lista salva neste navegador.';
+  if (origin === 'fallback') return 'As fontes não responderam. Esta é uma lista fixa de artigos.';
+  return 'Lista carregada agora';
+}
 
 function isNew(publishedAt: string): boolean {
   return Date.now() - new Date(publishedAt).getTime() < 6 * 60 * 60 * 1000;
@@ -57,15 +92,12 @@ function estimateReadTime(article: NewsArticle): string {
 
 function getCategoryTag(article: NewsArticle) {
   const cat = detectCategory(article);
-  const langColor = article.language === 'en'
-    ? 'from-blue-500 to-cyan-500'
-    : 'from-emerald-500 to-teal-500';
   const langLabel = article.language === 'en' ? 'English' : 'Português';
   const topicIcon = cat === 'automação' || cat === 'n8n'
     ? <Zap className="w-3 h-3" />
     : <Bot className="w-3 h-3" />;
   const topicLabel = CAT_LABELS[cat as CatFilter] || 'IA';
-  return { langColor, langLabel, topicIcon, topicLabel };
+  return { langLabel, topicIcon, topicLabel };
 }
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
@@ -119,16 +151,26 @@ function SkeletonFeatured() {
 }
 
 // ─── Featured Card ────────────────────────────────────────────────────────────
-function FeaturedCard({ article }: { article: NewsArticle }) {
+function FeaturedCard({ article, isFixedList }: { article: NewsArticle; isFixedList: boolean }) {
   const [imgError, setImgError] = useState(false);
-  const { langColor, langLabel, topicIcon, topicLabel } = getCategoryTag(article);
-  const novo = isNew(article.publishedAt);
+  const ids = useId();
+  const titleId = `${ids}-title`;
+  const tagsId = `${ids}-tags`;
+  const summaryId = `${ids}-summary`;
+  const metaId = `${ids}-meta`;
+  const textLang = article.language === 'en' ? 'en' : undefined;
+  const { langLabel, topicIcon, topicLabel } = getCategoryTag(article);
+  // The fixed list has no real dates: it never says new nor how long ago, or it would look like a fresh feed.
+  const novo = !isFixedList && isNew(article.publishedAt);
+  const timeAgo = isFixedList ? '' : getTimeAgo(article.publishedAt);
 
   return (
-    <motion.a
+    <m.a
       href={article.url}
       target="_blank"
       rel="noopener noreferrer"
+      aria-labelledby={titleId}
+      aria-describedby={cardDescribedBy(tagsId, summaryId, metaId)}
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -140,20 +182,23 @@ function FeaturedCard({ article }: { article: NewsArticle }) {
           src={imgError || !article.image ? FALLBACK_IMAGE : article.image}
           onError={() => setImgError(true)}
           loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          alt=""
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/60 hidden md:block" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent md:hidden" />
 
-        <div className="absolute top-5 left-5 flex gap-2 flex-wrap">
-          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-gradient-to-r ${langColor} shadow-lg`}>
+        <div id={tagsId} className="absolute top-5 left-5 flex gap-2 flex-wrap">
+          <span className={TAG_PILL}>
             {langLabel}
           </span>
-          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-white/20 md:bg-white/10 backdrop-blur-none md:backdrop-blur-md border border-white/10 flex items-center gap-1">
+          <span className={`${TAG_PILL} flex items-center gap-1`}>
             {topicIcon}{topicLabel}
           </span>
           {novo && (
-            <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white bg-emerald-500 shadow-lg">
+            <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-vn-black bg-vn-accent shadow-lg">
               NOVO
             </span>
           )}
@@ -164,25 +209,27 @@ function FeaturedCard({ article }: { article: NewsArticle }) {
       <div className="flex-1 flex flex-col justify-between p-8 md:p-10 relative z-10">
         <div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-[9px] font-bold uppercase tracking-widest text-zinc-400 mb-5">
-            <Sparkles className="w-3 h-3 text-amber-400" />
+            <Sparkles className="w-3 h-3 text-vn-accent" />
             Destaque
           </span>
 
-          <h2 className="text-2xl md:text-3xl font-bold text-white font-display leading-tight mb-4 group-hover:text-zinc-100 transition-colors line-clamp-3">
+          <h3 id={titleId} lang={textLang} className="text-2xl md:text-3xl font-bold text-white font-display leading-tight mb-4 group-hover:text-zinc-100 transition-colors line-clamp-3">
             {article.title}
-          </h2>
+          </h3>
 
-          <p className="text-sm text-zinc-400 leading-relaxed line-clamp-3 font-light">
-            {article.description || 'Clique para ler o artigo completo.'}
+          <p id={summaryId} lang={textLang} className="text-sm text-zinc-400 leading-relaxed line-clamp-3 font-light">
+            {article.description || 'Clica para ler o artigo completo.'}
           </p>
         </div>
 
         <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/[0.06] flex-wrap gap-3">
-          <div className="flex items-center gap-4 text-zinc-500 text-xs flex-wrap">
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" />
-              {getTimeAgo(article.publishedAt)}
-            </span>
+          <div id={metaId} className="flex items-center gap-4 text-vn-gray-light text-xs flex-wrap">
+            {timeAgo && (
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                {timeAgo}
+              </span>
+            )}
             <span className="flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5" />
               {estimateReadTime(article)} leitura
@@ -199,21 +246,32 @@ function FeaturedCard({ article }: { article: NewsArticle }) {
           </span>
         </div>
       </div>
-    </motion.a>
+    </m.a>
   );
 }
 
 // ─── News Card ────────────────────────────────────────────────────────────────
-function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
+function NewsCard({ article, index, isFixedList }: { article: NewsArticle; index: number; isFixedList: boolean }) {
   const [imgError, setImgError] = useState(false);
-  const { langColor, langLabel, topicIcon, topicLabel } = getCategoryTag(article);
-  const novo = isNew(article.publishedAt);
+  const ids = useId();
+  const titleId = `${ids}-title`;
+  const tagsId = `${ids}-tags`;
+  const newId = `${ids}-new`;
+  const summaryId = `${ids}-summary`;
+  const metaId = `${ids}-meta`;
+  const textLang = article.language === 'en' ? 'en' : undefined;
+  const { langLabel, topicIcon, topicLabel } = getCategoryTag(article);
+  // The fixed list has no real dates: it never says new nor how long ago, or it would look like a fresh feed.
+  const novo = !isFixedList && isNew(article.publishedAt);
+  const timeAgo = isFixedList ? '' : getTimeAgo(article.publishedAt);
 
   return (
-    <motion.a
+    <m.a
       href={article.url}
       target="_blank"
       rel="noopener noreferrer"
+      aria-labelledby={titleId}
+      aria-describedby={cardDescribedBy(tagsId, novo && newId, summaryId, metaId)}
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: Math.min(index * 0.07, 0.5), ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -228,21 +286,25 @@ function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
           src={imgError || !article.image ? FALLBACK_IMAGE : article.image}
           onError={() => setImgError(true)}
           loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          alt=""
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-        <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
-          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-gradient-to-r ${langColor} shadow-lg`}>
+        {/* The right edge is held back from the NOVO pill (or the hover icon) that sits in the corner, so the tags wrap instead of running under it. */}
+        <div id={tagsId} className={`absolute top-4 left-4 flex gap-2 flex-wrap ${novo ? 'right-[5.5rem]' : 'right-16'}`}>
+          <span className={TAG_PILL}>
             {langLabel}
           </span>
-          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-white/20 md:bg-white/10 backdrop-blur-none md:backdrop-blur-md border border-white/10 flex items-center gap-1">
+          <span className={`${TAG_PILL} flex items-center gap-1`}>
             {topicIcon}{topicLabel}
           </span>
         </div>
 
         {novo && (
-          <span className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white bg-emerald-500 shadow-lg">
+          <span id={newId} className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-vn-black bg-vn-accent shadow-lg">
             NOVO
           </span>
         )}
@@ -255,22 +317,22 @@ function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
       </div>
 
       <div className="p-6 flex flex-col flex-1 relative z-10">
-        <h3 className="text-base font-bold text-white leading-snug mb-3 line-clamp-2 group-hover:text-zinc-100 transition-colors font-display">
+        <h3 id={titleId} lang={textLang} className="text-base font-bold text-white leading-snug mb-3 line-clamp-2 group-hover:text-zinc-100 transition-colors font-display">
           {article.title}
         </h3>
 
-        <p className="text-sm text-zinc-400 leading-relaxed line-clamp-3 mb-auto font-light">
-          {article.description || 'Clique para ler o artigo completo.'}
+        <p id={summaryId} lang={textLang} className="text-sm text-zinc-400 leading-relaxed line-clamp-3 mb-auto font-light">
+          {article.description || 'Clica para ler o artigo completo.'}
         </p>
 
-        <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/[0.06]">
-          <div className="flex items-center gap-1.5 text-zinc-500">
+        <div id={metaId} className="flex items-center justify-between mt-5 pt-4 border-t border-white/[0.06]">
+          <div className="flex items-center gap-1.5 text-vn-gray-light">
             <Clock className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">
-              {estimateReadTime(article)} · {getTimeAgo(article.publishedAt)}
+              {timeAgo ? `${estimateReadTime(article)} · ${timeAgo}` : estimateReadTime(article)}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-zinc-500">
+          <div className="flex items-center gap-1.5 text-vn-gray-light">
             <Newspaper className="w-3.5 h-3.5" />
             <span className="text-xs font-medium truncate max-w-[100px]">
               {article.source.name}
@@ -278,7 +340,7 @@ function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
           </div>
         </div>
       </div>
-    </motion.a>
+    </m.a>
   );
 }
 
@@ -287,21 +349,30 @@ export default function BlogPage() {
   const [articles, setArticles]     = useState<NewsArticle[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
-  const [dataSource, setDataSource] = useState<string>('');
+  const [origin, setOrigin] = useState<NewsOrigin | null>(null);
 
   const [langFilter, setLangFilter]   = useState<LangFilter>('all');
   const [catFilter, setCatFilter]     = useState<CatFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchNews = useCallback(async (forceRefresh = false, signal?: AbortSignal) => {
-    setLoading(true);
-    setError(null);
-    if (forceRefresh) localStorage.removeItem('blog_news_cache');
+  // The first page the visitor opened (a load or a reload) and a step back or forward are read by the browser itself, so
+  // the skip link stays the first tab stop. Only a visitor who arrived by a link of the site (a PUSH) gets the focus on the
+  // main landmark, like the pages inside SiteLayout do. The type is read once, on arrival.
+  const mainRef = useRef<HTMLElement>(null);
+  const navigationType = useNavigationType();
+  const arrivedByLink = useRef(navigationType === 'PUSH');
+  useEffect(() => {
+    if (arrivedByLink.current) mainRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  // The answer of the sources goes into the state only after the await, so the first load (the state starts as loading)
+  // never sets state inside the effect that starts it.
+  const loadNews = useCallback(async (signal?: AbortSignal) => {
     try {
       const result = await getNewsArticles();
       if (signal?.aborted) return;
       setArticles(result.articles);
-      setDataSource(result.source);
+      setOrigin(result.origin);
     } catch (err) {
       if (signal?.aborted) return;
       setError(err instanceof Error ? err.message : 'Erro ao carregar notícias');
@@ -310,11 +381,33 @@ export default function BlogPage() {
     }
   }, []);
 
-  useEffect(() => {
+  // One load is current at a time: starting another (the first one, a refresh) aborts the one before, so a slower answer of an
+  // older load never lands on top of a newer one, and nothing is set after the page is gone.
+  const currentLoad = useRef<AbortController | null>(null);
+  const startLoad = useCallback(() => {
+    currentLoad.current?.abort();
     const controller = new AbortController();
-    fetchNews(false, controller.signal);
-    return () => controller.abort();
-  }, [fetchNews]);
+    currentLoad.current = controller;
+    void loadNews(controller.signal);
+  }, [loadNews]);
+
+  // The refresh button: drops the cache and asks the sources again.
+  // While a load runs the press does nothing (one load at a time), and the button stays in the tab order: a disabled
+  // button that held the focus would drop it to the body (WCAG 2.4.3), so it is aria-disabled instead.
+  const refreshNews = useCallback(() => {
+    if (loading) return;
+    setLoading(true);
+    setError(null);
+    clearNewsCache();
+    startLoad();
+  }, [loading, startLoad]);
+
+  useEffect(() => {
+    // The state is set after the await (the first render is already loading), never in the body of this effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    startLoad();
+    return () => currentLoad.current?.abort();
+  }, [startLoad]);
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const filteredArticles = useMemo(() => {
@@ -339,6 +432,7 @@ export default function BlogPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white relative overflow-hidden">
+      <SkipLink />
       {/* Background ambient */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[10%] -left-[20%] w-[600px] h-[600px] bg-purple-500/[0.04] rounded-full blur-[150px]" />
@@ -347,18 +441,24 @@ export default function BlogPage() {
       </div>
 
       {/* Back button */}
-      <Link
-        to="/"
-        className="fixed top-6 left-6 z-50 flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900 md:bg-white/[0.06] backdrop-blur-none md:backdrop-blur-xl border border-white/[0.1] text-sm text-zinc-300 hover:text-white hover:bg-white/[0.1] hover:border-white/[0.2] transition-all duration-300 group shadow-lg shadow-black/20"
-      >
-        <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-        <span className="font-medium">Portfólio</span>
-      </Link>
+      <header>
+        <nav aria-label="Voltar">
+          <Link
+            to="/"
+            className="fixed top-6 left-6 z-(--vn-z-header) flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900 md:bg-white/[0.06] backdrop-blur-none md:backdrop-blur-xl border border-white/[0.1] text-sm text-zinc-300 hover:text-white hover:bg-white/[0.1] hover:border-white/[0.2] transition-all duration-300 group shadow-lg shadow-black/20"
+          >
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <span className="font-medium">Voltar para a VN One</span>
+          </Link>
+        </nav>
+      </header>
+
+      <main ref={mainRef} id={MAIN_CONTENT_ID} tabIndex={-1} aria-labelledby="blog-title" className="outline-hidden">
 
       {/* Hero */}
       <section className="relative pt-32 pb-10 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -366,48 +466,41 @@ export default function BlogPage() {
           >
             <div className="flex items-center gap-3 mb-8 flex-wrap">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08]">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Blog & Insights</span>
+                <Sparkles className="w-4 h-4 text-vn-accent" />
+                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Blog</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08]">
-                <Globe className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">PT & EN</span>
+                <Globe className="w-4 h-4 text-vn-accent" />
+                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Português e inglês</span>
               </div>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter font-display italic mb-6 leading-[0.95]">
-              O futuro é{' '}
-              <span className="not-italic bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-300 to-zinc-500">
-                inteligente.
+            <h1 id="blog-title" className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter font-display italic mb-6 leading-[0.95]">
+              Leituras sobre{' '}
+              <span className="not-italic bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-300 to-zinc-400">
+                IA e automação
               </span>
             </h1>
 
             <p className="text-lg md:text-xl text-zinc-400 font-light leading-relaxed max-w-2xl mb-10">
-              Notícias curadas sobre{' '}
-              <span className="text-zinc-200">Inteligência Artificial</span>,{' '}
-              <span className="text-zinc-200">Automação</span> e os benefícios que essas tecnologias trazem para o mundo. Atualizado diariamente.
+              A gente junta artigos sobre inteligência artificial e automação, em português e em inglês. Dá para filtrar por idioma e por tópico.
             </p>
 
             <div className="flex items-center gap-3 flex-wrap">
               <button
-                onClick={() => fetchNews(true)}
-                disabled={loading}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.1] hover:border-white/[0.15] transition-all text-sm text-zinc-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                onClick={refreshNews}
+                aria-disabled={loading}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.1] hover:border-white/[0.15] transition-all text-sm text-zinc-300 hover:text-white aria-disabled:opacity-50 aria-disabled:cursor-not-allowed vn-focus-ring"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 Atualizar
               </button>
-              {dataSource && !loading && (
-                <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-600">
-                  {dataSource === 'cache'                                    && '📦 Cache local'}
-                  {(dataSource === 'edge-function' || dataSource === 'gnews') && '🟢 Atualizado agora'}
-                  {dataSource === 'devto'                                     && '🟢 Dev.to ao vivo'}
-                  {dataSource === 'stale-cache'                              && '⚠️ Cache anterior'}
-                  {dataSource === 'fallback'                                  && '📰 Artigos curados'}
-                </span>
-              )}
+              <p role="status" className="text-xs text-vn-gray-light max-w-md">
+                {origin && !loading ? describeDataSource(origin) : ''}
+              </p>
             </div>
-          </motion.div>
+          </m.div>
         </div>
       </section>
 
@@ -418,7 +511,7 @@ export default function BlogPage() {
 
       {/* Filtros + Busca */}
       {!loading && !error && articles.length > 0 && (
-        <motion.section
+        <m.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -426,20 +519,22 @@ export default function BlogPage() {
         >
           <div className="max-w-7xl mx-auto space-y-4">
             {/* Search */}
-            <div className="relative max-w-md">
+            <div role="search" className="relative max-w-md">
               <label htmlFor="search" className="sr-only">Buscar artigos</label>
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-vn-gray-light pointer-events-none" />
               <input
                 id="search"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Buscar artigos..."
-                className="w-full pl-11 pr-10 py-3 rounded-2xl bg-white/[0.05] border border-white/[0.08] focus:border-white/20 focus:outline-none text-sm text-white placeholder:text-zinc-600 transition-all"
+                className="w-full pl-11 pr-11 py-3 rounded-2xl bg-white/[0.05] border border-white/[0.08] focus:border-white/20 vn-focus-ring text-sm text-white placeholder:text-vn-gray-mid transition-all"
               />
               {searchQuery && (
                 <button
+                  type="button"
+                  aria-label="Limpar busca"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-full text-vn-gray-light hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-white"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -447,55 +542,54 @@ export default function BlogPage() {
             </div>
 
             {/* Filtro idioma */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0 md:flex-wrap">
+            <div role="group" aria-label="Filtrar por idioma" className="flex gap-2 overflow-x-auto pt-1 pb-1 md:overflow-visible scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0 md:flex-wrap">
               {(Object.keys(LANG_LABELS) as LangFilter[]).map(f => (
                 <button
                   key={f}
+                  type="button"
+                  aria-pressed={langFilter === f}
                   onClick={() => setLangFilter(f)}
-                  className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
-                    langFilter === f
-                      ? 'bg-white text-black'
-                      : 'bg-white/[0.05] text-zinc-500 border border-white/[0.08] hover:border-white/20 hover:text-white'
-                  }`}
+                  className={`${FILTER_CHIP_BASE} ${langFilter === f ? FILTER_CHIP_ON : FILTER_CHIP_OFF}`}
                 >
-                  {LANG_LABELS[f]}
+                  {LANG_LABELS[f].flag && <span aria-hidden="true">{LANG_LABELS[f].flag} </span>}
+                  <span lang={LANG_LABELS[f].lang}>{LANG_LABELS[f].text}</span>
                 </button>
               ))}
             </div>
 
             {/* Filtro tópico */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0 md:flex-wrap">
+            <div role="group" aria-label="Filtrar por tópico" className="flex gap-2 overflow-x-auto pt-1 pb-1 md:overflow-visible scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0 md:flex-wrap">
               {(Object.keys(CAT_LABELS) as CatFilter[]).map(f => (
                 <button
                   key={f}
+                  type="button"
+                  aria-pressed={catFilter === f}
                   onClick={() => setCatFilter(f)}
-                  className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
-                    catFilter === f
-                      ? 'bg-white text-black'
-                      : 'bg-white/[0.05] text-zinc-500 border border-white/[0.08] hover:border-white/20 hover:text-white'
-                  }`}
+                  className={`${FILTER_CHIP_BASE} ${catFilter === f ? FILTER_CHIP_ON : FILTER_CHIP_OFF}`}
                 >
                   {CAT_LABELS[f]}
                 </button>
               ))}
             </div>
 
-            {/* Contador */}
-            {hasActiveFilters && (
-              <div className="flex items-center gap-3">
-                <p className="text-xs text-zinc-500 uppercase tracking-widest">
-                  {filteredArticles.length} artigo{filteredArticles.length !== 1 ? 's' : ''} encontrado{filteredArticles.length !== 1 ? 's' : ''}
-                </p>
+            {/* Contador: a live region that is in the page before any filter is used, so the count is announced when it
+                appears and when it changes. It is the only announcement of the results (the empty block below is plain text). */}
+            <div className="flex items-center gap-3 has-[p:empty]:-mt-4">
+              <p role="status" className="text-xs text-vn-gray-light uppercase tracking-widest">
+                {hasActiveFilters &&
+                  `${filteredArticles.length} artigo${filteredArticles.length !== 1 ? 's' : ''} encontrado${filteredArticles.length !== 1 ? 's' : ''}`}
+              </p>
+              {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
-                  className="text-[10px] text-zinc-600 hover:text-zinc-300 uppercase tracking-widest underline underline-offset-2 transition-colors"
+                  className="text-[10px] text-vn-gray-light hover:text-zinc-300 uppercase tracking-widest underline underline-offset-2 transition-colors"
                 >
                   Limpar filtros
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </motion.section>
+        </m.section>
       )}
 
       {/* Artigos */}
@@ -504,92 +598,99 @@ export default function BlogPage() {
           <AnimatePresence mode="wait">
             {/* Error */}
             {error && !loading && (
-              <motion.div key="error" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              <m.div key="error" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center py-32 text-center"
               >
                 <div className="w-20 h-20 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
                   <AlertTriangle className="w-8 h-8 text-red-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2 font-display">Ops! Algo deu errado</h3>
+                <h2 className="text-xl font-bold text-white mb-2 font-display">Ops! Algo deu errado</h2>
                 <p className="text-zinc-400 mb-8 max-w-md text-sm leading-relaxed">{error}</p>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Loading */}
             {loading && (
-              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <SkeletonFeatured />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+              <m.div key="loading" role="status" aria-label={LOADING_LABEL} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <span className="sr-only">{LOADING_LABEL}</span>
+                <div aria-hidden="true">
+                  <SkeletonFeatured />
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+                  </div>
                 </div>
-              </motion.div>
+              </m.div>
             )}
 
-            {/* Empty state — sem artigos */}
+            {/* Empty state: sem artigos */}
             {!loading && !error && articles.length === 0 && (
-              <motion.div key="empty" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              <m.div key="empty" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center py-32 text-center"
               >
                 <div className="w-20 h-20 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-6">
-                  <Newspaper className="w-8 h-8 text-zinc-500" />
+                  <Newspaper className="w-8 h-8 text-vn-gray-light" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2 font-display">Nenhuma notícia encontrada</h3>
-                <p className="text-zinc-400 text-sm">Tente atualizar em alguns instantes.</p>
-              </motion.div>
+                <h2 className="text-xl font-bold text-white mb-2 font-display">Nenhuma notícia encontrada</h2>
+                <p className="text-zinc-400 text-sm">Tenta atualizar em alguns instantes.</p>
+              </m.div>
             )}
 
-            {/* Empty state — filtros sem resultado */}
+            {/* Empty state: filtros sem resultado */}
             {!loading && !error && articles.length > 0 && filteredArticles.length === 0 && (
-              <motion.div key="no-filter-results" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              <m.div key="no-filter-results" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="flex flex-col items-center py-24 text-center gap-4"
               >
-                <Search className="w-10 h-10 text-zinc-700" />
+                <Search className="w-10 h-10 text-vn-gray-mid" />
                 <p className="text-white font-bold text-xl font-display">Nenhum artigo encontrado</p>
-                <p className="text-zinc-500 text-sm">Tente outros filtros ou limpe a busca.</p>
+                <p className="text-vn-gray-light text-sm">Tenta outros filtros ou limpa a busca.</p>
                 <button
                   onClick={clearFilters}
                   className="px-6 py-2.5 rounded-full border border-white/10 text-xs text-zinc-400 hover:text-white hover:border-white/20 transition-all"
                 >
                   Limpar filtros
                 </button>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Artigos com featured */}
             {!loading && !error && filteredArticles.length > 0 && (
-              <motion.div key="articles" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <FeaturedCard article={filteredArticles[0]} />
+              <m.div key="articles" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <h2 className="sr-only">Artigos</h2>
+                <NewTabHint id={NEW_TAB_HINT_ID} />
+                <FeaturedCard article={filteredArticles[0]} isFixedList={origin === 'fallback'} />
                 {filteredArticles.length > 1 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredArticles.slice(1).map((article, idx) => (
-                      <NewsCard key={article.url} article={article} index={idx + 1} />
+                      <NewsCard key={article.url} article={article} index={idx + 1} isFixedList={origin === 'fallback'} />
                     ))}
                   </div>
                 )}
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>
       </section>
 
+      </main>
+
       {/* Footer */}
-      <section className="relative py-16 px-6 md:px-12">
+      <footer className="relative py-16 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
           <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mb-12" />
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <p className="text-xs text-zinc-600 uppercase tracking-widest">
-              Notícias via GNews · Cache server-side 24h
+            <p className="text-xs text-vn-gray-light uppercase tracking-widest">
+              Os artigos vêm de sites de terceiros e os links levam aos sites de quem publicou.
             </p>
             <Link
               to="/"
-              className="text-xs text-zinc-500 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
+              className="text-xs text-vn-gray-light hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
             >
               <ArrowLeft className="w-3 h-3" />
-              Voltar ao portfólio
+              Voltar para a VN One
             </Link>
           </div>
         </div>
-      </section>
+      </footer>
     </div>
   );
 }

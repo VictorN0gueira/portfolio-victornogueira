@@ -1,40 +1,48 @@
-import { motion } from 'motion/react';
+import { useId } from 'react';
+import { m } from 'motion/react';
 import { MessageCircle } from 'lucide-react';
-import ContactForm from './ContactForm';
+import { ContactForm } from './ContactForm';
+import { NewTabHint } from './ui/NewTabHint';
 
 interface ContactProps {
   /** Mensagem vinda do ROICalculator para pré-preencher o formulário */
   prefillMessage?: string;
+  /** Counts the requests, so the same message sent again still replaces what the visitor typed */
+  prefillNonce?: number;
 }
 
-export default function Contact({ prefillMessage }: ContactProps) {
+export default function Contact({ prefillMessage, prefillNonce }: ContactProps) {
+  const newTabHintId = useId();
+
   return (
     <section id="contato" className="py-32 px-6 md:px-12 bg-black text-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, x: -30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
           <h2 className="text-4xl sm:text-6xl md:text-8xl font-bold tracking-tighter mb-10 font-display italic">
-            Vamos criar <br/> <span className="not-italic text-zinc-400">algo juntos.</span>
+            Conta o que <br/> <span className="not-italic text-vn-gray-light">você precisa.</span>
           </h2>
           <p className="text-zinc-400 text-lg md:text-xl mb-12 max-w-md font-light leading-relaxed">
-            Estou sempre aberto a discutir novos projetos, ideias criativas ou oportunidades de fazer parte da sua visão.
+            A gente conversa sobre o seu projeto e mostra por onde começar.
           </p>
           
           <div className="space-y-6">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Email</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-vn-gray-light mb-2">E-mail</p>
               <a href="mailto:contato@vnone.com.br" className="text-xl md:text-2xl font-light hover:text-zinc-400 transition-colors">contato@vnone.com.br</a>
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">WhatsApp</p>
-              <a 
+              <p className="text-xs font-bold uppercase tracking-widest text-vn-gray-light mb-2">WhatsApp</p>
+              <NewTabHint id={newTabHintId} />
+              <a
                 href="https://wa.me/5581984451243"
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-describedby={newTabHintId}
                 className="flex items-center gap-2 text-xl md:text-2xl font-light text-zinc-400 hover:text-white transition-colors"
               >
                 +55 (81) 98445-1243
@@ -42,24 +50,21 @@ export default function Contact({ prefillMessage }: ContactProps) {
               </a>
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Localização</p>
-              <p className="text-xl md:text-2xl font-light">Recife, Brasil & Remoto</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-vn-gray-light mb-2">Localização</p>
+              <p className="text-xl md:text-2xl font-light">Recife e remoto</p>
             </div>
           </div>
-        </motion.div>
+        </m.div>
 
-        <motion.div
+        <m.div
           initial={{ opacity: 0, x: 30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
           className="relative z-10"
         >
-          <ContactForm initialMessage={prefillMessage} />
-          <p className="text-center text-zinc-600 text-xs mt-5 tracking-wide">
-            Respondo em até <span className="text-white font-medium">24 horas</span>
-          </p>
-        </motion.div>
+          <ContactForm initialMessage={prefillMessage} prefillNonce={prefillNonce} />
+        </m.div>
       </div>
 
       {/* Decorative circle */}

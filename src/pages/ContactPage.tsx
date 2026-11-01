@@ -1,68 +1,73 @@
-import { Suspense, lazy, useState, useCallback } from 'react';
-import { motion } from 'motion/react';
-import Header from '../components/Header';
-import SEO from '../components/SEO';
-import { revealProps, SectionSkeleton } from '../lib/reveal';
-import { useScrollToHash } from '../lib/useScrollToHash';
+import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
+import { m } from 'motion/react';
+import { SEO } from '../components/SEO';
+import { SectionSkeleton } from '../components/ui/SectionSkeleton';
+import { revealProps } from '../lib/reveal';
+import { useScrollToHash } from '../hooks/useScrollToHash';
+import { lazyWithRetry } from '../lib/lazyWithRetry';
+import { scrollToIdWhenMounted } from '../lib/scrollToIdWhenMounted';
 import { faqs } from '../data/faqs';
+import { buildFaqJsonLd } from '../lib/faqJsonLd';
 
-const ROICalculator = lazy(() => import('../components/ROICalculator'));
-const Contact = lazy(() => import('../components/Contact'));
-const FAQ = lazy(() => import('../components/FAQ'));
-const Footer = lazy(() => import('../components/Footer'));
-const Chatbot = lazy(() => import('../components/Chatbot'));
+// lazyWithRetry, not React.lazy: a chunk that a deploy deleted is retried and then reaches the error boundary (see lazyWithRetry).
+const ROICalculator = lazyWithRetry(() => import('../components/ROICalculator'));
+const Contact = lazyWithRetry(() => import('../components/Contact'));
+const FAQ = lazyWithRetry(() => import('../components/FAQ'));
 
-// FAQPage JSON-LD gerado da mesma fonte que o accordion — só nesta página
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqs.map((faq) => ({
-    '@type': 'Question',
-    name: faq.question,
-    acceptedAnswer: { '@type': 'Answer', text: faq.answer },
-  })),
-};
+// FAQPage JSON-LD gerado da mesma fonte que o accordion, só nesta página
+const faqJsonLd = buildFaqJsonLd(faqs);
+
+function findMessageField(section: HTMLElement): HTMLElement | null {
+  return section.querySelector<HTMLElement>('textarea');
+}
+
+interface PrefillRequest {
+  message: string;
+  /** Counts the requests: a second click with the same figures still restores the quote in an edited message. */
+  nonce: number;
+}
 
 export default function ContactPage() {
   useScrollToHash();
-  const [prefillMessage, setPrefillMessage] = useState<string | undefined>();
+  const [prefill, setPrefill] = useState<PrefillRequest | undefined>();
+
+  // The form is in a lazy section: the scroll may wait for it, so it is cancelled when the page goes or a new request starts.
+  const cancelScroll = useRef<(() => void) | undefined>(undefined);
+  useEffect(() => () => cancelScroll.current?.(), []);
 
   const handleQuoteRequest = useCallback((message: string) => {
-    setPrefillMessage(message);
-    document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' });
+    setPrefill((previous) => ({ message, nonce: (previous?.nonce ?? 0) + 1 }));
+    // No behavior given, so the page decides: smooth only when neither the system nor the widget asked for less motion.
+    // Focus goes to the message, the field the quote fills in, so the next Tab continues from the form.
+    cancelScroll.current?.();
+    cancelScroll.current = scrollToIdWhenMounted('contato', { focus: findMessageField });
   }, []);
 
   return (
     <>
       <SEO
         title="Contato"
-        description="Fale sobre seu projeto: calcule o custo dos seus processos manuais e solicite uma consulta gratuita de 30 minutos."
+        description="Fala sobre o seu projeto: calcula o custo dos seus processos manuais e pede uma consulta gratuita de 30 minutos."
         path="/contato"
         jsonLd={[faqJsonLd]}
       />
-      <Header />
-      <main id="main-content" className="pt-16 md:pt-20">
+      <div className="pt-16 md:pt-20">
         <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}>
+          <m.div {...revealProps}>
             <ROICalculator onQuoteRequest={handleQuoteRequest} />
-          </motion.div>
+          </m.div>
         </Suspense>
 
         <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}>
-            <Contact prefillMessage={prefillMessage} />
-          </motion.div>
+          <m.div {...revealProps}>
+            <Contact prefillMessage={prefill?.message} prefillNonce={prefill?.nonce} />
+          </m.div>
         </Suspense>
 
         <Suspense fallback={null}>
-          <motion.div {...revealProps}><FAQ /></motion.div>
+          <m.div {...revealProps}><FAQ /></m.div>
         </Suspense>
-      </main>
-
-      <Suspense fallback={null}>
-        <Footer />
-        <Chatbot />
-      </Suspense>
+      </div>
     </>
   );
 }

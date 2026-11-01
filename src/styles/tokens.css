@@ -1,0 +1,119 @@
+/*
+ * VN One design tokens: self-hosted fonts, palette, easing, radii, breakpoints, z index scale and the two custom variants.
+ * Nothing here draws anything: the component rules are in components.css, the keyframes and the motion off list in motion.css.
+ */
+
+/* Fonts: self-hosted from /public/fonts. Space Grotesk 400, 500, 700 and JetBrains Mono 400, 500. */
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/SpaceGrotesk-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/SpaceGrotesk-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/SpaceGrotesk-Bold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/JetBrainsMono-Medium.woff2") format("woff2");
+}
+
+@theme static {
+  --color-vn-white: #ffffff;
+  --color-vn-cream: #f2f2f2;
+  --color-vn-gray-light: #c7c7c7;
+  --color-vn-gray-mid: #8a8a8a;
+  --color-vn-gray-dark: #4d4d4d;
+  --color-vn-ink: #1a1a1a;
+  --color-vn-black: #0a0a0a;
+  --color-vn-accent: #00e5a0;
+
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+
+  /* The two fluid radii the components use: a card, and the big shell of a section (rounded-card, rounded-shell). */
+  --radius-card: clamp(20px, 3vw, 28px);
+  --radius-shell: clamp(24px, 4vw, 40px);
+
+  /* The smallest phones: xs: replaces the arbitrary min-[360px]: variant. */
+  --breakpoint-xs: 360px;
+
+  /*
+   * The z index scale, from the lowest layer to the highest. Use it as z-(--vn-z-header) and the like, never a number:
+   * the order of the layers is decided here, in one place. Float, then header, then the page progress bar, then the popover of a
+   * list (above the header), then the accessibility widget, then the menu overlay and its panel, then the skip link.
+   * "Float" is the WhatsApp button: just above the page content, under every other layer.
+   */
+  --vn-z-float: 40;
+  --vn-z-header: 50;
+  --vn-z-progress: 60;
+  --vn-z-popover: 100;
+  --vn-z-widget: 150;
+  --vn-z-overlay: 160;
+  --vn-z-dialog: 170;
+  --vn-z-skip: 200;
+}
+
+/*
+ * Motion is off: the visitor asked for reduced motion in the system, or switched "Pausar animações" on in the
+ * accessibility widget (the class on <html>). One variant for both, so a rule that stops motion is written once:
+ * `@variant vn-still { ... }` inside the rule of the thing that moves (the list is in motion.css).
+ * It cannot follow a pseudo element (a nested selector never matches one): those two cases are written out in motion.css.
+ */
+@custom-variant vn-still {
+  @media (prefers-reduced-motion: reduce) {
+    @slot;
+  }
+  &:where(.a11y-no-animations, .a11y-no-animations *) {
+    @slot;
+  }
+}
+
+/* The visitor asked for more contrast in the system, or switched "Contraste alto" on in the accessibility widget. */
+@custom-variant vn-contrast {
+  @media (prefers-contrast: more) {
+    @slot;
+  }
+  &:where(.a11y-high-contrast, .a11y-high-contrast *) {
+    @slot;
+  }
+}
+
+/* A phone held sideways: the viewport is short. One definition for the 480px height every component used to write out. */
+@custom-variant vn-landscape (@media (max-height: 480px));
+
+/* Animated angle for the conic border. */
+@property --vn-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}

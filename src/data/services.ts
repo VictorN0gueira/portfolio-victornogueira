@@ -1,4 +1,6 @@
 export interface Service {
+  /** Âncora do serviço na página de serviços: `/servicos#<slug>`. Não muda com o nome exibido. */
+  slug: string;
   nome: string;
   categoria: 'Automação' | 'Inteligência Artificial' | 'Desenvolvimento Web';
   descricao: string;
@@ -6,7 +8,7 @@ export interface Service {
   prazo: string;
 }
 
-export interface ServiceCombo {
+interface ServiceCombo {
   nome: string;
   composicao: string;
   desconto: string;
@@ -15,33 +17,35 @@ export interface ServiceCombo {
 
 /** Opções de alto nível para o dropdown de interesse no formulário de contato */
 export const serviceOptions: string[] = [
-  'Automação de Processos',
-  'Agente de IA / Chatbot',
-  'Site / Landing Page',
-  'Sistema Web sob medida',
-  'Combo (Site + Automação)',
-  'Ainda não sei / Quero orientação',
+  'Automação de processos',
+  'Agente de IA',
+  'Site ou landing page',
+  'Sistema web sob medida',
+  'Combo de site e automação',
+  'Ainda não sei, quero orientação',
 ];
 
 export const services: Service[] = [
   {
+    slug: 'automacao-essencial',
     nome: 'Automação Essencial',
     categoria: 'Automação',
     descricao:
-      'Um processo manual do seu negócio transformado em fluxo automático — rodando sozinho, todos os dias.',
+      'Um processo manual do seu negócio vira um fluxo automático, rodando sozinho todos os dias.',
     inclui: [
       '1 fluxo de automação completo',
       'Integração entre seus sistemas atuais',
       'Hospedagem e monitoramento',
       'Documentação de uso',
     ],
-    prazo: '~1 semana',
+    prazo: 'cerca de 1 semana',
   },
   {
+    slug: 'automacao-avancada',
     nome: 'Automação Avançada',
     categoria: 'Automação',
     descricao:
-      'Operações inteiras orquestradas: múltiplos fluxos integrados, lógica complexa e IA onde faz diferença.',
+      'Operações inteiras automatizadas, com IA onde faz diferença.',
     inclui: [
       'Múltiplos fluxos integrados',
       'Lógica condicional complexa',
@@ -51,12 +55,13 @@ export const services: Service[] = [
     prazo: '2 a 3 semanas',
   },
   {
+    slug: 'agente-de-ia-sob-medida',
     nome: 'Agente de IA Sob Medida',
     categoria: 'Inteligência Artificial',
     descricao:
-      'Um agente que atende, qualifica e responde pelos seus canais — treinado no contexto do seu negócio.',
+      'Um agente que atende, qualifica e responde pelos seus canais, treinado no contexto do seu negócio.',
     inclui: [
-      'Chatbot ou agente customizado',
+      'Escopo do agente definido com você',
       'Integração com 1 canal (WhatsApp ou site)',
       'Base de conhecimento do seu negócio',
       'Ajustes de comportamento pós-entrega',
@@ -64,41 +69,44 @@ export const services: Service[] = [
     prazo: '2 a 3 semanas',
   },
   {
-    nome: 'Landing Page / Site',
+    slug: 'landing-page-ou-site',
+    nome: 'Landing Page ou Site',
     categoria: 'Desenvolvimento Web',
     descricao:
-      'Presença digital rápida, moderna e focada em conversão — até 5 páginas.',
+      'Site rápido, pensado para o visitante virar contato.',
     inclui: [
-      'React + Tailwind, design responsivo',
+      'Funciona bem no celular e no computador',
       'Até 5 páginas',
       'SEO técnico configurado',
-      'Deploy incluso',
+      'Publicação no ar inclusa',
     ],
-    prazo: '~1 semana',
+    prazo: 'cerca de 1 semana',
   },
   {
+    slug: 'landing-page-complexa',
     nome: 'Landing Page Complexa',
     categoria: 'Desenvolvimento Web',
     descricao:
-      'Páginas com animações, integrações e seções avançadas para produtos que exigem mais.',
+      'Páginas para produtos que exigem mais do que um site comum.',
     inclui: [
       'Animações e interações avançadas',
       'Integrações com APIs e formulários',
       'Seções sob medida',
-      'Performance otimizada',
+      'Site rápido de carregar',
     ],
     prazo: '1 a 2 semanas',
   },
   {
+    slug: 'sistema-web-sob-medida',
     nome: 'Sistema Web Sob Medida',
     categoria: 'Desenvolvimento Web',
     descricao:
-      'Aplicação completa para o seu processo: backend, frontend, login e deploy — do zero ao ar.',
+      'Aplicação completa para o seu processo, do zero ao ar.',
     inclui: [
-      'Backend + frontend completos',
+      'Telas e regras do seu processo',
       'Autenticação de usuários',
       'Banco de dados estruturado',
-      'Deploy e ambiente de produção',
+      'Publicação e ambiente de produção',
     ],
     prazo: '1 a 2 meses',
   },
@@ -108,19 +116,19 @@ export const combos: ServiceCombo[] = [
   {
     nome: 'Presença + Automação',
     composicao: 'Landing Page + Automação Essencial',
-    desconto: '10% off',
+    desconto: '10% de desconto',
     descricao: 'Site no ar e o primeiro processo automatizado num pacote só.',
   },
   {
     nome: 'Automação + IA',
     composicao: 'Automação Avançada + Agente de IA',
-    desconto: '12% off',
-    descricao: 'Operação orquestrada com um agente inteligente na frente.',
+    desconto: '12% de desconto',
+    descricao: 'Operação automatizada com um agente de IA na frente.',
   },
   {
     nome: 'Sistema + Automação',
     composicao: 'Sistema Web + Automação Avançada',
-    desconto: '15% off',
-    descricao: 'A solução completa: sistema sob medida com fluxos integrados.',
+    desconto: '15% de desconto',
+    descricao: 'Sistema sob medida já com os fluxos integrados.',
   },
 ];

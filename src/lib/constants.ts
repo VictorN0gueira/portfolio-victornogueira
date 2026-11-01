@@ -1,8 +1,23 @@
-export const isTouchDevice =
-  typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+export const WHATSAPP_NUMBER = '5581984451243';
+export const WHATSAPP_DISPLAY = '(81) 98445-1243';
+export const CONTACT_EMAIL = 'contato@vnone.com.br';
 
-export const LOGO_URL =
-  'https://minio.vnone.com.br/api/v1/buckets/empresas/objects/download?preview=true&prefix=VN%20One%2FLogo%20-%20s.%20fundo.png&version_id=null';
+export function whatsappUrl(text: string): string {
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+}
 
-export const WHATSAPP_FALLBACK_URL =
-  'https://wa.me/5581984451243?text=Ol%C3%A1%2C+Victor!+Tentei+usar+o+formul%C3%A1rio+do+site.';
+/** First message of a chat opened from the floating button and the footer. */
+export const WHATSAPP_GREETING = 'Olá! Vim pelo site da VN One e quero conversar sobre um projeto.';
+
+export const WHATSAPP_FALLBACK_URL = whatsappUrl('Olá! Tentei usar o formulário do site da VN One.');
+
+export interface SocialLink {
+  label: 'LinkedIn' | 'GitHub' | 'Instagram';
+  href: string;
+}
+
+export const SOCIAL_LINKS: SocialLink[] = [
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/victornogueira-vn' },
+  { label: 'GitHub', href: 'https://github.com/VictorN0gueira' },
+  { label: 'Instagram', href: 'https://www.instagram.com/victornogueira._/' },
+];

@@ -1,0 +1,475 @@
+/*
+ * The component rules of the VN One design system (the vn-* classes) and its shared utilities.
+ * The tokens are in tokens.css, the keyframes and what each component does when motion is off are in motion.css (imported
+ * after this file, so its resets come later and win at equal specificity).
+ */
+
+/* Safe-area utility for fixed elements (notch). pb, pr and pl had no user and are gone. */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* The focus ring of the site: 2px, 2px off the edge, white on a dark surface and ink on a light one. */
+@utility vn-focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--color-vn-white);
+    outline-offset: 2px;
+  }
+}
+
+@utility vn-focus-ring-ink {
+  &:focus-visible {
+    outline: 2px solid var(--color-vn-ink);
+    outline-offset: 2px;
+  }
+}
+
+/* Chrome gradient text. */
+@utility vn-chrome-text {
+  background: linear-gradient(135deg, #ffffff 0%, #c7c7c7 45%, #8a8a8a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 64px line grid, faded out at the edges. The scan line is a child layer (.vn-scan-line) that uses vn-scan. */
+@utility vn-scan-grid {
+  background-image:
+    linear-gradient(var(--vn-grid-line, rgba(26, 26, 26, .06)) 1px, transparent 1px),
+    linear-gradient(90deg, var(--vn-grid-line, rgba(26, 26, 26, .06)) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(70% 70% at 50% 40%, #000, transparent);
+  mask-image: radial-gradient(70% 70% at 50% 40%, #000, transparent);
+}
+
+/* Modifier for dark surfaces. */
+@utility vn-scan-grid--dark {
+  --vn-grid-line: rgba(255, 255, 255, .045);
+  --vn-scan-line: rgba(255, 255, 255, .16);
+}
+
+/*
+ * Blinking block cursor. The size and color come from utilities on the element (see Cursor.tsx).
+ * It blinks five times and rests visible (a blink that never stops is motion the visitor cannot pause from the content).
+ */
+.vn-cursor {
+  animation: vn-blink 1.1s steps(1) 5;
+}
+
+/*
+ * Scan line that sweeps down a ScanGrid. The element is a full size layer of the grid and only its
+ * bottom 2px are drawn, so translating it from -100% to 0 moves the line from the top edge to the
+ * bottom edge of the grid, whatever the viewport. It sits inside the grid, so the grid mask fades it too.
+ * It sweeps twice and then fades out (the second animation starts when the sweeps end).
+ */
+.vn-scan-line {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--vn-scan-line, rgba(26, 26, 26, .14)), transparent) bottom / 100% 2px no-repeat;
+  animation: vn-scan 8s linear 2, vn-scan-hide 0s linear 16s forwards;
+  will-change: transform;
+}
+
+/*
+ * Marquee: a clipped frame that holds a track, and the track holds two identical groups. The track
+ * moves by half its own width, so the second group lands where the first one started and the loop has
+ * no seam. The frame must not report the track's width to its ancestors: overflow clip alone does not
+ * give a flex or grid item an automatic minimum of zero, and a plain wrapper around the frame would then
+ * stretch to the track width and scroll the page sideways. So the frame has inline size containment (its
+ * own intrinsic width is zero). Its width, min-width and max-width (w-full min-w-0 max-w-full) and all
+ * layout (display, gap) are utilities in Marquee.tsx, not set here: this file is unlayered, so a rule
+ * here would beat a consumer className such as max-w-4xl.
+ */
+.vn-marquee-frame {
+  contain: inline-size;
+  overflow-x: clip;
+  touch-action: pan-y;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+/*
+ * Browsers without overflow clip (before Safari 16) clip with hidden instead. This is an @supports block
+ * and not a second overflow-x declaration because the CSS optimizer of the build collapses
+ * "overflow-x: hidden; overflow-x: clip" into the last one, so such a fallback would never ship.
+ */
+@supports not (overflow-x: clip) {
+  .vn-marquee-frame {
+    overflow-x: hidden;
+  }
+}
+
+.vn-marquee {
+  animation: vn-marquee var(--vn-marquee-duration, 32s) linear infinite;
+  will-change: transform;
+}
+
+.vn-marquee:focus-within {
+  animation-play-state: paused;
+}
+
+@media (hover: hover) {
+  .vn-marquee:hover {
+    animation-play-state: paused;
+  }
+}
+
+/*
+ * Spotlight card: the cursor following glow (--mx and --my, written by usePointerSpotlight) and the
+ * rotating conic ring exist only where the device can hover with a fine pointer and the visitor did not
+ * ask for less motion. Everywhere else (touch, reduced motion) the pseudo elements are never generated,
+ * so the card is static. Positioning (relative, isolate) comes from utilities in SpotlightCard.tsx.
+ */
+.vn-spotlight {
+  --vn-spot-color: rgba(26, 26, 26, .08);
+}
+
+.vn-spotlight--dark {
+  --vn-spot-color: rgba(255, 255, 255, .08);
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .vn-spotlight::before,
+  .vn-spotlight::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms var(--ease-out);
+  }
+
+  /* 1px ring: the gradient fills the padding box and the mask subtracts the content box. */
+  .vn-spotlight::before {
+    padding: 1px;
+    background: conic-gradient(from var(--vn-angle), transparent 70%, var(--color-vn-gray-mid), transparent);
+    -webkit-mask: linear-gradient(var(--color-vn-black) 0 0) content-box, linear-gradient(var(--color-vn-black) 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(var(--color-vn-black) 0 0) content-box, linear-gradient(var(--color-vn-black) 0 0);
+    mask-composite: exclude;
+  }
+
+  .vn-spotlight::after {
+    background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), var(--vn-spot-color), transparent 70%);
+  }
+
+  /*
+   * The spin animates --vn-angle, which repaints every frame, so it is
+   * the second documented exception to compositor only animation, next to the accordion.
+   * It runs only on hover and focus within, and only inside this gate (fine pointer, motion allowed).
+   */
+  .vn-spotlight:hover::before,
+  .vn-spotlight:focus-within::before {
+    opacity: 1;
+    animation: vn-spin 4s linear infinite;
+  }
+
+  .vn-spotlight:hover::after {
+    opacity: 1;
+  }
+}
+
+/*
+ * The "includes" list of a service card: a decorative settle, nothing more. The list is always visible at full
+ * contrast, on every device and at every width, and it is always laid out, so the card never changes height. Only
+ * where the visitor can hover with a fine pointer and did not ask for less motion does the list rest 8px low and rise
+ * into place while the pointer is over its spotlight card. The offset stays inside the gap above the term of the card
+ * (pt-6, 24px), so nothing overlaps or is clipped. Only transform is declared (never opacity, display or a layout
+ * property), and the card holds nothing that takes the focus, so there is no focus rule. With "Pausar animações" the
+ * list is plain: no offset and no transition (the reset is in motion.css).
+ */
+.vn-card-includes {
+  transition: transform 300ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .vn-card-includes {
+    transform: translateY(8px);
+  }
+
+  .vn-spotlight:hover .vn-card-includes {
+    transform: none;
+  }
+}
+
+/*
+ * Accordion. The panel animates grid-template-rows from 0fr to 1fr with an opacity fade, because the
+ * height of the answer is unknown. This is a documented exception to compositor only animation (the
+ * conic ring spin of the spotlight card is the other one).
+ * Opening starts from @starting-style (the closed content is not rendered, so there is no previous
+ * style to transition from). Closing animates only where ::details-content exists, which keeps the
+ * content visible until the transition ends; elsewhere it collapses at once.
+ */
+.vn-accordion-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 300ms var(--ease-out), opacity 300ms var(--ease-out);
+}
+
+.vn-accordion[open] > .vn-accordion-panel {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+@starting-style {
+  .vn-accordion[open] > .vn-accordion-panel {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+
+.vn-accordion-icon {
+  transition: transform 300ms var(--ease-out);
+}
+
+.vn-accordion[open] > summary .vn-accordion-icon {
+  transform: rotate(45deg);
+}
+
+@supports selector(::details-content) {
+  .vn-accordion::details-content {
+    transition: content-visibility 300ms allow-discrete;
+  }
+}
+
+/*
+ * WhatsApp button pulse: one ring that grows and fades once after the button mounts (no infinite ping).
+ * The ring is its own layer, so only transform and opacity animate. It is invisible before and after the
+ * pulse, and it is not drawn at all under reduced motion.
+ */
+.vn-pulse-once {
+  opacity: 0;
+  animation: vn-pulse-once 1.4s var(--ease-out) 1.2s 1 forwards;
+}
+
+/*
+ * Mobile menu dialog. The panel slides in from the right and the overlay fades, driven by the data-state
+ * Radix puts on both. Radix waits for the exit animation to end before it unmounts them, and unmounts at
+ * once when the animation is off (reduced motion), so nothing here needs JavaScript.
+ */
+.vn-menu-panel[data-state="open"] {
+  animation: vn-menu-slide-in 320ms var(--ease-out);
+}
+
+.vn-menu-panel[data-state="closed"] {
+  animation: vn-menu-slide-out 240ms var(--ease-out) forwards;
+}
+
+.vn-menu-overlay[data-state="open"] {
+  animation: vn-menu-fade-in 240ms var(--ease-out);
+}
+
+.vn-menu-overlay[data-state="closed"] {
+  animation: vn-menu-fade-out 200ms var(--ease-out) forwards;
+}
+
+/*
+ * Cable pulse of the automation panel: a short dash that runs along a path and rests off the end of it.
+ * The path carries pathLength="100", so the dash (12 units) and the travel (from 12 to -100, which moves it
+ * from just before the start to just past the end) are the same on every cable, whatever its size in pixels.
+ * Only stroke-dashoffset animates. The stagger between cables comes from --vn-cable-delay on the element.
+ */
+.vn-cable-pulse {
+  stroke-dasharray: 12 100;
+  stroke-dashoffset: 12;
+  animation: vn-cable 2.8s linear var(--vn-cable-delay, 0s) infinite;
+}
+
+/*
+ * Paused automation panel: the window carries data-paused="true" while the visitor paused it, or the focus is
+ * inside its body (the pointer does not hold it), and the dash of the cable stops where it is. The animation
+ * itself stays on the pulse, so leaving the pause continues from the same point.
+ */
+[data-flow-window][data-paused="true"] .vn-cable-pulse {
+  animation-play-state: paused;
+}
+
+/*
+ * Progress of the active use case tab: a fill that grows from the left edge to the full width of its track while
+ * the rotation waits for the next tab. Only transform animates (scaleX, never width). The duration is the rotation
+ * interval, passed as --vn-tab-duration by the component (there is no fallback here), so the bar and the timer share
+ * one number. The component draws the bar only while the rotation really runs and mounts it fresh each time, so it
+ * always starts at zero together with the timer.
+ */
+.vn-tab-progress {
+  transform-origin: left center;
+  animation: vn-tab-progress var(--vn-tab-duration) linear forwards;
+}
+
+/*
+ * Choice pill panel (the listbox of ChoicePill). It fades and scales in from the point Radix anchors it to.
+ * Only the opening is animated: with no exit animation Radix unmounts it at once on close, so the focus
+ * goes back to the trigger without waiting. Only transform and opacity move.
+ */
+.vn-choice-panel[data-state="open"] {
+  transform-origin: var(--radix-popover-content-transform-origin);
+  animation: vn-choice-in 160ms var(--ease-out);
+}
+
+/*
+ * Testimonial dialog (the full text of a client). The panel rises 12px and fades in, and on close it returns along the
+ * same path (12px low, a little smaller, faded out) but quicker, 200ms against 280ms; the overlay fades with the same
+ * keyframes as the menu overlay. Only opacity and transform move, and
+ * the panel is never centered with a transform (it centers itself with auto margins and fixed insets), so these
+ * keyframes do not fight a position. Radix waits for the exit animation before it unmounts them, and unmounts at once
+ * when the animation is off (the reset is in motion.css).
+ */
+.vn-dialog-panel[data-state="open"] {
+  animation: vn-dialog-in 280ms var(--ease-out);
+}
+
+.vn-dialog-panel[data-state="closed"] {
+  animation: vn-dialog-out 200ms var(--ease-out) forwards;
+}
+
+.vn-dialog-overlay[data-state="open"] {
+  animation: vn-menu-fade-in 240ms var(--ease-out);
+}
+
+.vn-dialog-overlay[data-state="closed"] {
+  animation: vn-menu-fade-out 200ms var(--ease-out) forwards;
+}
+
+/*
+ * Client logo tone: a logo rests gray and a little faded, and takes its color back while the pointer is over its host
+ * (.vn-logo-host: a cell of the client grid, a testimonial card) or the focus is inside the host. The muted rest exists
+ * only where the device can hover. With (hover: none), a phone or a tablet, nothing can wake the logo, so it is colored
+ * from the start: the base rule below only sets the transition. Only filter and opacity change, 300ms on the shared
+ * easing, and the change is instant with motion off (the reset is in motion.css). The resting opacity stays at .7 or
+ * more: a logo that fails to load shows its name as text at that opacity, and it must keep its contrast.
+ */
+.vn-logo-tone {
+  transition: opacity 300ms var(--ease-out), filter 300ms var(--ease-out);
+}
+
+@media (hover: hover) {
+  .vn-logo-tone {
+    filter: grayscale(1);
+    opacity: .7;
+  }
+
+  .vn-logo-host:hover .vn-logo-tone,
+  .vn-logo-host:focus-within .vn-logo-tone {
+    filter: grayscale(0);
+    opacity: 1;
+  }
+}
+
+/*
+ * Range slider for dark surfaces (the hours slider of the ROI simulator). The input sets --vn-range-fill (a
+ * percentage) and the track paints its filled part from it. The fill ends at that share of the track, not at the
+ * center of the 28px thumb (which travels 14px less at each end): the opaque thumb always covers the difference.
+ * Width and height come from utilities on the element (w-full h-11: the 44px box is the touch target and the track
+ * is drawn in its middle), because this file is unlayered and would beat a consumer className.
+ * WebKit and Firefox parts are separate rules: a selector list with one unknown pseudo element is dropped whole.
+ * Everything is a palette token and the accent never appears: white fill, gray mid rest, white thumb.
+ */
+/* The fill is a paint on an input driven by --vn-range-fill, a documented exception to compositor only animation (nothing here animates). */
+.vn-range {
+  --vn-range-fill: 0%;
+  --vn-range-track: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+.vn-range::-webkit-slider-runnable-track {
+  height: var(--vn-range-track);
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-vn-white) var(--vn-range-fill), var(--color-vn-gray-mid) var(--vn-range-fill));
+}
+
+.vn-range::-moz-range-track {
+  height: var(--vn-range-track);
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-vn-white) var(--vn-range-fill), var(--color-vn-gray-mid) var(--vn-range-fill));
+}
+
+/* The 2px black border keeps the white thumb apart from the white fill it sits on. */
+.vn-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  margin-top: calc((var(--vn-range-track) - 28px) * 0.5);
+  border: 2px solid var(--color-vn-black);
+  border-radius: 50%;
+  background: var(--color-vn-white);
+}
+
+.vn-range::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--color-vn-black);
+  border-radius: 50%;
+  background: var(--color-vn-white);
+}
+
+/*
+ * The focus ring is on the thumb: a white ring of 3px (about 20:1 on the black surface). The input keeps a
+ * transparent outline, which forced colors mode turns into a visible one.
+ */
+.vn-range:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 4px;
+}
+
+.vn-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--color-vn-white);
+}
+
+.vn-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--color-vn-white);
+}
+
+/* Forced colors drop backgrounds and shadows: the thumb and the track take the system text color and a border. */
+@media (forced-colors: active) {
+  .vn-range::-webkit-slider-thumb {
+    background: ButtonText;
+  }
+
+  .vn-range::-moz-range-thumb {
+    background: ButtonText;
+  }
+
+  .vn-range::-webkit-slider-runnable-track {
+    border: 1px solid ButtonText;
+  }
+
+  .vn-range::-moz-range-track {
+    border: 1px solid ButtonText;
+  }
+}
+
+/*
+ * More contrast (the system setting, or "Contraste alto" in the widget; the widget also keeps its contrast filter).
+ * A filter does not raise the ratio of a mid gray against its background, so the rules below change the colors: the pale
+ * borders of cards, pills and buttons on a light surface become gray dark, the dimmed client logos and the faded answers
+ * are drawn at full strength, and the focus ring is thicker. Borders on a black surface stay as they are (they are light
+ * on dark already, and darkening them would hide them).
+ */
+@variant vn-contrast {
+  .border-vn-gray-light:not(:where(.bg-vn-black, .bg-vn-ink) *) {
+    border-color: var(--color-vn-gray-dark);
+  }
+
+  .vn-logo-tone,
+  .opacity-80 {
+    opacity: 1;
+  }
+
+  :focus-visible {
+    outline-width: 3px !important;
+  }
+}

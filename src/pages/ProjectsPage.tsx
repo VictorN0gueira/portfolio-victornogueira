@@ -1,32 +1,24 @@
-import { Suspense, lazy } from 'react';
-import { motion } from 'motion/react';
-import Header from '../components/Header';
-import SEO from '../components/SEO';
-import { revealProps, SectionSkeleton } from '../lib/reveal';
+import { Suspense } from 'react';
+import { SEO } from '../components/SEO';
+import { PROJECTS_PAGE_DESCRIPTION, PROJECTS_TITLE } from '../components/projectLabels';
+import { SectionSkeleton } from '../components/ui/SectionSkeleton';
+import { lazyWithRetry } from '../lib/lazyWithRetry';
 
-const Projects = lazy(() => import('../components/Projects'));
-const Footer = lazy(() => import('../components/Footer'));
-const Chatbot = lazy(() => import('../components/Chatbot'));
+// The whole content of the page: a chunk that fails is retried once, then the page reloads once (see lazyWithRetry).
+const Projects = lazyWithRetry(() => import('../components/Projects'));
+
+// About as tall as the loaded page at each width (measured), so the footer is not pushed down when the chunk arrives.
+const PROJECTS_SKELETON_HEIGHT = 'min-h-[5200px] md:min-h-[4800px] lg:min-h-[3900px]';
 
 export default function ProjectsPage() {
   return (
     <>
-      <SEO
-        title="Projetos & Cases"
-        description="Cases reais de automação, IA e desenvolvimento web — produtos próprios e projetos entregues para clientes, com resultados mensuráveis."
-        path="/projetos"
-      />
-      <Header />
-      <main id="main-content" className="pt-16 md:pt-20">
-        <Suspense fallback={<SectionSkeleton />}>
-          <motion.div {...revealProps}><Projects /></motion.div>
+      <SEO title={PROJECTS_TITLE} description={PROJECTS_PAGE_DESCRIPTION} path="/projetos" />
+      <div className="pt-16 md:pt-20">
+        <Suspense fallback={<SectionSkeleton heightClassName={PROJECTS_SKELETON_HEIGHT} />}>
+          <Projects />
         </Suspense>
-      </main>
-
-      <Suspense fallback={null}>
-        <Footer />
-        <Chatbot />
-      </Suspense>
+      </div>
     </>
   );
 }

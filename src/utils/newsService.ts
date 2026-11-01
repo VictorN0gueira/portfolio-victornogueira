@@ -1,3 +1,5 @@
+import { parseNewsDate, safeHttpUrl, safeImageUrl, sanitizeArticle, sanitizeArticles } from './newsSanitize';
+
 export interface NewsArticle {
   title: string;
   description: string;
@@ -14,7 +16,7 @@ export interface NewsArticle {
 const CACHE_KEY = 'blog_news_cache';
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
 
-// Edge Function no Supabase — proxy seguro (API key nunca exposta no frontend)
+// Edge Function no Supabase, proxy seguro (API key nunca exposta no frontend)
 const EDGE_FUNCTION_URL = 'https://qpcwoioflaxiasmcdfbd.supabase.co/functions/v1/gnews-proxy';
 
 interface CachedData {
@@ -50,86 +52,79 @@ interface TabnewsArticle {
   tabcoins: number;
 }
 
-// Artigos curados de fallback — usados somente quando todas as APIs falham
+// Lista fixa de fallback, usada somente quando todas as fontes falham. Cada item aponta para a página de um tema na
+// publicação, não para uma matéria: por isso os textos descrevem a seção, sem número, sem estudo e sem data (a página
+// não mostra "novo" nem "há quantas horas" para esta lista).
 const FALLBACK_ARTICLES: NewsArticle[] = [
   {
-    title: 'Como a IA Generativa está transformando empresas em 2025',
-    description: 'A inteligência artificial generativa está revolucionando processos empresariais, desde atendimento ao cliente até criação de conteúdo. Descubra como empresas estão adotando essa tecnologia.',
+    title: 'Inteligência artificial na MIT Technology Review',
+    description: 'A seção de inteligência artificial da publicação reúne reportagens e análises sobre o tema.',
     url: 'https://www.technologyreview.com/topic/artificial-intelligence/',
     image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&q=80',
-    publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    publishedAt: '',
     source: { name: 'MIT Technology Review', url: 'https://www.technologyreview.com' },
     language: 'pt',
   },
   {
-    title: 'Automação de processos: o guia definitivo para PMEs',
-    description: 'Automatizar tarefas repetitivas pode economizar até 40% do tempo da sua equipe. Conheça as ferramentas e estratégias mais eficazes para pequenas e médias empresas.',
+    title: 'Automação de processos no blog da Zapier',
+    description: 'O blog da Zapier tem guias sobre como automatizar tarefas repetitivas em equipes pequenas e grandes.',
     url: 'https://zapier.com/blog/business-automation/',
     image: 'https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=800&q=80',
-    publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    publishedAt: '',
     source: { name: 'Zapier Blog', url: 'https://zapier.com' },
     language: 'pt',
   },
   {
-    title: 'The Rise of AI Agents: What You Need to Know',
-    description: 'AI agents are autonomous systems that can plan, reason, and execute tasks. Learn how this emerging technology is reshaping software development and business operations.',
+    title: 'AI agents in the Wired archive',
+    description: 'Wired keeps a section with its reporting on artificial intelligence, agents included.',
     url: 'https://www.wired.com/tag/artificial-intelligence/',
     image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&q=80',
-    publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    publishedAt: '',
     source: { name: 'Wired', url: 'https://www.wired.com' },
     language: 'en',
   },
   {
-    title: 'N8N vs Make vs Zapier: Qual ferramenta de automação escolher?',
-    description: 'Comparativo completo entre as três principais plataformas de automação no-code/low-code. Prós, contras e casos de uso ideais para cada uma.',
+    title: 'Blog do N8N: workflows e automação',
+    description: 'O blog oficial do N8N fala de workflows, integrações e casos de uso da ferramenta de automação.',
     url: 'https://n8n.io/blog/',
     image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
-    publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    publishedAt: '',
     source: { name: 'N8N Blog', url: 'https://n8n.io' },
     language: 'pt',
   },
   {
-    title: 'Machine Learning em produção: lições aprendidas',
-    description: 'Colocar modelos de ML em produção é o maior desafio das equipes de dados. Veja as melhores práticas para deploy, monitoramento e manutenção de modelos.',
+    title: 'Machine learning em produção no MLOps',
+    description: 'O site do MLOps reúne material sobre como colocar modelos de machine learning em produção e acompanhar o que acontece com eles.',
     url: 'https://ml-ops.org/',
     image: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=800&q=80',
-    publishedAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+    publishedAt: '',
     source: { name: 'MLOps Community', url: 'https://ml-ops.org' },
     language: 'pt',
   },
   {
-    title: 'How RAG is Making AI More Reliable and Accurate',
-    description: 'Retrieval-Augmented Generation combines the power of LLMs with real-time data retrieval, reducing hallucinations and improving factual accuracy in AI applications.',
+    title: 'Retrieval-augmented generation at Google AI',
+    description: 'Google AI explains how retrieval-augmented generation connects a language model to outside sources of information.',
     url: 'https://ai.google/discover/retrieval-augmented-generation/',
     image: 'https://images.unsplash.com/photo-1633356122102-3fe601e05bd2?w=800&q=80',
-    publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    publishedAt: '',
     source: { name: 'Google AI', url: 'https://ai.google' },
     language: 'en',
   },
   {
-    title: 'Chatbots com IA: como criar experiências que realmente funcionam',
-    description: 'A nova geração de chatbots vai além de respostas prontas. Saiba como integrar LLMs, RAG e automações para criar assistentes virtuais inteligentes.',
-    url: 'https://www.chatbot.com/blog/',
-    image: 'https://images.unsplash.com/photo-1531746790095-e5a643644c9a?w=800&q=80',
-    publishedAt: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(),
-    source: { name: 'Chatbot Magazine', url: 'https://chatbot.com' },
-    language: 'pt',
-  },
-  {
-    title: 'O impacto da automação no mercado de trabalho brasileiro',
-    description: 'Estudo revela que 30% das tarefas em empresas brasileiras podem ser automatizadas. Entenda quais setores serão mais impactados e como se preparar.',
+    title: 'Inteligência artificial e trabalho na McKinsey',
+    description: 'A McKinsey Brasil publica textos sobre o que a automação muda nas empresas e no trabalho.',
     url: 'https://www.mckinsey.com/br/our-insights',
     image: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80',
-    publishedAt: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
+    publishedAt: '',
     source: { name: 'McKinsey Brasil', url: 'https://mckinsey.com/br' },
     language: 'pt',
   },
   {
-    title: 'OpenAI, Google and Meta: The AI Race in 2025',
-    description: 'The competition between major AI companies is accelerating innovation at unprecedented speeds. A comprehensive overview of the latest developments and what they mean for developers.',
+    title: 'AI coverage at The Verge',
+    description: 'The Verge has a section that follows the companies and products of the AI field.',
     url: 'https://www.theverge.com/ai-artificial-intelligence',
     image: 'https://images.unsplash.com/photo-1636690513351-0af1363a6b17?w=800&q=80',
-    publishedAt: new Date(Date.now() - 42 * 60 * 60 * 1000).toISOString(),
+    publishedAt: '',
     source: { name: 'The Verge', url: 'https://theverge.com' },
     language: 'en',
   },
@@ -159,14 +154,29 @@ export function detectCategory(article: NewsArticle): string {
   return 'ia';
 }
 
+// O cache vive no localStorage, que qualquer script da origem pode escrever: o que volta de lá passa pela mesma checagem
+// dos artigos que vêm da rede.
 function getCachedArticles(): CachedData | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as CachedData;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) throw new Error('cache is not an object');
+    const { articles, timestamp, source } = parsed as Partial<Record<keyof CachedData, unknown>>;
+    if (typeof timestamp !== 'number') throw new Error('cache has no timestamp');
+    return { articles: sanitizeArticles(articles), timestamp, source: typeof source === 'string' ? source : undefined };
   } catch {
-    localStorage.removeItem(CACHE_KEY);
+    clearNewsCache();
     return null;
+  }
+}
+
+// localStorage pode estar bloqueado (cookies desligados, navegadores embutidos): lançar aqui derrubaria o blog inteiro.
+export function clearNewsCache(): void {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch {
+    // Sem acesso ao armazenamento: não há cache para limpar.
   }
 }
 
@@ -175,7 +185,7 @@ function setCachedArticles(articles: NewsArticle[], source: string): void {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
   } catch {
-    // localStorage cheio — ignora silenciosamente
+    // localStorage cheio, ignora silenciosamente
   }
 }
 
@@ -211,74 +221,57 @@ function pickPlaceholder(seed: string): string {
   return PLACEHOLDER_IMAGES[Math.abs(hash) % PLACEHOLDER_IMAGES.length];
 }
 
-// Busca artigos da Dev.to — inglês (tags de IA/automação) + português (brdev/brasil/ia)
+const DEVTO_EN_TAGS = ['ai', 'machinelearning', 'llm', 'n8n', 'automation'];
+const DEVTO_PT_TAGS = ['brdev', 'ia', 'inteligencia-artificial', 'automacao'];
+const DEVTO_EN_QUERY = 'per_page=4&top=7';
+const DEVTO_PT_QUERY = 'per_page=5&top=30';
+const FEED_TIMEOUT_MS = 8000;
+const DEVTO_LIMIT = 20;
+
+// Um artigo da Dev.to no formato do blog. Links e capas passam pela checagem de newsSanitize (capa fora da lista vira placeholder).
+function devToArticle(item: unknown): NewsArticle | null {
+  // Um item que não é um objeto, ou que não tem link em texto, sai sozinho: as outras matérias da tag ficam.
+  if (typeof item !== 'object' || item === null) return null;
+  const a = item as Partial<DevToArticle>;
+  const url = typeof a.url === 'string' ? a.url : '';
+  return sanitizeArticle({
+    title: a.title,
+    description: a.description || '',
+    url,
+    image: safeImageUrl(a.cover_image) || pickPlaceholder(url),
+    publishedAt: a.published_at,
+    source: { name: a.organization?.name || a.user?.name || 'Dev.to', url: a.user?.website_url || 'https://dev.to' },
+    // Usa o campo language da Dev.to, pode ser 'pt' para devs brasileiros
+    language: a.language === 'pt' ? 'pt' : 'en',
+  });
+}
+
+// Os artigos de uma tag da Dev.to; uma tag que falha não derruba as outras.
+async function fetchDevToTag(tag: string, query: string): Promise<NewsArticle[]> {
+  const res = await fetch(`https://dev.to/api/articles?tag=${tag}&${query}`, { signal: AbortSignal.timeout(FEED_TIMEOUT_MS) });
+  if (!res.ok) return [];
+  const data: unknown = await res.json();
+  if (!Array.isArray(data)) return [];
+  return data.flatMap((item) => devToArticle(item) ?? []);
+}
+
+// Busca artigos da Dev.to, inglês (tags de IA/automação) + português (brdev/brasil/ia)
 async function fetchFromDevTo(): Promise<NewsArticle[]> {
-  const enTags = ['ai', 'machinelearning', 'llm', 'n8n', 'automation'];
-  const ptTags = ['brdev', 'ia', 'inteligencia-artificial', 'automacao'];
+  const results = await Promise.allSettled([
+    ...DEVTO_EN_TAGS.map((tag) => fetchDevToTag(tag, DEVTO_EN_QUERY)),
+    ...DEVTO_PT_TAGS.map((tag) => fetchDevToTag(tag, DEVTO_PT_QUERY)),
+  ]);
 
   const seen = new Set<string>();
-  const articles: NewsArticle[] = [];
-
-  await Promise.allSettled([
-    // Artigos em inglês — busca os mais recentes/relevantes
-    ...enTags.map(async (tag) => {
-      const res = await fetch(
-        `https://dev.to/api/articles?tag=${tag}&per_page=4&top=7`,
-        { signal: AbortSignal.timeout(8000) }
-      );
-      if (!res.ok) return;
-      const data: DevToArticle[] = await res.json();
-      for (const a of data) {
-        if (seen.has(a.url)) continue;
-        seen.add(a.url);
-        articles.push({
-          title: a.title,
-          description: a.description || '',
-          url: a.url,
-          image: a.cover_image || pickPlaceholder(a.url),
-          publishedAt: a.published_at,
-          source: {
-            name: a.organization?.name || a.user.name,
-            url: a.user.website_url || 'https://dev.to',
-          },
-          // Usa o campo language da Dev.to — pode ser 'pt' para devs brasileiros
-          language: a.language === 'pt' ? 'pt' : 'en',
-        });
-      }
-    }),
-
-    // Artigos com tags brasileiras/portuguesas
-    ...ptTags.map(async (tag) => {
-      const res = await fetch(
-        `https://dev.to/api/articles?tag=${tag}&per_page=5&top=30`,
-        { signal: AbortSignal.timeout(8000) }
-      );
-      if (!res.ok) return;
-      const data: DevToArticle[] = await res.json();
-      for (const a of data) {
-        if (seen.has(a.url)) continue;
-        seen.add(a.url);
-        articles.push({
-          title: a.title,
-          description: a.description || '',
-          url: a.url,
-          image: a.cover_image || pickPlaceholder(a.url),
-          publishedAt: a.published_at,
-          source: {
-            name: a.organization?.name || a.user.name,
-            url: a.user.website_url || 'https://dev.to',
-          },
-          language: a.language === 'pt' ? 'pt' : 'en',
-        });
-      }
-    }),
-  ]);
+  const articles = results
+    .flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
+    .filter((article) => !seen.has(article.url) && seen.add(article.url));
 
   if (articles.length === 0) throw new Error('No articles from Dev.to');
 
   return articles
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-    .slice(0, 20);
+    .slice(0, DEVTO_LIMIT);
 }
 
 // Busca artigos em destaque do TabNews (plataforma brasileira de tech)
@@ -290,61 +283,26 @@ async function fetchFromTabnews(): Promise<NewsArticle[]> {
   );
   if (!res.ok) throw new Error(`TabNews error: ${res.status}`);
 
-  const data: TabnewsArticle[] = await res.json();
+  const data: unknown = await res.json();
+  if (!Array.isArray(data)) throw new Error('TabNews answered with another shape');
 
-  return data
-    .filter(a => {
-      const text = a.title.toLowerCase();
-      return TABNEWS_RELEVANCE_KEYWORDS.some(kw => text.includes(kw));
-    })
+  return (data as TabnewsArticle[])
+    .filter((a) => typeof a?.title === 'string' && TABNEWS_RELEVANCE_KEYWORDS.some((kw) => a.title.toLowerCase().includes(kw)))
     .slice(0, 8)
-    .map(a => ({
-      title: a.title,
-      description: tabNewsDescription(a),
-      url: a.source_url || `https://www.tabnews.com.br/${a.owner_username}/${a.slug}`,
-      image: pickPlaceholder(a.slug),
-      publishedAt: a.published_at,
-      source: { name: 'TabNews', url: 'https://www.tabnews.com.br' },
-      language: 'pt' as const,
-    }));
-}
-
-// Busca artigos do GNews diretamente — só funciona se VITE_GNEWS_API_KEY estiver definida
-async function fetchFromGNews(): Promise<NewsArticle[]> {
-  const apiKey = import.meta.env.VITE_GNEWS_API_KEY as string | undefined;
-  if (!apiKey) throw new Error('VITE_GNEWS_API_KEY not set');
-
-  const [ptRes, enRes] = await Promise.all([
-    fetch(
-      `https://gnews.io/api/v4/top-headlines?topic=technology&lang=pt&country=br&max=5&apikey=${apiKey}`,
-      { signal: AbortSignal.timeout(10000) }
-    ),
-    fetch(
-      `https://gnews.io/api/v4/top-headlines?topic=technology&lang=en&max=6&apikey=${apiKey}`,
-      { signal: AbortSignal.timeout(10000) }
-    ),
-  ]);
-
-  const articles: NewsArticle[] = [];
-
-  for (const [res, lang] of [[ptRes, 'pt'], [enRes, 'en']] as [Response, 'pt' | 'en'][]) {
-    if (!res.ok) continue;
-    const data = await res.json();
-    for (const a of data.articles || []) {
-      articles.push({
+    .flatMap((a) => {
+      // O link do autor (source_url) pode ser qualquer coisa: só http e https passam, senão fica a página do TabNews.
+      const url = safeHttpUrl(a.source_url) ?? `https://www.tabnews.com.br/${a.owner_username}/${a.slug}`;
+      const article = sanitizeArticle({
         title: a.title,
-        description: a.description || '',
-        url: a.url,
-        image: a.image || pickPlaceholder(a.url),
-        publishedAt: a.publishedAt,
-        source: { name: a.source.name, url: a.source.url },
-        language: lang,
+        description: tabNewsDescription(a),
+        url,
+        image: pickPlaceholder(a.slug),
+        publishedAt: a.published_at,
+        source: { name: 'TabNews', url: 'https://www.tabnews.com.br' },
+        language: 'pt',
       });
-    }
-  }
-
-  if (articles.length === 0) throw new Error('No articles from GNews');
-  return articles;
+      return article ?? [];
+    });
 }
 
 // Combina Dev.to + TabNews em paralelo e retorna artigos intercalados por idioma
@@ -380,11 +338,23 @@ async function fetchFromPublicAPIs(): Promise<{ articles: NewsArticle[]; source:
   return { articles: merged.slice(0, 20), source: sources || 'public-apis' };
 }
 
-export async function getNewsArticles(): Promise<{ articles: NewsArticle[]; source: string }> {
+/**
+ * Where the list came from, as the browser knows it. `source` is the name the server (or the feed code) gave, shown to nobody:
+ * only `origin` is safe to word a status line from.
+ */
+export type NewsOrigin = 'live' | 'browser-cache' | 'stale-browser-cache' | 'fallback';
+
+export interface NewsResult {
+  articles: NewsArticle[];
+  source: string;
+  origin: NewsOrigin;
+}
+
+export async function getNewsArticles(): Promise<NewsResult> {
   // 1. Cache local válido
   const cached = getCachedArticles();
   if (cached && isCacheValid(cached) && cached.articles.length > 0) {
-    return { articles: cached.articles, source: 'cache' };
+    return { articles: cached.articles, source: 'cache', origin: 'browser-cache' };
   }
 
   // 2. Edge Function Supabase (proxy seguro)
@@ -397,46 +367,40 @@ export async function getNewsArticles(): Promise<{ articles: NewsArticle[]; sour
 
     if (!response.ok) throw new Error(`Edge function error: ${response.status}`);
 
-    const data = await response.json();
-    if (data.articles && Array.isArray(data.articles) && data.articles.length > 0) {
-      setCachedArticles(data.articles, data.source || 'edge-function');
-      return { articles: data.articles, source: data.source || 'edge-function' };
+    // O formato da resposta é checado antes de ir para o cache: o que não passa é descartado.
+    const data: unknown = await response.json();
+    const body = typeof data === 'object' && data !== null ? (data as { articles?: unknown; source?: unknown }) : {};
+    const articles = sanitizeArticles(body.articles);
+    if (articles.length > 0) {
+      const source = typeof body.source === 'string' && body.source !== '' ? body.source : 'edge-function';
+      setCachedArticles(articles, source);
+      return { articles, source, origin: 'live' };
     }
 
     throw new Error('No articles returned from edge function');
   } catch {
-    // Edge function indisponível — tenta próxima fonte
+    // Edge function indisponível, tenta próxima fonte
   }
 
-  // 3. GNews API direta (se VITE_GNEWS_API_KEY estiver configurada)
-  try {
-    const articles = await fetchFromGNews();
-    setCachedArticles(articles, 'gnews');
-    return { articles, source: 'gnews' };
-  } catch {
-    // Chave ausente ou API falhou — tenta próxima fonte
-  }
-
-  // 4. Dev.to + TabNews (gratuitas, sem autenticação, PT + EN)
+  // 3. Dev.to + TabNews (gratuitas, sem autenticação, PT + EN)
   try {
     const result = await fetchFromPublicAPIs();
     setCachedArticles(result.articles, result.source);
-    return result;
+    return { ...result, origin: 'live' };
   } catch {
-    // APIs públicas indisponíveis — segue para fallback
+    // APIs públicas indisponíveis, segue para fallback
   }
 
-  // 5. Cache expirado (melhor que nada)
+  // 4. Cache expirado (melhor que nada)
   if (cached && cached.articles.length > 0) {
-    return { articles: cached.articles, source: 'stale-cache' };
+    return { articles: cached.articles, source: 'stale-cache', origin: 'stale-browser-cache' };
   }
 
-  // 6. Último recurso: artigos estáticos curados
-  return { articles: FALLBACK_ARTICLES, source: 'fallback' };
+  // 5. Último recurso: artigos estáticos curados
+  return { articles: FALLBACK_ARTICLES, source: 'fallback', origin: 'fallback' };
 }
 
-export function formatDate(dateString: string): string {
-  const date = new Date(dateString);
+function formatDate(date: Date): string {
   return date.toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'long',
@@ -444,9 +408,11 @@ export function formatDate(dateString: string): string {
   });
 }
 
+// Quanto tempo faz que saiu a matéria. Um valor que não é uma data ISO dá um texto vazio, nunca "Invalid Date".
 export function getTimeAgo(dateString: string): string {
+  const date = parseNewsDate(dateString);
+  if (date === null) return '';
   const now = new Date();
-  const date = new Date(dateString);
   const diffMs = now.getTime() - date.getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
@@ -455,5 +421,5 @@ export function getTimeAgo(dateString: string): string {
   if (diffHours < 24) return `${diffHours}h atrás`;
   if (diffDays === 1) return 'Ontem';
   if (diffDays < 7) return `${diffDays} dias atrás`;
-  return formatDate(dateString);
+  return formatDate(date);
 }

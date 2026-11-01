@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
+import { useMotionAllowed } from '../hooks/useMotionAllowed';
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&!?';
 const ACCENTS = new Set(['ã', 'â', 'á', 'à', 'ê', 'é', 'í', 'ó', 'ô', 'ú', 'ç', 'ñ']);
@@ -9,14 +10,19 @@ const ACCENTS = new Set(['ã', 'â', 'á', 'à', 'ê', 'é', 'í', 'ó', 'ô', '
 function useScramble(text: string) {
   const [display, setDisplay] = useState('');
   const [active, setActive] = useState(false);
+  const isMotionAllowed = useMotionAllowed();
 
   useEffect(() => {
+    // Reduced motion (the system, or the widget's "Pausar animações"): the title stays as it is (the hook returns the
+    // text while display is empty), with no scramble.
+    if (!isMotionAllowed) return;
     const timer = setTimeout(() => setActive(true), 400);
     return () => clearTimeout(timer);
-  }, []);
+  }, [text, isMotionAllowed]);
 
   useEffect(() => {
-    if (!active) return;
+    // Animations paused while it runs: the interval ends here and the title is the real text (see the return below).
+    if (!active || !isMotionAllowed) return;
     let iteration = 0;
 
     const interval = setInterval(() => {
@@ -33,13 +39,17 @@ function useScramble(text: string) {
       );
 
       iteration += 0.4;
-      if (iteration >= text.length) clearInterval(interval);
+      if (iteration >= text.length) {
+        // The last tick above still had a scrambled letter: end on the real text.
+        setDisplay(text);
+        clearInterval(interval);
+      }
     }, 28);
 
     return () => clearInterval(interval);
-  }, [text, active]);
+  }, [text, active, isMotionAllowed]);
 
-  return display || text;
+  return isMotionAllowed ? display || text : text;
 }
 
 export default function NotFound() {
@@ -64,7 +74,7 @@ export default function NotFound() {
       {/* Ambient glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(600px,100vw)] h-[300px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -96,7 +106,7 @@ export default function NotFound() {
           {titleDisplay}
         </h1>
 
-        <p className="text-zinc-500 text-sm md:text-base font-light max-w-sm mb-10 leading-relaxed">
+        <p className="text-vn-gray-light text-sm md:text-base font-light max-w-sm mb-10 leading-relaxed">
           A página que você procura não existe ou foi movida para outro endereço.
         </p>
 
@@ -108,10 +118,10 @@ export default function NotFound() {
           Voltar ao início
         </Link>
 
-        <p className="mt-8 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-700">
-          © 2026 Victor Nogueira
+        <p className="mt-8 text-[10px] font-bold uppercase tracking-[0.3em] text-vn-gray-mid">
+          &copy; {new Date().getFullYear()} VN One
         </p>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

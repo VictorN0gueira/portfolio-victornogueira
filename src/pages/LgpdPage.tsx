@@ -1,14 +1,11 @@
-import { Suspense, lazy, useRef } from 'react';
-import { motion, useInView } from 'motion/react';
+import { useRef } from 'react';
+import { m, useInView } from 'motion/react';
 import { Link } from 'react-router-dom';
 import {
   ShieldCheck, Eye, PencilLine, Trash2, Ban, Download, ScrollText,
   Scale, Lock, Clock, Mail, ArrowUpRight,
 } from 'lucide-react';
-import Header from '../components/Header';
 import SEO from '../components/SEO';
-
-const Footer = lazy(() => import('../components/Footer'));
 
 const EFFECTIVE_DATE = '8 de julho de 2026';
 const DPO_EMAIL = 'contato@vnone.com.br';
@@ -57,12 +54,11 @@ export default function LgpdPage() {
         description="Como o site vnone.com.br trata seus dados pessoais em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018)."
         path="/lgpd"
       />
-      <Header />
-      <main id="main-content" className="bg-brand-white min-h-screen">
+      <div className="bg-brand-white min-h-screen">
         {/* Hero */}
         <section className="pt-32 md:pt-44 pb-16 px-6 md:px-12 relative overflow-hidden">
           <div className="absolute top-20 -right-32 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: 'easeOut' }}
@@ -82,7 +78,7 @@ export default function LgpdPage() {
               exercer cada um dos seus direitos como titular.
             </p>
             <p className="text-zinc-400 text-sm mt-8">Vigente desde {EFFECTIVE_DATE}</p>
-          </motion.div>
+          </m.div>
         </section>
 
         {/* Controlador */}
@@ -113,7 +109,7 @@ export default function LgpdPage() {
             <h2 className="text-2xl md:text-4xl font-bold tracking-tight font-display italic mb-10">
               Bases legais
             </h2>
-            <motion.div
+            <m.div
               ref={basesRef}
               variants={gridContainer}
               initial="hidden"
@@ -121,7 +117,7 @@ export default function LgpdPage() {
               className="grid md:grid-cols-2 gap-4 md:gap-5"
             >
               {bases.map((base) => (
-                <motion.div
+                <m.div
                   key={base.title}
                   variants={gridItem}
                   className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-3xl p-7"
@@ -131,9 +127,9 @@ export default function LgpdPage() {
                   </div>
                   <h3 className="font-bold text-zinc-900 dark:text-white mb-2">{base.title}</h3>
                   <p className="text-sm text-zinc-500 leading-relaxed">{base.desc}</p>
-                </motion.div>
+                </m.div>
               ))}
-            </motion.div>
+            </m.div>
           </div>
         </section>
 
@@ -186,7 +182,7 @@ export default function LgpdPage() {
                 Seus direitos
               </h2>
             </div>
-            <motion.div
+            <m.div
               ref={rightsRef}
               variants={gridContainer}
               initial="hidden"
@@ -194,7 +190,7 @@ export default function LgpdPage() {
               className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
             >
               {rights.map((right) => (
-                <motion.div
+                <m.div
                   key={right.title}
                   variants={gridItem}
                   className="group bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-3xl p-7 hover:border-emerald-500/40 transition-colors duration-300"
@@ -204,9 +200,9 @@ export default function LgpdPage() {
                   </div>
                   <h3 className="font-bold text-zinc-900 dark:text-white mb-2">{right.title}</h3>
                   <p className="text-sm text-zinc-500 leading-relaxed">{right.desc}</p>
-                </motion.div>
+                </m.div>
               ))}
-            </motion.div>
+            </m.div>
           </div>
         </section>
 
@@ -239,11 +235,7 @@ export default function LgpdPage() {
             </p>
           </div>
         </section>
-      </main>
-
-      <Suspense fallback={null}>
-        <Footer />
-      </Suspense>
+      </div>
     </>
   );
 }

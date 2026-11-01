@@ -1,0 +1,22 @@
+# Host installs and build output: the image installs and builds its own, for its own platform.
+node_modules
+dist
+dist-e2e-*
+coverage
+test-results
+playwright-report
+
+# Version control, agent and planning folders, local secrets.
+.git
+.github
+.claude
+.superpowers
+.env*
+Acessos
+supabase
+
+# Not needed to build the site.
+e2e
+docs
+/*.png
+*.log

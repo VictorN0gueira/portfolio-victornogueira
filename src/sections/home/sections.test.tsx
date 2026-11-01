@@ -1,0 +1,345 @@
+import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { homeCopy } from '../../data/homeCopy';
+import { integrations } from '../../data/integrations';
+import { stats } from '../../data/stats';
+import { findAccentElements } from '../../test/accent';
+import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
+import { renderWithProviders } from '../../test/render';
+import { IntegrationsMarquee } from './IntegrationsMarquee';
+import { StatementStats } from './StatementStats';
+import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
+
+const MARQUEE_NAME = 'Integrações';
+
+// A box that takes its width from its content cannot hold the Marquee frame, which has no width of its own.
+const SHRINK_TO_FIT_CLASSES = ['inline-block', 'inline-flex', 'inline-grid', 'w-fit', 'w-min', 'w-max', 'absolute', 'fixed', 'flex', 'grid'];
+
+const isInsideHiddenCopy = (element: Element): boolean => element.closest('[aria-hidden="true"]') !== null;
+
+describe('IntegrationsMarquee with motion allowed', () => {
+  beforeEach(() => {
+    stubMatchMedia();
+  });
+
+  it('is a region named Integrações that holds the Notion item', () => {
+    renderWithProviders(<IntegrationsMarquee />);
+
+    const region = screen.getByRole('region', { name: MARQUEE_NAME });
+
+    expect(within(region).getAllByText('Notion').length).toBeGreaterThan(0);
+  });
+
+  it('shows the kicker and the line above the marquee', () => {
+    renderWithProviders(<IntegrationsMarquee />);
+
+    expect(screen.getByText('integrações')).toBeInTheDocument();
+    expect(screen.getByText('A gente conecta o que você já usa')).toBeInTheDocument();
+  });
+
+  it('renders every integration label from the data file', () => {
+    renderWithProviders(<IntegrationsMarquee />);
+    const region = screen.getByRole('region', { name: MARQUEE_NAME });
+
+    for (const { label } of integrations) {
+      expect(within(region).getAllByText(label).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('hides the duplicate copy of every label from assistive tech and leaves one copy exposed', () => {
+    renderWithProviders(<IntegrationsMarquee />);
+
+    for (const { label } of integrations) {
+      const copies = screen.getAllByText(label);
+
+      expect(copies).toHaveLength(2);
+      expect(copies.filter(isInsideHiddenCopy)).toHaveLength(1);
+    }
+  });
+
+  it('draws every icon decorative, since the label next to it names the item', () => {
+    renderWithProviders(<IntegrationsMarquee />);
+    const region = screen.getByRole('region', { name: MARQUEE_NAME });
+    const icons = region.querySelectorAll('svg');
+
+    expect(icons).toHaveLength(integrations.length * 2);
+    icons.forEach((icon) => expect(icon).toHaveAttribute('aria-hidden', 'true'));
+  });
+
+  it('draws the items in full ink with no hover color (they are not links), and no accent anywhere', () => {
+    const { container } = renderWithProviders(<IntegrationsMarquee />);
+    const [item] = screen.getAllByText('Notion');
+    const itemBox = item.closest('li') as HTMLElement;
+
+    expect(itemBox).toHaveClass('text-vn-ink');
+    expect(itemBox.className).not.toMatch(/hover:/);
+    expect(itemBox.className).not.toMatch(/text-vn-gray/);
+    expect(findAccentElements(container)).toHaveLength(0);
+  });
+
+  it('names the section by an h2 that holds the line, with the kicker above it', () => {
+    const { container } = renderWithProviders(<IntegrationsMarquee />);
+    const heading = screen.getByRole('heading', { level: 2, name: 'A gente conecta o que você já usa' });
+    const section = container.querySelector('section') as HTMLElement;
+
+    expect(heading.id).not.toBe('');
+    expect(section).toHaveAttribute('aria-labelledby', heading.id);
+    expect(screen.getByRole('region', { name: 'A gente conecta o que você já usa' })).toBe(section);
+    expect(screen.getByText('integrações').compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('reads the integrations as a list with one item each, the duplicate being an aria-hidden list', () => {
+    renderWithProviders(<IntegrationsMarquee />);
+    const region = screen.getByRole('region', { name: MARQUEE_NAME });
+    const lists = within(region).getAllByRole('list', { hidden: true });
+
+    expect(lists).toHaveLength(2);
+    expect(lists[1]).toHaveAttribute('aria-hidden', 'true');
+    expect(within(region).getAllByRole('listitem')).toHaveLength(integrations.length);
+  });
+
+  describe('pause button (WCAG 2.2.2)', () => {
+    const PAUSE_NAME = 'Pausar faixa de integrações';
+    const getTrack = (container: HTMLElement) => container.querySelector('.vn-marquee') as HTMLElement;
+
+    it('is a toggle with a constant name, not pressed at first, that sits before the marquee in the tab order', () => {
+      const { container } = renderWithProviders(<IntegrationsMarquee />);
+      const toggle = screen.getByRole('button', { name: PAUSE_NAME });
+
+      expect(toggle).toHaveAttribute('aria-pressed', 'false');
+      expect(getTrack(container)).not.toHaveAttribute('data-paused');
+      expect(toggle.compareDocumentPosition(getTrack(container)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('pauses the track on a click and resumes it on the next, and the name never changes', async () => {
+      const user = userEvent.setup();
+      const { container } = renderWithProviders(<IntegrationsMarquee />);
+
+      await user.click(screen.getByRole('button', { name: PAUSE_NAME }));
+      expect(getTrack(container)).toHaveAttribute('data-paused', 'true');
+      expect(screen.getByRole('button', { name: PAUSE_NAME })).toHaveAttribute('aria-pressed', 'true');
+
+      await user.click(screen.getByRole('button', { name: PAUSE_NAME }));
+      expect(getTrack(container)).not.toHaveAttribute('data-paused');
+      expect(screen.getByRole('button', { name: PAUSE_NAME })).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('is reached with the keyboard and works with Enter and Space', async () => {
+      const user = userEvent.setup();
+      const { container } = renderWithProviders(<IntegrationsMarquee />);
+
+      await user.tab();
+      expect(screen.getByRole('button', { name: PAUSE_NAME })).toHaveFocus();
+      await user.keyboard('{Enter}');
+      expect(getTrack(container)).toHaveAttribute('data-paused', 'true');
+      await user.keyboard(' ');
+      expect(getTrack(container)).not.toHaveAttribute('data-paused');
+    });
+  });
+
+  it('is a white section with a top and a bottom border', () => {
+    const { container } = renderWithProviders(<IntegrationsMarquee />);
+    const section = container.querySelector('section') as HTMLElement;
+
+    expect(section).toHaveAttribute('data-tone', 'white');
+    expect(section).toHaveClass('border-y', 'border-vn-gray-light');
+  });
+
+  it('keeps every ancestor of the marquee, up to the section, free of shrink to fit boxes, so the frame fills a definite width', () => {
+    const { container } = renderWithProviders(<IntegrationsMarquee />);
+    const section = container.querySelector('section') as HTMLElement;
+    const ancestors: HTMLElement[] = [];
+
+    for (let box = screen.getByRole('region', { name: MARQUEE_NAME }).parentElement; box; box = box.parentElement) {
+      ancestors.push(box);
+      if (box === section) break;
+    }
+
+    expect(ancestors.at(-1)).toBe(section);
+    expect(ancestors.length).toBeGreaterThan(1);
+    for (const ancestor of ancestors) {
+      for (const shrinkToFit of SHRINK_TO_FIT_CLASSES) {
+        expect(ancestor, `${ancestor.tagName} with ${shrinkToFit}`).not.toHaveClass(shrinkToFit);
+      }
+    }
+  });
+
+  it('tightens the space between items to 1.5rem on small screens and 2.5rem from sm up, through the Marquee gap variable', () => {
+    renderWithProviders(<IntegrationsMarquee />);
+
+    expect(screen.getByRole('region', { name: MARQUEE_NAME })).toHaveClass(
+      '[--vn-marquee-gap:1.5rem]',
+      'sm:[--vn-marquee-gap:2.5rem]',
+    );
+  });
+});
+
+describe('IntegrationsMarquee without motion', () => {
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('renders a single copy of each label when the system asks for reduced motion', () => {
+    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
+
+    renderWithProviders(<IntegrationsMarquee />);
+
+    // The wrapping row takes the same gap variable, so its rows stay short (15 items) on a small screen.
+    expect(screen.getByRole('region', { name: MARQUEE_NAME })).toHaveClass(
+      '[--vn-marquee-gap:1.5rem]',
+      'sm:[--vn-marquee-gap:2.5rem]',
+    );
+    expect(within(screen.getByRole('region', { name: MARQUEE_NAME })).getByRole('list')).toHaveClass('flex-wrap');
+    expect(screen.getByText('Notion')).toBeInTheDocument();
+    for (const { label } of integrations) {
+      const copies = screen.getAllByText(label);
+
+      expect(copies).toHaveLength(1);
+      expect(isInsideHiddenCopy(copies[0])).toBe(false);
+    }
+  });
+
+  it('shows a static row and no pause button, since nothing moves', () => {
+    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
+
+    const { container } = renderWithProviders(<IntegrationsMarquee />);
+
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(container.querySelector('.vn-marquee')).toBeNull();
+    expect(screen.getAllByRole('listitem')).toHaveLength(integrations.length);
+  });
+
+  it('renders a single copy of each label when the accessibility toggle paused animations', () => {
+    stubMatchMedia();
+    localStorage.setItem(A11Y_STORAGE_KEY, JSON.stringify({ noAnimations: true }));
+
+    renderWithProviders(<IntegrationsMarquee />);
+
+    for (const { label } of integrations) {
+      expect(screen.getAllByText(label)).toHaveLength(1);
+    }
+  });
+});
+
+describe('StatementStats with motion off', () => {
+  beforeEach(() => {
+    stubMatchMedia({ [REDUCED_MOTION_QUERY]: true });
+  });
+
+  it('shows the four numbers as plain text', () => {
+    renderWithProviders(<StatementStats />);
+
+    expect(screen.getByText('500h+')).toBeInTheDocument();
+    expect(screen.getByText('100+')).toBeInTheDocument();
+    expect(screen.getByText('10+')).toBeInTheDocument();
+    expect(screen.getByText('85%')).toBeInTheDocument();
+  });
+
+  it('has exactly one h2, the statement', () => {
+    renderWithProviders(<StatementStats />);
+
+    const headings = screen.getAllByRole('heading', { level: 2 });
+
+    expect(headings).toHaveLength(1);
+    expect(headings[0]).toHaveTextContent(homeCopy.statement.heading);
+  });
+
+  it('shows the label and the description of every stat', () => {
+    renderWithProviders(<StatementStats />);
+
+    for (const { label, description } of stats) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+      expect(screen.getByText(description)).toBeInTheDocument();
+    }
+  });
+
+  it('shows the kicker and the sub line', () => {
+    renderWithProviders(<StatementStats />);
+
+    expect(screen.getByText(homeCopy.statement.kicker)).toBeInTheDocument();
+    expect(screen.getByText(homeCopy.statement.sub)).toBeInTheDocument();
+  });
+
+  it('is named by its heading', () => {
+    renderWithProviders(<StatementStats />);
+
+    expect(screen.getByRole('region', { name: homeCopy.statement.heading })).toBeInTheDocument();
+  });
+
+  it('lays the cards out in 1 column, 2 from sm and 4 from lg', () => {
+    renderWithProviders(<StatementStats />);
+    const grid = screen.getByText('500h+').closest('[class*="grid-cols-1"]');
+
+    expect(grid).toHaveClass('grid', 'grid-cols-1', 'sm:grid-cols-2', 'lg:grid-cols-4');
+    expect(grid?.children).toHaveLength(stats.length);
+  });
+
+  it('reveals the cards through a group of their own, nested in the one of the header, so they reveal when the grid is in view', () => {
+    const { container } = renderWithProviders(<StatementStats />);
+    const grid = screen.getByText('500h+').closest('[class*="grid-cols-1"]') as HTMLElement;
+    const headingGroup = screen.getByRole('heading', { level: 2 }).closest('[data-reveal-group]') as HTMLElement;
+
+    expect(container.querySelectorAll('[data-reveal-group]')).toHaveLength(2);
+    expect(grid).toHaveAttribute('data-reveal-group');
+    expect(headingGroup).not.toBe(grid);
+    expect(headingGroup).toContainElement(grid);
+    for (const card of Array.from(grid.children)) {
+      expect(card).toHaveAttribute('data-reveal-item');
+      expect(card.parentElement?.closest('[data-reveal-group]')).toBe(grid);
+    }
+  });
+
+  it('leaves an empty illustration slot, exactly <div data-slot="illustration" />, for the illustration phase', () => {
+    const { container } = renderWithProviders(<StatementStats />);
+    const slots = container.querySelectorAll('[data-slot="illustration"]');
+
+    expect(slots).toHaveLength(1);
+    expect(slots[0]).toBeEmptyDOMElement();
+    expect(slots[0].tagName).toBe('DIV');
+    expect(slots[0].getAttributeNames()).toEqual(['data-slot']);
+  });
+
+  it('keeps the accent out of a section on a light background', () => {
+    const { container } = renderWithProviders(<StatementStats />);
+
+    expect(findAccentElements(container)).toHaveLength(0);
+  });
+});
+
+describe('StatementStats with motion allowed', () => {
+  beforeEach(() => {
+    stubMatchMedia();
+  });
+
+  it('keeps the final value of every stat in the DOM for screen readers while the digits count', () => {
+    renderWithProviders(<StatementStats />);
+
+    expect(stats).toHaveLength(4);
+    for (const { value } of stats) {
+      expect(screen.getByText(value)).toHaveClass('sr-only');
+    }
+  });
+
+  it('keeps the tight line height on the counting number, which twMerge drops if it comes before the font size', () => {
+    renderWithProviders(<StatementStats />);
+
+    for (const { value } of stats) {
+      const root = screen.getByText(value).parentElement as HTMLElement;
+
+      expect(root).toHaveClass('leading-none', 'tabular-nums');
+    }
+  });
+
+  it('keeps the accent out of the section while it counts too', () => {
+    const { container } = renderWithProviders(<StatementStats />);
+
+    expect(findAccentElements(container)).toHaveLength(0);
+  });
+
+  it('still has exactly one h2', () => {
+    renderWithProviders(<StatementStats />);
+
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(1);
+  });
+});

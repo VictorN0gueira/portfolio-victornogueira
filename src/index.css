@@ -1,44 +1,63 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
+@import "./styles/components.css";
+@import "./styles/motion.css";
+@import "./styles/skeleton.css";
 
-/* Dark mode via .dark class on <html> */
-@variant dark (&:where(.dark, .dark *));
+/* Legacy dark: utilities are intentionally inert until the old pages are rebuilt. */
+@custom-variant dark (&:where([data-vn-never-dark], [data-vn-never-dark] *));
 
+/* Legacy alias so old pages keep rendering until they are rebuilt. A VN One value, not a new color. */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  
-  --color-brand-black: #050505;
-  --color-brand-white: #F8F9FA;
-  --color-brand-gray: #E5E7EB;
+  --color-brand-white: #F2F2F2;
 }
 
-/* CSS custom properties for theme-aware values */
+/* Legacy values still read by the old ROICalculator of /contato. */
 :root {
-  --grid-line-color: rgba(0, 0, 0, 0.04);
-  --roi-slider-fill: #18181b;
-  --roi-slider-track: #e4e4e7;
-}
-
-/* Dark mode token overrides — auto-flips all bg-brand-white usages */
-.dark {
-  --color-brand-white: #18181b;
-  --color-brand-gray: #27272a;
-  --grid-line-color: rgba(255, 255, 255, 0.06);
-  --roi-slider-fill: #ffffff;
-  --roi-slider-track: #3f3f46;
+  --roi-slider-fill: #1A1A1A;
+  --roi-slider-track: #C7C7C7;
 }
 
 @layer base {
   html {
-    scroll-behavior: smooth;
-    -webkit-font-smoothing: antialiased;
-  }
-  
-  body {
-    @apply bg-brand-white text-zinc-900 overflow-x-hidden;
+    -webkit-text-size-adjust: 100%;
+    /* Anchors stop below the floating header, which sits at max(12px, notch inset) from the top. */
+    scroll-padding-top: max(96px, calc(env(safe-area-inset-top) + 84px));
+    /* The floating buttons (WhatsApp, accessibility) sit at the bottom: a focused field is never left under them. */
+    scroll-padding-bottom: 5rem;
   }
 
-  /* Global Scrollbar Styling - Ultra Minimalist */
+  /* On a phone held upright the accessibility tab floats 96px over the bottom margin: a focused control is scrolled
+     clear of it, not left under it (it is centred on the edge from sm up and on a phone held sideways). */
+  @media (width < 40rem) and (min-height: 30rem) {
+    html {
+      scroll-padding-bottom: calc(max(16px, env(safe-area-inset-bottom)) + 96px + 2.75rem + 8px);
+    }
+  }
+
+  /* The floating header sits 8px higher and is thinner on a phone held sideways. */
+  @variant vn-landscape {
+    html {
+      scroll-padding-top: max(72px, calc(env(safe-area-inset-top) + 60px));
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    @apply bg-vn-cream text-vn-ink font-sans antialiased overflow-x-hidden;
+  }
+
+  ::selection {
+    background: var(--color-vn-ink);
+    color: var(--color-vn-white);
+  }
+
+  /* Global scrollbar styling, ultra minimalist */
   ::-webkit-scrollbar {
     width: 5px;
     height: 5px;
@@ -49,108 +68,38 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #e4e4e7; /* zinc-200 */
+    background: var(--color-vn-gray-light);
     border-radius: 20px;
     transition: background 0.3s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #71717a; /* zinc-500 */
+    background: var(--color-vn-gray-mid);
   }
 
   /* Firefox */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #e4e4e7 transparent;
+    scrollbar-color: var(--color-vn-gray-light) transparent;
   }
-
-  /* Dark mode text contrast — bump dark text shades to readable levels.
-     Placed in @layer base so any explicit dark:text-* utility overrides it. */
-  .dark .text-zinc-500 { color: #a1a1aa; } /* zinc-500 → zinc-400 */
-  .dark .text-zinc-600 { color: #a1a1aa; } /* zinc-600 → zinc-400 */
-  .dark .text-zinc-700 { color: #d4d4d8; } /* zinc-700 → zinc-300 */
-  .dark .text-zinc-900 { color: #f4f4f5; } /* zinc-900 → zinc-100 */
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-white/10 backdrop-blur-none md:backdrop-blur-md border border-white/20;
-  }
-  
-  .glass-dark {
-    @apply bg-black/80 md:bg-black/40 backdrop-blur-none md:backdrop-blur-xl border border-white/5;
-  }
-  
-  .glass-premium {
-    @apply bg-white/95 md:bg-white/70 backdrop-blur-none md:backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
-  }
-  
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-linear-to-r from-black via-zinc-700 to-zinc-500;
-  }
-
-  .text-gradient-dark {
-    @apply bg-clip-text text-transparent bg-linear-to-r from-white via-zinc-200 to-zinc-400;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
-
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-
-  /* Efeito shimmer para CTAs premium */
-  .shimmer {
-    position: relative;
-    overflow: hidden;
-  }
-  .shimmer::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 60%;
-    height: 100%;
-    background: linear-gradient(
-      120deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.15) 45%,
-      rgba(255, 255, 255, 0.3) 50%,
-      rgba(255, 255, 255, 0.15) 55%,
-      transparent 100%
-    );
-    transform: translateX(-160%);
-    animation: shimmer 3s infinite;
-    pointer-events: none;
-  }
-  @keyframes shimmer {
-    0% { transform: translateX(-160%); }
-    100% { transform: translateX(320%); }
-  }
 }
 
-/* ── Marquee (compositor thread — no JS cost) ── */
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-.marquee {
-  animation: marquee 30s linear infinite;
-  will-change: transform;
-}
-
-/* ── Acessibilidade: classes aplicadas ao <html> pelo AccessibilityWidget ── */
+/*
+ * Acessibilidade: classes aplicadas ao <html> pelo AccessibilityWidget.
+ * "Pausar animações" (.a11y-no-animations) is handled with the system preference in motion.css, and the colors of
+ * "Contraste alto" (.a11y-high-contrast) with prefers-contrast in components.css; the contrast filter below stays.
+ */
 
 .a11y-font-large {
   font-size: 120% !important;
@@ -168,14 +117,6 @@
   filter: contrast(150%) grayscale(100%) !important;
 }
 
-.a11y-no-animations *,
-.a11y-no-animations *::before,
-.a11y-no-animations *::after {
-  animation-duration: 0.001ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.001ms !important;
-}
-
 .a11y-underline-links a {
   text-decoration: underline !important;
 }
@@ -186,12 +127,7 @@
   letter-spacing: 0.01em !important;
 }
 
-/* Dark mode gradient text override */
-.dark .text-gradient {
-  background-image: linear-gradient(to right, #ffffff, #e4e4e7, #a1a1aa);
-}
-
-/* ── ROI Calculator range slider ── */
+/* ROI Calculator range slider (light rules only, used by ROICalculator until it is rebuilt) */
 .roi-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -207,26 +143,26 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #18181b;
+  background: #1A1A1A;
   cursor: pointer;
-  border: 3px solid white;
-  box-shadow: 0 0 0 1.5px #d4d4d8;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 0 0 1.5px #C7C7C7;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .roi-slider::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 0 0 0 3px #d4d4d8;
+  box-shadow: 0 0 0 3px #C7C7C7;
 }
 
 .roi-slider::-moz-range-thumb {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #18181b;
+  background: #1A1A1A;
   cursor: pointer;
-  border: 3px solid white;
-  box-shadow: 0 0 0 1.5px #d4d4d8;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 0 0 1.5px #C7C7C7;
   transition: transform 0.15s ease;
 }
 
@@ -234,31 +170,18 @@
   transform: scale(1.15);
 }
 
-/* Dark mode slider overrides */
-.dark .roi-slider::-webkit-slider-thumb {
-  background: #ffffff;
-  border-color: #27272a;
-  box-shadow: 0 0 0 1.5px #52525b;
-}
-
-.dark .roi-slider::-moz-range-thumb {
-  background: #ffffff;
-  border-color: #27272a;
-  box-shadow: 0 0 0 1.5px #52525b;
-}
-
-/* ── 404 glitch effect ── */
+/* 404 glitch effect */
 @keyframes glitch-1 {
   0%, 100% { transform: translate(0); clip-path: none; }
-  15% { transform: translate(-3px, 1px); clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%); color: #34d399; }
+  15% { transform: translate(-3px, 1px); clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%); color: #00E5A0; }
   30% { transform: translate(3px, -1px); clip-path: polygon(0 65%, 100% 65%, 100% 80%, 0 80%); color: #ffffff; }
   45% { transform: translate(-1px, 2px); clip-path: none; }
-  60% { transform: translate(2px, -2px); clip-path: polygon(0 45%, 100% 45%, 100% 60%, 0 60%); color: #a1a1aa; }
+  60% { transform: translate(2px, -2px); clip-path: polygon(0 45%, 100% 45%, 100% 60%, 0 60%); color: #8A8A8A; }
 }
 
 @keyframes glitch-2 {
   0%, 100% { transform: translate(0); opacity: 0.3; }
-  25% { transform: translate(4px, 0); opacity: 0.5; color: #34d399; }
+  25% { transform: translate(4px, 0); opacity: 0.5; color: #00E5A0; }
   50% { transform: translate(-4px, 1px); opacity: 0.2; }
   75% { transform: translate(2px, -1px); opacity: 0.4; }
 }
