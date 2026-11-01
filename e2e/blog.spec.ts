@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './n8nGuard';
 
 const EDGE_FUNCTION = '**/functions/v1/gnews-proxy*';
@@ -28,8 +28,13 @@ function sampleArticle(index: number, language: 'pt' | 'en') {
   };
 }
 
-async function openBlog(page: Page) {
-  const articles = [sampleArticle(1, 'pt'), sampleArticle(2, 'en'), sampleArticle(3, 'pt'), sampleArticle(4, 'pt')];
+type SampleArticle = ReturnType<typeof sampleArticle>;
+
+function defaultArticles(): SampleArticle[] {
+  return [sampleArticle(1, 'pt'), sampleArticle(2, 'en'), sampleArticle(3, 'pt'), sampleArticle(4, 'pt')];
+}
+
+async function openBlog(page: Page, articles: SampleArticle[] = defaultArticles()) {
   await page.route(EDGE_FUNCTION, async (route) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: CORS_JSON });
@@ -38,7 +43,67 @@ async function openBlog(page: Page) {
     await route.fulfill({ status: 200, headers: CORS_JSON, contentType: 'application/json', body: JSON.stringify({ articles, source: 'edge-function' }) });
   });
   await page.goto('/blog');
-  await expect(page.getByRole('link', { name: 'Artigo de teste 1' })).toBeVisible();
+  await expect(page.locator('main a[target="_blank"]').first()).toBeVisible();
+}
+
+// The page root has overflow-hidden, so the scroll width of the document can never show a box that sticks out. These
+// helpers look at the boxes themselves.
+const VIEWPORT_SLACK_PX = 0.5;
+const LAYOUT_TARGETS: Record<string, string> = {
+  title: 'h1',
+  'refresh button': 'main button[aria-disabled]',
+  'data source line': 'main p[role="status"]',
+  'search field': '#search',
+  'language chips row': '[role="group"][aria-label="Filtrar por idioma"]',
+  'topic chips row': '[role="group"][aria-label="Filtrar por tópico"]',
+  'article cards': 'main a[target="_blank"]',
+  footer: 'footer',
+};
+
+async function boxesOutsideViewport(page: Page): Promise<string[]> {
+  return page.evaluate(
+    ({ targets, slack }) => {
+      const width = document.documentElement.clientWidth;
+      return Object.entries(targets).flatMap(([name, selector]) =>
+        Array.from(document.querySelectorAll(selector)).flatMap((element, index) => {
+          const box = element.getBoundingClientRect();
+          const outside = box.left < -slack || box.right > width + slack;
+          return outside ? [`${name} #${index}: ${Math.round(box.left)} to ${Math.round(box.right)} in a ${width}px viewport`] : [];
+        }),
+      );
+    },
+    { targets: LAYOUT_TARGETS, slack: VIEWPORT_SLACK_PX },
+  );
+}
+
+/** Where the focus ring of an element (its box grown by the outline width and offset) is cut off: by the viewport or by an ancestor that clips. */
+async function clippedRingSides(element: Locator): Promise<string[]> {
+  return element.evaluate((node) => {
+    const style = getComputedStyle(node);
+    const grow = parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset);
+    const box = node.getBoundingClientRect();
+    const ring = { left: box.left - grow, top: box.top - grow, right: box.right + grow, bottom: box.bottom + grow };
+    const slack = 0.5;
+    const sides: string[] = [];
+    const check = (owner: string, area: { left: number; top: number; right: number; bottom: number }, horizontal: boolean, vertical: boolean) => {
+      if (horizontal && ring.left < area.left - slack) sides.push(owner + ' left');
+      if (horizontal && ring.right > area.right + slack) sides.push(owner + ' right');
+      if (vertical && ring.top < area.top - slack) sides.push(owner + ' top');
+      if (vertical && ring.bottom > area.bottom + slack) sides.push(owner + ' bottom');
+    };
+    check('viewport', { left: 0, top: 0, right: document.documentElement.clientWidth, bottom: Infinity }, true, false);
+    for (let ancestor = node.parentElement; ancestor; ancestor = ancestor.parentElement) {
+      const overflow = getComputedStyle(ancestor);
+      const clipsX = overflow.overflowX !== 'visible';
+      const clipsY = overflow.overflowY !== 'visible';
+      if (!clipsX && !clipsY) continue;
+      const outer = ancestor.getBoundingClientRect();
+      const left = outer.left + ancestor.clientLeft;
+      const top = outer.top + ancestor.clientTop;
+      check(ancestor.tagName.toLowerCase() + '.' + ancestor.className.split(' ')[0], { left, top, right: left + ancestor.clientWidth, bottom: top + ancestor.clientHeight }, clipsX, clipsY);
+    }
+    return sides;
+  });
 }
 
 function luminance([red, green, blue]: number[]): number {
@@ -65,8 +130,7 @@ for (const viewport of VIEWPORTS) {
     test('has no horizontal scroll, a working skip link and filter chips that say which one is on', async ({ page }) => {
       await openBlog(page);
 
-      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-      expect(overflow).toBeLessThanOrEqual(0);
+      expect(await boxesOutsideViewport(page)).toEqual([]);
 
       await page.keyboard.press('Tab');
       const skip = page.getByRole('link', { name: SKIP_LINK_NAME });
@@ -113,15 +177,30 @@ test.describe('blog controls', () => {
     expect(box?.height).toBeGreaterThanOrEqual(MIN_TARGET_PX);
   });
 
-  test('has no horizontal scroll with the focus ring on the first and last chip', async ({ page }) => {
-    await openBlog(page);
-    const first = page.getByRole('button', { name: 'Todos idiomas' });
+})
 
-    await first.focus();
+for (const viewport of VIEWPORTS) {
+  test.describe(`blog focus rings at ${viewport.width}px`, () => {
+    test.use({ viewport });
 
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    expect(overflow).toBeLessThanOrEqual(0);
+    test('shows the whole focus ring of the first and the last chip of each row, clipped by no ancestor', async ({ page }) => {
+      await openBlog(page);
+
+      for (const row of ['Filtrar por idioma', 'Filtrar por tópico']) {
+        const chips = page.getByRole('group', { name: row }).getByRole('button');
+        for (const chip of [chips.first(), chips.last()]) {
+          await chip.focus();
+          // The chips animate their properties (transition-all), so the ring is read once its width has settled.
+          await expect.poll(() => chip.evaluate((node) => parseFloat(getComputedStyle(node).outlineWidth))).toBeGreaterThanOrEqual(2);
+          expect(await clippedRingSides(chip), `${row}: ${await chip.textContent()}`).toEqual([]);
+        }
+      }
+    });
   });
+}
+
+test.describe('blog controls, contrast', () => {
+  test.use({ viewport: VIEWPORTS[1] });
 
   test('reaches 4.5:1 for the muted texts, the placeholder and the inactive chips', async ({ page }) => {
     await openBlog(page);
@@ -151,3 +230,106 @@ test.describe('blog controls', () => {
     }
   });
 });
+
+// A one pixel white PNG: the cover the third party might send, the worst case for a pill that has no surface of its own.
+const WHITE_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC', 'base64');
+const WHITE_COVER = 'https://images.unsplash.com/photo-white-cover?w=800';
+const WHITE = [255, 255, 255];
+
+/** Mixes a color that may be transparent over an opaque one, the way the browser paints it. */
+function paintOver(foreground: number[], alpha: number, background: number[]): number[] {
+  return foreground.map((channel, index) => channel * alpha + background[index] * (1 - alpha));
+}
+
+function parseRgba(value: string): { rgb: number[]; alpha: number } {
+  const numbers = (value.match(/[\d.]+/g) ?? []).map(Number);
+  return { rgb: numbers.slice(0, 3), alpha: numbers.length > 3 ? numbers[3] : 1 };
+}
+
+test.describe('blog tag pills on a white cover', () => {
+  for (const viewport of [VIEWPORTS[0], VIEWPORTS[3]]) {
+    test.describe(`at ${viewport.width}px`, () => {
+      test.use({ viewport });
+
+      test('reads white text at 4.5:1 or more on the language pill and on the topic pill, even over a white picture', async ({ page }) => {
+        await page.route(WHITE_COVER, (route) => route.fulfill({ status: 200, contentType: 'image/png', body: WHITE_PNG }));
+        const articles = [1, 2, 3].map((index) => ({ ...sampleArticle(index, 'pt'), image: WHITE_COVER }));
+        await openBlog(page, articles);
+        await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('a img')).every((img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0))).toBe(true);
+
+        const pills = await page.evaluate(() =>
+          Array.from(document.querySelectorAll('[id$="-tags"] > span')).map((pill) => {
+            const style = getComputedStyle(pill);
+            return { text: pill.textContent?.trim() ?? '', color: style.color, background: style.backgroundColor };
+          }),
+        );
+
+        expect(pills.length).toBeGreaterThanOrEqual(6);
+        for (const pill of pills) {
+          const background = parseRgba(pill.background);
+          const surface = paintOver(background.rgb, background.alpha, WHITE);
+          expect(contrast(parseRgb(pill.color), surface), pill.text).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);
+        }
+      });
+    });
+  }
+});
+
+// The pills sit on the cover, the NOVO pill at its top right corner: with the longest tags at the narrowest widths they must
+// not touch each other, and the pills must stay inside the cover.
+const NARROW_VIEWPORTS = [320, 360, 390];
+const FRESH = () => new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
+function tagStressArticles(): SampleArticle[] {
+  const base = { description: 'Resumo do artigo', image: '', source: { name: 'Uma fonte com nome bem comprido', url: 'https://example.com' } };
+  return [
+    { ...sampleArticle(0, 'pt'), title: 'O destaque da lista' },
+    { ...sampleArticle(1, 'en'), ...base, title: 'Machine learning in production: a title long enough to wrap onto three lines of the card', publishedAt: FRESH() },
+    { ...sampleArticle(2, 'en'), ...base, title: 'Automação de processos para equipes pequenas, com um título que quebra em várias linhas', publishedAt: FRESH() },
+    { ...sampleArticle(3, 'pt'), ...base, title: 'Workflow n8n do começo ao fim', publishedAt: FRESH() },
+    { ...sampleArticle(4, 'en'), ...base, title: 'Autonomous agent loop', publishedAt: FRESH() },
+    { ...sampleArticle(5, 'pt'), ...base, title: 'Machine learning em produção', publishedAt: new Date(Date.now() - 3 * 86_400_000).toISOString() },
+  ];
+}
+
+async function overlappingCardParts(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const intersects = (a: DOMRect, b: DOMRect) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+    const problems: string[] = [];
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('main a[target="_blank"]')).slice(1);
+    cards.forEach((card, cardIndex) => {
+      const label = `card ${cardIndex + 1} (${card.querySelector('h3')?.textContent?.slice(0, 24)})`;
+      const cover = card.querySelector('img')?.parentElement?.getBoundingClientRect();
+      const pills = Array.from(card.querySelectorAll<HTMLElement>('[id$="-tags"] > span'));
+      const novo = card.querySelector<HTMLElement>('[id$="-new"]');
+      const parts = [...pills.map((pill, index) => ({ name: `pill ${index} ${pill.textContent?.trim()}`, box: pill.getBoundingClientRect() })), ...(novo ? [{ name: 'NOVO', box: novo.getBoundingClientRect() }] : [])];
+      parts.forEach((part, index) => {
+        parts.slice(index + 1).forEach((other) => {
+          if (intersects(part.box, other.box)) problems.push(`${label}: ${part.name} touches ${other.name}`);
+        });
+        if (cover && (part.box.left < cover.left || part.box.right > cover.right)) problems.push(`${label}: ${part.name} leaves the cover`);
+      });
+      const meta = Array.from(card.querySelectorAll<HTMLElement>('[id$="-meta"] > div'));
+      if (meta.length === 2 && intersects(meta[0].getBoundingClientRect(), meta[1].getBoundingClientRect())) problems.push(`${label}: the time and the source touch`);
+      const metaBox = card.querySelector('[id$="-meta"]')?.getBoundingClientRect();
+      meta.forEach((part) => {
+        if (metaBox && part.getBoundingClientRect().right > metaBox.right + 0.5) problems.push(`${label}: the meta line spills out of its card`);
+      });
+    });
+    return problems;
+  });
+}
+
+for (const width of NARROW_VIEWPORTS) {
+  test.describe(`blog card tags at ${width}px`, () => {
+    test.use({ viewport: { width, height: 800 } });
+
+    test('keeps the language and topic pills, the NOVO pill and the meta line from touching each other', async ({ page }) => {
+      await openBlog(page, tagStressArticles());
+      await expect(page.getByRole('link', { name: /Machine learning in production/ })).toBeVisible();
+      await expect(page.getByText('NOVO').first()).toBeVisible();
+
+      expect(await overlappingCardParts(page)).toEqual([]);
+    });
+  });
+}

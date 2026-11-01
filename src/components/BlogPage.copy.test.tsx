@@ -69,7 +69,7 @@ describe('BlogPage copy', () => {
     renderWithProviders(<BlogPage />, { route: '/blog' });
     await screen.findAllByText('Artigo de teste');
 
-    expect(screen.getByRole('contentinfo')).toHaveTextContent('Os artigos vêm de sites de terceiros e cada link abre a fonte original.');
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('Os artigos vêm de sites de terceiros e os links levam aos sites de quem publicou.');
     expect(screen.getByRole('contentinfo')).toHaveTextContent('Voltar para a VN One');
   });
 });

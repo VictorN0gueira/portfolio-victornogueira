@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useId, useMemo, useRef } from 'react';
 import { m, AnimatePresence } from 'motion/react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useNavigationType } from 'react-router-dom';
 import {
   ArrowLeft,
   ExternalLink,
@@ -23,6 +23,7 @@ import {
   getTimeAgo,
   detectCategory,
   type NewsArticle,
+  type NewsOrigin,
 } from '../utils/newsService';
 import { MAIN_CONTENT_ID, SkipLink } from './layout/SkipLink';
 import { NewTabHint } from './ui/NewTabHint';
@@ -39,8 +40,11 @@ function cardDescribedBy(...ids: Array<string | false>): string {
   return [...ids, NEW_TAB_HINT_ID].filter(Boolean).join(' ');
 }
 
+// The pills sit on a cover that is somebody else's picture, light or dark: they carry their own opaque dark surface.
+const TAG_PILL = 'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-vn-black/80 border border-white/20 shadow-lg';
+
 const FALLBACK_IMAGE =
-  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400" fill="%2318181b"%3E%3Crect width="800" height="400"/%3E%3Ctext x="400" y="200" fill="%2371717a" font-family="sans-serif" font-size="24" text-anchor="middle" alignment-baseline="middle"%3EImagem indispon%C3%ADvel%3C/text%3E%3C/svg%3E';
+  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400" fill="%2318181b"%3E%3Crect width="800" height="400"/%3E%3Ctext x="400" y="200" fill="%23a1a1aa" font-family="sans-serif" font-size="24" text-anchor="middle" alignment-baseline="middle"%3EImagem indispon%C3%ADvel%3C/text%3E%3C/svg%3E';
 
 type LangFilter = 'all' | 'pt' | 'en';
 type CatFilter  = 'all' | 'ia' | 'automação' | 'n8n' | 'agentes' | 'llms' | 'ml';
@@ -52,7 +56,7 @@ const LANG_LABELS: Record<LangFilter, { text: string; flag?: string; lang?: stri
   en:  { text: 'English', flag: '🇺🇸', lang: 'en' },
 };
 
-const FILTER_CHIP_BASE = 'px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white';
+const FILTER_CHIP_BASE = 'px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all vn-focus-ring';
 const FILTER_CHIP_ON = 'bg-white text-black';
 const FILTER_CHIP_OFF = 'bg-white/[0.05] text-vn-gray-light border border-white/[0.08] hover:border-white/20 hover:text-white';
 
@@ -67,14 +71,14 @@ const CAT_LABELS: Record<CatFilter, string> = {
 };
 
 /**
- * Says where the list on screen comes from, and only what is true of it: a list that is not fresh never says it was updated.
- * Any source that answered just now (the edge function, Dev.to, TabNews, whatever name it reports) is a fresh list.
+ * Says where the list on screen comes from, and only what is true of it: a list that is not fresh never says it was loaded now.
+ * It goes by the origin the browser knows (see NewsOrigin), never by the source name a server reports, which can be any string.
  */
-function describeDataSource(source: string): string {
-  if (source === 'cache') return 'Lista salva neste navegador';
-  if (source === 'stale-cache') return 'As fontes não responderam. Esta é a última lista salva neste navegador.';
-  if (source === 'fallback') return 'As fontes não responderam. Esta é uma lista fixa de artigos.';
-  return 'Lista atualizada agora';
+function describeDataSource(origin: NewsOrigin): string {
+  if (origin === 'browser-cache') return 'Lista salva neste navegador';
+  if (origin === 'stale-browser-cache') return 'As fontes não responderam. Esta é a última lista salva neste navegador.';
+  if (origin === 'fallback') return 'As fontes não responderam. Esta é uma lista fixa de artigos.';
+  return 'Lista carregada agora';
 }
 
 function isNew(publishedAt: string): boolean {
@@ -147,7 +151,7 @@ function SkeletonFeatured() {
 }
 
 // ─── Featured Card ────────────────────────────────────────────────────────────
-function FeaturedCard({ article }: { article: NewsArticle }) {
+function FeaturedCard({ article, isFixedList }: { article: NewsArticle; isFixedList: boolean }) {
   const [imgError, setImgError] = useState(false);
   const ids = useId();
   const titleId = `${ids}-title`;
@@ -156,7 +160,9 @@ function FeaturedCard({ article }: { article: NewsArticle }) {
   const metaId = `${ids}-meta`;
   const textLang = article.language === 'en' ? 'en' : undefined;
   const { langLabel, topicIcon, topicLabel } = getCategoryTag(article);
-  const novo = isNew(article.publishedAt);
+  // The fixed list has no real dates: it never says new nor how long ago, or it would look like a fresh feed.
+  const novo = !isFixedList && isNew(article.publishedAt);
+  const timeAgo = isFixedList ? '' : getTimeAgo(article.publishedAt);
 
   return (
     <m.a
@@ -185,10 +191,10 @@ function FeaturedCard({ article }: { article: NewsArticle }) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent md:hidden" />
 
         <div id={tagsId} className="absolute top-5 left-5 flex gap-2 flex-wrap">
-          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-vn-black/80 border border-white/20 shadow-lg`}>
+          <span className={TAG_PILL}>
             {langLabel}
           </span>
-          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-white/20 md:bg-white/10 backdrop-blur-none md:backdrop-blur-md border border-white/10 flex items-center gap-1">
+          <span className={`${TAG_PILL} flex items-center gap-1`}>
             {topicIcon}{topicLabel}
           </span>
           {novo && (
@@ -218,10 +224,12 @@ function FeaturedCard({ article }: { article: NewsArticle }) {
 
         <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/[0.06] flex-wrap gap-3">
           <div id={metaId} className="flex items-center gap-4 text-vn-gray-light text-xs flex-wrap">
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" />
-              {getTimeAgo(article.publishedAt)}
-            </span>
+            {timeAgo && (
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                {timeAgo}
+              </span>
+            )}
             <span className="flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5" />
               {estimateReadTime(article)} leitura
@@ -243,7 +251,7 @@ function FeaturedCard({ article }: { article: NewsArticle }) {
 }
 
 // ─── News Card ────────────────────────────────────────────────────────────────
-function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
+function NewsCard({ article, index, isFixedList }: { article: NewsArticle; index: number; isFixedList: boolean }) {
   const [imgError, setImgError] = useState(false);
   const ids = useId();
   const titleId = `${ids}-title`;
@@ -253,7 +261,9 @@ function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
   const metaId = `${ids}-meta`;
   const textLang = article.language === 'en' ? 'en' : undefined;
   const { langLabel, topicIcon, topicLabel } = getCategoryTag(article);
-  const novo = isNew(article.publishedAt);
+  // The fixed list has no real dates: it never says new nor how long ago, or it would look like a fresh feed.
+  const novo = !isFixedList && isNew(article.publishedAt);
+  const timeAgo = isFixedList ? '' : getTimeAgo(article.publishedAt);
 
   return (
     <m.a
@@ -283,11 +293,12 @@ function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-        <div id={tagsId} className="absolute top-4 left-4 flex gap-2 flex-wrap">
-          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-vn-black/80 border border-white/20 shadow-lg`}>
+        {/* The right edge is held back from the NOVO pill (or the hover icon) that sits in the corner, so the tags wrap instead of running under it. */}
+        <div id={tagsId} className={`absolute top-4 left-4 flex gap-2 flex-wrap ${novo ? 'right-[5.5rem]' : 'right-16'}`}>
+          <span className={TAG_PILL}>
             {langLabel}
           </span>
-          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-white/20 md:bg-white/10 backdrop-blur-none md:backdrop-blur-md border border-white/10 flex items-center gap-1">
+          <span className={`${TAG_PILL} flex items-center gap-1`}>
             {topicIcon}{topicLabel}
           </span>
         </div>
@@ -318,7 +329,7 @@ function NewsCard({ article, index }: { article: NewsArticle; index: number }) {
           <div className="flex items-center gap-1.5 text-vn-gray-light">
             <Clock className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">
-              {estimateReadTime(article)} · {getTimeAgo(article.publishedAt)}
+              {timeAgo ? `${estimateReadTime(article)} · ${timeAgo}` : estimateReadTime(article)}
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-vn-gray-light">
@@ -338,19 +349,21 @@ export default function BlogPage() {
   const [articles, setArticles]     = useState<NewsArticle[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
-  const [dataSource, setDataSource] = useState<string>('');
+  const [origin, setOrigin] = useState<NewsOrigin | null>(null);
 
   const [langFilter, setLangFilter]   = useState<LangFilter>('all');
   const [catFilter, setCatFilter]     = useState<CatFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // The first page the visitor opened is read by the browser itself. Arriving from another page of the site (the router gave
-  // the entry a key of its own), focus goes to the main landmark, like the pages inside SiteLayout do.
+  // The first page the visitor opened (a load or a reload) and a step back or forward are read by the browser itself, so
+  // the skip link stays the first tab stop. Only a visitor who arrived by a link of the site (a PUSH) gets the focus on the
+  // main landmark, like the pages inside SiteLayout do. The type is read once, on arrival.
   const mainRef = useRef<HTMLElement>(null);
-  const { key: locationKey } = useLocation();
+  const navigationType = useNavigationType();
+  const arrivedByLink = useRef(navigationType === 'PUSH');
   useEffect(() => {
-    if (locationKey !== 'default') mainRef.current?.focus({ preventScroll: true });
-  }, [locationKey]);
+    if (arrivedByLink.current) mainRef.current?.focus({ preventScroll: true });
+  }, []);
 
   // The answer of the sources goes into the state only after the await, so the first load (the state starts as loading)
   // never sets state inside the effect that starts it.
@@ -359,7 +372,7 @@ export default function BlogPage() {
       const result = await getNewsArticles();
       if (signal?.aborted) return;
       setArticles(result.articles);
-      setDataSource(result.source);
+      setOrigin(result.origin);
     } catch (err) {
       if (signal?.aborted) return;
       setError(err instanceof Error ? err.message : 'Erro ao carregar notícias');
@@ -379,12 +392,15 @@ export default function BlogPage() {
   }, [loadNews]);
 
   // The refresh button: drops the cache and asks the sources again.
+  // While a load runs the press does nothing (one load at a time), and the button stays in the tab order: a disabled
+  // button that held the focus would drop it to the body (WCAG 2.4.3), so it is aria-disabled instead.
   const refreshNews = useCallback(() => {
+    if (loading) return;
     setLoading(true);
     setError(null);
     clearNewsCache();
     startLoad();
-  }, [startLoad]);
+  }, [loading, startLoad]);
 
   useEffect(() => {
     // The state is set after the await (the first render is already loading), never in the body of this effect.
@@ -474,14 +490,14 @@ export default function BlogPage() {
               <button
                 type="button"
                 onClick={refreshNews}
-                disabled={loading}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.1] hover:border-white/[0.15] transition-all text-sm text-zinc-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-disabled={loading}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.1] hover:border-white/[0.15] transition-all text-sm text-zinc-300 hover:text-white aria-disabled:opacity-50 aria-disabled:cursor-not-allowed vn-focus-ring"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 Atualizar
               </button>
               <p role="status" className="text-xs text-vn-gray-light max-w-md">
-                {dataSource && !loading ? describeDataSource(dataSource) : ''}
+                {origin && !loading ? describeDataSource(origin) : ''}
               </p>
             </div>
           </m.div>
@@ -511,7 +527,7 @@ export default function BlogPage() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Buscar artigos..."
-                className="w-full pl-11 pr-11 py-3 rounded-2xl bg-white/[0.05] border border-white/[0.08] focus:border-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white text-sm text-white placeholder:text-vn-gray-mid transition-all"
+                className="w-full pl-11 pr-11 py-3 rounded-2xl bg-white/[0.05] border border-white/[0.08] focus:border-white/20 vn-focus-ring text-sm text-white placeholder:text-vn-gray-mid transition-all"
               />
               {searchQuery && (
                 <button
@@ -556,20 +572,22 @@ export default function BlogPage() {
               ))}
             </div>
 
-            {/* Contador */}
-            {hasActiveFilters && (
-              <div className="flex items-center gap-3">
-                <p className="text-xs text-vn-gray-light uppercase tracking-widest">
-                  {filteredArticles.length} artigo{filteredArticles.length !== 1 ? 's' : ''} encontrado{filteredArticles.length !== 1 ? 's' : ''}
-                </p>
+            {/* Contador: a live region that is in the page before any filter is used, so the count is announced when it
+                appears and when it changes. It is the only announcement of the results (the empty block below is plain text). */}
+            <div className="flex items-center gap-3 has-[p:empty]:-mt-4">
+              <p role="status" className="text-xs text-vn-gray-light uppercase tracking-widest">
+                {hasActiveFilters &&
+                  `${filteredArticles.length} artigo${filteredArticles.length !== 1 ? 's' : ''} encontrado${filteredArticles.length !== 1 ? 's' : ''}`}
+              </p>
+              {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
                   className="text-[10px] text-vn-gray-light hover:text-zinc-300 uppercase tracking-widest underline underline-offset-2 transition-colors"
                 >
                   Limpar filtros
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </m.section>
       )}
@@ -639,11 +657,11 @@ export default function BlogPage() {
               <m.div key="articles" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <h2 className="sr-only">Artigos</h2>
                 <NewTabHint id={NEW_TAB_HINT_ID} />
-                <FeaturedCard article={filteredArticles[0]} />
+                <FeaturedCard article={filteredArticles[0]} isFixedList={origin === 'fallback'} />
                 {filteredArticles.length > 1 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredArticles.slice(1).map((article, idx) => (
-                      <NewsCard key={article.url} article={article} index={idx + 1} />
+                      <NewsCard key={article.url} article={article} index={idx + 1} isFixedList={origin === 'fallback'} />
                     ))}
                   </div>
                 )}
@@ -661,7 +679,7 @@ export default function BlogPage() {
           <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mb-12" />
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <p className="text-xs text-vn-gray-light uppercase tracking-widest">
-              Os artigos vêm de sites de terceiros e cada link abre a fonte original.
+              Os artigos vêm de sites de terceiros e os links levam aos sites de quem publicou.
             </p>
             <Link
               to="/"

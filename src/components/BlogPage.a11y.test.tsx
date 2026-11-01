@@ -1,7 +1,5 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { LazyMotion, domAnimation } from 'motion/react';
-import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../test/render';
 import type { NewsArticle } from '../utils/newsService';
@@ -103,18 +101,6 @@ describe('BlogPage landmarks', () => {
     expect(screen.getByRole('main')).not.toHaveFocus();
   });
 
-  it('moves focus to the main landmark when the visitor arrives from another page of the site', async () => {
-    render(
-      <LazyMotion features={domAnimation} strict>
-        <MemoryRouter initialEntries={[{ pathname: '/blog', key: 'came-from-the-site' }]}>
-          <BlogPage />
-        </MemoryRouter>
-      </LazyMotion>,
-    );
-
-    await waitFor(() => expect(screen.getByRole('main')).toHaveFocus());
-  });
-
   it('announces the loading as a status while the sources answer', async () => {
     getNewsArticles.mockReturnValue(new Promise(() => undefined));
     renderWithProviders(<BlogPage />, { route: '/blog' });
@@ -141,7 +127,7 @@ describe('BlogPage search and filters', () => {
     await renderLoaded();
 
     const search = screen.getByRole('textbox', { name: 'Buscar artigos' });
-    expect(search).toHaveClass('focus-visible:outline-2', 'focus-visible:outline-white');
+    expect(search).toHaveClass('vn-focus-ring');
     expect(search).not.toHaveClass('focus:outline-none');
   });
 

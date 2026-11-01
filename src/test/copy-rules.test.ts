@@ -135,6 +135,8 @@ const SCANNED_FILES = [
   'src/pages/ContactPage.tsx',
   'src/pages/ProjectDetailPage.tsx',
   'src/pages/ProjectsPage.tsx',
+  // The fixed list the blog shows when no source answers: its strings are site copy too.
+  'src/utils/newsService.ts',
 ];
 // projects.ts is rebuilt with the projects page (plan 3), so its claims are not scanned for sales wording yet.
 // testimonials.ts holds the clients' own words, verbatim: they are not ours to edit.
@@ -325,6 +327,31 @@ describe('copy rules', () => {
     const longTexts = [...faqs.map((faq) => faq.answer), ...processSteps.map((step) => step.description)];
 
     expect(longTexts.filter((text) => SHORT_FORM_PATTERN.test(text))).toEqual([]);
+  });
+});
+
+// The fixed list of the blog (FALLBACK_ARTICLES) speaks for the site when no source answers, so it cannot carry a number
+// or a study the site never measured, nor an item from a publisher whose name has the banned word.
+function fallbackBlock(): string {
+  const source = readFileSync(resolve(ROOT, 'src/utils/newsService.ts'), 'utf8');
+  const start = source.indexOf('const FALLBACK_ARTICLES');
+  const end = source.indexOf('];', start);
+  return source.slice(start, end);
+}
+
+describe('blog fallback articles', () => {
+  it('has no "chatbot", no number followed by a percent sign, no dash and no study claim', () => {
+    const block = fallbackBlock();
+
+    expect(block.length).toBeGreaterThan(0);
+    expect(block).not.toMatch(CHATBOT_PATTERN);
+    expect(block).not.toMatch(/\d\s*%/);
+    expect(block).not.toMatch(DASH_PATTERN);
+    expect(block).not.toMatch(/estudo|pesquisa revela|revela que|study|survey/i);
+  });
+
+  it('keeps at least four articles', () => {
+    expect((fallbackBlock().match(/title:/g) ?? []).length).toBeGreaterThanOrEqual(4);
   });
 });
 

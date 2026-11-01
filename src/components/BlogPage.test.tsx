@@ -1,4 +1,6 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { LazyMotion, domAnimation } from 'motion/react';
+import { Link, MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../test/render';
@@ -28,7 +30,7 @@ beforeEach(() => {
   window.scrollTo = vi.fn();
   localStorage.clear();
   getNewsArticles.mockReset();
-  getNewsArticles.mockResolvedValue({ articles: [1, 2, 3].map(newsArticle), source: 'edge-function' });
+  getNewsArticles.mockResolvedValue({ articles: [1, 2, 3].map(newsArticle), source: 'edge-function', origin: 'live' });
 });
 
 const articlesText = () => screen.queryAllByText(/Artigo de teste|Article in English/);
@@ -56,7 +58,7 @@ describe('BlogPage states', () => {
   });
 
   it('says so when there is no article at all', async () => {
-    getNewsArticles.mockResolvedValue({ articles: [], source: 'fallback' });
+    getNewsArticles.mockResolvedValue({ articles: [], source: 'fallback', origin: 'fallback' });
     renderWithProviders(<BlogPage />, { route: '/blog' });
 
     expect(await screen.findByText('Nenhuma notícia encontrada')).toBeInTheDocument();
@@ -118,26 +120,36 @@ describe('BlogPage cards and labels', () => {
   });
 
   it.each([
-    ['cache', /Lista salva neste navegador/],
-    ['edge-function', /Lista atualizada agora/],
-    ['gnews', /Lista atualizada agora/],
-    ['devto', /Lista atualizada agora/],
-    ['tabnews+devto', /Lista atualizada agora/],
-    ['stale-cache', /As fontes não responderam\. Esta é a última lista salva neste navegador\./],
-    ['fallback', /As fontes não responderam\. Esta é uma lista fixa de artigos\./],
-  ])('tells where the articles came from: %s', async (source, label) => {
-    getNewsArticles.mockResolvedValue({ articles: [newsArticle(1)], source });
+    ['browser-cache', 'cache', /Lista salva neste navegador/],
+    ['live', 'edge-function', /Lista carregada agora/],
+    ['live', 'devto', /Lista carregada agora/],
+    ['live', 'tabnews+devto', /Lista carregada agora/],
+    ['stale-browser-cache', 'cache', /As fontes não responderam\. Esta é a última lista salva neste navegador\./],
+    ['fallback', 'fallback', /As fontes não responderam\. Esta é uma lista fixa de artigos\./],
+  ])('tells where the articles came from: %s (server source %s)', async (origin, source, label) => {
+    getNewsArticles.mockResolvedValue({ articles: [newsArticle(1)], source, origin });
     renderWithProviders(<BlogPage />, { route: '/blog' });
 
     expect(await screen.findByText(label)).toBeInTheDocument();
   });
 
-  it.each(['cache', 'stale-cache', 'fallback'])('does not claim an update when the list is not fresh: %s', async (source) => {
-    getNewsArticles.mockResolvedValue({ articles: [newsArticle(1)], source });
+  it.each(['cache', 'stale-cache', 'fallback'])(
+    'words a live list by what the browser did, not by a server source name that sounds like a state: %s',
+    async (source) => {
+      getNewsArticles.mockResolvedValue({ articles: [newsArticle(1)], source, origin: 'live' });
+      renderWithProviders(<BlogPage />, { route: '/blog' });
+
+      expect(await screen.findByText('Lista carregada agora')).toBeInTheDocument();
+      expect(screen.queryByText(/salva neste navegador|lista fixa/)).toBeNull();
+    },
+  );
+
+  it.each(['browser-cache', 'stale-browser-cache', 'fallback'])('does not claim an update when the list is not fresh: %s', async (origin) => {
+    getNewsArticles.mockResolvedValue({ articles: [newsArticle(1)], source: 'x', origin });
     renderWithProviders(<BlogPage />, { route: '/blog' });
 
     await screen.findAllByText('Artigo de teste 1');
-    expect(document.body.textContent).not.toMatch(/atualizad|diariamente|ao vivo/i);
+    expect(document.body.textContent).not.toMatch(/atualizad|diariamente|ao vivo|carregada agora/i);
   });
 
   it('shows a generic message when a source fails with something that is not an Error', async () => {
@@ -159,6 +171,173 @@ describe('BlogPage cards and labels', () => {
 
     expect((await screen.findAllByText('Workflow n8n')).length).toBeGreaterThan(0);
     await waitFor(() => expect(screen.queryByText('Outro tema')).toBeNull());
+  });
+});
+
+describe('BlogPage fixed list', () => {
+  it('does not look like a fresh feed: no NOVO and no time ago on any card, whatever the dates say', async () => {
+    const recent = [1, 2, 3].map((index) => ({ ...newsArticle(index), publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() }));
+    getNewsArticles.mockResolvedValue({ articles: recent, source: 'fallback', origin: 'fallback' });
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+
+    await screen.findAllByText('Artigo de teste 1');
+    expect(screen.queryByText('NOVO')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/atrás|Agora mesmo|Ontem/);
+  });
+
+  it('still shows NOVO and the time ago for a live list', async () => {
+    const recent = [1, 2].map((index) => ({ ...newsArticle(index), publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() }));
+    getNewsArticles.mockResolvedValue({ articles: recent, source: 'edge-function', origin: 'live' });
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+
+    await screen.findAllByText('Artigo de teste 1');
+    expect(screen.getAllByText('NOVO').length).toBeGreaterThan(0);
+    expect(document.body.textContent).toMatch(/2h atrás/);
+  });
+
+  it('says in the footer that the links lead to the publishers sites, true for the fixed list too', async () => {
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+
+    await screen.findAllByText('Artigo de teste 1');
+    expect(screen.getByText(/leva(m)? aos sites de quem publicou/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/fonte original/);
+  });
+});
+
+describe('BlogPage tag pills', () => {
+  it('gives the topic pill of every card the same opaque dark surface as the language pill, so it reads over any cover', async () => {
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+    await screen.findAllByText('Artigo de teste 1');
+
+    const containers = Array.from(document.querySelectorAll('[id$="-tags"]'));
+    expect(containers.length).toBeGreaterThanOrEqual(2);
+    for (const container of containers) {
+      const pills = Array.from(container.querySelectorAll(':scope > span'));
+      expect(pills.length).toBeGreaterThanOrEqual(2);
+      for (const pill of pills) {
+        expect(pill.className).toContain('bg-vn-black/80');
+        expect(pill.className).toContain('border-white/20');
+        expect(pill.className).not.toMatch(/bg-white\/(10|20)/);
+      }
+    }
+  });
+});
+
+describe('BlogPage refresh button', () => {
+  it('stays focusable and keeps the focus while it loads, saying it is busy with aria-disabled', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+    await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
+    let answer: (value: unknown) => void = () => undefined;
+    getNewsArticles.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    const button = screen.getByRole('button', { name: /Atualizar/ });
+
+    await user.click(button);
+
+    await waitFor(() => expect(button).toHaveAttribute('aria-disabled', 'true'));
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveFocus();
+
+    answer({ articles: [newsArticle(1)], source: 'edge-function', origin: 'live' });
+    await waitFor(() => expect(button).toHaveAttribute('aria-disabled', 'false'));
+    expect(button).toHaveFocus();
+  });
+
+  it('ignores a press while it is loading: one load at a time', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+    await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
+    getNewsArticles.mockReturnValue(new Promise(() => undefined));
+    const button = screen.getByRole('button', { name: /Atualizar/ });
+
+    await user.click(button);
+    await user.click(button);
+    await user.keyboard('{Enter}');
+
+    expect(getNewsArticles).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('BlogPage focus on arrival', () => {
+  function Home() {
+    const navigate = useNavigate();
+    return (
+      <>
+        <Link to="/blog">Ir para o blog</Link>
+        <button type="button" onClick={() => void navigate(-1)}>Voltar</button>
+      </>
+    );
+  }
+
+  function renderApp(entries: string[], index?: number) {
+    return render(
+      <LazyMotion features={domAnimation} strict>
+        <MemoryRouter initialEntries={entries} initialIndex={index}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/blog" element={<BlogPage />} />
+          </Routes>
+        </MemoryRouter>
+      </LazyMotion>,
+    );
+  }
+
+  it('leaves the first tab stop to the skip link when the blog is the page that was opened (a reload)', async () => {
+    renderApp(['/blog']);
+    await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
+
+    expect(screen.getByRole('main')).not.toHaveFocus();
+    expect(document.body).toHaveFocus();
+  });
+
+  it('leaves the focus alone after back or forward to the blog', async () => {
+    renderApp(['/', '/blog', '/'], 2);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Voltar' }));
+    await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
+
+    expect(screen.getByRole('main')).not.toHaveFocus();
+  });
+
+  it('moves the focus to the main landmark when the visitor arrives by a link of the site', async () => {
+    renderApp(['/']);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('link', { name: 'Ir para o blog' }));
+
+    await waitFor(() => expect(screen.getByRole('main')).toHaveFocus());
+  });
+});
+
+describe('BlogPage result count as a live region', () => {
+  it('announces the count through one polite status region that is already in the page before a filter is used', async () => {
+    const user = userEvent.setup();
+    getNewsArticles.mockResolvedValue({ articles: [newsArticle(1), newsArticle(2)], source: 'edge-function', origin: 'live' });
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+    const search = await screen.findByLabelText('Buscar artigos');
+    const regions = () => screen.getAllByRole('status').filter((region) => region.getAttribute('aria-label') !== 'Carregando artigos');
+    const before = regions();
+    const counterBefore = before[before.length - 1];
+    expect(counterBefore).toBeEmptyDOMElement();
+
+    await user.type(search, 'Artigo de teste 1');
+
+    const counter = screen.getByText(/1 artigo encontrado/);
+    expect(counter).toBe(counterBefore);
+    expect(counter).toHaveAttribute('role', 'status');
+  });
+
+  it('does not announce the empty results block a second time: the count says it, the block is plain text', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+    await user.type(await screen.findByLabelText('Buscar artigos'), 'nada disso existe');
+
+    const counter = await screen.findByText(/0 artigos encontrados/);
+    expect(counter).toHaveAttribute('role', 'status');
+    const empty = await screen.findByText('Nenhum artigo encontrado');
+    expect(empty.closest('[role="status"], [role="alert"], [aria-live]')).toBeNull();
+    expect(screen.getAllByText(/\d+ artigos? encontrados?/)).toHaveLength(1);
   });
 });
 

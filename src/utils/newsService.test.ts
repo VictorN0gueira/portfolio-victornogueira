@@ -410,3 +410,31 @@ describe('what the module exports', () => {
     expect(getTimeAgo(new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString())).toBe('5h atrás');
   });
 });
+
+describe('getNewsArticles origin', () => {
+  it('says live for an answer of the edge function, whatever source name the server reports', async () => {
+    stubFeeds({ articles: [article()], source: 'cache' });
+
+    const result = await getNewsArticles();
+
+    expect(result.origin).toBe('live');
+    expect(result.source).toBe('cache');
+  });
+
+  it('says live for the public feeds, browser-cache for a valid cache, and stale-browser-cache for an expired one', async () => {
+    stubPublicFeeds([devToItem({ title: 'Do feed', url: 'https://dev.to/o/9' })], []);
+    expect((await getNewsArticles()).origin).toBe('live');
+
+    expect((await getNewsArticles()).origin).toBe('browser-cache');
+
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ articles: [article()], timestamp: 1, source: 'edge-function' }));
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({}, 503)));
+    expect((await getNewsArticles()).origin).toBe('stale-browser-cache');
+  });
+
+  it('says fallback for the fixed list', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({}, 503)));
+
+    expect((await getNewsArticles()).origin).toBe('fallback');
+  });
+});
