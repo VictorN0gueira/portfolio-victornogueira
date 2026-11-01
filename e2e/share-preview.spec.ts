@@ -39,7 +39,8 @@ test.describe('share preview without JavaScript', () => {
   test('raw HTML has the VN One title and no keywords meta', async ({ page }) => {
     const html = await (await page.request.get('/')).text();
 
-    expect(html).toContain(`<title>${SITE.title}</title>`);
+    // The title carries data-static-seo, so that SEO.tsx can drop it once a page has its own.
+    expect(html).toContain(`<title data-static-seo>${SITE.title}</title>`);
     expect(readMetaContent(html, 'name', 'description')).toBe(SITE.description);
     expect(readMetaContent(html, 'name', 'author')).toBe(SITE.name);
     expect(readMetaContent(html, 'name', 'keywords')).toBeNull();

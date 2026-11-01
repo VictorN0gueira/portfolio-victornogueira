@@ -48,3 +48,34 @@ test('the raw HTML still carries the home share tags for crawlers that run no sc
   expect(html).toContain('property="og:image"');
   expect(html).toContain('name="description"');
 });
+
+// Between two pages, while the chunk of the next one is slow, the head must not fall back to the static home title,
+// and the announcement of the new page must be its own title (not the home one).
+const SLOW_PAGE_CHUNK = /\/assets\/ServicesPage-[^/]*\.js$/;
+const SLOW_PAGE_MS = 2500;
+const HOME_TITLE_TEXT = 'VN One | Automação e IA para empresas';
+const TITLE_SAMPLE_MS = 25;
+
+test('the title never goes back to the home title between /sobre and a slow /servicos', async ({ page }) => {
+  await page.goto('/sobre');
+  await expect(page).toHaveTitle(/^Sobre/);
+  await expect.poll(() => page.locator('head [data-static-seo]').count()).toBe(0);
+
+  await page.route(SLOW_PAGE_CHUNK, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, SLOW_PAGE_MS));
+    await route.fallback();
+  });
+  await page.evaluate((interval) => {
+    const seen: string[] = [];
+    (window as unknown as { __titles: string[] }).__titles = seen;
+    window.setInterval(() => seen.push(document.title), interval);
+  }, TITLE_SAMPLE_MS);
+
+  await page.locator('footer a[href="/servicos"]').first().click();
+  await expect(page).toHaveTitle(/^Serviços/, { timeout: SLOW_PAGE_MS * 3 });
+
+  const seen = await page.evaluate(() => (window as unknown as { __titles: string[] }).__titles);
+  expect(seen.length).toBeGreaterThan(SLOW_PAGE_MS / TITLE_SAMPLE_MS / 2);
+  expect(seen).not.toContain(HOME_TITLE_TEXT);
+  await expect(page.locator('[role="status"].sr-only').first()).toHaveText(/^Serviços/);
+});

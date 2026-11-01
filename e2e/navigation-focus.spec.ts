@@ -139,9 +139,10 @@ const focusedInside = (page: Page, sectionId: string) =>
   }, sectionId);
 
 /**
- * Waits for the new page (by its title: /sobre has a #metodo of its own, which the old page focuses while it fades out,
- * so a focus inside #metodo says nothing until the home is the page), then for the focus to land in the section and
- * checks it is still there after the window in which the guard of main used to take it back.
+ * Waits for the new page (by its title: /sobre has a #metodo of its own, which the old page leaves alone while it fades
+ * out because the path already moved on, so the first focus inside #metodo is the one of the new page), then for the
+ * focus to land in the section and checks it is still there after the window in which the guard of main used to take
+ * it back.
  */
 async function expectFocusStaysOn(page: Page, sectionId: string, newTitle: RegExp) {
   await expect(page).toHaveTitle(newTitle, { timeout: FOCUS_TIMEOUT_MS });
@@ -160,7 +161,7 @@ async function throttleCpu(page: Page, rate: number) {
 test.describe('focus after a hash link that changes the page', () => {
   test('from /sobre to "Como funciona" lands on the heading of the section and stays', async ({ page }) => {
     await page.goto('/sobre');
-    await expect(page.getByRole('heading', { level: 2, name: 'Sobre mim' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Sobre mim' })).toBeVisible();
 
     await followHeaderLink(page, 'Como funciona');
 
@@ -181,7 +182,7 @@ test.describe('focus after a hash link that changes the page', () => {
 
   test('keeps the same result with the CPU 4x slower', async ({ page }) => {
     await page.goto('/sobre');
-    await expect(page.getByRole('heading', { level: 2, name: 'Sobre mim' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Sobre mim' })).toBeVisible();
     await throttleCpu(page, 4);
 
     await followHeaderLink(page, 'Como funciona');

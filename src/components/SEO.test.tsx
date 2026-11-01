@@ -244,6 +244,30 @@ describe('SEO', () => {
       expect(readMeta('name', 'theme-color')).toBe('#0A0A0A');
     });
 
+    it('marks the static title too, and keeps the home title in the raw HTML for crawlers', () => {
+      const title = rawHtml.match(/<title[^>]*>([^<]*)<\/title>/);
+
+      expect(title?.[0]).toContain(STATIC_ATTR);
+      expect(title?.[1]).toBe('VN One | Automação e IA para empresas');
+    });
+
+    it('never lets the static home title come back as the title between two pages', () => {
+      const staticTitle = document.createElement('title');
+      staticTitle.textContent = 'VN One | Automação e IA para empresas';
+      staticTitle.setAttribute(STATIC_ATTR, '');
+      document.head.appendChild(staticTitle);
+      staticTags.push(staticTitle);
+
+      const about = renderSeo({ title: 'Sobre', path: '/sobre' });
+      expect(document.title).toBe('Sobre | VN One');
+      about.unmount();
+
+      // The old page is gone and the next one is still loading: the home title must not show up in between.
+      expect(document.title).not.toBe('VN One | Automação e IA para empresas');
+      renderSeo({ title: 'Serviços', path: '/servicos' });
+      expect(document.title).toBe('Serviços | VN One');
+    });
+
     it('drops the static og:url on a noindex page instead of leaving the home one', () => {
       addStaticTag('property', 'og:url', 'https://vnone.com.br/');
 

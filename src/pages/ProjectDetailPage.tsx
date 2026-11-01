@@ -6,12 +6,25 @@ import { SEO } from '../components/SEO';
 import { ProjectDetail } from '../components/ProjectDetail';
 import { BACK_LABEL, BREADCRUMB_HOME, CONTACT_LABEL, NOT_FOUND_TITLE, PROJECT_CTA_TEXT, PROJECTS_TITLE } from '../components/projectLabels';
 import { coverOf, getProjectBySlug, REMOVED_PROJECT_SLUGS, type Project } from '../data/projects';
-import { SectionSkeleton } from '../components/ui/SectionSkeleton';
+import { shellCopy } from '../data/shellCopy';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { SITE } from '../lib/site';
 
 // The same lazy chunk App.tsx uses for its 404: a project page that exists never downloads it.
 const NotFound = lazyWithRetry(() => import('../components/NotFound'));
+
+/**
+ * Holds the place of the not found page while its chunk loads: that page is as tall as the screen on a dark background,
+ * so the footer and the background do not jump when it arrives (the cream compact skeleton was about 250 px tall).
+ */
+function NotFoundFallback() {
+  return (
+    <div role="status" aria-label={shellCopy.pageLoading} className="flex min-h-screen items-center justify-center bg-zinc-950">
+      <div aria-hidden="true" className="size-10 rounded-full border-2 border-white/20 border-t-white/70 motion-safe:animate-spin" />
+      <span className="sr-only">{shellCopy.pageLoading}</span>
+    </div>
+  );
+}
 
 const SHARE_IMAGE_WIDTH = 1200;
 const SHARE_IMAGE_HEIGHT = 630;
@@ -39,7 +52,7 @@ export default function ProjectDetailPage() {
     return (
       <>
         <SEO title={NOT_FOUND_TITLE} noindex />
-        <Suspense fallback={<SectionSkeleton />}>
+        <Suspense fallback={<NotFoundFallback />}>
           <NotFound />
         </Suspense>
       </>

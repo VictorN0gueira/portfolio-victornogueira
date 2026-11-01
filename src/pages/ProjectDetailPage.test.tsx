@@ -98,10 +98,5 @@ describe('ProjectDetailPage and the NotFound chunk', () => {
     expect(source).toMatch(/lazyWithRetry\(\(\) => import\('\.\.\/components\/NotFound'\)\)/);
   });
 
-  it('puts noindex in the head at once, without waiting for the chunk of the not found page', async () => {
-    renderAt('/projetos/nao-existe');
-
-    expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toContain('noindex');
-    await screen.findByRole('heading', { level: 1, name: 'Página não encontrada' });
-  });
+  // The noindex while the chunk is on its way is in ProjectDetailPage.pending.test.tsx: it needs a chunk that never arrives.
 });

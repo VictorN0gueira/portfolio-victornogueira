@@ -1,9 +1,11 @@
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SITE } from '../../lib/site';
 import { RouteAnnouncer } from './RouteAnnouncer';
 
 const FRAME_MS = 16;
 const MAX_WAIT_MS = 3000;
+const HOME_TITLE = SITE.title;
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
@@ -52,6 +54,43 @@ describe('RouteAnnouncer', () => {
     });
 
     expect(status()).toHaveTextContent('Início | VN One');
+  });
+
+  it('does not announce the home title for another route, nor an empty title, while the new page loads', () => {
+    document.title = 'Sobre | VN One';
+    const { rerender } = render(<RouteAnnouncer pathname="/sobre" />);
+
+    rerender(<RouteAnnouncer pathname="/servicos" />);
+    // The old page left and the new one is still loading: the head shows nothing, or the static home title.
+    document.title = '';
+    act(() => {
+      vi.advanceTimersByTime(FRAME_MS * 3);
+    });
+    document.title = HOME_TITLE;
+    act(() => {
+      vi.advanceTimersByTime(FRAME_MS * 3);
+    });
+    expect(status()).toBeEmptyDOMElement();
+
+    document.title = 'Serviços | VN One';
+    act(() => {
+      vi.advanceTimersByTime(FRAME_MS * 2);
+    });
+
+    expect(status()).toHaveTextContent('Serviços | VN One');
+  });
+
+  it('announces the home title when the route is the home', () => {
+    document.title = 'Sobre | VN One';
+    const { rerender } = render(<RouteAnnouncer pathname="/sobre" />);
+
+    rerender(<RouteAnnouncer pathname="/" />);
+    document.title = HOME_TITLE;
+    act(() => {
+      vi.advanceTimersByTime(FRAME_MS * 2);
+    });
+
+    expect(status()).toHaveTextContent(HOME_TITLE);
   });
 
   it('says nothing when the pathname stays the same, as with a hash change or a plain re-render', () => {

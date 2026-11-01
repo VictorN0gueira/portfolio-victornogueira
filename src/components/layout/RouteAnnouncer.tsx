@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { SITE } from '../../lib/site';
+
+const HOME_PATH = '/';
 
 /** The new page is lazy, so its title can arrive after the route changed: this is the longest the announcer waits for it. */
 const MAX_TITLE_WAIT_MS = 3000;
@@ -26,12 +29,17 @@ export function RouteAnnouncer({ pathname }: RouteAnnouncerProps) {
     const startedAt = performance.now();
     let frame = 0;
 
+    // Between two pages the head can show nothing (the old page left, the new one is loading) or the home title of
+    // index.html: neither is the title of the page this route leads to.
+    const isUsable = () => document.title !== '' && (pathname === HOME_PATH || document.title !== SITE.title);
+
     const check = () => {
-      if (document.title !== titleBefore || performance.now() - startedAt >= MAX_TITLE_WAIT_MS) {
+      const isLate = performance.now() - startedAt >= MAX_TITLE_WAIT_MS;
+      if (isUsable() && (document.title !== titleBefore || isLate)) {
         setAnnouncement(document.title);
         return;
       }
-      frame = requestAnimationFrame(check);
+      if (!isLate) frame = requestAnimationFrame(check);
     };
     frame = requestAnimationFrame(check);
 
