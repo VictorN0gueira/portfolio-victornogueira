@@ -1,9 +1,11 @@
-import { Suspense, lazy } from 'react';
+import { Suspense } from 'react';
 import { SEO } from '../components/SEO';
 import { PROJECTS_PAGE_DESCRIPTION, PROJECTS_TITLE } from '../components/projectLabels';
 import { SectionSkeleton } from '../components/ui/SectionSkeleton';
+import { lazyWithRetry } from '../lib/lazyWithRetry';
 
-const Projects = lazy(() => import('../components/Projects'));
+// The whole content of the page: a chunk that fails is retried once, then the page reloads once (see lazyWithRetry).
+const Projects = lazyWithRetry(() => import('../components/Projects'));
 
 // About as tall as the loaded page at each width (measured), so the footer is not pushed down when the chunk arrives.
 const PROJECTS_SKELETON_HEIGHT = 'min-h-[5200px] md:min-h-[4800px] lg:min-h-[3900px]';

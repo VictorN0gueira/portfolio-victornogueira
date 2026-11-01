@@ -124,6 +124,73 @@ test.describe('focus and announcement on a route change', () => {
   });
 });
 
+// A hash link that also changes the page: the guard that holds focus on main after a change of page must give way to
+// the heading the hash points to, instead of pulling focus back to main.
+const GUARD_WINDOW_MS = 1500;
+const SERVICE_SLUG = 'automacao-essencial';
+const HOME_TITLE = /Automação e IA para empresas/;
+
+/** The id of the element inside `#section` that holds focus, or '' when focus is elsewhere. */
+const focusedInside = (page: Page, sectionId: string) =>
+  page.evaluate((id) => {
+    const active = document.activeElement;
+    const section = document.getElementById(id);
+    return active && section?.contains(active) ? (active.tagName + ':' + (active.id || section.id)) : '';
+  }, sectionId);
+
+/**
+ * Waits for the new page (by its title: /sobre has a #metodo of its own, which the old page focuses while it fades out,
+ * so a focus inside #metodo says nothing until the home is the page), then for the focus to land in the section and
+ * checks it is still there after the window in which the guard of main used to take it back.
+ */
+async function expectFocusStaysOn(page: Page, sectionId: string, newTitle: RegExp) {
+  await expect(page).toHaveTitle(newTitle, { timeout: FOCUS_TIMEOUT_MS });
+  await expect.poll(() => focusedInside(page, sectionId), { timeout: FOCUS_TIMEOUT_MS }).not.toBe('');
+  const landed = await focusedInside(page, sectionId);
+  await page.waitForTimeout(GUARD_WINDOW_MS);
+  expect(await focusedInside(page, sectionId)).toBe(landed);
+  expect(await activeId(page)).not.toBe(MAIN_ID);
+}
+
+async function throttleCpu(page: Page, rate: number) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate });
+}
+
+test.describe('focus after a hash link that changes the page', () => {
+  test('from /sobre to "Como funciona" lands on the heading of the section and stays', async ({ page }) => {
+    await page.goto('/sobre');
+    await expect(page.getByRole('heading', { level: 2, name: 'Sobre mim' })).toBeVisible();
+
+    await followHeaderLink(page, 'Como funciona');
+
+    await expect(page).toHaveURL(/\/#metodo$/);
+    await expectFocusStaysOn(page, 'metodo', HOME_TITLE);
+    expect(await page.evaluate(() => document.activeElement?.tagName)).toBe('H2');
+  });
+
+  test('from /projetos to a service by the footer lands inside that card and stays', async ({ page }) => {
+    await page.goto('/projetos');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: PAGE_LOAD_TIMEOUT_MS });
+
+    await page.locator(`footer a[href$="/servicos#${SERVICE_SLUG}"]`).click();
+
+    await expect(page).toHaveURL(new RegExp(`/servicos#${SERVICE_SLUG}$`));
+    await expectFocusStaysOn(page, SERVICE_SLUG, /^Serviços/);
+  });
+
+  test('keeps the same result with the CPU 4x slower', async ({ page }) => {
+    await page.goto('/sobre');
+    await expect(page.getByRole('heading', { level: 2, name: 'Sobre mim' })).toBeVisible();
+    await throttleCpu(page, 4);
+
+    await followHeaderLink(page, 'Como funciona');
+
+    await expect(page).toHaveURL(/\/#metodo$/);
+    await expectFocusStaysOn(page, 'metodo', HOME_TITLE);
+  });
+});
+
 // A hash link must reach its section however late the chunks come, and end where an anchor puts it: the top of the
 // section at the bottom edge of the header (the scroll-padding-top of the page), within one pixel.
 const SECTION_CHUNK = /\/assets\/(StatementStats|UseCaseTabs|ServicesCards|MethodSteps|RoiSimulator|Testimonials|FaqSection|FinalCta)-[^/]*\.js$/;

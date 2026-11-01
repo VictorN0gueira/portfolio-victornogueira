@@ -1,3 +1,5 @@
+import { importWithRetry } from '../../lib/lazyWithRetry';
+
 type PopoverModule = typeof import('./ChoicePillPopover');
 
 // One request for the whole page: every pill shares the module once it has arrived.
@@ -6,10 +8,12 @@ let pendingLoad: Promise<void> | undefined;
 
 /**
  * Requests the chunk with the popover (Radix Popover and floating-ui, about 24 kB gzip that the first paint does not need).
- * A request that fails can be made again by the next call.
+ * Goes through importWithRetry (a browser keeps a failed module import for the life of the document, so the retry has to
+ * be a fresh import after a pause, not the next click). It never reloads the page: the visitor keeps what they have, the
+ * plain pill stays, and a later call can ask again.
  */
 export function preloadChoicePopover(): Promise<void> {
-  pendingLoad ??= import('./ChoicePillPopover').then(
+  pendingLoad ??= importWithRetry(() => import('./ChoicePillPopover'), { canReload: false }).then(
     (module) => {
       popoverModule = module;
     },

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react';
+import { releasePageGuard } from '../lib/focusGuard';
 
 /**
  * Gives the element focus when it mounts, but only if the focus is lost: on the body (a retry button that was just
@@ -14,7 +15,10 @@ export function useTakeLostFocus<T extends HTMLElement>(): RefObject<T | null> {
     const active = document.activeElement;
     if (!element) return;
     const isLost = !active || active === document.body || active.contains(element);
-    if (isLost) element.focus({ preventScroll: true });
+    if (!isLost) return;
+    // A render error right after a change of page: the guard of the main landmark would take this focus back.
+    releasePageGuard();
+    element.focus({ preventScroll: true });
   }, []);
 
   return ref;

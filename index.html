@@ -8,8 +8,9 @@
     <!-- Performance & Preloads -->
     <link rel="preload" href="/fonts/SpaceGrotesk-Bold.woff2" as="font" type="font/woff2" crossorigin />
 
-    <!-- SEO -->
-    <meta name="description" content="A gente automatiza o trabalho repetitivo da sua empresa com IA e conecta as ferramentas que você já usa. Conversa de 30 minutos, sem compromisso." />
+    <!-- SEO. The tags marked data-static-seo are what crawlers that do not run JavaScript read (the home values). SEO.tsx
+         adds the ones of each page and removes these on mount, so a page never carries two of each. -->
+    <meta name="description" content="A gente automatiza o trabalho repetitivo da sua empresa com IA e conecta as ferramentas que você já usa. Conversa de 30 minutos, sem compromisso." data-static-seo />
     <meta name="author" content="VN One" />
     <meta name="theme-color" content="#0A0A0A" />
     <!-- canonical é gerenciado por rota pelo React, que move title, meta e link para o head (SEO.tsx) -->
@@ -19,23 +20,23 @@
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
 
     <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="VN One" />
-    <meta property="og:url" content="https://vnone.com.br/" />
-    <meta property="og:title" content="VN One | Automação e IA para empresas" />
-    <meta property="og:description" content="A gente automatiza o trabalho repetitivo da sua empresa com IA e conecta as ferramentas que você já usa. Conversa de 30 minutos, sem compromisso." />
-    <meta property="og:image" content="https://vnone.com.br/og-banner.png?v=3" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="VN One, automação e IA para empresas" />
-    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:type" content="website" data-static-seo />
+    <meta property="og:site_name" content="VN One" data-static-seo />
+    <meta property="og:url" content="https://vnone.com.br/" data-static-seo />
+    <meta property="og:title" content="VN One | Automação e IA para empresas" data-static-seo />
+    <meta property="og:description" content="A gente automatiza o trabalho repetitivo da sua empresa com IA e conecta as ferramentas que você já usa. Conversa de 30 minutos, sem compromisso." data-static-seo />
+    <meta property="og:image" content="https://vnone.com.br/og-banner.png?v=3" data-static-seo />
+    <meta property="og:image:width" content="1200" data-static-seo />
+    <meta property="og:image:height" content="630" data-static-seo />
+    <meta property="og:image:alt" content="VN One, automação e IA para empresas" data-static-seo />
+    <meta property="og:locale" content="pt_BR" data-static-seo />
 
     <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="VN One | Automação e IA para empresas" />
-    <meta name="twitter:description" content="A gente automatiza o trabalho repetitivo da sua empresa com IA e conecta as ferramentas que você já usa. Conversa de 30 minutos, sem compromisso." />
-    <meta name="twitter:image" content="https://vnone.com.br/og-banner.png?v=3" />
-    <meta name="twitter:image:alt" content="VN One, automação e IA para empresas" />
+    <meta name="twitter:card" content="summary_large_image" data-static-seo />
+    <meta name="twitter:title" content="VN One | Automação e IA para empresas" data-static-seo />
+    <meta name="twitter:description" content="A gente automatiza o trabalho repetitivo da sua empresa com IA e conecta as ferramentas que você já usa. Conversa de 30 minutos, sem compromisso." data-static-seo />
+    <meta name="twitter:image" content="https://vnone.com.br/og-banner.png?v=3" data-static-seo />
+    <meta name="twitter:image:alt" content="VN One, automação e IA para empresas" data-static-seo />
   </head>
   <body>
     <div id="root"></div>

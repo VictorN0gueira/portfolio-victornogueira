@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { screen, waitFor } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
@@ -78,11 +80,28 @@ describe('ProjectDetailPage', () => {
   it('shows the not found page for an address that never existed, with noindex, no canonical and no JSON-LD', async () => {
     renderAt('/projetos/nao-existe');
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Página não encontrada' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Página não encontrada' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /vamos conversar/i })).toBeNull();
     await waitFor(() => expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toContain('noindex'));
     expect(document.querySelector('link[rel="canonical"]')).toBeNull();
     expect(meta('property', 'og:url')).toBeNull();
     expect(document.querySelectorAll('script[type="application/ld+json"]')).toHaveLength(0);
+  });
+});
+
+// App.tsx loads NotFound on its own chunk; a static import here would pull it into the chunk of every project page.
+describe('ProjectDetailPage and the NotFound chunk', () => {
+  const source = readFileSync(resolve(__dirname, 'ProjectDetailPage.tsx'), 'utf8');
+
+  it('does not import NotFound statically, so the code split of that module holds', () => {
+    expect(source).not.toMatch(/^import\s+(?!type\b).*from '\.\.\/components\/NotFound'/m);
+    expect(source).toMatch(/lazyWithRetry\(\(\) => import\('\.\.\/components\/NotFound'\)\)/);
+  });
+
+  it('puts noindex in the head at once, without waiting for the chunk of the not found page', async () => {
+    renderAt('/projetos/nao-existe');
+
+    expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toContain('noindex');
+    await screen.findByRole('heading', { level: 1, name: 'Página não encontrada' });
   });
 });

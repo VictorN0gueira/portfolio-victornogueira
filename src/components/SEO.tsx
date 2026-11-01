@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { SOCIAL_LINKS } from '../lib/constants';
 import { serializeJsonLd } from '../lib/jsonLd';
 import { SITE, pageTitle } from '../lib/site';
@@ -119,8 +120,23 @@ function twitterMeta(tags: ShareTags, noindex?: boolean) {
   ];
 }
 
+/** The attribute of the static tags of index.html that this component takes over (see the comment there). */
+const STATIC_TAG_ATTR = 'data-static-seo';
+
+/**
+ * index.html carries the home tags for the crawlers that do not run JavaScript. React hoists the tags of the page into
+ * the head next to them instead of replacing them, so once the page is running the static ones are removed: a page then
+ * has one description, one og:title and one og:url, and a noindex page does not keep the og:url of the home.
+ */
+function useDropStaticTags(): void {
+  useEffect(() => {
+    document.head.querySelectorAll(`[${STATIC_TAG_ATTR}]`).forEach((tag) => tag.remove());
+  }, []);
+}
+
 export function SEO(props: SEOProps) {
   const { path = '/', noindex, jsonLd } = props;
+  useDropStaticTags();
   const tags = resolveShareTags(props);
   // Uma página noindex (404, projeto removido) não declara canonical, og:url nem entidades da home.
   const isHome = path === '/' && !noindex;

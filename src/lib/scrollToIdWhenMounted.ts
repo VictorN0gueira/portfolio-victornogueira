@@ -1,4 +1,4 @@
-import { USER_INPUT_EVENTS, focusWithoutScrolling, guardFocus, watchVisitorInput } from './focusGuard';
+import { USER_INPUT_EVENTS, focusWithoutScrolling, guardFocus, releasePageGuard, watchVisitorInput } from './focusGuard';
 
 /**
  * How long the section may take to show up in the page (its lazy chunk can be slow: a bad mobile network took six
@@ -105,6 +105,8 @@ function focusWhenReady(
     if (hasVisitorTakenOver()) return;
     const found = lookup(section);
     if (found) {
+      // The landmark guard of a page change would pull this focus back to main: this is a deliberate claim.
+      releasePageGuard();
       focusWithoutScrolling(found);
       stopGuard = guardFocus(found, hasVisitorTakenOver);
       onFocused?.(found);

@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { SOCIAL_LINKS } from '../lib/constants';
 import { SEO } from './SEO';
 
@@ -196,6 +198,59 @@ describe('SEO', () => {
     renderSeo();
 
     expect(document.head.innerHTML).not.toMatch(DASH_PATTERN);
+  });
+
+  describe('the static tags of index.html', () => {
+    const STATIC_ATTR = 'data-static-seo';
+    const rawHtml = readFileSync(resolve(__dirname, '../../index.html'), 'utf8');
+    const staticTags: HTMLElement[] = [];
+
+    /** A static tag as index.html has it, put in the head the way the browser does before React runs. */
+    function addStaticTag(attr: 'name' | 'property', key: string, content: string, isMarked = true): void {
+      const tag = document.createElement('meta');
+      tag.setAttribute(attr, key);
+      tag.setAttribute('content', content);
+      if (isMarked) tag.setAttribute(STATIC_ATTR, '');
+      document.head.appendChild(tag);
+      staticTags.push(tag);
+    }
+
+    afterEach(() => {
+      for (const tag of staticTags.splice(0)) tag.remove();
+    });
+
+    const managed = /<meta[^>]*(?:name="(?:description|twitter:[^"]*)"|property="og:[^"]*")[^>]*>/g;
+
+    it('marks every tag the component manages, so the component can replace them (crawlers still read them raw)', () => {
+      const tags = rawHtml.match(managed) ?? [];
+
+      expect(tags.length).toBeGreaterThan(10);
+      for (const tag of tags) expect(tag, tag).toContain(STATIC_ATTR);
+    });
+
+    it('leaves one description, og:title, og:image and og:url on a page, not the static home ones plus its own', () => {
+      addStaticTag('name', 'description', 'static');
+      addStaticTag('property', 'og:title', 'static');
+      addStaticTag('property', 'og:image', 'static');
+      addStaticTag('property', 'og:url', 'https://vnone.com.br/');
+      addStaticTag('name', 'theme-color', '#0A0A0A', false);
+
+      renderSeo({ title: 'Serviços', path: '/servicos' });
+
+      for (const selector of ['meta[name="description"]', 'meta[property="og:title"]', 'meta[property="og:image"]', 'meta[property="og:url"]']) {
+        expect(document.querySelectorAll(selector), selector).toHaveLength(1);
+      }
+      expect(readMeta('property', 'og:url')).toBe('https://vnone.com.br/servicos');
+      expect(readMeta('name', 'theme-color')).toBe('#0A0A0A');
+    });
+
+    it('drops the static og:url on a noindex page instead of leaving the home one', () => {
+      addStaticTag('property', 'og:url', 'https://vnone.com.br/');
+
+      renderSeo({ title: 'Projeto não encontrado', noindex: true });
+
+      expect(readMeta('property', 'og:url')).toBeNull();
+    });
   });
 
   describe('a page that must not be indexed', () => {

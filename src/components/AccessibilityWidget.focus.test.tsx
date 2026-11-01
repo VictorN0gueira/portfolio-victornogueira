@@ -67,6 +67,16 @@ describe('AccessibilityWidget order and landmark (X:I-3, X:M-3)', () => {
 });
 
 describe('AccessibilityWidget focus (X:I-3)', () => {
+  it('sends the focus to the first option when "Resetar tudo" is pressed, since that button goes away with the options', async () => {
+    const { user, panel } = await openPanel();
+    await user.click(within(panel).getAllByRole('button')[0]);
+    await user.click(within(panel).getByRole('button', { name: /Resetar tudo/ }));
+
+    await waitFor(() => expect(within(panel).queryByRole('button', { name: /Resetar tudo/ })).toBeNull());
+    expect(screen.getByRole('dialog', { name: PANEL_NAME })).toBeInTheDocument();
+    expect(document.activeElement).toBe(within(panel).getAllByRole('button')[0]);
+  });
+
   it('moves the focus to the first option when the panel opens', async () => {
     const { panel } = await openPanel();
 

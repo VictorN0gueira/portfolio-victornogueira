@@ -1,12 +1,17 @@
+import { Suspense } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { m } from 'motion/react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { SEO } from '../components/SEO';
-import NotFound from '../components/NotFound';
 import { ProjectDetail } from '../components/ProjectDetail';
 import { BACK_LABEL, BREADCRUMB_HOME, CONTACT_LABEL, NOT_FOUND_TITLE, PROJECT_CTA_TEXT, PROJECTS_TITLE } from '../components/projectLabels';
 import { coverOf, getProjectBySlug, REMOVED_PROJECT_SLUGS, type Project } from '../data/projects';
+import { SectionSkeleton } from '../components/ui/SectionSkeleton';
+import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { SITE } from '../lib/site';
+
+// The same lazy chunk App.tsx uses for its 404: a project page that exists never downloads it.
+const NotFound = lazyWithRetry(() => import('../components/NotFound'));
 
 const SHARE_IMAGE_WIDTH = 1200;
 const SHARE_IMAGE_HEIGHT = 630;
@@ -34,7 +39,9 @@ export default function ProjectDetailPage() {
     return (
       <>
         <SEO title={NOT_FOUND_TITLE} noindex />
-        <NotFound />
+        <Suspense fallback={<SectionSkeleton />}>
+          <NotFound />
+        </Suspense>
       </>
     );
   }

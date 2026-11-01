@@ -34,6 +34,13 @@ export function AccessibilityPanel({ id, state, activeCount, onToggle, onReset }
     firstOptionRef.current?.focus({ preventScroll: true });
   }, []);
 
+  // The reset button leaves with the options it resets (no option is on, so it is not shown), and a focused button that
+  // unmounts drops the focus to the body while the dialog stays open. The first option takes it first.
+  const handleReset = () => {
+    firstOptionRef.current?.focus({ preventScroll: true });
+    onReset();
+  };
+
   return (
     <m.div
       id={id}
@@ -58,7 +65,7 @@ export function AccessibilityPanel({ id, state, activeCount, onToggle, onReset }
         <div className="shrink-0 border-t border-white/10 px-4 py-3">
           <button
             type="button"
-            onClick={onReset}
+            onClick={handleReset}
             className={`flex min-h-11 w-full items-center justify-center gap-2 text-xs text-white/50 transition-colors hover:text-white/80 ${PANEL_FOCUS_RING}`}
           >
             <RotateCcw aria-hidden="true" className="size-3.5 shrink-0" />

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Link, Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { shellCopy } from '../../data/shellCopy';
+import { useScrollToHash } from '../../hooks/useScrollToHash';
 import { renderWithProviders } from '../../test/render';
 import { SiteLayout } from './SiteLayout';
 
@@ -25,8 +26,12 @@ function Page({ title, children }: { title: string; children?: React.ReactNode }
 
 function Home() {
   const navigate = useNavigate();
+  useScrollToHash();
   return (
     <Page title="Início | VN One">
+      <section id="metodo" aria-labelledby="metodo-heading">
+        <h2 id="metodo-heading">Como funciona</h2>
+      </section>
       <Link to="/sobre">ir para sobre</Link>
       <Link to="/#metodo">ir para o método</Link>
       <Link to="/quebrada">ir para a quebrada</Link>
@@ -41,6 +46,7 @@ function About() {
   const navigate = useNavigate();
   return (
     <Page title="Sobre | VN One">
+      <Link to="/#metodo">ir para o método da home</Link>
       <button type="button" onClick={() => navigate(-1)}>
         voltar
       </button>
@@ -167,6 +173,7 @@ describe('SiteLayout takes the focus back for main after a route change', () => 
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
   });
 
   async function arriveOnAbout() {
@@ -216,6 +223,22 @@ describe('SiteLayout takes the focus back for main after a route change', () => 
     }
   });
 
+  it('leaves focus on the heading a hash link of another page points to, even though main was guarded first', async () => {
+    vi.stubGlobal('scrollTo', vi.fn());
+    Element.prototype.scrollIntoView = vi.fn();
+    const user = userEvent.setup();
+    renderSite('/sobre');
+    await screen.findByRole('heading', { name: 'Sobre | VN One' });
+
+    await user.click(screen.getByRole('link', { name: 'ir para o método da home' }));
+
+    const heading = await screen.findByRole('heading', { name: 'Como funciona' }, { timeout: EXIT_TIMEOUT_MS });
+    await waitFor(() => expect(heading).toHaveFocus());
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(heading).toHaveFocus();
+    expect(main()).not.toHaveFocus();
+  });
+
   it('removes its listeners when the layout unmounts', async () => {
     const remove = vi.spyOn(document, 'removeEventListener');
     const user = userEvent.setup();
@@ -253,6 +276,18 @@ describe('SiteLayout error boundary around the page', () => {
     expect(alert).toBeInTheDocument();
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
+  });
+
+  it('keeps focus on the recovery panel when the page breaks right after a change of page', async () => {
+    const user = userEvent.setup();
+    renderSite();
+
+    await user.click(screen.getByRole('link', { name: 'ir para a quebrada' }));
+
+    const heading = await screen.findByRole('heading', { name: shellCopy.errorBoundary.heading }, { timeout: EXIT_TIMEOUT_MS });
+    await waitFor(() => expect(heading).toHaveFocus());
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(heading).toHaveFocus();
   });
 
   it('resets when the visitor navigates to another page', async () => {

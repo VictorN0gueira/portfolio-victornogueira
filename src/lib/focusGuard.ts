@@ -50,6 +50,9 @@ export function watchVisitorInput(): { hasTakenOver: () => boolean; stop: () => 
   };
 }
 
+/** Cancels the guard that focusAndGuard last installed for the page, if it is still running. */
+let releasePageGuardNow: (() => void) | undefined;
+
 /**
  * Puts focus on the target and keeps it there for FOCUS_GUARD_MS against a focus move no input of the visitor caused
  * (a Radix dialog that closes returns focus to its trigger when its animation ends, which can be after the page changed
@@ -66,6 +69,17 @@ export function focusAndGuard(target: HTMLElement): () => void {
     window.clearTimeout(timer);
     stopGuard();
     visitorInput.stop();
+    if (releasePageGuardNow === cancel) releasePageGuardNow = undefined;
   }
+  releasePageGuardNow = cancel;
   return cancel;
+}
+
+/**
+ * Lets go of the guard that holds focus on the page landmark after a change of page. Called by whatever claims focus on
+ * purpose a moment later (the heading a hash link points to, an error panel): without it the guard of the landmark would
+ * take that focus back as a focus move no input of the visitor caused. The claimer then guards its own target.
+ */
+export function releasePageGuard(): void {
+  releasePageGuardNow?.();
 }

@@ -19,7 +19,7 @@ const NOTHING_RECEIVED: ChoicePillHandoff = { isOpen: false, hasFocus: false };
  * pointer over, press or focus; a press, a click or an arrow key before it arrives is remembered and opens the list as
  * soon as the real pill takes its place, which also keeps the focus the plain one had (a press counts because the swap
  * can come between the press and the release, and then no click would reach the pill). See ChoicePillPopover for the
- * behavior of the list. A chunk that cannot be fetched leaves the plain pill, and the next click tries again.
+ * behavior of the list. A chunk that cannot be fetched is asked for once more after a pause (see choicePopoverLoader); if that fails too the plain pill stays and the next click asks again.
  */
 export function ChoicePill<T extends string | number>(props: ChoicePillProps<T>) {
   const { value, options, ariaLabel, className } = props;
