@@ -17,7 +17,7 @@ const ONE_PER_PAGE = [
   'meta[property="og:locale"]',
 ];
 const ROUTES = [
-  { path: '/', hasOgUrl: true, title: /Automação e IA para empresas/ },
+  { path: '/', hasOgUrl: true, title: /Automação de processos e agentes de IA/ },
   { path: '/servicos', hasOgUrl: true, title: /^Serviços/ },
   { path: '/projetos/dizpara', hasOgUrl: true, title: /^DizPara/ },
   { path: '/rota-que-nao-existe', hasOgUrl: false, title: /^Página não encontrada/ },
@@ -53,7 +53,7 @@ test('the raw HTML still carries the home share tags for crawlers that run no sc
 // and the announcement of the new page must be its own title (not the home one).
 const SLOW_PAGE_CHUNK = /\/assets\/ServicesPage-[^/]*\.js$/;
 const SLOW_PAGE_MS = 2500;
-const HOME_TITLE_TEXT = 'VN One | Automação e IA para empresas';
+const HOME_TITLE_TEXT = 'VN One | Automação de processos e agentes de IA sob medida';
 const TITLE_SAMPLE_MS = 25;
 
 test('the title never goes back to the home title between /sobre and a slow /servicos', async ({ page }) => {

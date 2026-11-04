@@ -26,7 +26,7 @@ describe('SEO', () => {
   it('uses the VN One default title on the home route', () => {
     renderSeo();
 
-    expect(document.title).toContain('VN One | Automação e IA para empresas');
+    expect(document.title).toContain('VN One | Automação de processos e agentes de IA sob medida');
   });
 
   it('suffixes a page title with VN One', () => {
@@ -248,12 +248,12 @@ describe('SEO', () => {
       const title = rawHtml.match(/<title[^>]*>([^<]*)<\/title>/);
 
       expect(title?.[0]).toContain(STATIC_ATTR);
-      expect(title?.[1]).toBe('VN One | Automação e IA para empresas');
+      expect(title?.[1]).toBe('VN One | Automação de processos e agentes de IA sob medida');
     });
 
     it('never lets the static home title come back as the title between two pages', () => {
       const staticTitle = document.createElement('title');
-      staticTitle.textContent = 'VN One | Automação e IA para empresas';
+      staticTitle.textContent = 'VN One | Automação de processos e agentes de IA sob medida';
       staticTitle.setAttribute(STATIC_ATTR, '');
       document.head.appendChild(staticTitle);
       staticTags.push(staticTitle);
@@ -263,7 +263,7 @@ describe('SEO', () => {
       about.unmount();
 
       // The old page is gone and the next one is still loading: the home title must not show up in between.
-      expect(document.title).not.toBe('VN One | Automação e IA para empresas');
+      expect(document.title).not.toBe('VN One | Automação de processos e agentes de IA sob medida');
       renderSeo({ title: 'Serviços', path: '/servicos' });
       expect(document.title).toBe('Serviços | VN One');
     });
