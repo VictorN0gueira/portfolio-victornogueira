@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { coverOf, projects, REMOVED_PROJECT_SLUGS } from '../data/projects';
 import { SITE } from '../lib/site';
-import { ROUTE_METAS, routeMetaFor, type RouteMeta } from './routeMeta';
+import { ROUTE_METAS, routeMetaFor, type RouteImage, type RouteKind, type RouteMeta } from './routeMeta';
 
 const ROOT = resolve(__dirname, '../..');
 const EM_DASH = String.fromCharCode(0x2014);
@@ -35,6 +35,8 @@ function routerPaths(): string[] {
   });
   return [...literals, ...named];
 }
+
+const ALL_KINDS: readonly RouteKind[] = ['home', 'page', 'project', 'legal'];
 
 function metaOf(path: string): RouteMeta {
   const meta = routeMetaFor(path);
@@ -141,6 +143,14 @@ describe('ROUTE_METAS', () => {
     for (const meta of ROUTE_METAS) {
       if (meta.path !== '/') expect(meta.path.endsWith('/'), meta.path).toBe(false);
       expect(meta.path.startsWith('/'), meta.path).toBe(true);
+    }
+  });
+
+  it('uses every kind of route, and gives a share image only to the projects', () => {
+    for (const kind of ALL_KINDS) expect(ROUTE_METAS.some((meta) => meta.kind === kind), kind).toBe(true);
+    for (const meta of ROUTE_METAS) {
+      const image: RouteImage | undefined = meta.image;
+      expect(image !== undefined, meta.path).toBe(meta.kind === 'project');
     }
   });
 
