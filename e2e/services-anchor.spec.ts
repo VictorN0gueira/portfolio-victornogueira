@@ -6,8 +6,8 @@ const SLUGS = [
   'automacao-essencial',
   'automacao-avancada',
   'agente-de-ia-sob-medida',
+  'super-agente',
   'landing-page-ou-site',
-  'landing-page-complexa',
   'sistema-web-sob-medida',
 ] as const;
 const VIEWPORTS = [
