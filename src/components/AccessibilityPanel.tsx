@@ -82,8 +82,11 @@ export function AccessibilityPanel({ id, state, activeCount, onToggle, onReset, 
           <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium text-white">{activeBadgeText(activeCount)}</span>
         ) : null}
       </div>
-      <AccessibilityOptions state={state} onToggle={onToggle} firstOptionRef={firstOptionRef} />
-      <AccessibilityPositionGroup {...position} />
+      {/* The options and the position group scroll together, so a short window keeps room for the options. */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <AccessibilityOptions state={state} onToggle={onToggle} firstOptionRef={firstOptionRef} />
+        <AccessibilityPositionGroup {...position} />
+      </div>
       {activeCount > 0 ? (
         <div className="shrink-0 border-t border-white/10 px-4 py-3">
           <button

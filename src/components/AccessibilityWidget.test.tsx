@@ -55,7 +55,8 @@ describe('AccessibilityWidget', () => {
     const { panel } = await openPanel();
 
     expect(panel).toHaveClass('max-h-[calc(100svh-112px-max(16px,env(safe-area-inset-bottom)))]', 'sm:max-h-[calc(100svh-8rem)]', 'flex', 'flex-col', 'overflow-hidden');
-    expect(within(panel).getAllByRole('list')[0]).toHaveClass('overflow-y-auto');
+    // The options and the position group share one scroll region, between the header and the reset row.
+    expect(within(panel).getAllByRole('list')[0].parentElement).toHaveClass('overflow-y-auto', 'min-h-0');
   });
 
   // Escape from an option used to leave the focus on the body once the panel was gone.
