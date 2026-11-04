@@ -50,7 +50,7 @@ export const testimonials: Testimonial[] = [
     role: 'CEO',
     company: 'Henrique França',
     logo: assetUrl('/clients/henrique-franca.webp'),
-    text: 'O sistema de captura e qualificação de leads por IA mudou nosso atendimento. Os contatos chegam organizados no pipeline e o WhatsApp integrado agilizou todo o processo comercial.',
+    text: 'O Hub081 juntou o atendimento no WhatsApp e a gestão comercial no mesmo painel. As conversas ficam organizadas e a equipe acompanha os contatos no pipeline sem trocar de ferramenta.',
     isDraft: true,
   },
   {
