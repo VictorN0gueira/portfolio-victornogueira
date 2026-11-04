@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { projects, REMOVED_PROJECT_SLUGS } from '../data/projects';
+import { coverOf, projects, REMOVED_PROJECT_SLUGS } from '../data/projects';
 import { SITE } from '../lib/site';
 import { ROUTE_METAS, routeMetaFor, type RouteMeta } from './routeMeta';
 
@@ -159,13 +159,16 @@ describe('ROUTE_METAS', () => {
     for (const project of projects) expect(metaOf(`/projetos/${project.slug}`).crumbs[2].name).toBe(project.title);
   });
 
-  it('shares the cover of each project, with its alt and the size of the share image', () => {
+  it('agrees with the project data: one project route per project, the same name, cover and alt', () => {
+    const projectMetas = ROUTE_METAS.filter((meta) => meta.kind === 'project');
+
+    expect(projectMetas.map((meta) => meta.path).sort()).toEqual(projects.map((project) => `/projetos/${project.slug}`).sort());
     for (const project of projects) {
       const meta = metaOf(`/projetos/${project.slug}`);
 
-      expect(meta.kind).toBe('project');
-      expect(meta.image?.url, project.slug).toMatch(/^https:\/\/vnone\.com\.br\/projects\/.+-share\.jpg$/);
-      expect(meta.image?.alt).toBe(project.shots[0].alt);
+      expect(meta.crumbs[2].name, project.slug).toBe(project.title);
+      expect(meta.image?.url, project.slug).toBe(coverOf(project).shareUrl);
+      expect(meta.image?.alt, project.slug).toBe(project.shots[0].alt);
       expect([meta.image?.width, meta.image?.height]).toEqual([1200, 630]);
     }
   });
