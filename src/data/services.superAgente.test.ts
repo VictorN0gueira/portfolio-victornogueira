@@ -30,16 +30,16 @@ describe('the service list with Super Agente', () => {
     expect(services.map((service) => service.nome)).toEqual([
       'Automação Essencial',
       'Automação Avançada',
-      'Agente de IA Sob Medida',
       'Super Agente',
+      'Agente de IA Sob Medida',
       'Landing Page ou Site',
       'Sistema Web Sob Medida',
     ]);
     expect(services.map((service) => service.slug)).toEqual([
       'automacao-essencial',
       'automacao-avancada',
-      'agente-de-ia-sob-medida',
       'super-agente',
+      'agente-de-ia-sob-medida',
       'landing-page-ou-site',
       'sistema-web-sob-medida',
     ]);

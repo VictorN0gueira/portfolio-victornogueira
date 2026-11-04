@@ -240,8 +240,8 @@ describe('services', () => {
     expect(services.map((service) => service.nome)).toEqual([
       'Automação Essencial',
       'Automação Avançada',
-      'Agente de IA Sob Medida',
       'Super Agente',
+      'Agente de IA Sob Medida',
       'Landing Page ou Site',
       'Sistema Web Sob Medida',
     ]);

@@ -30,7 +30,7 @@ describe('featuredServices', () => {
   it('is the first service of each featured category, in the order of the categories', () => {
     expect(featuredServices.map((item) => item.nome)).toEqual([
       'Automação Essencial',
-      'Agente de IA Sob Medida',
+      'Super Agente',
       'Landing Page ou Site',
     ]);
     expect(featuredServices.map((item) => item.categoria)).toEqual([...FEATURED_CATEGORIES]);

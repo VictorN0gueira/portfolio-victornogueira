@@ -5,8 +5,8 @@ import { expect, test } from './n8nGuard';
 const SLUGS = [
   'automacao-essencial',
   'automacao-avancada',
-  'agente-de-ia-sob-medida',
   'super-agente',
+  'agente-de-ia-sob-medida',
   'landing-page-ou-site',
   'sistema-web-sob-medida',
 ] as const;

@@ -55,20 +55,6 @@ export const services: Service[] = [
     prazo: '2 a 3 semanas',
   },
   {
-    slug: 'agente-de-ia-sob-medida',
-    nome: 'Agente de IA Sob Medida',
-    categoria: 'Inteligência Artificial',
-    descricao:
-      'Um agente que atende, qualifica e responde pelos seus canais, treinado no contexto do seu negócio.',
-    inclui: [
-      'Escopo do agente definido com você',
-      'Integração com 1 canal (WhatsApp ou site)',
-      'Base de conhecimento do seu negócio',
-      'Ajustes de comportamento pós-entrega',
-    ],
-    prazo: '2 a 3 semanas',
-  },
-  {
     slug: 'super-agente',
     nome: 'Super Agente',
     categoria: 'Inteligência Artificial',
@@ -81,6 +67,20 @@ export const services: Service[] = [
       'Ações nos seus sistemas e canais como o WhatsApp',
     ],
     prazo: 'definido na conversa de 30 minutos',
+  },
+  {
+    slug: 'agente-de-ia-sob-medida',
+    nome: 'Agente de IA Sob Medida',
+    categoria: 'Inteligência Artificial',
+    descricao:
+      'Um agente que atende, qualifica e responde pelos seus canais, treinado no contexto do seu negócio.',
+    inclui: [
+      'Escopo do agente definido com você',
+      'Integração com 1 canal (WhatsApp ou site)',
+      'Base de conhecimento do seu negócio',
+      'Ajustes de comportamento pós-entrega',
+    ],
+    prazo: '2 a 3 semanas',
   },
   {
     slug: 'landing-page-ou-site',
