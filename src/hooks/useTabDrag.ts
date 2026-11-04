@@ -11,7 +11,7 @@ import {
   type TabSide,
 } from '../lib/floatingLayout';
 
-export interface DragView {
+interface DragView {
   viewport: Size;
   insets: Insets;
 }

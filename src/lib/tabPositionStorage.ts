@@ -1,6 +1,6 @@
 import type { TabPosition } from './floatingLayout';
 
-/** Its own key: never the accessibility preferences ('a11y-preferences'), which other scripts read. */
+/** Its own key: never the one of the accessibility preferences (A11Y_STORAGE_KEY), which other scripts read. */
 export const TAB_POSITION_STORAGE_KEY = 'vn-a11y-tab-position';
 
 /** The stored text as a position, or null for anything that is not a side and a ratio from 0 to 1. */

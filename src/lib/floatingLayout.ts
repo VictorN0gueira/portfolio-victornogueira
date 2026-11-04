@@ -10,18 +10,16 @@ export const FLOAT_GAP_PX = 16;
 export const TAB_SIZE_PX = 44;
 /** The WhatsApp button is size-[52px]. */
 export const WHATSAPP_SIZE_PX = 52;
-/** The default place of the tab on a phone held upright: this far over the bottom margin. */
-export const TAB_DEFAULT_BOTTOM_OFFSET_PX = 96;
 /** A press that moves less than this is a tap, not a drag. */
 export const TAP_SLOP_PX = 8;
 /** One press of Subir or Descer moves the tab by this share of the window height. */
-export const STEP_RATIO = 0.1;
+const STEP_RATIO = 0.1;
 /** The panel is w-[min(13rem,...)]: 208px at the default font size. */
-export const PANEL_WIDTH_PX = 208;
+const PANEL_WIDTH_PX = 208;
 /** The gap between the tab and the panel that opens beside it. */
 export const PANEL_GAP_PX = 8;
 /** Air kept between the tab and a focused control the browser scrolls into view. */
-export const SCROLL_AIR_PX = 8;
+const SCROLL_AIR_PX = 8;
 
 export type TabSide = 'left' | 'right';
 export type StepDirection = 'up' | 'down';
@@ -49,7 +47,7 @@ export interface Size {
   height: number;
 }
 
-export interface Offset {
+interface Offset {
   dx: number;
   dy: number;
 }

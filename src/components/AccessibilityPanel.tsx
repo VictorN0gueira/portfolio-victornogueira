@@ -23,7 +23,7 @@ const PANEL_DEFAULT_CLASSES =
 const SLIDE_IN_PX = 16;
 const WILL_CHANGE = { willChange: 'transform, opacity' } as const;
 
-export interface PositionActions {
+interface PositionActions {
   toSide: (side: TabSide) => void;
   step: (direction: StepDirection) => void;
   reset: () => void;

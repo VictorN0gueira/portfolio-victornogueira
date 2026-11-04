@@ -136,7 +136,7 @@ export default function AccessibilityWidget() {
         activeCount={activeCount}
         side={placement.shownSide}
         isChosen={placement.position !== null}
-        drag={placement.drag}
+        pointer={placement.drag}
         onClick={handleTriggerClick}
       />
       {activeCount > 0 ? (
@@ -177,7 +177,7 @@ interface AccessibilityTriggerProps {
   activeCount: number;
   side: TabSide;
   isChosen: boolean;
-  drag: TabPlacement['drag'];
+  pointer: TabPlacement['drag'];
   onClick: () => void;
 }
 
@@ -186,13 +186,13 @@ interface AccessibilityTriggerProps {
  * aria-controls points at the panel only while it exists, and the description says how many options are on, since the
  * count badge is decoration. The colors are the opposite of the page under it, and the focus ring follows them.
  */
-function AccessibilityTrigger({ buttonRef, isOpen, isDark, panelId, summaryId, activeCount, side, isChosen, drag, onClick }: AccessibilityTriggerProps) {
+function AccessibilityTrigger({ buttonRef, isOpen, isDark, panelId, summaryId, activeCount, side, isChosen, pointer, onClick }: AccessibilityTriggerProps) {
   return (
     <button
       ref={buttonRef}
       type="button"
       onClick={onClick}
-      {...drag.handlers}
+      {...pointer.handlers}
       aria-expanded={isOpen}
       aria-haspopup="dialog"
       aria-controls={isOpen ? panelId : undefined}
