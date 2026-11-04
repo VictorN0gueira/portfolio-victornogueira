@@ -1,8 +1,10 @@
 name: Deploy to GitHub Pages
 
+# Manual only. The canonical site is the Docker image that EasyPanel builds from main; this is an optional copy on
+# GitHub Pages and it needs Pages enabled in the repository (Settings, Pages, source GitHub Actions). On a push to
+# main it failed at the Setup Pages step because Pages was never enabled, so the owner turned the trigger off.
+# CI for main now runs from ci.yml on every push.
 on:
-  push:
-    branches: ["main"]
   workflow_dispatch:
 
 concurrency:
