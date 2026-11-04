@@ -80,3 +80,94 @@ describe('the PNG set', () => {
     expect(read('brand/favicon-48.png').equals(read('brand/favicon-32.png'))).toBe(false);
   });
 });
+
+// The head of the home declares the set. The order matters: the first declared icons are the ones a crawler reads first.
+const ROOT = resolve(__dirname, '../..');
+const html = readFileSync(resolve(ROOT, 'index.html'), 'utf8');
+const faviconBlock = html.slice(html.indexOf('<!-- Favicon -->'), html.indexOf('<!-- Open Graph -->'));
+
+const EXPECTED_LINKS = [
+  '<link rel="icon" href="/favicon.ico" sizes="any" />',
+  '<link rel="icon" type="image/png" sizes="48x48" href="/brand/favicon-48.png" />',
+  '<link rel="icon" type="image/png" sizes="96x96" href="/brand/favicon-96.png" />',
+  '<link rel="icon" type="image/png" sizes="192x192" href="/brand/favicon-192.png" />',
+  '<link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />',
+  '<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />',
+  '<link rel="manifest" href="/site.webmanifest" />',
+];
+
+describe('the favicon block of index.html', () => {
+  it('declares the icons, the touch icon and the manifest in this order', () => {
+    const declared = faviconBlock.match(/<link [^>]*>/g) ?? [];
+    expect(declared).toEqual(EXPECTED_LINKS);
+  });
+
+  it('points every href to a file of public/', () => {
+    const hrefs = [...faviconBlock.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
+    expect(hrefs).toHaveLength(EXPECTED_LINKS.length);
+    for (const href of hrefs) {
+      expect(() => read(href.slice(1)), href).not.toThrow();
+    }
+  });
+
+  it('declares sizes that match the real dimensions of each PNG', () => {
+    const pngLinks = [...faviconBlock.matchAll(/<link rel="icon" type="image\/png" sizes="(\d+)x(\d+)" href="([^"]+)"/g)];
+    expect(pngLinks).toHaveLength(4);
+    for (const [, width, height, href] of pngLinks) {
+      expect(pngSize(read(href.slice(1))), href).toEqual({ width: Number(width), height: Number(height) });
+    }
+  });
+});
+
+describe('site.webmanifest', () => {
+  const manifest = JSON.parse(read('site.webmanifest').toString('utf8')) as {
+    name: string;
+    short_name: string;
+    lang: string;
+    start_url: string;
+    display: string;
+    theme_color: string;
+    background_color: string;
+    icons: { src: string; sizes: string; type: string; purpose: string }[];
+  };
+
+  it('names the site and keeps it a plain browser page', () => {
+    expect(manifest).toMatchObject({
+      name: 'VN One',
+      short_name: 'VN One',
+      lang: 'pt-BR',
+      start_url: '/',
+      display: 'browser',
+      theme_color: '#0A0A0A',
+      background_color: '#0A0A0A',
+    });
+  });
+
+  it('lists the 192 and 512 px icons, and each file has the declared size', () => {
+    expect(manifest.icons.map((icon) => icon.sizes)).toEqual(['192x192', '512x512']);
+    for (const icon of manifest.icons) {
+      const [width, height] = icon.sizes.split('x').map(Number);
+      expect(icon.type).toBe('image/png');
+      expect(icon.purpose).toBe('any');
+      expect(pngSize(read(icon.src.slice(1))), icon.src).toEqual({ width, height });
+    }
+  });
+});
+
+describe('robots.txt', () => {
+  const disallowed = read('robots.txt')
+    .toString('utf8')
+    .split(/\r?\n/)
+    .filter((line) => /^disallow:/i.test(line))
+    .map((line) => line.slice('disallow:'.length).trim())
+    .filter((rule) => rule !== '');
+
+  it('does not block the icons, the brand folder or the manifest', () => {
+    for (const path of ['/favicon.ico', '/brand/favicon-48.png', '/site.webmanifest']) {
+      expect(
+        disallowed.filter((rule) => path.startsWith(rule)),
+        path,
+      ).toEqual([]);
+    }
+  });
+});
