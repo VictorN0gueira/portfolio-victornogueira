@@ -160,7 +160,7 @@ describe('structuredDataFor', () => {
         expect(names).toEqual(faqs.map((faq) => faq.question));
       }
     }
-    expect(faqNode(faqs)['@type']).toBe('FAQPage');
+    expect(typeOf(faqNode(faqs))).toBe('FAQPage');
   });
 
   it('puts the breadcrumb and one Service per service on /servicos', () => {
