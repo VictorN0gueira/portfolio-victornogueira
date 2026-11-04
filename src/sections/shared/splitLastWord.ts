@@ -1,4 +1,4 @@
-export interface SplitText {
+interface SplitText {
   /** Everything before the last word, with the space that follows it kept ('' for a single word). */
   head: string;
   last: string;
