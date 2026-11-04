@@ -42,8 +42,13 @@ describe('nearestSide', () => {
 });
 
 describe('topBounds', () => {
-  it('keeps 16px under the top and 16px over the bottom on the right', () => {
-    expect(topBounds('right', PHONE.height, NO_INSETS)).toEqual({ min: 16, max: 844 - 44 - 16 });
+  it('stays under the floating header (96px, the scroll padding of anchors) and 16px over the bottom on the right', () => {
+    expect(topBounds('right', PHONE.height, NO_INSETS)).toEqual({ min: 96, max: 844 - 44 - 16 });
+  });
+
+  it('uses the thinner header of a phone on its side (72px, window up to 480px tall)', () => {
+    expect(topBounds('right', 390, NO_INSETS).min).toBe(72);
+    expect(topBounds('right', 481, NO_INSETS).min).toBe(96);
   });
 
   it('stacks the left side above the WhatsApp button with a 16px gap: bottom 16 + 52 + 16', () => {
@@ -52,7 +57,8 @@ describe('topBounds', () => {
 
   it('takes the larger of the margin and the safe area, like the buttons do', () => {
     const insets = { top: 47, bottom: 34 };
-    expect(topBounds('right', 844, insets)).toEqual({ min: 47, max: 844 - 44 - 34 });
+    // The header sits under the notch: the inset plus 84px, like the scroll padding of anchors.
+    expect(topBounds('right', 844, insets)).toEqual({ min: 47 + 84, max: 844 - 44 - 34 });
     expect(topBounds('left', 844, insets).max).toBe(844 - 44 - (34 + 52 + 16));
   });
 
@@ -78,7 +84,7 @@ describe('ratio and top', () => {
   });
 
   it('clamps a ratio that no longer fits (after a rotation) inside the window', () => {
-    expect(topFromRatio(0, 'right', 390, NO_INSETS)).toBe(16);
+    expect(topFromRatio(0, 'right', 390, NO_INSETS)).toBe(72);
     expect(topFromRatio(1, 'right', 390, NO_INSETS)).toBe(390 - 44 - 16);
     expect(topFromRatio(1, 'left', 390, NO_INSETS)).toBe(390 - 44 - 84);
   });
@@ -98,7 +104,7 @@ describe('clampDragOffset', () => {
 
   it('stops the tab at the edges of the window and at the margins', () => {
     expect(clampDragOffset({ rect, dx: 500, dy: 900, viewport: PHONE, insets: NO_INSETS })).toEqual({ dx: 0, dy: 844 - 44 - 16 - 400 });
-    expect(clampDragOffset({ rect, dx: -900, dy: -900, viewport: PHONE, insets: NO_INSETS })).toEqual({ dx: -346, dy: 16 - 400 });
+    expect(clampDragOffset({ rect, dx: -900, dy: -900, viewport: PHONE, insets: NO_INSETS })).toEqual({ dx: -346, dy: 96 - 400 });
   });
 });
 
@@ -127,7 +133,7 @@ describe('stepPosition', () => {
     expect(up.ratio).toBeCloseTo(limit - 0.1, 5);
   });
 
-  it('stops at the top and never leaves 0 to 1', () => {
+  it('stops under the header at the top and never leaves 0 to 1', () => {
     const top = stepPosition({ side: 'right', ratio: 0 }, 'up', view);
     expect(top.ratio).toBeGreaterThanOrEqual(0);
     expect(top.ratio).toBeLessThanOrEqual(0.5);

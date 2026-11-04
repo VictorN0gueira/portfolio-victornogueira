@@ -15,6 +15,7 @@ const WINDOWS = [
 const PLACES = [
   { side: 'right', ratio: 0.9 },
   { side: 'right', ratio: 0.1 },
+  { side: 'right', ratio: 0 },
   { side: 'left', ratio: 0.5 },
   { side: 'left', ratio: 1 },
 ];

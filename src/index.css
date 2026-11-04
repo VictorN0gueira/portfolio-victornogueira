@@ -42,6 +42,14 @@
     scroll-padding-bottom: max(var(--vn-tab-pad), 5rem);
   }
 
+  /* At the very end of the page nothing can scroll further, so a tab low on the window would stay over the last links of the
+     footer. The footer grows by what its own bottom padding (6rem plus the inset) does not already clear. */
+  html[data-vn-tab-band='bottom'] footer::after {
+    content: '';
+    display: block;
+    height: max(0px, calc(var(--vn-tab-pad) - 6rem - env(safe-area-inset-bottom)));
+  }
+
   html[data-vn-tab-band='top'] {
     scroll-padding-top: max(var(--vn-tab-pad), 96px, calc(env(safe-area-inset-top) + 84px));
   }

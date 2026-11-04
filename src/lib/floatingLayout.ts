@@ -57,6 +57,23 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(value, max));
 }
 
+/** The floating header ends here from the top of a window taller than 480px: the scroll padding of anchors (index.css). */
+const HEADER_CLEARANCE_PX = 96;
+const HEADER_NOTCH_GAP_PX = 84;
+/** The header of a phone on its side (window up to 480px tall, the vn-landscape variant) is thinner. */
+const SHORT_WINDOW_PX = 480;
+const SHORT_HEADER_CLEARANCE_PX = 72;
+const SHORT_HEADER_NOTCH_GAP_PX = 60;
+
+/** Where the floating header ends, so the tab never lies over its controls (it is fixed: scrolling cannot clear them). */
+function headerClearance(viewportHeight: number, insets: Insets): number {
+  const isShort = viewportHeight <= SHORT_WINDOW_PX;
+  return Math.max(
+    isShort ? SHORT_HEADER_CLEARANCE_PX : HEADER_CLEARANCE_PX,
+    insets.top + (isShort ? SHORT_HEADER_NOTCH_GAP_PX : HEADER_NOTCH_GAP_PX),
+  );
+}
+
 /** The margin from an edge: 16px, or the safe area inset when it is larger (the same rule the buttons' CSS spells). */
 const edgeOffset = (inset: number): number => Math.max(FLOAT_MARGIN_PX, inset);
 
@@ -72,7 +89,7 @@ export function nearestSide(centerX: number, viewportWidth: number): TabSide {
 
 /** The lowest and highest `top` the tab may have on a side. */
 export function topBounds(side: TabSide, viewportHeight: number, insets: Insets): { min: number; max: number } {
-  const min = edgeOffset(insets.top);
+  const min = headerClearance(viewportHeight, insets);
   return { min, max: Math.max(min, viewportHeight - TAB_SIZE_PX - bottomLimit(side, insets)) };
 }
 
