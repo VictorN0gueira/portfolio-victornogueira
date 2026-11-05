@@ -121,10 +121,8 @@ const SCANNED_FILES = [
   'src/components/ContactForm.tsx',
   'src/components/ServiceSelect.tsx',
   // Older files that still carry user facing text.
-  'src/components/About.tsx',
   'src/components/ProjectCard.tsx',
   'src/components/ProjectDetail.tsx',
-  'src/components/Skills.tsx',
   'src/components/Projects.tsx',
   'src/components/NotFound.tsx',
   'src/components/FeaturedProjectCard.tsx',
@@ -145,10 +143,10 @@ const VOICE_EXEMPT = new Set(['src/data/testimonials.ts']);
 // Files allowed to keep a first person plural verb until their owner rewrites the text. Empty since the merge of the
 // batches: the integrations line, the thanks title and the cooldown message all say "a gente".
 const FIRST_PERSON_HANDOFF = new Set<string>([]);
-// "Sobre mim" and "Minhas Especialidades" (About.tsx) are the founder's voice. The owner kept them for now, because
-// /sobre is rewritten in plan 3 (Victor as the founder). The first person singular is allowed on that file until then.
+// "Sobre mim" and "Minhas Especialidades" (src/sections/about/founderVoice.ts) are the founder's own words, kept verbatim
+// from the text the owner approved. The first person singular is allowed on that file, and only there.
 // (The meta description of AboutPage.tsx says "a gente" now, so that page is held to the voice rule like the others.)
-const VOICE_OWNER_DECISION = new Set(['src/components/About.tsx']);
+const VOICE_OWNER_DECISION = new Set(['src/sections/about/founderVoice.ts']);
 const SCANNED_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.html', '.json']);
 const TEST_FILE_PATTERN = /\.test\.[^.]+$/;
 

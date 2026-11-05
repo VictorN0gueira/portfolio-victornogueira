@@ -17,6 +17,7 @@
     "e2e": "playwright test",
     "og": "node scripts/generate-og-banner.mjs",
     "favicons": "node scripts/build-favicons.mjs",
+    "founder-photo": "node scripts/process-founder-photo.mjs",
     "headers": "node scripts/generate-security-headers.mjs",
     "headers:check": "node scripts/generate-security-headers.mjs --check",
     "budget": "node scripts/check-bundle-budget.mjs",

@@ -7,25 +7,23 @@ const SRC = resolve(__dirname, '..');
 const LAZY_IMPORT = /import\(\s*['"]([^'"]+)['"]\s*\)/g;
 
 const read = (path: string) => readFileSync(resolve(SRC, path), 'utf8');
-const importedModules = (source: string) => [...source.matchAll(LAZY_IMPORT)].map((match) => match[1].split('/').slice(-1)[0]);
+const importedModules = (source: string) =>
+  [...source.matchAll(LAZY_IMPORT)].map((match) => match[1].split('/').slice(-1)[0]);
 
 // The preload list repeats the lazy imports of the pages. A section added to HomePage and left out of the list would not be
 // preloaded, and the first test of every home suite would wait for its module again and time out under load.
 describe('the preload lists follow the lazy sections of the pages', () => {
   it('preloads exactly the lazy sections of HomePage, in the same order', () => {
     const page = importedModules(read('pages/HomePage.tsx'));
-    const preloaded = importedModules(read('test/lazyPages.ts').split('export async function preloadAboutSections')[0]);
+    const preloaded = importedModules(read('test/lazyPages.ts'));
 
     expect(page.length).toBeGreaterThan(0);
     expect(preloaded).toEqual(page);
   });
 
-  it('preloads the lazy chunk of AboutPage', () => {
-    const page = importedModules(read('pages/AboutPage.tsx'));
-    const preloaded = importedModules(read('test/lazyPages.ts').split('export async function preloadAboutSections')[1]);
-
-    expect(page.length).toBeGreaterThan(0);
-    expect(preloaded).toEqual(page);
+  it('has no lazy section in AboutPage, so there is nothing of it to preload', () => {
+    expect(importedModules(read('pages/AboutPage.tsx'))).toEqual([]);
+    expect(read('test/lazyPages.ts')).not.toMatch(/preloadAboutSections/);
   });
 
   it('knows that the form is the last section of the home', () => {

@@ -78,8 +78,19 @@ describe('CtaBand', () => {
 
     expect(nowrap).toHaveTextContent('começar?');
     expect(cursor).toHaveAttribute('aria-hidden', 'true');
-    expect(heading.className).toContain('calc(100cqi/5.5)');
+    expect(heading.className).toContain('calc(100cqi/7.2)');
     expect(heading.closest('.\\@container')).not.toBeNull();
+  });
+
+  it('budgets the width of the last word for 12 letters plus the cursor, so a long word does not push a 280px page sideways', () => {
+    renderWithProviders(<CtaBand heading="Pronto para automatizar?" body={BODY} cta={CTA} />);
+    const heading = screen.getByRole('heading', { level: 2 });
+    const budgetEm = Number(/calc\(100cqi\/([\d.]+)\)/.exec(heading.className)?.[1]);
+    // "automatizar?" is 12 characters at about 0.5em each, plus the margin and the width of the cursor.
+    const lastWordEm = 12 * 0.5 + 0.2 + 0.5;
+
+    expect(heading.querySelector('.whitespace-nowrap')).toHaveTextContent('automatizar?');
+    expect(budgetEm).toBeGreaterThanOrEqual(lastWordEm);
   });
 
   it('has exactly one accent element, the cursor, with or without WhatsApp', () => {
