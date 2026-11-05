@@ -260,7 +260,7 @@ describe('services', () => {
     expect(descriptions).not.toMatch(/converter|A solução completa/);
   });
 
-  it('carries no discount percentage in the combos: the old 10, 12 and 15 percent were never checked', () => {
+  it('carries no discount in the combos: a checked one needs this guard edited', () => {
     for (const combo of combos) {
       expect(combo).not.toHaveProperty('desconto');
       expect(Object.values(combo).join(' ')).not.toMatch(/\d+\s*%|desconto/i);

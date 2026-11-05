@@ -8,11 +8,12 @@ export interface Service {
   prazo: string;
 }
 
+// A combo has no discount field on purpose: the old percentages (10, 12 and 15) were never verified and the owner
+// took them out. Bringing a checked discount back means adding the field here, drawing it in ComboCard and editing
+// the guard in data.test.ts that keeps every combo without one.
 export interface ServiceCombo {
   nome: string;
   composicao: string;
-  /** Only when the discount is real and checked. The page draws it when it is here and leaves no gap when it is not. */
-  desconto?: string;
   descricao: string;
 }
 
