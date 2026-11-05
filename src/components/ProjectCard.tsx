@@ -4,7 +4,7 @@ import { useMotionAllowed } from '../hooks/useMotionAllowed';
 import { cn } from '../lib/utils';
 import { BrowserShot } from '../sections/projects/BrowserShot';
 import { MotionArrow } from '../sections/projects/MotionArrow';
-import { NoBreakHyphens } from '../sections/projects/NoBreakHyphens';
+import { NoBreakHyphens } from '../sections/shared/NoBreakHyphens';
 import { TagList } from '../sections/projects/TagList';
 import { Heading } from './ui/Heading';
 import { SpotlightCard } from './ui/SpotlightCard';

@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { FEATURES_LABEL, TAGS_LABEL } from '../src/components/projectLabels';
 import { STICKY_MIN_HEIGHT_PX, STICKY_TOP_PX } from '../src/sections/projects/stickyColumn';
-import { PAGE_LOAD_TIMEOUT_MS, nextFrames } from './homeSupport';
+import { PAGE_LOAD_TIMEOUT_MS, enableLargeFont, nextFrames } from './homeSupport';
 import { expect, test } from './n8nGuard';
 import { describePageContract, openPage, type PageContract } from './pageContract';
 
@@ -166,6 +166,37 @@ test.describe('the sticky column of a case page', () => {
 });
 
 test.describe('the case pages', () => {
+  test('at 280px with the font at 120 percent, "e-mail" in the lead of the hero does not wrap at its hyphen', async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'desktop',
+      'the test sets its own viewport: it runs once, in the desktop project',
+    );
+    test.slow();
+    await page.setViewportSize({ width: 280, height: 700 });
+    await enableLargeFont(page);
+    await openPage(page, REGULAR);
+
+    const lead = await page.evaluate(() => {
+      const paragraph = Array.from(document.querySelectorAll('main section:first-of-type p')).find((item) =>
+        /e-mail/.test(item.textContent ?? ''),
+      );
+      const words = Array.from(paragraph?.querySelectorAll('span.whitespace-nowrap') ?? []).filter((span) =>
+        /e-mail/.test(span.textContent ?? ''),
+      );
+      return {
+        found: paragraph !== undefined,
+        wordCount: words.length,
+        wrapped: words.filter((word) => word.getClientRects().length > 1).length,
+      };
+    });
+
+    expect(lead.found, 'the lead of the hero mentions e-mail').toBe(true);
+    expect(lead.wordCount, 'the word is in a no-wrap span').toBeGreaterThan(0);
+    expect(lead.wrapped).toBe(0);
+  });
+
   test('an address of a project that left the list ends in /projetos', async ({ page }) => {
     await page.goto('/projetos/troco');
 

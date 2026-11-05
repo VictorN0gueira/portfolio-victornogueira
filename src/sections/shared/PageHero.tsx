@@ -12,6 +12,7 @@ import { Kicker } from '../../components/ui/Kicker';
 import { ScanGrid } from '../../components/ui/ScanGrid';
 import { Section } from '../../components/ui/Section';
 import { cn } from '../../lib/utils';
+import { NoBreakHyphens } from './NoBreakHyphens';
 import { splitLastWord } from './splitLastWord';
 
 // The same top as the HeroSection of the home, copied and not shared: the home hero stays closed (and so do the
@@ -96,7 +97,11 @@ export function PageHero({ kicker, title, lead, hasCursor = false, children, asi
               <Heading as="h1" size="xl" id={headingId} className="mt-6">
                 <HeroTitle title={title} hasCursor={hasCursor} />
               </Heading>
-              {lead && <p className="mt-6 max-w-2xl text-pretty text-base text-vn-gray-dark md:text-lg">{lead}</p>}
+              {lead && (
+                <p className="mt-6 max-w-2xl text-pretty text-base text-vn-gray-dark md:text-lg">
+                  <NoBreakHyphens text={lead} />
+                </p>
+              )}
               {children}
             </div>
             {/* A div and not an aside: a complementary landmark inside main is flagged by accessibility checkers. */}

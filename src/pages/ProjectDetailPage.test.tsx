@@ -52,7 +52,10 @@ describe('ProjectDetailPage', () => {
 
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(within(hero).getByText(project.category)).toBeInTheDocument();
-    expect(within(hero).getByText(project.description)).toBeInTheDocument();
+    // A hyphenated word ("e-mail") sits in its own span, so the lead is found by its whole text.
+    expect(
+      within(hero).getByText((_, element) => element?.tagName === 'P' && element.textContent === project.description),
+    ).toBeInTheDocument();
   });
 
   it('makes the way back a target of at least 44 px and hides its arrow from assistive technology', () => {

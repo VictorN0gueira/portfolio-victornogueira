@@ -37,6 +37,17 @@ describe('PageHero', () => {
     expect(screen.getByRole('link', { name: 'ação' })).toBeInTheDocument();
   });
 
+  it('keeps a hyphenated word of the lead whole: "e-mail" sits in a no-wrap span and the text is unchanged', () => {
+    const lead = 'O roteiro chega por e-mail, dia a dia.';
+    renderWithProviders(<PageHero kicker="k" title="t" lead={lead} />);
+
+    const leadParagraph = screen.getByText((_, element) => element?.tagName === 'P' && element.textContent === lead);
+
+    expect([...leadParagraph.querySelectorAll('span')].map((span) => [span.textContent, span.className])).toEqual([
+      ['e-mail,', 'whitespace-nowrap'],
+    ]);
+  });
+
   it('draws no lead when none is given', () => {
     const { container } = renderWithProviders(<PageHero kicker="k" title="t" />);
 
@@ -50,7 +61,9 @@ describe('PageHero', () => {
 
     rerender(<PageHero kicker="k" title="t" aside={<span>foto</span>} />);
     expect(container.querySelector('[data-hero-aside]')).toHaveTextContent('foto');
-    expect(container.querySelector('[data-hero-columns]')?.className).toContain('lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]');
+    expect(container.querySelector('[data-hero-columns]')?.className).toContain(
+      'lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]',
+    );
   });
 
   it('draws the cursor after the last word in ink, hidden from assistive tech, and never uses the accent', () => {

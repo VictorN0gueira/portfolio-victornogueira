@@ -12,7 +12,7 @@ import type { Project } from '../../data/projects';
 import { projectsCopy } from '../../data/projectsCopy';
 import { cn } from '../../lib/utils';
 import { CONTACT_PATH } from './paths';
-import { NoBreakHyphens } from './NoBreakHyphens';
+import { NoBreakHyphens } from '../shared/NoBreakHyphens';
 import { STICKY_COLUMN_CLASSES } from './stickyColumn';
 import { TagList } from './TagList';
 
