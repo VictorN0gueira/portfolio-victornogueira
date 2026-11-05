@@ -1,23 +1,24 @@
-import { Suspense } from 'react';
+import { Projects } from '../components/Projects';
+import { CONTACT_LABEL, PROJECT_CTA_TEXT, PROJECTS_INTRO, PROJECTS_TITLE } from '../components/projectLabels';
 import { SEO } from '../components/SEO';
-import { SectionSkeleton } from '../components/ui/SectionSkeleton';
-import { lazyWithRetry } from '../lib/lazyWithRetry';
+import { projectsCopy } from '../data/projectsCopy';
+import { CtaBand } from '../sections/shared/CtaBand';
+import { PageHero } from '../sections/shared/PageHero';
 
-// The whole content of the page: a chunk that fails is retried once, then the page reloads once (see lazyWithRetry).
-const Projects = lazyWithRetry(() => import('../components/Projects'));
-
-// About as tall as the loaded page at each width (measured), so the footer is not pushed down when the chunk arrives.
-const PROJECTS_SKELETON_HEIGHT = 'min-h-[5200px] md:min-h-[4800px] lg:min-h-[3900px]';
+const CONTACT_PATH = '/contato';
 
 export default function ProjectsPage() {
   return (
     <>
       <SEO path="/projetos" />
-      <div className="pt-16 md:pt-20">
-        <Suspense fallback={<SectionSkeleton heightClassName={PROJECTS_SKELETON_HEIGHT} />}>
-          <Projects />
-        </Suspense>
-      </div>
+      <PageHero kicker={projectsCopy.listKicker} title={PROJECTS_TITLE} lead={PROJECTS_INTRO} />
+      <Projects />
+      <CtaBand
+        heading={PROJECT_CTA_TEXT}
+        body={projectsCopy.ctaBody}
+        cta={{ label: CONTACT_LABEL, to: CONTACT_PATH }}
+        whatsappMessage={projectsCopy.ctaWhatsappMessage}
+      />
     </>
   );
 }

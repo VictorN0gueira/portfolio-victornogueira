@@ -1,49 +1,50 @@
-import { m } from 'motion/react';
 import { projects } from '../data/projects';
+import { Container } from './ui/Container';
+import { RevealGroup, RevealItem } from './ui/Reveal';
+import { Section } from './ui/Section';
 import { FeaturedProjectCard } from './FeaturedProjectCard';
 import { ProjectCard } from './ProjectCard';
 import { cardLayout } from './projectGrid';
-import { PROJECTS_INTRO, PROJECTS_TITLE } from './projectLabels';
 
 const featuredProjects = projects.filter((project) => project.featured);
 const regularProjects = projects.filter((project) => !project.featured);
 
+const FEATURED_LIST_CLASSES = 'grid list-none gap-6 p-0 md:gap-10';
+const REGULAR_LIST_CLASSES =
+  'mt-12 grid list-none gap-x-6 gap-y-8 p-0 md:mt-16 md:grid-cols-2 md:gap-x-8 lg:grid-cols-6 lg:gap-x-10 lg:gap-y-10';
 
-export default function Projects() {
+/**
+ * The list of projects of /projetos, on a white section: the two featured ones on black, then the five regular ones in a
+ * grid. The h1 is the one of the PageHero above. Each list reveals as one group (one observer), and the h2 of every card
+ * follows the h1 with no level skipped.
+ */
+export function Projects() {
   return (
-    <section id="projetos" aria-labelledby="projetos-titulo" className="mx-auto max-w-7xl px-4 py-24 sm:px-6 md:px-12 md:py-32">
-      <m.div
-        initial={{ y: 30 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="mb-12 md:mb-20"
-      >
-        <div className="max-w-2xl max-md:pr-14">
-          <h1 id="projetos-titulo" className="mb-6 font-display text-4xl font-bold italic tracking-tight text-vn-ink md:text-6xl">
-            {PROJECTS_TITLE}
-          </h1>
-          <p className="text-lg text-vn-gray-dark md:text-xl">{PROJECTS_INTRO}</p>
-        </div>
-      </m.div>
-
-      <ul role="list" className="mb-16 grid list-none gap-6 p-0 md:mb-24 md:gap-10">
-        {featuredProjects.map((project, index) => (
-          <li key={project.slug}>
-            <FeaturedProjectCard project={project} priority={index === 0} />
-          </li>
-        ))}
-      </ul>
-
-      <ul role="list" className="grid list-none gap-x-6 gap-y-14 p-0 md:grid-cols-2 md:gap-x-8 md:gap-y-16 lg:grid-cols-6 lg:gap-x-10">
-        {regularProjects.map((project, index) => {
-          const { cellClassName, imageSizes } = cardLayout(index, regularProjects.length);
-          return (
-            <li key={project.slug} className={cellClassName}>
-              <ProjectCard project={project} imageSizes={imageSizes} />
+    <Section tone="white">
+      <Container>
+        <RevealGroup as="ul" className={FEATURED_LIST_CLASSES}>
+          {featuredProjects.map((project, index) => (
+            <li key={project.slug} className="min-w-0">
+              <RevealItem>
+                <FeaturedProjectCard project={project} priority={index === 0} />
+              </RevealItem>
             </li>
-          );
-        })}
-      </ul>
-    </section>
+          ))}
+        </RevealGroup>
+
+        <RevealGroup as="ul" className={REGULAR_LIST_CLASSES}>
+          {regularProjects.map((project, index) => {
+            const { cellClassName, imageSizes } = cardLayout(index, regularProjects.length);
+            return (
+              <li key={project.slug} className={`min-w-0 ${cellClassName}`}>
+                <RevealItem className="h-full">
+                  <ProjectCard project={project} imageSizes={imageSizes} />
+                </RevealItem>
+              </li>
+            );
+          })}
+        </RevealGroup>
+      </Container>
+    </Section>
   );
 }

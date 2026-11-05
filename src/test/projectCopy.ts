@@ -1,4 +1,5 @@
 import * as labels from '../components/projectLabels';
+import { projectsCopy } from '../data/projectsCopy';
 import { projects, type Project } from '../data/projects';
 
 // The rules of the copy of the projects pages, in one place: the data tests and the page tests both use them.
@@ -20,6 +21,7 @@ export const NUMBER_RULE = /\d/;
 /** Every fixed sentence the components render: the constants themselves, and the gallery label for each project. */
 export const COMPONENT_LITERALS: readonly string[] = [
   ...(Object.values(labels) as unknown[]).filter((value): value is string => typeof value === 'string'),
+  ...Object.values(projectsCopy),
   ...projects.map((project) => labels.galleryLabel(project.title)),
 ];
 
