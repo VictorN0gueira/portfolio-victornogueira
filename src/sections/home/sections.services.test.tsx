@@ -11,7 +11,7 @@ import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
 
 const HEADING = 'Três jeitos de tirar trabalho manual da sua frente';
 const LINK_NAME = 'Ver todos os serviços';
-const CARD_NAMES = ['Automação Essencial', 'Agente de IA Sob Medida', 'Landing Page ou Site'];
+const CARD_NAMES = ['Automação Essencial', 'Super Agente', 'Landing Page ou Site'];
 
 const getCards = (): HTMLElement[] => screen.getAllByRole('article');
 
@@ -31,7 +31,7 @@ afterEach(() => {
 });
 
 describe('ServicesCards content', () => {
-  it('renders three articles named after the services: Automação Essencial, Agente de IA Sob Medida and the first of Desenvolvimento Web', () => {
+  it('renders three articles named after the services: Automação Essencial, Super Agente and the first of Desenvolvimento Web', () => {
     MODES.touch();
     renderWithProviders(<ServicesCards />);
 
@@ -269,7 +269,7 @@ describe('ServicesCards hover settle', () => {
     featuredServices.forEach((service, position) => {
       const term = within(getCards()[position]).getByText(service.prazo);
 
-      expect(term).toHaveClass('pt-6', 'mt-auto');
+      expect(term).toHaveClass('pt-6', 'self-start');
     });
   });
 });
