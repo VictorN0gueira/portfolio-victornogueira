@@ -33,7 +33,8 @@ describe('AccessibilityWidget', () => {
     const { panel } = await openPanel();
 
     const options = within(panel).getAllByRole('button');
-    expect(options).toHaveLength(6);
+    // The six options plus the five buttons of the position group, which must be 44px too.
+    expect(options).toHaveLength(11);
     for (const option of options) {
       expect(option, option.textContent ?? '').toHaveClass('min-h-11');
     }
@@ -54,7 +55,8 @@ describe('AccessibilityWidget', () => {
     const { panel } = await openPanel();
 
     expect(panel).toHaveClass('max-h-[calc(100svh-112px-max(16px,env(safe-area-inset-bottom)))]', 'sm:max-h-[calc(100svh-8rem)]', 'flex', 'flex-col', 'overflow-hidden');
-    expect(within(panel).getAllByRole('list')[0]).toHaveClass('overflow-y-auto');
+    // The options and the position group share one scroll region, between the header and the reset row.
+    expect(within(panel).getAllByRole('list')[0].parentElement).toHaveClass('overflow-y-auto', 'min-h-0');
   });
 
   // Escape from an option used to leave the focus on the body once the panel was gone.
@@ -72,7 +74,7 @@ describe('AccessibilityWidget', () => {
 
   it('centres the panel on the window when it is short (a phone on its side) and keeps it above the WhatsApp button', async () => {
     const { panel } = await openPanel();
-    const wrapper = panel.parentElement as HTMLElement;
+    const wrapper = panel.closest('aside') as HTMLElement;
 
     expect(wrapper).toHaveClass(
       '[@media(max-height:30rem)]:bottom-auto',
@@ -91,7 +93,7 @@ describe('AccessibilityWidget', () => {
   it('lets the pointer through the wrapper, and takes it only on the panel and on the trigger', async () => {
     const { panel } = await openPanel();
 
-    expect(panel.parentElement).toHaveClass('pointer-events-none');
+    expect(panel.closest('aside')).toHaveClass('pointer-events-none');
     expect(panel).toHaveClass('pointer-events-auto');
     expect(screen.getByRole('button', { name: TRIGGER_NAME })).toHaveClass('pointer-events-auto');
   });

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type RefObject } from 'react';
+import { TAB_SLIDE_MS } from '../lib/floatingLayout';
 
 /** Below this brightness (0 to 255) the page under the trigger counts as dark. */
 const DARK_BRIGHTNESS = 140;
@@ -6,6 +7,8 @@ const DARK_BRIGHTNESS = 140;
 const MIN_OPAQUE_ALPHA = 0.3;
 /** The brightness is read at most this often while the page scrolls or resizes. */
 const THROTTLE_MS = 150;
+/** Air after the slide of a moved trigger before its place is read. */
+const SETTLE_MARGIN_MS = 40;
 const RGB_PATTERN = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/;
 
 /** The perceived brightness (0 to 255) of the first opaque background at or above the element, or null when none. */
@@ -24,9 +27,9 @@ function getBrightness(element: Element): number | null {
 
 /**
  * True when the page under the centre of the trigger is dark, so the trigger can take the opposite colors.
- * Read on mount and, throttled, while the page scrolls or the window resizes.
+ * Read on mount, when `placeKey` changes (the trigger was moved) and, throttled, while the page scrolls or the window resizes.
  */
-export function useBackdropIsDark(triggerRef: RefObject<HTMLElement | null>): boolean {
+export function useBackdropIsDark(triggerRef: RefObject<HTMLElement | null>, placeKey?: unknown): boolean {
   const [isDark, setIsDark] = useState(false);
 
   const check = useCallback(() => {
@@ -62,6 +65,13 @@ export function useBackdropIsDark(triggerRef: RefObject<HTMLElement | null>): bo
       window.removeEventListener('resize', handleMove);
     };
   }, [check]);
+
+  // The page under the trigger changes when the trigger is moved: read again at once and when its slide has ended.
+  useEffect(() => {
+    check();
+    const timeout = setTimeout(check, TAB_SLIDE_MS + SETTLE_MARGIN_MS);
+    return () => clearTimeout(timeout);
+  }, [check, placeKey]);
 
   return isDark;
 }
