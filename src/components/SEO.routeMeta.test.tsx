@@ -106,6 +106,14 @@ describe('SEO fed by the route metadata', () => {
     expect(readJsonLd().map((node) => node['@type']).sort()).toEqual(['BreadcrumbList', 'FAQPage']);
   });
 
+  it('builds the canonical, og:url and twitter:url from the path of the metadata, so a trailing slash cannot reach them', () => {
+    render(<SEO path="/servicos/" />);
+
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://vnone.com.br/servicos');
+    expect(readMeta('property', 'og:url')).toBe('https://vnone.com.br/servicos');
+    expect(readMeta('name', 'twitter:url')).toBe('https://vnone.com.br/servicos');
+  });
+
   it('adds nothing of the metadata to an unknown path with a noindex, as the 404 does', () => {
     render(<SEO title="Página não encontrada" noindex />);
 

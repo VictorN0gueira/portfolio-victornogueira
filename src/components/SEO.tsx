@@ -61,7 +61,8 @@ function resolveShareTags({ title, description, path = '/', image, imageAlt, ima
   return {
     fullTitle: title ? pageTitle(title) : (meta?.title ?? SITE.title),
     description: description || meta?.description || SITE.description,
-    pageUrl: `${SITE.url}${path}`,
+    // The path of the metadata is already normalized (no trailing slash, no query), so decision D7 holds for any spelling.
+    pageUrl: `${SITE.url}${meta?.path ?? path}`,
     image: image || routeImage?.url || SITE.ogImage,
     imageAlt: imageAlt || routeImage?.alt || SITE.ogImageAlt,
     imageWidth: isDefaultImage ? DEFAULT_IMAGE_WIDTH : (routeImage?.width ?? imageWidth),
