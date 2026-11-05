@@ -119,7 +119,6 @@ const SCANNED_FILES = [
   'index.html',
   'src/components/SEO.tsx',
   'src/components/ContactForm.tsx',
-  'src/components/ServiceSelect.tsx',
   // Older files that still carry user facing text.
   'src/components/ProjectCard.tsx',
   'src/components/ProjectDetail.tsx',
