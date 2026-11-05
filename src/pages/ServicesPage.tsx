@@ -11,7 +11,7 @@ const CONTACT_PATH = '/contato';
 
 /**
  * The services page: the hero, one card per service (each the target of /servicos#slug), the combos, the FAQ of the
- * home and the closing band. Cream, white, black, white, black. The head comes from src/seo/routeMeta.ts.
+ * home and the closing band. Cream, white, black, white, black. The head comes from the route metadata of the SEO module.
  */
 export default function ServicesPage() {
   // The page is a lazy route, so the browser looks for /servicos#slug before the cards exist: the scroll waits for them.
