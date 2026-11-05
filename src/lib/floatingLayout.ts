@@ -188,3 +188,69 @@ export function scrollBand(top: number, viewportHeight: number): { edge: 'top' |
     ? { edge: 'bottom', pad: viewportHeight - top + SCROLL_AIR_PX }
     : { edge: 'top', pad: top + TAB_SIZE_PX + SCROLL_AIR_PX };
 }
+
+const overlaps = (a: Box, b: Box): boolean =>
+  Math.min(a.left + a.width, b.left + b.width) > Math.max(a.left, b.left) &&
+  Math.min(a.top + a.height, b.top + b.height) > Math.max(a.top, b.top);
+
+/** True when the tab lies over any of the rects of the focused element (WCAG 2.2 SC 2.4.11 Focus Not Obscured). */
+export function isObscured(tab: Box, targets: Box[]): boolean {
+  return targets.some((target) => overlaps(tab, target));
+}
+
+interface DodgeInput {
+  tab: Box;
+  /** The box of the focused element (all its rects together). */
+  target: Box;
+  viewport: Size;
+  insets: Insets;
+}
+
+/** A place the tab may step to, with the bounds of `top` on the side it is on. */
+interface DodgePlace {
+  left: number;
+  top: number;
+  min: number;
+  max: number;
+}
+
+/** The part of a box that is inside the window, or null when none is. */
+function insideWindow(box: Box, viewport: Size): Box | null {
+  const left = Math.max(box.left, 0);
+  const top = Math.max(box.top, 0);
+  const right = Math.min(box.left + box.width, viewport.width);
+  const bottom = Math.min(box.top + box.height, viewport.height);
+  return right > left && bottom > top ? { left, top, width: right - left, height: bottom - top } : null;
+}
+
+/**
+ * How far the tab steps aside for a focused control it lies over, when the page could not scroll the control clear. The
+ * choices are the free places the tab may have (under the header, over the bottom limit of its side): above the control,
+ * below it (8px of air), or level on the other side of the window. The nearest one wins. Null when none is clear (a control
+ * that fills the window); an offset of zero when nothing is covered.
+ */
+export function dodgeOffset({ tab, target, viewport, insets }: DodgeInput): Offset | null {
+  const visible = insideWindow(target, viewport);
+  if (!visible || !overlaps(tab, visible)) return { dx: 0, dy: 0 };
+  const side = nearestSide(tab.left + tab.width / 2, viewport.width);
+  const other: TabSide = side === 'left' ? 'right' : 'left';
+  const own = topBounds(side, viewport.height, insets);
+  const far = topBounds(other, viewport.height, insets);
+  const places: DodgePlace[] = [
+    { left: tab.left, top: visible.top - SCROLL_AIR_PX - TAB_SIZE_PX, ...own },
+    { left: tab.left, top: visible.top + visible.height + SCROLL_AIR_PX, ...own },
+    { left: tabLeft(other, viewport.width, insets), top: clamp(tab.top, far.min, far.max), ...far },
+  ];
+  const free = places.filter(
+    (place) =>
+      place.top >= place.min &&
+      place.top <= place.max &&
+      !overlaps({ ...tab, left: place.left, top: place.top }, visible),
+  );
+  const distance = (place: { left: number; top: number }) => Math.hypot(place.left - tab.left, place.top - tab.top);
+  const nearest = free.reduce<DodgePlace | null>(
+    (best, place) => (best && distance(best) <= distance(place) ? best : place),
+    null,
+  );
+  return nearest ? { dx: nearest.left - tab.left, dy: nearest.top - tab.top } : null;
+}
