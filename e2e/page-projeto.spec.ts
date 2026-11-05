@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { FEATURES_LABEL, TAGS_LABEL } from '../src/components/projectLabels';
 import { PAGE_LOAD_TIMEOUT_MS, nextFrames } from './homeSupport';
 import { expect, test } from './n8nGuard';
@@ -17,10 +18,16 @@ const REGULAR: PageContract = {
   readyHeading: TAGS_LABEL,
   hasFloatingClearance: true,
 };
-const DESKTOP = { width: 1440, height: 900 };
-const SCROLL_PX = 150;
-const STUCK_OFFSET_PX = 250;
-const PIXEL_TOLERANCE = 1;
+// The three windows of a laptop and a desktop where the two columns sit side by side (lg and up).
+const SIDE_BY_SIDE_WINDOWS = [
+  { width: 1024, height: 768 },
+  { width: 1366, height: 768 },
+  { width: 1440, height: 900 },
+];
+const PIXEL_TOLERANCE = 2;
+// Small enough for the column to stay inside its travel on DizPara at 1366 and 1440, where the gallery is about 157px
+// shorter than the facts and so can travel only that far.
+const SCROLL_STEP_PX = 10;
 
 test.describe('case page of a featured project', () => {
   describePageContract(FEATURED);
@@ -28,6 +35,115 @@ test.describe('case page of a featured project', () => {
 
 test.describe('case page of a regular project', () => {
   describePageContract(REGULAR);
+});
+
+interface ColumnReport {
+  /** Which column sticks: the first (facts) or the second (gallery). */
+  stickyIndex: number;
+  /** The viewport height and the `top` the sticky column keeps. */
+  innerHeight: number;
+  stickyTop: number;
+  stickyHeight: number;
+  bodyHeight: number;
+  heights: [number, number];
+}
+
+function readColumns(page: Page): Promise<ColumnReport> {
+  return page.evaluate(() => {
+    const body = document.querySelector('[data-case-body]') as HTMLElement;
+    const columns = Array.from(body.children) as HTMLElement[];
+    const stickyIndex = columns.findIndex((column) => getComputedStyle(column).position === 'sticky');
+    const sticky = columns[stickyIndex];
+    return {
+      stickyIndex,
+      innerHeight: window.innerHeight,
+      stickyTop: parseFloat(getComputedStyle(sticky).top),
+      stickyHeight: sticky.getBoundingClientRect().height,
+      bodyHeight: body.getBoundingClientRect().height,
+      heights: [columns[0].getBoundingClientRect().height, columns[1].getBoundingClientRect().height],
+    };
+  });
+}
+
+interface Edges {
+  top: number;
+  bottom: number;
+}
+
+/** Scrolls so the body of the case sits `inside` the window by a step, or ends exactly at its bottom edge, and measures. */
+async function boxesAt(page: Page, placeBody: 'inside' | 'end'): Promise<{ column: Edges; body: Edges }> {
+  await page.evaluate(
+    ({ place, step }) => {
+      const body = document.querySelector('[data-case-body]') as HTMLElement;
+      const rect = body.getBoundingClientRect();
+      const bodyTop = rect.top + window.scrollY;
+      const top = place === 'inside' ? bodyTop + step : bodyTop + rect.height - window.innerHeight;
+      window.scrollTo({ top, behavior: 'instant' });
+    },
+    { place: placeBody, step: SCROLL_STEP_PX },
+  );
+  await nextFrames(page);
+  return page.evaluate(() => {
+    const body = document.querySelector('[data-case-body]') as HTMLElement;
+    const columns = Array.from(body.children) as HTMLElement[];
+    const sticky = columns.find((column) => getComputedStyle(column).position === 'sticky') as HTMLElement;
+    const edges = (element: HTMLElement) => ({
+      top: element.getBoundingClientRect().top,
+      bottom: element.getBoundingClientRect().bottom,
+    });
+    return { column: edges(sticky), body: edges(body) };
+  });
+}
+
+test.describe('the sticky column of a case page', () => {
+  for (const contract of [FEATURED, REGULAR]) {
+    for (const size of SIDE_BY_SIDE_WINDOWS) {
+      test(`${contract.path} at ${size.width}x${size.height}: the shorter column sticks, fits the window and leaves no hole`, async ({
+        page,
+      }, testInfo) => {
+        test.skip(
+          testInfo.project.name !== 'desktop',
+          'the test sets its own viewport: it runs once, in the desktop project',
+        );
+        test.slow();
+        await page.setViewportSize(size);
+        await openPage(page, contract);
+        const report = await readColumns(page);
+
+        // Exactly one column sticks, and it is the shorter of the two.
+        expect(report.stickyIndex, 'one column is sticky').toBeGreaterThanOrEqual(0);
+        const otherHeight = report.heights[report.stickyIndex === 0 ? 1 : 0];
+        expect(report.stickyHeight, 'the sticky column is the shorter one').toBeLessThanOrEqual(
+          otherHeight + PIXEL_TOLERANCE,
+        );
+        // It fits under the header, so no part of it is clipped at the bottom of the window.
+        expect(report.stickyHeight + report.stickyTop, 'the sticky column fits the window').toBeLessThanOrEqual(
+          report.innerHeight,
+        );
+
+        // Inside the body it keeps its place: its top stays at the sticky offset (112px) while the body scrolls.
+        const first = await boxesAt(page, 'inside');
+        const second = await page.evaluate((step) => {
+          window.scrollBy({ top: step, behavior: 'instant' });
+          const body = document.querySelector('[data-case-body]') as HTMLElement;
+          const sticky = (Array.from(body.children) as HTMLElement[]).find(
+            (column) => getComputedStyle(column).position === 'sticky',
+          ) as HTMLElement;
+          return sticky.getBoundingClientRect().top;
+        }, SCROLL_STEP_PX);
+        expect(Math.abs(first.column.top - second), 'the sticky column did not move').toBeLessThanOrEqual(
+          PIXEL_TOLERANCE,
+        );
+
+        // With the end of the body at the bottom edge of the window the column is still whole and on screen: it followed
+        // the scroll, so there is no empty space under the gallery and nothing is clipped at the bottom of the window.
+        const end = await boxesAt(page, 'end');
+        expect(end.column.top, 'not above the window').toBeGreaterThanOrEqual(-PIXEL_TOLERANCE);
+        expect(end.column.bottom, 'not below the window').toBeLessThanOrEqual(report.innerHeight + PIXEL_TOLERANCE);
+        expect(end.column.bottom, 'inside the body').toBeLessThanOrEqual(end.body.bottom + PIXEL_TOLERANCE);
+      });
+    }
+  }
 });
 
 test.describe('the case pages', () => {
@@ -40,40 +156,24 @@ test.describe('the case pages', () => {
     });
   });
 
-  test('the column of facts stays in place while the three stacked shots scroll, at 1440', async ({
+  test('the next project comes after the facts and the gallery, before the closing band, and it opens that case', async ({
     page,
-  }, testInfo) => {
-    test.skip(
-      testInfo.project.name !== 'desktop',
-      'the test sets its own viewport: it runs once, in the desktop project',
-    );
-    await page.setViewportSize(DESKTOP);
-    await openPage(page, REGULAR);
-    const facts = page.locator('[data-case-body] > :first-child');
-    const gallery = page.getByRole('group', { name: /^Telas de/ });
-    // A regular project has three stacked shots, taller than the facts, so there is room to stick (the gallery of a
-    // featured project is shorter than its facts). The top of the body is above the window, so the facts are stuck at their sticky top.
-    await page.evaluate((offset) => {
-      const body = document.querySelector('[data-case-body]') as HTMLElement;
-      window.scrollTo({ top: body.getBoundingClientRect().top + window.scrollY + offset, behavior: 'instant' });
-    }, STUCK_OFFSET_PX);
-    await nextFrames(page);
-    const before = (await facts.boundingBox())?.y ?? Number.NaN;
-    const galleryBefore = (await gallery.boundingBox())?.y ?? Number.NaN;
-
-    await page.evaluate((delta) => window.scrollBy({ top: delta, behavior: 'instant' }), SCROLL_PX);
-    await nextFrames(page);
-    const after = (await facts.boundingBox())?.y ?? Number.NaN;
-    const galleryAfter = (await gallery.boundingBox())?.y ?? Number.NaN;
-
-    expect(galleryBefore - galleryAfter, 'the gallery moved up with the scroll').toBeGreaterThan(
-      SCROLL_PX - PIXEL_TOLERANCE,
-    );
-    expect(Math.abs(before - after), 'the facts stayed where they were').toBeLessThanOrEqual(PIXEL_TOLERANCE);
-  });
-
-  test('the next project is the last link before the closing band, and it opens that case', async ({ page }) => {
+  }) => {
     await openPage(page, FEATURED);
+
+    const order = await page.evaluate(() => {
+      const next = document.querySelector('a[href="/projetos/hub081"]') as HTMLElement;
+      const body = document.querySelector('[data-case-body]') as HTMLElement;
+      const band = Array.from(document.querySelectorAll('main section')).at(-1) as HTMLElement;
+      const follows = (first: Node, second: Node) =>
+        Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return {
+        afterBody: follows(body, next),
+        beforeBand: follows(next, band),
+        bandIsLastSection: band.querySelector('a[href^="https://wa.me/"]') !== null,
+      };
+    });
+    expect(order).toEqual({ afterBody: true, beforeBand: true, bandIsLastSection: true });
 
     await page.getByRole('link', { name: /^próximo projeto Hub081/i }).click();
 

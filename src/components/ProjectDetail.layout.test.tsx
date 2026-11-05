@@ -52,6 +52,20 @@ describe('the layout classes that keep a case page from being cut', () => {
     expect(bodyOf(regular.container).previousElementSibling).toBeNull();
   });
 
+  it('sticks the shorter column from lg: the facts of a regular case, the gallery of a featured one', () => {
+    const regular = renderWithProviders(<ProjectDetail project={getProjectBySlug('travel-ia')!} />);
+    const [regularFacts, regularGallery] = Array.from(bodyOf(regular.container).children);
+    expect(regularFacts.className).toContain('lg:sticky');
+    expect(regularGallery.className).not.toContain('sticky');
+    regular.unmount();
+
+    const featured = renderWithProviders(<ProjectDetail project={getProjectBySlug('dizpara')!} />);
+    const [featuredFacts, featuredGallery] = Array.from(bodyOf(featured.container).children);
+    expect(featuredFacts.className).not.toContain('sticky');
+    expect(featuredGallery.className).toContain('lg:sticky');
+    expect(featuredGallery.className).toContain('lg:self-start');
+  });
+
   it('lays a featured gallery out as the cover and two shots side by side, and a regular one as three stacked', () => {
     const featured = renderWithProviders(<ProjectDetail project={getProjectBySlug('dizpara')!} />);
     expect(featured.container.querySelector('[data-gallery-pair]')?.children).toHaveLength(2);
