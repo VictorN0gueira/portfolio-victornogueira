@@ -1,13 +1,23 @@
+import { homeCopy } from '../src/data/homeCopy';
 import { expect, test } from './n8nGuard';
 
-// The old calculator of /contato at its largest inputs prints "R$ 312 mi" and "R$ 249,6 mi". They must stay inside the
-// card padding on the narrowest phones (before: 27 px past the box at 280 px, 7 px at 300 px).
+// The simulator of /contato at its largest inputs prints "R$ 312.000.000" and "R$ 249.600.000" (80 hours, more than 10 people,
+// R$ 5.000 an hour). The figures must stay inside their box on the narrowest phones: the old calculator pushed them
+// 27 px past it at 280 px. The page mounts the real form, so this file takes its `test` from the guard: nothing here
+// fills the form or sends anything.
 const WIDTHS = [280, 300, 320, 360, 390];
 const MAX_HOURS = '80';
 const MAX_RATE = '5000';
+const LARGEST_TEAM = /mais de 10 pessoas/;
+const TEAM_GROUP = { name: homeCopy.roi.labels.team };
+
+// The figures are in the hidden-from-assistive-tech block of the result panel, written in full (14 characters at most).
+const BIG_FIGURES = '[aria-hidden="true"] .tabular-nums';
 
 for (const width of WIDTHS) {
-  test(`keeps the big figures of the /contato calculator inside their box at ${width}px with the largest inputs`, async ({ page }, testInfo) => {
+  test(`keeps the big figures of the /contato simulator inside their box at ${width}px with the largest inputs`, async ({
+    page,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/contato');
@@ -18,16 +28,26 @@ for (const width of WIDTHS) {
       range.dispatchEvent(new Event('input', { bubbles: true }));
     }, MAX_HOURS);
     // The option is a native radio hidden behind its label, so the click goes to the label that draws it.
-    await page.locator('label').filter({ hasText: /mais de 10 pessoas/ }).first().click();
-    await page.getByLabel('Custo médio por hora da equipe em reais').fill(MAX_RATE);
+    await page.locator('label').filter({ hasText: LARGEST_TEAM }).first().click();
+    await page.getByLabel(homeCopy.roi.labels.rate).fill(MAX_RATE);
 
-    const figures = page.locator('p.tabular-nums').filter({ hasText: /mi$/ });
+    const figures = page.locator(BIG_FIGURES).filter({ hasText: /^R\$/ });
     await expect(figures).toHaveCount(2);
-    await expect(figures.first()).toContainText('312');
+    await expect(figures.first()).toContainText('312.000.000');
     const overflow = await figures.evaluateAll((nodes) => nodes.map((node) => node.scrollWidth - node.clientWidth));
+    const past = await figures.evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const box = node.getBoundingClientRect();
+        const container = node.closest('.\\@container')?.getBoundingClientRect();
+        return container ? Math.max(0, box.right - container.right) : Number.NaN;
+      }),
+    );
 
     expect(overflow).toEqual([0, 0]);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    expect(past.every((value) => value <= 0.5)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(
+      0,
+    );
   });
 }
 
@@ -40,7 +60,7 @@ for (const width of TEAM_WIDTHS) {
     test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/contato');
-    await expect(page.getByRole('radiogroup', { name: 'Pessoas que executam essa tarefa' })).toBeVisible();
+    await expect(page.getByRole('radiogroup', TEAM_GROUP)).toBeVisible();
 
     const pills = await page.locator('[role="radiogroup"] label > span').evaluateAll((nodes) =>
       nodes.map((node) => {
@@ -69,6 +89,8 @@ for (const width of TEAM_WIDTHS) {
       expect(pill.pokesOutRight, `${pill.label} leaves the padding on the right`).toBeLessThanOrEqual(0.5);
       expect(pill.boxRight, `${pill.label} is past the viewport`).toBeLessThanOrEqual(width);
     }
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(
+      0,
+    );
   });
 }

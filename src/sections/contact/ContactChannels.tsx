@@ -4,10 +4,10 @@ import { NewTabHint } from '../../components/ui/NewTabHint';
 import { contactCopy } from '../../data/contactCopy';
 import { CONTACT_EMAIL, WHATSAPP_DISPLAY, WHATSAPP_GREETING, whatsappUrl } from '../../lib/constants';
 
-const ROW_CLASSES = 'grid gap-1 border-t border-vn-gray-light py-4 first:border-t-0 first:pt-0 last:pb-0';
+const ROW_CLASSES = 'grid grid-cols-[minmax(0,1fr)] gap-1 border-t border-vn-gray-light py-4 first:border-t-0 first:pt-0 last:pb-0';
 const LABEL_CLASSES = 'font-mono text-xs uppercase tracking-[.18em] text-vn-gray-dark';
-// min-h-11 is the 44px touch target. break-words keeps the address inside the card at 280px and at the larger font.
-const VALUE_CLASSES = 'break-words text-xl font-medium text-vn-ink md:text-2xl';
+// min-h-11 is the 44px touch target. overflow-wrap anywhere keeps the address inside the card at 280px and at the larger font.
+const VALUE_CLASSES = '[overflow-wrap:anywhere] text-lg font-medium text-vn-ink sm:text-xl md:text-2xl';
 const LINK_CLASSES = `${VALUE_CLASSES} inline-flex min-h-11 items-center gap-3 rounded-md underline-offset-4 hover:underline vn-focus-ring-ink`;
 
 /**
@@ -20,7 +20,7 @@ export function ContactChannels() {
   const { email, whatsapp, location, locationValue } = contactCopy.channels;
 
   return (
-    <div className="rounded-card border border-vn-gray-light bg-vn-white p-6 md:p-8">
+    <div className="rounded-card border border-vn-gray-light bg-vn-white p-5 sm:p-6 md:p-8">
       <NewTabHint id={newTabHintId} />
       <dl className="m-0">
         <div className={ROW_CLASSES}>
