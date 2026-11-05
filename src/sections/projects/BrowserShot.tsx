@@ -33,7 +33,7 @@ export function BrowserShot({
   imageStyle,
 }: BrowserShotProps) {
   return (
-    <WindowFrame title={slug} className={className}>
+    <WindowFrame title={slug} isTitleDecorative className={className}>
       <ProjectShotImage shot={shot} sizes={sizes} priority={priority} className={imageClassName} style={imageStyle} />
     </WindowFrame>
   );

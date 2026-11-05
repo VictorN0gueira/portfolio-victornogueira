@@ -38,11 +38,14 @@ describe('BrowserShot', () => {
   });
 
   it('shows the slug of the project in the title bar, in the mono font, and no address', () => {
-    const { container } = renderWithProviders(<BrowserShot shot={shotOf('travel-ia')} slug="travel-ia" sizes={SIZES} />);
+    const { container } = renderWithProviders(
+      <BrowserShot shot={shotOf('travel-ia')} slug="travel-ia" sizes={SIZES} />,
+    );
 
     const title = screen.getByText('travel-ia');
 
     expect(title.className).toContain('font-mono');
+    expect(title).toHaveAttribute('aria-hidden', 'true');
     expect(container.textContent).not.toMatch(/https?:|www\.|\.com/i);
   });
 

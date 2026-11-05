@@ -26,6 +26,18 @@ describe('WindowFrame', () => {
     expect(screen.getByText('fluxo.n8n')).toHaveClass('font-mono');
   });
 
+  it('reads the title to assistive technology by default, and hides it when the title is only decoration', () => {
+    const { rerender } = renderFrame({ title: 'fluxo.n8n' });
+    expect(screen.getByText('fluxo.n8n')).not.toHaveAttribute('aria-hidden');
+
+    rerender(
+      <WindowFrame title="fluxo.n8n" isTitleDecorative>
+        <p>conteudo</p>
+      </WindowFrame>,
+    );
+    expect(screen.getByText('fluxo.n8n')).toHaveAttribute('aria-hidden', 'true');
+  });
+
   it('shows the status at the right when given, and no pill without it', () => {
     const { rerender, container } = renderFrame({ status: 'ativo' });
 

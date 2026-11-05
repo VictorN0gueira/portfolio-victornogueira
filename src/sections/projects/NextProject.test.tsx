@@ -39,7 +39,7 @@ describe('NextProject', () => {
 
     expect(image).toHaveAttribute('loading', 'lazy');
     expect(image).toHaveAttribute('src', next.shots[0].image.src);
-    expect(screen.getByText(next.slug)).toBeInTheDocument();
+    expect(screen.getByText(next.slug)).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('has a focus ring on the link and no legacy look', () => {
