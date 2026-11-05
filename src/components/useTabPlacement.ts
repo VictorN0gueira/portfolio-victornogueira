@@ -56,16 +56,31 @@ function useFloatingView(): FloatingView {
   return view;
 }
 
-/** Tells the stylesheet which edge a focused control has to stay clear of, so the tab never covers what the keyboard reaches. */
+/**
+ * Tells the stylesheet which edge a focused control has to stay clear of, so the tab never covers what the keyboard
+ * reaches. The bottom band is always on: padding at the bottom never moves an anchor. The top band would push every hash
+ * and anchor down by the height of the tab's band (scroll-padding-top is honoured by scrollIntoView), so it only lasts
+ * while the keyboard moves the focus: from a Tab key to the next press or key.
+ */
 function useScrollBand(top: number | null, viewportHeight: number): void {
   useEffect(() => {
-    const root = document.documentElement;
     if (top === null) return;
+    const root = document.documentElement;
     const { edge, pad } = scrollBand(top, viewportHeight);
-    root.setAttribute(BAND_ATTRIBUTE, edge);
     root.style.setProperty(BAND_PAD_PROPERTY, `${pad}px`);
+    const show = () => root.setAttribute(BAND_ATTRIBUTE, edge);
+    const hide = () => root.removeAttribute(BAND_ATTRIBUTE);
+    const handleKey = (event: KeyboardEvent) => (event.key === 'Tab' ? show() : hide());
+    if (edge === 'bottom') {
+      show();
+    } else {
+      document.addEventListener('keydown', handleKey, true);
+      document.addEventListener('pointerdown', hide, true);
+    }
     return () => {
-      root.removeAttribute(BAND_ATTRIBUTE);
+      document.removeEventListener('keydown', handleKey, true);
+      document.removeEventListener('pointerdown', hide, true);
+      hide();
       root.style.removeProperty(BAND_PAD_PROPERTY);
     };
   }, [top, viewportHeight]);

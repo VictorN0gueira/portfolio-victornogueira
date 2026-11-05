@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TAB_POSITION_STORAGE_KEY } from '../lib/tabPositionStorage';
@@ -65,6 +65,9 @@ describe('AccessibilityWidget position', () => {
     const second = stored();
 
     expect(first && second && second.ratio > first.ratio).toBe(true);
+    // The tab is in the upper half: its top band only lasts while the keyboard moves the focus (see the band tests below).
+    expect(document.documentElement.style.getPropertyValue('--vn-tab-pad')).not.toBe('');
+    fireEvent.keyDown(document, { key: 'Tab' });
     expect(document.documentElement.getAttribute('data-vn-tab-band')).toBe('top');
   });
 
@@ -94,5 +97,43 @@ describe('AccessibilityWidget position', () => {
     renderWithProviders(<AccessibilityWidget />);
 
     expect(screen.getByRole('complementary', { name: PANEL_NAME })).toHaveClass('right-0', 'flex-row-reverse');
+  });
+
+  // F1: a tab in the upper half used to push every in-page anchor 200px too low through scroll-padding-top.
+  describe('the scroll band of a tab in the upper half', () => {
+    const band = () => document.documentElement.getAttribute('data-vn-tab-band');
+
+    beforeEach(() => {
+      window.localStorage.setItem(TAB_POSITION_STORAGE_KEY, JSON.stringify({ side: 'right', ratio: 0.3 }));
+      renderWithProviders(<AccessibilityWidget />);
+    });
+
+    it('is not set at rest, so a hash or an anchor lands where it does with the tab at its default place', () => {
+      expect(band()).toBeNull();
+    });
+
+    it('is set while the keyboard moves the focus (Tab, Shift+Tab), so a focused control is scrolled clear of the tab', () => {
+      fireEvent.keyDown(document, { key: 'Tab' });
+      expect(band()).toBe('top');
+      fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+      expect(band()).toBe('top');
+    });
+
+    it('goes away on a press and on any other key, so activating an anchor scrolls without it', () => {
+      fireEvent.keyDown(document, { key: 'Tab' });
+      fireEvent.pointerDown(document.body);
+      expect(band()).toBeNull();
+      fireEvent.keyDown(document, { key: 'Tab' });
+      fireEvent.keyDown(document, { key: 'Enter' });
+      expect(band()).toBeNull();
+    });
+  });
+
+  it('keeps the bottom band always on, since padding at the bottom never moves an anchor', () => {
+    window.localStorage.setItem(TAB_POSITION_STORAGE_KEY, JSON.stringify({ side: 'right', ratio: 0.9 }));
+
+    renderWithProviders(<AccessibilityWidget />);
+
+    expect(document.documentElement.getAttribute('data-vn-tab-band')).toBe('bottom');
   });
 });
