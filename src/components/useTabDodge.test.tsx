@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { StrictMode, useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { dodgeOffset, TAB_SIZE_PX, TAB_SLIDE_MS, type Box, type TabPosition } from '../lib/floatingLayout';
+import { dodgeOffset } from '../lib/floatingDodge';
+import { TAB_SIZE_PX, TAB_SLIDE_MS, type Box, type TabPosition } from '../lib/floatingLayout';
 import { clearDodge, useTabDodge } from './useTabDodge';
 
 // jsdom has no layout. The scene below says where the window is, where the tab rests and where the focused link is, and the

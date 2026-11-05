@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { dodgeOffset, isObscured, TAB_SIZE_PX, topBounds, type Box, type Insets, type Size } from './floatingLayout';
+import { dodgeOffset, isObscured } from './floatingDodge';
+import { TAB_SIZE_PX, topBounds, type Box, type Insets, type Size } from './floatingLayout';
 
 const NO_INSETS = { top: 0, bottom: 0, left: 0, right: 0 };
 const PHONE = { width: 390, height: 844 };

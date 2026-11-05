@@ -1,13 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react';
-import {
-  dodgeOffset,
-  isObscured,
-  scrollBand,
-  TAB_SIZE_PX,
-  TAB_SLIDE_MS,
-  type Box,
-  type TabPosition,
-} from '../lib/floatingLayout';
+import { dodgeOffset, isObscured } from '../lib/floatingDodge';
+import { scrollBand, TAB_SIZE_PX, TAB_SLIDE_MS, type Box, type TabPosition } from '../lib/floatingLayout';
 import { readFloatingView } from '../lib/floatingView';
 
 /** The tab reads these two lengths from its own style (a translate, see AccessibilityTrigger). The DOM holds the state. */
