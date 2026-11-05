@@ -100,30 +100,25 @@ describe('ProjectDetail images', () => {
     for (const shot of project.shots) expect(screen.getByRole('img', { name: shot.alt })).toBeInTheDocument();
   });
 
-  it.each(projects.map((project) => project.slug))(
-    'gives every image of %s its size, srcset and a reserved aspect ratio',
-    (slug) => {
-      renderWithProviders(<ProjectDetail project={projectOf(slug)} />);
+  it.each(projects.map((project) => project.slug))('gives every image of %s its size, srcset and a reserved aspect ratio', (slug) => {
+    renderWithProviders(<ProjectDetail project={projectOf(slug)} />);
 
-      for (const image of screen.getAllByRole('img')) {
-        const width = Number(image.getAttribute('width'));
-        const height = Number(image.getAttribute('height'));
-        expect(image).toHaveAttribute('srcset');
-        expect(image).toHaveAttribute('sizes');
-        expect(width).toBeGreaterThan(0);
-        expect(height).toBeGreaterThan(0);
-        expect(image).toHaveAttribute('decoding', 'async');
-        expect((image as HTMLElement).style.aspectRatio.replace(/\s/g, '')).toBe(`${width}/${height}`);
-      }
-    },
-  );
+    for (const image of screen.getAllByRole('img')) {
+      const width = Number(image.getAttribute('width'));
+      const height = Number(image.getAttribute('height'));
+      expect(image).toHaveAttribute('srcset');
+      expect(image).toHaveAttribute('sizes');
+      expect(width).toBeGreaterThan(0);
+      expect(height).toBeGreaterThan(0);
+      expect(image).toHaveAttribute('decoding', 'async');
+      expect((image as HTMLElement).style.aspectRatio.replace(/\s/g, '')).toBe(`${width}/${height}`);
+    }
+  });
 
   it('reserves a box for a tall phone shot: its own ratio and a width that stops it at a fixed height', () => {
     renderWithProviders(<ProjectDetail project={projectOf('ai-playlist-maker')} />);
 
-    const tall = screen
-      .getAllByRole('img')
-      .find((image) => Number(image.getAttribute('height')) > Number(image.getAttribute('width')));
+    const tall = screen.getAllByRole('img').find((image) => Number(image.getAttribute('height')) > Number(image.getAttribute('width')));
     const width = Number(tall?.getAttribute('width'));
     const height = Number(tall?.getAttribute('height'));
 
