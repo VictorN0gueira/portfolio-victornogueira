@@ -242,7 +242,9 @@ describe('ServiceSelect as a listbox', () => {
 
     fireEvent.pointerDown(await screen.findByRole('listbox'));
     expect(screen.getByRole('listbox')).toBeInTheDocument();
-    fireEvent.pointerDown(document.body);
+    // Radix Popover 1.3 defers the dismissal of a pointer down outside to the click that follows it (so a drag or a
+    // scroll that starts outside no longer closes the list), so the press needs its click.
+    await user.click(document.body);
 
     await closed();
   });

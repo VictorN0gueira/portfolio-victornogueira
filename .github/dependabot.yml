@@ -1,15 +1,32 @@
-# Keeps the pinned GitHub Actions (commit SHAs) and the npm dependencies current, one pull request per update.
+# Keeps the pinned GitHub Actions (commit SHAs) and the npm dependencies current with one pull request a week.
+#
+# The minor and patch updates are grouped, so a week of updates is one pull request that CI checks once. The
+# `dependabot-merge` job in .github/workflows/ci.yml merges it by itself when every check passes. A major update is
+# never grouped: it arrives as its own pull request, and the job leaves it open for a person to read.
+#
+# A dependency belongs to the first group in the file that matches it.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    # Wait a week after a release before proposing it: most compromised releases are caught and pulled within days.
+    # Security updates ignore the cooldown.
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    # Grouped updates count as one pull request each, so this leaves room for the majors that stay separate.
+    open-pull-requests-limit: 10
     # react and react-dom 19.3 grow the react-vendor chunk by 8.7 kB gzip, which breaks the 160 kB bundle budget
     # (npm run budget -- --enforce, in CI), so a pull request for them would fail by design. Revisit this when the
     # budget is reconsidered; 19.2 patches and 19.4 or later still arrive.
@@ -18,3 +35,16 @@ updates:
         versions: ["19.3.x"]
       - dependency-name: "react-dom"
         versions: ["19.3.x"]
+    groups:
+      # react and react-dom must run the exact same version (react-dom refuses to start otherwise), so they move in one
+      # pull request. It is also apart from the rest: react grows the critical path, which CI holds under a budget,
+      # and a red react pull request must not hold back the other updates.
+      react:
+        patterns: ["react", "react-dom"]
+        update-types: ["minor", "patch"]
+      production-dependencies:
+        dependency-type: production
+        update-types: ["minor", "patch"]
+      development-dependencies:
+        dependency-type: development
+        update-types: ["minor", "patch"]
