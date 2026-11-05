@@ -99,8 +99,18 @@ test('the title never goes back to the home title between /sobre and a slow /ser
 // The inner pages still pass their own title and description to SEO.tsx, so what they write at run time is not yet what the
 // route metadata says. The 'after M2' block holds those comparisons: batch M2 (the pages switch to routeMeta) turns them on by
 // setting IS_AFTER_M2. They show as skipped, with the reason, until then.
-const IS_AFTER_M2 = false;
-const PARITY_PATHS = ['/', '/servicos', '/sobre', '/projetos', '/projetos/hub081', '/contato', '/blog', '/privacidade', '/lgpd'] as const;
+const IS_AFTER_M2 = true;
+const PARITY_PATHS = [
+  '/',
+  '/servicos',
+  '/sobre',
+  '/projetos',
+  '/projetos/hub081',
+  '/contato',
+  '/blog',
+  '/privacidade',
+  '/lgpd',
+] as const;
 /** The pages whose SEO props are already the metadata of the route: the home passes none, the legal pages are frozen and equal. */
 const PAGES_ON_ROUTE_META: ReadonlySet<string> = new Set(['/', '/privacidade', '/lgpd']);
 
@@ -163,10 +173,15 @@ test.describe('raw HTML against the head after the app mounts', () => {
 });
 
 test.describe('after M2', () => {
-  test.skip(!IS_AFTER_M2, 'needs batch M2: the inner pages still pass their own title, description and JSON-LD to SEO.tsx');
+  test.skip(
+    !IS_AFTER_M2,
+    'needs batch M2: the inner pages still pass their own title, description and JSON-LD to SEO.tsx',
+  );
 
   for (const path of PARITY_PATHS.filter((entry) => !PAGES_ON_ROUTE_META.has(entry))) {
-    test(`${path}: the title, the description and the structured data are the ones of routeMeta, before and after mount`, async ({ page }) => {
+    test(`${path}: the title, the description and the structured data are the ones of routeMeta, before and after mount`, async ({
+      page,
+    }) => {
       const meta = routeMetaFor(path)!;
       const { rawHead, liveHead } = await readBoth(page, path);
 
