@@ -456,6 +456,41 @@ test.describe('the tab is still the visitor’s: a press on a dodged tab, and th
     await testInfo.attach('home-over-light', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
+  test('a link with a huge z-index inside a low stacking context is still under the tab: the tab steps aside', async ({
+    page,
+  }) => {
+    await openProbe(page, { place: PHONE_PLACE });
+    const home = await rectOf(trigger(page));
+    await page.evaluate((top) => {
+      const context = document.createElement('div');
+      context.id = 'vn-context';
+      context.style.cssText = `position:absolute;z-index:1;left:0;right:0;top:${top}px`;
+      const link = document.createElement('a');
+      link.href = '#context-link';
+      link.textContent = 'Link no contexto';
+      link.style.cssText =
+        'position:relative;z-index:9999;display:block;height:44px;background:#fff;color:#000;border:1px solid #000';
+      context.append(link);
+      document.body.prepend(context);
+    }, Math.round(home.top));
+    // The link sits under the tab, and the tab (z-index 150 in the root context) paints over it.
+    expect(
+      await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('aside') !== null, {
+        x: home.left + 10,
+        y: home.top + 10,
+      }),
+    ).toBe(true);
+
+    await page.keyboard.press('Tab');
+    await waitForCalm(page);
+
+    const link = await rectOf(page.locator('#vn-context a:focus'));
+    const tab = await rectOf(trigger(page));
+    expect(overlaps(link, home)).toBe(true);
+    expect(overlaps(link, tab)).toBe(false);
+    expect(boundsProblems(tab, PHONE)).toEqual([]);
+  });
+
   test('the tab can still be reached with the keyboard and opens its panel', async ({ page }) => {
     await openProbe(page, { place: PHONE_PLACE });
     await trigger(page).focus();

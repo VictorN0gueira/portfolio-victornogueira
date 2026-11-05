@@ -8,8 +8,8 @@ const DODGE_X = '--vn-dodge-x';
 const DODGE_Y = '--vn-dodge-y';
 /** How long a scroll has to be quiet before the tab judges where the focused control ended up. */
 const SETTLE_MS = 100;
-/** Elements of the top layer (a modal dialog, a popover) paint over everything, whatever their z-index. */
-const TOP_LAYER = 'dialog[open], :modal, :popover-open';
+/** What the browser puts in the top layer (a modal dialog, an open popover): it paints over everything, whatever its z-index. */
+const TOP_LAYER = ':modal, :popover-open';
 const TEXT_ENTRY = 'input, textarea, [contenteditable]';
 
 interface TabDodgeOptions {
@@ -68,21 +68,41 @@ function isInTopLayer(element: Element): boolean {
   try {
     return element.closest(TOP_LAYER) !== null;
   } catch {
-    // A browser that does not know :modal or :popover-open still knows an open dialog.
-    return element.closest('dialog[open]') !== null;
+    // A browser without these pseudo-classes has no top layer to speak of; a non-modal dialog is not in it anyway.
+    return false;
   }
 }
 
-/** True when something paints over the widget (the top layer, or a z-index above the one of the widget): it can never be covered by it. */
+const isSet = (value: string) => value !== '' && value !== 'none';
+
+/** True when the element starts a stacking context: its z-index then caps everything inside it. */
+function isStackingContext(style: CSSStyleDeclaration): boolean {
+  const isPositioned = style.position !== 'static' && style.position !== '';
+  return (
+    (isPositioned && style.zIndex !== 'auto' && style.zIndex !== '') ||
+    style.position === 'fixed' ||
+    style.position === 'sticky' ||
+    (style.opacity !== '' && Number(style.opacity) < 1) ||
+    isSet(style.transform) ||
+    isSet(style.filter) ||
+    style.isolation === 'isolate'
+  );
+}
+
+/**
+ * True when something paints over the widget: the top layer, or an outermost stacking context above the one of the widget
+ * (a z-index inside a context never gets out of it, so only the outermost one counts, and one without a z-index counts as 0).
+ */
 function isAboveWidget(element: Element, widget: Element): boolean {
   if (isInTopLayer(element)) return true;
   const widgetZ = Number.parseInt(getComputedStyle(widget).zIndex, 10);
   if (Number.isNaN(widgetZ)) return false;
-  for (let node: Element | null = element; node; node = node.parentElement) {
+  let outermost = 0;
+  for (let node: Element | null = element; node && node !== document.body; node = node.parentElement) {
     const style = getComputedStyle(node);
-    if (style.position !== 'static' && Number.parseInt(style.zIndex, 10) > widgetZ) return true;
+    if (isStackingContext(style)) outermost = Number.parseInt(style.zIndex, 10) || 0;
   }
-  return false;
+  return outermost > widgetZ;
 }
 
 /**

@@ -73,6 +73,11 @@ function Harness({ isOpen = false, position = null }: HarnessProps) {
           d
         </a>
       </div>
+      <div data-testid="context" style={{ position: 'absolute', zIndex: 1 }}>
+        <a href="#f" data-testid="link-f" style={{ position: 'relative', zIndex: 9999 }}>
+          f
+        </a>
+      </div>
       <dialog open data-testid="dialog">
         <a href="#e" data-testid="link-e">
           e
@@ -94,7 +99,7 @@ function setup(props: HarnessProps = {}, isStrict = false) {
   const element = <Harness {...props} />;
   const view = render(isStrict ? <StrictMode>{element}</StrictMode> : element);
   const wrapper = view.getByTestId('wrapper');
-  for (const id of ['link-a', 'link-b', 'link-c', 'link-d', 'link-e', 'field']) {
+  for (const id of ['link-a', 'link-b', 'link-c', 'link-d', 'link-e', 'link-f', 'field']) {
     vi.spyOn(view.getByTestId(id), 'getClientRects').mockImplementation(
       () =>
         [
@@ -391,9 +396,42 @@ describe('what the tab can not cover', () => {
     expect(dy(tab)).toBe('-38px');
   });
 
-  it('skips a control inside an open dialog: it is in the top layer, above the widget', () => {
+  it('still steps aside for a non-modal dialog: it is not in the top layer and paints below the widget', () => {
     const { tab, view } = setup();
     act(() => view.getByTestId('link-e').focus());
+    frame();
+    expect(dy(tab)).toBe('-38px');
+  });
+
+  it('skips a control inside a modal dialog: it is in the top layer, above the widget', () => {
+    const closest = Element.prototype.closest;
+    vi.spyOn(Element.prototype, 'closest').mockImplementation(function (this: Element, selector: string) {
+      return selector.includes(':modal') && this.getAttribute('data-testid') === 'link-e'
+        ? this
+        : closest.call(this, selector);
+    });
+    const { tab, view } = setup();
+    act(() => view.getByTestId('link-e').focus());
+    frame();
+    expect(dy(tab)).toBe('');
+  });
+
+  it('knows a stacking context caps its children: a z-index of 9999 inside a context at 1 is below the widget', () => {
+    const { tab, view } = setup();
+    act(() => view.getByTestId('link-f').focus());
+    frame();
+    expect(dy(tab)).toBe('-38px');
+  });
+
+  it('skips a control whose outermost stacking context is above the widget, whatever z-index it has itself', () => {
+    const { tab, view } = setup();
+    const above = view.getByTestId('above');
+    const inner = document.createElement('a');
+    inner.href = '#g';
+    inner.style.cssText = 'position:relative;z-index:1';
+    above.append(inner);
+    vi.spyOn(inner, 'getClientRects').mockImplementation(() => [rectOf(scene.link)] as unknown as DOMRectList);
+    act(() => inner.focus());
     frame();
     expect(dy(tab)).toBe('');
   });
