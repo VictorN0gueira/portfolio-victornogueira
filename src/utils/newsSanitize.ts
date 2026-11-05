@@ -65,7 +65,9 @@ export function parseNewsDate(value: unknown): Date | null {
   const match = dayOnly ?? withTime;
   if (!match || !isRealDay(Number(match[1]), Number(match[2]), Number(match[3]))) return null;
 
-  const date = dayOnly ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : new Date(value.replace(' ', 'T'));
+  const date = dayOnly
+    ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+    : new Date(value.replace(' ', 'T'));
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -96,8 +98,15 @@ export function sanitizeArticle(raw: unknown): NewsArticle | null {
   };
 }
 
-/** The articles of a list of unknown shape that pass sanitizeArticle. A value that is not a list gives an empty list. */
+/**
+ * The articles of a list of unknown shape that pass sanitizeArticle, each address once (the first article of it stays: the
+ * cards of the list are keyed by it). A value that is not a list gives an empty list.
+ */
 export function sanitizeArticles(raw: unknown): NewsArticle[] {
   if (!Array.isArray(raw)) return [];
-  return raw.map(sanitizeArticle).filter((article): article is NewsArticle => article !== null);
+  const seen = new Set<string>();
+  return raw
+    .map(sanitizeArticle)
+    .filter((article): article is NewsArticle => article !== null)
+    .filter((article) => !seen.has(article.url) && Boolean(seen.add(article.url)));
 }

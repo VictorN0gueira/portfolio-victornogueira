@@ -209,6 +209,32 @@ describe('getNewsArticles says why a source failed', () => {
     expect(result.failures?.find((failure) => failure.source === 'tabnews')?.reason).toMatch(/invalid url/i);
   });
 
+  it('records the TabNews addresses that are not addresses once, with a count, not once per article', async () => {
+    const items = Array.from({ length: 6 }, (_, index) =>
+      tabNewsItem({ slug: `s${index}`, title: `IA numero ${index}`, source_url: 'not an address' }),
+    );
+    stubSources({ edge: down(), devTo: down(), tabNews: () => jsonResponse(items) });
+
+    const result = await getNewsArticles();
+
+    expect(result.articles).toHaveLength(6);
+    const notes = result.failures?.filter((failure) => failure.source === 'tabnews') ?? [];
+    expect(notes).toHaveLength(1);
+    expect(notes[0].count).toBe(6);
+  });
+
+  it('records a cache that cannot be read once, even when it cannot be removed either', async () => {
+    localStorage.setItem(CACHE_KEY, 'this is not json');
+    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    });
+    stubSources({ edge: () => jsonResponse({ articles: [edgeArticle('Do edge')] }), devTo: down(), tabNews: down() });
+
+    const result = await getNewsArticles();
+
+    expect(result.failures?.filter((failure) => failure.source === 'cache')).toHaveLength(1);
+  });
+
   it('keeps the data: the fixed list and the answers are what they were, with the field added beside them', async () => {
     stubSources({ edge: down(), devTo: down(), tabNews: down() });
 
@@ -216,5 +242,49 @@ describe('getNewsArticles says why a source failed', () => {
 
     expect(Object.keys(result).sort()).toEqual(['articles', 'failures', 'origin', 'source']);
     expect(result.source).toBe('fallback');
+  });
+});
+
+describe('getNewsArticles when the visitor asks for a refresh', () => {
+  const SAVED = [edgeArticle('Da lista salva')];
+
+  function saveList(timestamp: number): void {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ articles: SAVED, timestamp, source: 'edge-function' }));
+  }
+
+  it('asks the sources even though the saved list is still valid', async () => {
+    saveList(Date.now());
+    stubSources({ edge: () => jsonResponse({ articles: [edgeArticle('Da fonte')] }), devTo: down(), tabNews: down() });
+
+    const result = await getNewsArticles({ forceRefresh: true });
+
+    expect(result.origin).toBe('live');
+    expect(result.articles.map((item) => item.title)).toEqual(['Da fonte']);
+  });
+
+  it('keeps the saved list, and says so, when every source fails: the fixed list does not replace it', async () => {
+    saveList(Date.now());
+    stubSources({ edge: down(), devTo: offline(), tabNews: offline() });
+
+    const result = await getNewsArticles({ forceRefresh: true });
+
+    expect(result.origin).toBe('stale-browser-cache');
+    expect(result.articles.map((item) => item.title)).toEqual(['Da lista salva']);
+    expect(localStorage.getItem(CACHE_KEY)).not.toBeNull();
+  });
+
+  it('is the fixed list only when there is no saved list at all', async () => {
+    stubSources({ edge: down(), devTo: offline(), tabNews: offline() });
+
+    const result = await getNewsArticles({ forceRefresh: true });
+
+    expect(result.origin).toBe('fallback');
+  });
+
+  it('still answers from a valid saved list when the visitor did not ask for a refresh', async () => {
+    saveList(Date.now());
+    stubSources({ edge: offline(), devTo: offline(), tabNews: offline() });
+
+    expect((await getNewsArticles()).origin).toBe('browser-cache');
   });
 });

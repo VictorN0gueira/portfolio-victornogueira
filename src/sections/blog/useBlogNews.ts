@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { clearNewsCache, getNewsArticles, type NewsArticle, type NewsOrigin } from '../../utils/newsService';
+import { getNewsArticles, type NewsArticle, type NewsOrigin } from '../../utils/newsService';
 import { blogCopy } from './blogCopy';
 
 interface BlogNews {
@@ -8,7 +8,7 @@ interface BlogNews {
   error: string | null;
   /** Where the list came from, as the browser knows it. Null until the first answer. */
   origin: NewsOrigin | null;
-  /** Drops the cache and asks the sources again. While a load runs the call does nothing: one load at a time. */
+  /** Asks the sources again. The saved list stays until a source gives a new one. While a load runs the call does nothing: one load at a time. */
   refresh: () => void;
 }
 
@@ -25,9 +25,9 @@ export function useBlogNews(): BlogNews {
 
   // The answer of the sources goes into the state only after the await, so the first load (the state starts as loading)
   // never sets state inside the effect that starts it.
-  const loadNews = useCallback(async (signal?: AbortSignal) => {
+  const loadNews = useCallback(async (signal: AbortSignal, forceRefresh: boolean) => {
     try {
-      const result = await getNewsArticles();
+      const result = await getNewsArticles({ forceRefresh });
       if (signal?.aborted) return;
       setArticles(result.articles);
       setOrigin(result.origin);
@@ -40,12 +40,15 @@ export function useBlogNews(): BlogNews {
   }, []);
 
   const currentLoad = useRef<AbortController | null>(null);
-  const startLoad = useCallback(() => {
-    currentLoad.current?.abort();
-    const controller = new AbortController();
-    currentLoad.current = controller;
-    void loadNews(controller.signal);
-  }, [loadNews]);
+  const startLoad = useCallback(
+    (forceRefresh: boolean) => {
+      currentLoad.current?.abort();
+      const controller = new AbortController();
+      currentLoad.current = controller;
+      void loadNews(controller.signal, forceRefresh);
+    },
+    [loadNews],
+  );
 
   // The refresh button stays in the tab order while a load runs (a disabled button that held the focus would drop it to the
   // body, WCAG 2.4.3): it is aria-disabled, and the press does nothing here.
@@ -53,14 +56,13 @@ export function useBlogNews(): BlogNews {
     if (isLoading) return;
     setIsLoading(true);
     setError(null);
-    clearNewsCache();
-    startLoad();
+    startLoad(true);
   }, [isLoading, startLoad]);
 
   useEffect(() => {
     // The state is set after the await (the first render is already loading), never in the body of this effect.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    startLoad();
+    startLoad(false);
     return () => currentLoad.current?.abort();
   }, [startLoad]);
 
