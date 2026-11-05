@@ -27,7 +27,6 @@ import {
 } from '../utils/newsService';
 import { MAIN_CONTENT_ID, SkipLink } from './layout/SkipLink';
 import {
-  CAT_LABELS,
   NEW_TAB_HINT_ID,
   cardDescribedBy,
   describeDataSource,
@@ -37,21 +36,14 @@ import {
   type CatFilter,
   type LangFilter,
 } from '../sections/blog/blogMeta';
+import { CAT_LABELS, LANG_LABELS, blogCopy, countLabel } from '../sections/blog/blogCopy';
 import { NewTabHint } from './ui/NewTabHint';
 
-const LOADING_LABEL = 'Carregando artigos';
 // The pills sit on a cover that is somebody else's picture, light or dark: they carry their own opaque dark surface.
 const TAG_PILL = 'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-vn-black/80 border border-white/20 shadow-lg';
 
 const FALLBACK_IMAGE =
   'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400" fill="%2318181b"%3E%3Crect width="800" height="400"/%3E%3Ctext x="400" y="200" fill="%23a1a1aa" font-family="sans-serif" font-size="24" text-anchor="middle" alignment-baseline="middle"%3EImagem indispon%C3%ADvel%3C/text%3E%3C/svg%3E';
-
-// The flags are decoration: the name of a filter is its word.
-const LANG_LABELS: Record<LangFilter, { text: string; flag?: string; lang?: string }> = {
-  all: { text: 'Todos idiomas' },
-  pt:  { text: 'Português', flag: '🇧🇷' },
-  en:  { text: 'English', flag: '🇺🇸', lang: 'en' },
-};
 
 const FILTER_CHIP_BASE = 'px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all vn-focus-ring';
 const FILTER_CHIP_ON = 'bg-white text-black';
@@ -157,7 +149,7 @@ function FeaturedCard({ article, isFixedList }: { article: NewsArticle; isFixedL
           </span>
           {novo && (
             <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-vn-black bg-vn-accent shadow-lg">
-              NOVO
+              {blogCopy.card.isNew}
             </span>
           )}
         </div>
@@ -168,7 +160,7 @@ function FeaturedCard({ article, isFixedList }: { article: NewsArticle; isFixedL
         <div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-[9px] font-bold uppercase tracking-widest text-zinc-400 mb-5">
             <Sparkles className="w-3 h-3 text-vn-accent" />
-            Destaque
+            {blogCopy.card.featured}
           </span>
 
           <h3 id={titleId} lang={textLang} className="text-2xl md:text-3xl font-bold text-white font-display leading-tight mb-4 group-hover:text-zinc-100 transition-colors line-clamp-3">
@@ -176,7 +168,7 @@ function FeaturedCard({ article, isFixedList }: { article: NewsArticle; isFixedL
           </h3>
 
           <p id={summaryId} lang={textLang} className="text-sm text-zinc-400 leading-relaxed line-clamp-3 font-light">
-            {article.description || 'Clica para ler o artigo completo.'}
+            {article.description || blogCopy.card.noSummary}
           </p>
         </div>
 
@@ -190,7 +182,7 @@ function FeaturedCard({ article, isFixedList }: { article: NewsArticle; isFixedL
             )}
             <span className="flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5" />
-              {estimateReadTime(article)} leitura
+              {estimateReadTime(article)} {blogCopy.card.readTime}
             </span>
             <span className="flex items-center gap-1.5">
               <Newspaper className="w-3.5 h-3.5" />
@@ -199,7 +191,7 @@ function FeaturedCard({ article, isFixedList }: { article: NewsArticle; isFixedL
           </div>
 
           <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-zinc-400 group-hover:text-white transition-colors">
-            Ler artigo
+            {blogCopy.card.read}
             <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </span>
         </div>
@@ -264,7 +256,7 @@ function NewsCard({ article, index, isFixedList }: { article: NewsArticle; index
 
         {novo && (
           <span id={newId} className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-vn-black bg-vn-accent shadow-lg">
-            NOVO
+            {blogCopy.card.isNew}
           </span>
         )}
 
@@ -281,7 +273,7 @@ function NewsCard({ article, index, isFixedList }: { article: NewsArticle; index
         </h3>
 
         <p id={summaryId} lang={textLang} className="text-sm text-zinc-400 leading-relaxed line-clamp-3 mb-auto font-light">
-          {article.description || 'Clica para ler o artigo completo.'}
+          {article.description || blogCopy.card.noSummary}
         </p>
 
         <div id={metaId} className="flex items-center justify-between mt-5 pt-4 border-t border-white/[0.06]">
@@ -334,7 +326,7 @@ export default function BlogPage() {
       setOrigin(result.origin);
     } catch (err) {
       if (signal?.aborted) return;
-      setError(err instanceof Error ? err.message : 'Erro ao carregar notícias');
+      setError(err instanceof Error ? err.message : blogCopy.states.errorFallback);
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
@@ -426,7 +418,7 @@ export default function BlogPage() {
             <div className="flex items-center gap-3 mb-8 flex-wrap">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08]">
                 <Sparkles className="w-4 h-4 text-vn-accent" />
-                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Blog</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">{blogCopy.kicker}</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08]">
                 <Globe className="w-4 h-4 text-vn-accent" />
@@ -442,7 +434,7 @@ export default function BlogPage() {
             </h1>
 
             <p className="text-lg md:text-xl text-zinc-400 font-light leading-relaxed max-w-2xl mb-10">
-              A gente junta artigos sobre inteligência artificial e automação, em português e em inglês. Dá para filtrar por idioma e por tópico.
+              {blogCopy.lead}
             </p>
 
             <div className="flex items-center gap-3 flex-wrap">
@@ -453,7 +445,7 @@ export default function BlogPage() {
                 className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.1] hover:border-white/[0.15] transition-all text-sm text-zinc-300 hover:text-white aria-disabled:opacity-50 aria-disabled:cursor-not-allowed vn-focus-ring"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                Atualizar
+                {blogCopy.refresh}
               </button>
               <p role="status" className="text-xs text-vn-gray-light max-w-md">
                 {origin && !loading ? describeDataSource(origin) : ''}
@@ -479,19 +471,19 @@ export default function BlogPage() {
           <div className="max-w-7xl mx-auto space-y-4">
             {/* Search */}
             <div role="search" className="relative max-w-md">
-              <label htmlFor="search" className="sr-only">Buscar artigos</label>
+              <label htmlFor="search" className="sr-only">{blogCopy.filters.searchLabel}</label>
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-vn-gray-light pointer-events-none" />
               <input
                 id="search"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Buscar artigos..."
+                placeholder={blogCopy.filters.searchPlaceholder}
                 className="w-full pl-11 pr-11 py-3 rounded-2xl bg-white/[0.05] border border-white/[0.08] focus:border-white/20 vn-focus-ring text-sm text-white placeholder:text-vn-gray-mid transition-all"
               />
               {searchQuery && (
                 <button
                   type="button"
-                  aria-label="Limpar busca"
+                  aria-label={blogCopy.filters.clearSearch}
                   onClick={() => setSearchQuery('')}
                   className="absolute right-1.5 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-full text-vn-gray-light hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-white"
                 >
@@ -501,7 +493,7 @@ export default function BlogPage() {
             </div>
 
             {/* Filtro idioma */}
-            <div role="group" aria-label="Filtrar por idioma" className="flex gap-2 overflow-x-auto pt-1 pb-1 md:overflow-visible scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0 md:flex-wrap">
+            <div role="group" aria-label={blogCopy.filters.languageGroup} className="flex gap-2 overflow-x-auto pt-1 pb-1 md:overflow-visible scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0 md:flex-wrap">
               {(Object.keys(LANG_LABELS) as LangFilter[]).map(f => (
                 <button
                   key={f}
@@ -517,7 +509,7 @@ export default function BlogPage() {
             </div>
 
             {/* Filtro tópico */}
-            <div role="group" aria-label="Filtrar por tópico" className="flex gap-2 overflow-x-auto pt-1 pb-1 md:overflow-visible scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0 md:flex-wrap">
+            <div role="group" aria-label={blogCopy.filters.topicGroup} className="flex gap-2 overflow-x-auto pt-1 pb-1 md:overflow-visible scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0 md:flex-wrap">
               {(Object.keys(CAT_LABELS) as CatFilter[]).map(f => (
                 <button
                   key={f}
@@ -536,14 +528,14 @@ export default function BlogPage() {
             <div className="flex items-center gap-3 has-[p:empty]:-mt-4">
               <p role="status" className="text-xs text-vn-gray-light uppercase tracking-widest">
                 {hasActiveFilters &&
-                  `${filteredArticles.length} artigo${filteredArticles.length !== 1 ? 's' : ''} encontrado${filteredArticles.length !== 1 ? 's' : ''}`}
+                  countLabel(filteredArticles.length)}
               </p>
               {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
                   className="text-[10px] text-vn-gray-light hover:text-zinc-300 uppercase tracking-widest underline underline-offset-2 transition-colors"
                 >
-                  Limpar filtros
+                  {blogCopy.filters.clear}
                 </button>
               )}
             </div>
@@ -563,15 +555,15 @@ export default function BlogPage() {
                 <div className="w-20 h-20 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
                   <AlertTriangle className="w-8 h-8 text-red-400" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-2 font-display">Ops! Algo deu errado</h2>
+                <h2 className="text-xl font-bold text-white mb-2 font-display">{blogCopy.states.errorTitle}</h2>
                 <p className="text-zinc-400 mb-8 max-w-md text-sm leading-relaxed">{error}</p>
               </m.div>
             )}
 
             {/* Loading */}
             {loading && (
-              <m.div key="loading" role="status" aria-label={LOADING_LABEL} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <span className="sr-only">{LOADING_LABEL}</span>
+              <m.div key="loading" role="status" aria-label={blogCopy.loadingLabel} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <span className="sr-only">{blogCopy.loadingLabel}</span>
                 <div aria-hidden="true">
                   <SkeletonFeatured />
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -589,8 +581,8 @@ export default function BlogPage() {
                 <div className="w-20 h-20 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-6">
                   <Newspaper className="w-8 h-8 text-vn-gray-light" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-2 font-display">Nenhuma notícia encontrada</h2>
-                <p className="text-zinc-400 text-sm">Tenta atualizar em alguns instantes.</p>
+                <h2 className="text-xl font-bold text-white mb-2 font-display">{blogCopy.states.emptyTitle}</h2>
+                <p className="text-zinc-400 text-sm">{blogCopy.states.emptyHint}</p>
               </m.div>
             )}
 
@@ -600,13 +592,13 @@ export default function BlogPage() {
                 className="flex flex-col items-center py-24 text-center gap-4"
               >
                 <Search className="w-10 h-10 text-vn-gray-mid" />
-                <p className="text-white font-bold text-xl font-display">Nenhum artigo encontrado</p>
-                <p className="text-vn-gray-light text-sm">Tenta outros filtros ou limpa a busca.</p>
+                <p className="text-white font-bold text-xl font-display">{blogCopy.states.noMatchTitle}</p>
+                <p className="text-vn-gray-light text-sm">{blogCopy.states.noMatchHint}</p>
                 <button
                   onClick={clearFilters}
                   className="px-6 py-2.5 rounded-full border border-white/10 text-xs text-zinc-400 hover:text-white hover:border-white/20 transition-all"
                 >
-                  Limpar filtros
+                  {blogCopy.filters.clear}
                 </button>
               </m.div>
             )}
@@ -614,7 +606,7 @@ export default function BlogPage() {
             {/* Artigos com featured */}
             {!loading && !error && filteredArticles.length > 0 && (
               <m.div key="articles" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <h2 className="sr-only">Artigos</h2>
+                <h2 className="sr-only">{blogCopy.listHeading}</h2>
                 <NewTabHint id={NEW_TAB_HINT_ID} />
                 <FeaturedCard article={filteredArticles[0]} isFixedList={origin === 'fallback'} />
                 {filteredArticles.length > 1 && (
@@ -638,7 +630,7 @@ export default function BlogPage() {
           <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mb-12" />
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <p className="text-xs text-vn-gray-light uppercase tracking-widest">
-              Os artigos vêm de sites de terceiros e os links levam aos sites de quem publicou.
+              {blogCopy.thirdPartyNote}
             </p>
             <Link
               to="/"

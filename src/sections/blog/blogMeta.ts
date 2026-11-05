@@ -1,4 +1,5 @@
 import { detectCategory, type NewsArticle, type NewsOrigin } from '../../utils/newsService';
+import { CAT_LABELS, blogCopy } from './blogCopy';
 
 /** The one hint that tells a screen reader every article link opens a new tab (see NewTabHint). */
 export const NEW_TAB_HINT_ID = 'blog-new-tab-hint';
@@ -8,16 +9,6 @@ const WORDS_PER_MINUTE = 200;
 
 export type LangFilter = 'all' | 'pt' | 'en';
 export type CatFilter = 'all' | 'ia' | 'automação' | 'n8n' | 'agentes' | 'llms' | 'ml';
-
-export const CAT_LABELS: Record<CatFilter, string> = {
-  all: 'Todos tópicos',
-  ia: 'IA',
-  automação: 'Automação',
-  n8n: 'N8N',
-  agentes: 'Agentes',
-  llms: 'LLMs',
-  ml: 'Machine Learning',
-};
 
 /**
  * The name of a card link is the title of the article. The rest of the card (language and topic, summary, time and source)
@@ -32,10 +23,10 @@ export function cardDescribedBy(...ids: Array<string | false>): string {
  * It goes by the origin the browser knows (see NewsOrigin), never by the source name a server reports, which can be any string.
  */
 export function describeDataSource(origin: NewsOrigin): string {
-  if (origin === 'browser-cache') return 'Lista salva neste navegador';
-  if (origin === 'stale-browser-cache') return 'As fontes não responderam. Esta é a última lista salva neste navegador.';
-  if (origin === 'fallback') return 'As fontes não responderam. Esta é uma lista fixa de artigos.';
-  return 'Lista carregada agora';
+  if (origin === 'browser-cache') return blogCopy.dataSource.browserCache;
+  if (origin === 'stale-browser-cache') return blogCopy.dataSource.staleBrowserCache;
+  if (origin === 'fallback') return blogCopy.dataSource.fallback;
+  return blogCopy.dataSource.live;
 }
 
 export function isNew(publishedAt: string): boolean {
