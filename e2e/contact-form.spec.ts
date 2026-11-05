@@ -10,6 +10,7 @@ import {
   type N8nAnswer,
   type NetworkGuard,
 } from './n8nGuard';
+import { takeFocusFromHashGuard } from './hashFocus';
 import { enableLargeFont } from './homeSupport';
 
 // Where the form lives: the final call to action of the home. The legacy /contato page renders the same form until it
@@ -48,6 +49,7 @@ async function openForm(page: Page): Promise<Locator> {
   const form = formOf(page);
   await form.scrollIntoViewIfNeeded();
   await expect(form).toBeVisible();
+  await takeFocusFromHashGuard(page);
   return form;
 }
 

@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { takeFocusFromHashGuard } from './hashFocus';
 import { N8N_WEBHOOK_PATTERN, expect, fulfillOk, n8nRoute, test } from './n8nGuard';
 
 // The service list and the focus moves of the contact form, split from contact-form.spec.ts (webhooks, number
@@ -24,6 +25,7 @@ async function openForm(page: Page): Promise<Locator> {
   const form = formOf(page);
   await form.scrollIntoViewIfNeeded();
   await expect(form).toBeVisible();
+  await takeFocusFromHashGuard(page);
   return form;
 }
 
