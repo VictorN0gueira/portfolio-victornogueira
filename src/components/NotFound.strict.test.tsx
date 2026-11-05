@@ -24,6 +24,8 @@ describe('NotFound title under StrictMode (effects run twice)', () => {
       vi.advanceTimersByTime(SCRAMBLE_TOTAL_MS);
     });
 
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(TITLE);
+    const shown = screen.getByRole('heading', { level: 1 }).querySelector('[data-title-display]')?.textContent;
+    expect(shown).toBe(TITLE);
+    expect(screen.getByRole('heading', { level: 1, name: TITLE })).toBeInTheDocument();
   });
 });

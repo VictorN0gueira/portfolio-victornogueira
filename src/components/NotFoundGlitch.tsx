@@ -1,6 +1,6 @@
 const NUMBER = '404';
 // One size for the three layers, so they sit exactly on each other: from a 280px phone to a 2560px monitor.
-const NUMBER_CLASSES = 'font-display font-bold leading-none text-[length:clamp(5rem,1rem+30vw,16rem)]';
+const NUMBER_CLASSES = 'font-display font-bold leading-none text-[length:clamp(5rem,min(1rem+30vw,32dvh),16rem)]';
 
 /**
  * The 404 as a decoration (aria-hidden: the h1 says it). The base is chrome text. Two copies, one white and one mid gray,
