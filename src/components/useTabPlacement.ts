@@ -125,9 +125,10 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
   const applyPanel = useCallback(
     (rect: Box, side: TabSide) => {
       const placer = placerRef.current;
-      // At the default place the box of the panel is display: contents: it has no size and is not placed.
-      if (!placer || placer.offsetWidth === 0) return;
       const cache = dragCache.current;
+      // At the default place the box of the panel is display: contents: it has no size and is not placed. Once a drag has
+      // measured the panel the answer is known, so a pointer move does not read the layout again.
+      if (!placer || (!cache?.panel && placer.offsetWidth === 0)) return;
       const { viewport, insets } = cache?.view ?? readFloatingView();
       const panel = cache?.panel ?? { width: placer.offsetWidth, height: placer.offsetHeight };
       if (cache) cache.panel = panel;

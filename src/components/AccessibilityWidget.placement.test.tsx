@@ -93,11 +93,15 @@ describe('the panel placed beside a moved tab', () => {
 
     const getComputedStyle = vi.spyOn(window, 'getComputedStyle');
     const createElement = vi.spyOn(document, 'createElement');
+    // The width of the panel was read to measure it; once it is cached no pointer move reads it again.
+    const offsetWidth = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get');
+    offsetWidth.mockClear();
     for (let step = 0; step < 8; step += 1) {
       fireEvent.pointerMove(trigger, { clientX: 970 - step * 10, clientY: 630 - step * 10, pointerId: 1, pointerType: 'touch' });
     }
 
     expect(getComputedStyle).not.toHaveBeenCalled();
     expect(createElement).not.toHaveBeenCalled();
+    expect(offsetWidth).not.toHaveBeenCalled();
   });
 });
