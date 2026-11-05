@@ -32,16 +32,19 @@ export interface ChoicePillHandoff {
   isPress: boolean;
 }
 
-/** The press that opened the list has ended: one task later the browser is done with its mouse events. */
-const PRESS_END_EVENTS = ['pointerup', 'pointercancel'] as const;
+/**
+ * After the pointer goes up the browser may still send the mouse events of a tap: on a touch screen they come as a task
+ * of their own, a while after the pointer events. The check stays armed this long for them.
+ */
+const COMPAT_MOUSE_WAIT_MS = 500;
 
 /**
- * After a list that opened in the middle of a press: when the press ends and the focus is nowhere (the browser dropped
- * it), the chosen option takes it again. A focus the visitor moved on purpose is left alone.
+ * After a list that opened in the middle of a press: when the press ends, and again after the mouse events that follow
+ * it, the chosen option takes the focus if the browser dropped it (nothing has the focus). A focus the visitor moved on
+ * purpose is left alone, and a list that has closed since has no option left to focus, so the call does nothing then.
  */
 function useFocusAfterPress(isPress: boolean, focusOption: () => void) {
-  // The latest focus function, so the listener below needs no dependency on it. A list that has closed since has no
-  // options left to focus, so the call does nothing then.
+  // The latest focus function, so the listeners below need no dependency on it.
   const latestFocusOption = useRef(focusOption);
   useEffect(() => {
     latestFocusOption.current = focusOption;
@@ -49,17 +52,34 @@ function useFocusAfterPress(isPress: boolean, focusOption: () => void) {
 
   useEffect(() => {
     if (!isPress) return undefined;
-    let timer: number | undefined;
-    const restore = () => {
-      timer = window.setTimeout(() => {
+    const timers: number[] = [];
+    const listeners: Array<[string, () => void]> = [];
+    const later = (task: () => void, delay: number) => {
+      timers.push(window.setTimeout(task, delay));
+    };
+    const stopListening = () => {
+      for (const [type, listener] of listeners) document.removeEventListener(type, listener, true);
+      listeners.length = 0;
+    };
+    const restoreIfLost = () =>
+      later(() => {
         const active = document.activeElement;
         if (!active || active === document.body) latestFocusOption.current();
       }, 0);
+    // pointerup may be followed by the mouse events of a tap, so it keeps listening; mouseup and pointercancel are the end.
+    const onPointerUp = () => {
+      restoreIfLost();
+      later(stopListening, COMPAT_MOUSE_WAIT_MS);
     };
-    for (const type of PRESS_END_EVENTS) document.addEventListener(type, restore, { capture: true, once: true });
+    const onEnd = () => {
+      restoreIfLost();
+      stopListening();
+    };
+    listeners.push(['pointerup', onPointerUp], ['pointercancel', onEnd], ['mouseup', onEnd]);
+    for (const [type, listener] of listeners) document.addEventListener(type, listener, true);
     return () => {
-      for (const type of PRESS_END_EVENTS) document.removeEventListener(type, restore, { capture: true });
-      window.clearTimeout(timer);
+      stopListening();
+      for (const id of timers) window.clearTimeout(id);
     };
   }, [isPress]);
 }

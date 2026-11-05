@@ -209,6 +209,50 @@ describe('useTabDrag', () => {
     expect(spies.onClick).toHaveBeenCalledTimes(1);
   });
 
+  it('does not swallow a later click after a pointercancel, which never has a release', () => {
+    const { spies, button } = setup();
+
+    fireEvent.pointerDown(button, point(360, 620, 1, 'mouse'));
+    fireEvent.pointerMove(button, point(200, 620, 1, 'mouse'));
+    fireEvent.pointerCancel(button);
+    vi.advanceTimersByTime(250);
+    fireEvent.click(button);
+
+    expect(spies.suppressed).toEqual([false]);
+    expect(spies.onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps waiting for the finger that was cancelled when another finger touches the tab and lifts first', () => {
+    const { spies, button } = setup();
+
+    fireEvent.pointerDown(button, point(360, 620, 1));
+    fireEvent.pointerMove(button, point(200, 620, 1));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.pointerDown(button, point(350, 610, 2));
+    fireEvent.pointerUp(button, point(350, 610, 2));
+    fireEvent.pointerUp(button, point(200, 620, 1));
+    fireEvent.click(button);
+
+    expect(spies.suppressed).toEqual([true]);
+    expect(spies.onClick).not.toHaveBeenCalled();
+  });
+
+  it('lets a new tap through after a cancelled drag whose pointer was never released', () => {
+    const { spies, button } = setup();
+
+    fireEvent.pointerDown(button, point(360, 620, 1, 'mouse'));
+    fireEvent.pointerMove(button, point(200, 620, 1, 'mouse'));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    // The release got lost (the window lost the pointer): the next press starts clean.
+    fireEvent.pointerDown(button, point(360, 620, 1, 'mouse'));
+    fireEvent.pointerUp(button, point(360, 620, 1, 'mouse'));
+    vi.advanceTimersByTime(250);
+    fireEvent.click(button);
+
+    expect(spies.suppressed).toEqual([false]);
+    expect(spies.onClick).toHaveBeenCalledTimes(1);
+  });
+
   it('ignores another finger and the right mouse button', () => {
     const { spies, button } = setup();
 

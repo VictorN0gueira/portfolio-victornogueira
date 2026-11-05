@@ -12,6 +12,17 @@ const OPEN_KEYS = new Set(['ArrowDown', 'ArrowUp']);
 const PRIMARY_BUTTON = 0;
 const NOTHING_RECEIVED: ChoicePillHandoff = { isOpen: false, hasFocus: false, isPress: false };
 
+/** Calls `onEnd` once, when the pointer that is down now goes up or is cancelled, wherever it is released. */
+function onPressEnd(onEnd: () => void) {
+  const end = () => {
+    document.removeEventListener('pointerup', end, true);
+    document.removeEventListener('pointercancel', end, true);
+    onEnd();
+  };
+  document.addEventListener('pointerup', end, true);
+  document.addEventListener('pointercancel', end, true);
+}
+
 /**
  * A pill that opens a listbox of options, written to be in the entry without the popover behind it.
  * Until the popover chunk has arrived it is a plain button of the same markup and size as the real pill (same classes,
@@ -52,6 +63,9 @@ export function ChoicePill<T extends string | number>(props: ChoicePillProps<T>)
     if (event.button === PRIMARY_BUTTON) {
       wantsOpen.current = true;
       isPressing.current = true;
+      onPressEnd(() => {
+        isPressing.current = false;
+      });
     }
     load();
   };
@@ -71,12 +85,8 @@ export function ChoicePill<T extends string | number>(props: ChoicePillProps<T>)
       className={cn(TRIGGER_CLASSES, className)}
       onPointerEnter={load}
       onPointerDown={handlePointerDown}
-      onPointerUp={() => {
-        isPressing.current = false;
-      }}
       onPointerCancel={() => {
         wantsOpen.current = false;
-        isPressing.current = false;
       }}
       onFocus={() => {
         hasFocus.current = true;
