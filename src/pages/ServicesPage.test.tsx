@@ -1,8 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { homeCopy } from '../data/homeCopy';
 import { combos, services } from '../data/services';
 import { servicesCopy } from '../data/servicesCopy';
+import { serviceTermLabel } from '../data/sharedCopy';
 import { routeMetaFor } from '../seo/routeMeta';
 import { findAccentElements } from '../test/accent';
 import { stubMatchMedia } from '../test/matchMedia';
@@ -21,7 +21,7 @@ describe('ServicesPage', () => {
     stubMatchMedia();
   });
 
-  it('scrolls to the card named by the hash: the page is a lazy route, so the browser cannot find the anchor by itself', () => {
+  it('scrolls to the card named by the hash: the lazy route has no anchor for the browser to find', () => {
     renderWithProviders(<ServicesPage />, { route: `/servicos#${HASH_SLUG}` });
 
     expect(scrollToIdWhenMounted).toHaveBeenCalledWith(HASH_SLUG, { focus: 'heading' });
@@ -33,14 +33,16 @@ describe('ServicesPage', () => {
     expect(scrollToIdWhenMounted).not.toHaveBeenCalled();
   });
 
-  it('takes its head from the route metadata: title, description, canonical, one breadcrumb and one Service per service', async () => {
+  it('takes its head from the route metadata: title, description, canonical and the structured data', async () => {
     renderWithProviders(<ServicesPage />, { route: '/servicos' });
     const meta = routeMetaFor('/servicos')!;
 
     await waitFor(() => expect(document.title).toBe(meta.title));
     expect(document.querySelector('meta[name="description"]')).toHaveAttribute('content', meta.description);
     expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute('href', 'https://vnone.com.br/servicos');
-    const types = Array.from(document.querySelectorAll('script[type="application/ld+json"]')).map((node) => JSON.parse(node.textContent ?? '{}')['@type']);
+    const types = Array.from(document.querySelectorAll('script[type="application/ld+json"]')).map(
+      (node) => JSON.parse(node.textContent ?? '{}')['@type'],
+    );
     expect(types.filter((type) => type === 'BreadcrumbList')).toHaveLength(1);
     expect(types.filter((type) => type === 'Service')).toHaveLength(services.length);
   });
@@ -65,9 +67,11 @@ describe('ServicesPage', () => {
     }
   });
 
-  it('stacks the sections in the tones of the plan: cream hero, white grid, black combos, white FAQ, black closing band', () => {
+  it('stacks the sections cream, white, black, white and black: hero, grid, combos, FAQ, closing band', () => {
     const { container } = renderWithProviders(<ServicesPage />, { route: '/servicos' });
-    const tones = Array.from(container.querySelectorAll('section[data-tone]')).map((section) => section.getAttribute('data-tone'));
+    const tones = Array.from(container.querySelectorAll('section[data-tone]')).map((section) =>
+      section.getAttribute('data-tone'),
+    );
 
     expect(tones).toEqual(['cream', 'white', 'black', 'white', 'black']);
   });
@@ -90,7 +94,7 @@ describe('ServicesPage', () => {
   it('reads "Prazo estimado" for every lead time', () => {
     renderWithProviders(<ServicesPage />, { route: '/servicos' });
 
-    expect(screen.getAllByText(`${homeCopy.services.term}:`, { exact: false })).toHaveLength(services.length);
+    expect(screen.getAllByText(`${serviceTermLabel}:`, { exact: false })).toHaveLength(services.length);
   });
 
   it('speaks as "a gente" and shows no price and no percentage', () => {
@@ -146,7 +150,7 @@ describe('ServicesPage', () => {
     }
   });
 
-  it('uses no italic, no dark: variant and no color family outside the palette, and at most one accent per section', () => {
+  it('uses no italic, no dark: variant, no color outside the palette and at most one accent per section', () => {
     const { container } = renderWithProviders(<ServicesPage />, { route: '/servicos' });
 
     expect(container.innerHTML).not.toMatch(FORBIDDEN_CLASSES);

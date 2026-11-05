@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { homeCopy } from '../../data/homeCopy';
 import { services } from '../../data/services';
+import { serviceTermLabel } from '../../data/sharedCopy';
 import { stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import { ServiceCard } from './ServiceCard';
@@ -48,8 +48,12 @@ describe('ServiceCard', () => {
     renderWithProviders(<ServiceCard service={service} />);
     const list = screen.getByRole('list');
 
-    expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual(service.inclui);
-    expect(screen.getByText(`${homeCopy.services.term}:`, { exact: false })).toHaveClass('sr-only');
+    expect(
+      within(list)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(service.inclui);
+    expect(screen.getByText(`${serviceTermLabel}:`, { exact: false })).toHaveClass('sr-only');
     expect(screen.getByText(service.prazo, { exact: false })).toBeVisible();
   });
 

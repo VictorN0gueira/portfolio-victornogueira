@@ -3,7 +3,7 @@ import { Check, Clock } from 'lucide-react';
 import { Heading } from '../../components/ui/Heading';
 import { Kicker } from '../../components/ui/Kicker';
 import { SpotlightCard } from '../../components/ui/SpotlightCard';
-import { homeCopy } from '../../data/homeCopy';
+import { serviceTermLabel } from '../../data/sharedCopy';
 import type { Service } from '../../data/services';
 import { cn } from '../../lib/utils';
 import { SERVICE_SUBGRID_CLASSES } from './serviceCardLayout';
@@ -12,7 +12,9 @@ import { SERVICE_SUBGRID_CLASSES } from './serviceCardLayout';
 // inside it draws the surface (radius, border, background). min-w-0 lets the card shrink below its longest word, so
 // nothing widens a 280px page.
 const ARTICLE_CLASSES = `flex min-w-0 flex-1 ${SERVICE_SUBGRID_CLASSES}`;
-const SURFACE_CLASSES = `flex w-full min-w-0 flex-col rounded-card border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6 ${SERVICE_SUBGRID_CLASSES}`;
+const SURFACE_LOOK_CLASSES =
+  'flex w-full min-w-0 flex-col rounded-card border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6';
+const SURFACE_CLASSES = `${SURFACE_LOOK_CLASSES} ${SERVICE_SUBGRID_CLASSES}`;
 // Under the fixed header when /servicos#slug scrolls here.
 const ANCHOR_CLASSES = 'scroll-mt-28';
 
@@ -54,7 +56,7 @@ export function ServiceCard({ service, headingAs = 'h3', anchorId }: ServiceCard
         </div>
         <p className="flex items-center gap-2 self-start pt-6 font-mono text-sm">
           <Clock aria-hidden="true" className="size-4 shrink-0" />
-          <span className="sr-only">{homeCopy.services.term}: </span>
+          <span className="sr-only">{serviceTermLabel}: </span>
           {service.prazo}
         </p>
       </SpotlightCard>

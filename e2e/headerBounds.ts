@@ -1,5 +1,5 @@
-// Where the fixed header ends, in CSS pixels, from src/components/layout/headerMetrics.ts: it sits 12px from the top
-// (HEADER_TOP_OFFSET) and is 3.5rem plus its 2px border tall (HEADER_HEIGHT), so 12 + 56 + 2 = 70px at the default font.
+// Where the fixed header ends, in CSS pixels, from src/components/layout/headerMetrics.ts: it sits 12px from the
+// top (HEADER_TOP_OFFSET) and is 3.5rem plus its 2px border tall (HEADER_HEIGHT): 12 + 56 + 2 = 70px by default.
 const HEADER_TOP_PX = 12;
 const HEADER_HEIGHT_PX = 58;
 export const HEADER_BOTTOM_PX = HEADER_TOP_PX + HEADER_HEIGHT_PX;

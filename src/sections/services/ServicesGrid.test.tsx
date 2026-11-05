@@ -44,7 +44,10 @@ describe('ServicesGrid', () => {
       const card = document.getElementById(service.slug) as HTMLElement;
       const items = within(within(card).getByRole('list')).getAllByRole('listitem');
 
-      expect(items.map((item) => item.textContent), service.slug).toEqual(service.inclui);
+      expect(
+        items.map((item) => item.textContent),
+        service.slug,
+      ).toEqual(service.inclui);
       expect(within(card).getByText(service.prazo, { exact: false })).toBeInTheDocument();
     }
     expect(document.body.textContent).not.toMatch(/R\$/);

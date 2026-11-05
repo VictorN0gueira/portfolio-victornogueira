@@ -1,4 +1,5 @@
 import { HERO_HOUR_OPTIONS, SAVINGS_RATE, TEAM_OPTIONS } from '../lib/roi';
+import { serviceTermLabel } from './sharedCopy';
 
 /** Which interactive piece of the hero sentence fills a slot. */
 export type HeroSentenceSlot = 'hours' | 'task' | 'result';
@@ -82,7 +83,7 @@ export const homeCopy = {
   services: {
     kicker: 'o que a gente faz',
     heading: 'Três jeitos de tirar trabalho manual da sua frente',
-    term: 'Prazo estimado',
+    term: serviceTermLabel,
     link: 'Ver todos os serviços',
   },
   // Os textos da seção do método (o conteúdo de cada passo está em data/process.ts).

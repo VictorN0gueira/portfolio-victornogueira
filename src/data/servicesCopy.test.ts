@@ -8,7 +8,23 @@ const DASH_PATTERN = new RegExp(`[${EM_DASH}${EN_DASH}]`);
 const SLASH_SEPARATOR = / \/ /;
 const PRICE_PATTERN = /R\$/;
 const PERCENT_PATTERN = /\d+\s*%/;
-const SALES_WORDS = /revolucion|potencializ|desbloque|jornada|inova(dor|ç)|\btransforma|alavanc|ecossistema|sinergia|\bescal(ar|e|am|ável)\b|robust|modern[ao]s?\b/i;
+const SALES_WORDS = new RegExp(
+  [
+    'revolucion',
+    'potencializ',
+    'desbloque',
+    'jornada',
+    'inova(dor|ç)',
+    '\\btransforma',
+    'alavanc',
+    'ecossistema',
+    'sinergia',
+    '\\bescal(ar|e|am|ável)\\b',
+    'robust',
+    'modern[ao]s?\\b',
+  ].join('|'),
+  'i',
+);
 const CHATBOT = /chat[\s-]?bot/i;
 
 function collectStrings(value: unknown): string[] {
