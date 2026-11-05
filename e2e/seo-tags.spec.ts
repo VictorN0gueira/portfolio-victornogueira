@@ -195,30 +195,39 @@ test.describe('after M2', () => {
 });
 
 // An unknown path is a real 404 with the app page: the head says noindex before and after the app mounts, with no canonical.
-test('an unknown path answers 404 with noindex in the raw HTML and after the app mounts', async ({ page }) => {
-  const response = await page.request.get('/rota-que-nao-existe');
-  expect(response.status()).toBe(404);
-  const rawHtml = await response.text();
-  expect(rawHtml).toContain('name="robots" content="noindex, nofollow"');
+// An unknown project address shows the same page, so its head is the same: one wording, one sentence, from src/data/notFoundCopy.ts.
+const NOT_FOUND_PATHS = ['/rota-que-nao-existe', '/projetos/nao-existe'];
 
-  await page.goto('/rota-que-nao-existe');
-  await expect.poll(() => page.locator('head [data-static-seo]').count()).toBe(0);
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
-  await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
-  await expect(page).toHaveTitle(/^Página não encontrada/);
+for (const path of NOT_FOUND_PATHS) {
+  test(`${path} answers 404 with noindex in the raw HTML and after the app mounts`, async ({ page }) => {
+    const response = await page.request.get(path);
+    expect(response.status()).toBe(404);
+    const rawHtml = await response.text();
+    expect(rawHtml).toContain('name="robots" content="noindex, nofollow"');
 
-  // The static head and the head the app writes say the same: one description, and the same one in og:description.
-  const staticHead = await page.evaluate((html) => {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    return {
-      description: doc.querySelector('meta[name="description"]')?.getAttribute('content'),
-      ogDescription: doc.querySelector('meta[property="og:description"]')?.getAttribute('content'),
-      title: doc.title,
-    };
-  }, rawHtml);
-  expect(staticHead.description).toBeTruthy();
-  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', staticHead.description ?? '');
-  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', staticHead.ogDescription ?? '');
-  expect(staticHead.ogDescription).toBe(staticHead.description);
-  await expect(page).toHaveTitle(staticHead.title);
-});
+    await page.goto(path);
+    await expect.poll(() => page.locator('head [data-static-seo]').count()).toBe(0);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
+    await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+    await expect(page).toHaveTitle(/^Página não encontrada/);
+
+    // The static head and the head the app writes say the same: one description, in og:description and twitter:description too.
+    const staticHead = await page.evaluate((html) => {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const content = (selector: string) => doc.querySelector(selector)?.getAttribute('content') ?? '';
+      return {
+        description: content('meta[name="description"]'),
+        ogDescription: content('meta[property="og:description"]'),
+        twitterDescription: content('meta[name="twitter:description"]'),
+        title: doc.title,
+      };
+    }, rawHtml);
+    expect(staticHead.description).toBeTruthy();
+    expect(staticHead.ogDescription).toBe(staticHead.description);
+    expect(staticHead.twitterDescription).toBe(staticHead.description);
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', staticHead.description);
+    await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', staticHead.description);
+    await expect(page.locator('meta[name="twitter:description"]')).toHaveAttribute('content', staticHead.description);
+    await expect(page).toHaveTitle(staticHead.title);
+  });
+}

@@ -13,7 +13,6 @@ export const TAGS_LABEL = 'Tecnologias e recursos';
 export const BACK_LABEL = 'Todos os projetos';
 export const CONTACT_LABEL = 'Vamos conversar';
 export const PROJECT_CTA_TEXT = 'Quer algo assim no seu negócio?';
-export const NOT_FOUND_TITLE = 'Projeto não encontrado';
 export const BREADCRUMB_HOME = 'Início';
 
 /** The accessible name of the link to /contato in the facts of a case: it starts with the visible CONTACT_LABEL. */

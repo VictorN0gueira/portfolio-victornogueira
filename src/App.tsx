@@ -6,11 +6,11 @@ import { ErrorBoundary, ErrorPanel } from './components/layout/ErrorBoundary';
 import { ScrollProgress } from './components/layout/ScrollProgress';
 import { SiteLayout } from './components/layout/SiteLayout';
 import { pageTransition } from './components/layout/pageTransition';
+import { notFoundCopy } from './data/notFoundCopy';
 import { shellCopy } from './data/shellCopy';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 import { whenIdle } from './lib/whenIdle';
 import { HomePage } from './pages/HomePage';
-import { notFoundCopy } from './data/notFoundCopy';
 
 // Every page, the not found page, the blog and the accessibility widget are chunks of their own. A chunk that fails to
 // load is retried once and then reaches an error boundary (see lazyWithRetry).
