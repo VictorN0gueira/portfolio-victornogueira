@@ -17,9 +17,11 @@ import {
   type TabSide,
 } from '../lib/floatingLayout';
 import { readFloatingView, type FloatingView } from '../lib/floatingView';
+import { clearDodge } from './useTabDodge';
 import { clearTabPosition, readTabPosition, writeTabPosition } from '../lib/tabPositionStorage';
 
-const SLIDE_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
+// The same token as the slide of the dodge (AccessibilityTrigger): one easing for every move of the tab.
+const SLIDE_EASE = 'var(--ease-out)';
 const BAND_ATTRIBUTE = 'data-vn-tab-band';
 const BAND_PAD_PROPERTY = '--vn-tab-pad';
 
@@ -198,6 +200,8 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
       applyPanel(rect, side);
     },
     onRelease: (next, from) => {
+      // A tab that was dodging lets go of its step aside with the drag: the new place is laid out clean and judged again.
+      if (triggerRef.current) clearDodge(triggerRef.current);
       liveRect.current = null;
       dragCache.current = null;
       setLiveSide(null);

@@ -109,7 +109,7 @@ export default function AccessibilityWidget() {
   const placerRef = useRef<HTMLDivElement>(null);
   const isMotionAllowed = useMotionAllowed();
   const placement = useTabPlacement({ wrapperRef, triggerRef, placerRef, isOpen, activeCount, isMotionAllowed });
-  useTabDodge({ wrapperRef, triggerRef, isOpen, isMotionAllowed, placeKey: `${placement.position?.side}:${placement.topPx}` });
+  useTabDodge({ wrapperRef, triggerRef, isOpen, position: placement.position });
   const isDark = useBackdropIsDark(triggerRef, placement.position);
   const wrapperStyle: CSSProperties | undefined = placement.topPx === null ? undefined : { top: placement.topPx };
 
@@ -202,7 +202,7 @@ function AccessibilityTrigger({ buttonRef, isOpen, isDark, panelId, summaryId, a
       aria-label={a11yWidgetCopy.triggerLabel}
       className={cn(
         // touch-none only on the button: a finger that starts on it drags it, a finger anywhere else scrolls the page.
-        'pointer-events-auto relative flex size-[44px] touch-none select-none items-center justify-center shadow-lg [transition-property:color,background-color,border-color,translate] [transition-duration:300ms,300ms,300ms,var(--vn-dodge-ms,220ms)] [transition-timing-function:var(--ease-out)] translate-x-[var(--vn-dodge-x,0px)] translate-y-[var(--vn-dodge-y,0px)] focus-visible:outline-2 focus-visible:outline-offset-2 [@media(hover:hover)_and_(pointer:fine)]:cursor-grab data-[dragging=true]:cursor-grabbing',
+        'pointer-events-auto relative flex size-[44px] touch-none select-none items-center justify-center shadow-lg [transition-property:color,background-color,border-color,translate] [transition-duration:300ms,300ms,300ms,220ms] [transition-timing-function:var(--ease-out)] translate-x-[var(--vn-dodge-x,0px)] translate-y-[var(--vn-dodge-y,0px)] focus-visible:outline-2 focus-visible:outline-offset-2 [@media(hover:hover)_and_(pointer:fine)]:cursor-grab data-[dragging=true]:cursor-grabbing',
         isChosen && side === 'left' ? 'rounded-r-xl' : 'rounded-l-xl',
         isDark
           ? 'bg-white text-zinc-950 focus-visible:outline-white'

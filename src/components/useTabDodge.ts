@@ -1,31 +1,74 @@
-import { useEffect, type RefObject } from 'react';
-import { dodgeOffset, isObscured, TAB_SLIDE_MS, type Box } from '../lib/floatingLayout';
+import { useEffect, useRef, type RefObject } from 'react';
+import {
+  dodgeOffset,
+  isObscured,
+  TAB_SIZE_PX,
+  TAB_SLIDE_MS,
+  type Box,
+  type TabPosition,
+} from '../lib/floatingLayout';
 import { readFloatingView } from '../lib/floatingView';
 
-/** The tab reads these two lengths (and the duration of its slide) from its own style: see AccessibilityTrigger. */
+/** The tab reads these two lengths from its own style (a translate, see AccessibilityTrigger). The DOM holds the state. */
 const DODGE_X = '--vn-dodge-x';
 const DODGE_Y = '--vn-dodge-y';
-const DODGE_MS = '--vn-dodge-ms';
-/** How long the focus and the scroll have to be quiet before the tab judges where the focused control ended up. */
-const SETTLE_MS = 120;
-/** Presses and wheel turns are the pointer: the tab does not step aside for them, and it comes home at once. */
+/** How long a scroll has to be quiet before the tab judges where the focused control ended up. */
+const SETTLE_MS = 100;
+/** The widget sits at z-index 150 (--vn-z-widget): what is above it can never be covered by it. */
+const DEFAULT_WIDGET_Z = 150;
 const POINTER_EVENTS = ['pointerdown', 'touchstart', 'wheel'] as const;
+const VIEW_EVENTS = ['resize', 'orientationchange'] as const;
+const FOCUS_EVENTS = ['focusin', 'focusout'] as const;
 
 interface TabDodgeOptions {
   wrapperRef: RefObject<HTMLElement | null>;
   triggerRef: RefObject<HTMLElement | null>;
+  /** The panel opens and closes: the focus moves into it and back out, so the tab is judged again. */
   isOpen: boolean;
-  isMotionAllowed: boolean;
-  /** Changes whenever the tab is put somewhere else, so a step aside is judged again from the new place. */
-  placeKey: string;
+  /** The place the tab was moved to: it slides there, and is judged once it has arrived. */
+  position: TabPosition | null;
 }
 
-const toBox = ({ left, top, width, height }: DOMRect): Box => ({ left, top, width, height });
 
-/** The rects of the focused element that have a size, or none when it is the page itself or lives in the widget. */
-function focusedRects(widget: HTMLElement): DOMRect[] {
+/** Puts the dodge in the style of the tab. The same values write nothing; `isInstant` skips the transition once. */
+function setDodge(trigger: HTMLElement, dx: number, dy: number, isInstant: boolean): void {
+  const x = `${dx}px`;
+  const y = `${dy}px`;
+  const isSet = (name: string, value: string) => (trigger.style.getPropertyValue(name) || '0px') === value;
+  if (isSet(DODGE_X, x) && isSet(DODGE_Y, y)) return;
+  if (isInstant) trigger.style.transition = 'none';
+  trigger.style.setProperty(DODGE_X, x);
+  trigger.style.setProperty(DODGE_Y, y);
+  if (!isInstant) return;
+  void trigger.offsetWidth;
+  trigger.style.transition = '';
+}
+
+/** The tab goes home with no slide: a drag lets go of it, and the new place is laid out from where it rests. */
+export function clearDodge(trigger: HTMLElement): void {
+  setDodge(trigger, 0, 0, true);
+}
+
+/** True when something above the widget in z order holds the element (a dialog, the skip link). */
+function isAboveWidget(element: Element, widget: Element): boolean {
+  const widgetZ = Number.parseInt(getComputedStyle(widget).zIndex, 10) || DEFAULT_WIDGET_Z;
+  for (let node: Element | null = element; node; node = node.parentElement) {
+    const style = getComputedStyle(node);
+    if (style.position !== 'static' && Number.parseInt(style.zIndex, 10) > widgetZ) return true;
+  }
+  return false;
+}
+
+/**
+ * The rects of the focused control the tab has to stay clear of: none when nothing is focused, when the focus is in the
+ * widget (the panel), when the pointer put it there, or when the control is above the widget. The rects are those of the
+ * box, not clipped by scrolling containers: a control cut off by one is judged whole, which at worst moves the tab for a
+ * part that is not on screen. That costs a step aside, never a covered control, so it is accepted.
+ */
+function focusedRects(widget: HTMLElement, isPointerFocus: boolean): DOMRect[] {
   const active = document.activeElement;
   if (!active || active === document.body || active === document.documentElement || widget.contains(active)) return [];
+  if (isPointerFocus || !active.matches(':focus-visible') || isAboveWidget(active, widget)) return [];
   return Array.from(active.getClientRects()).filter((rect) => rect.width > 0 && rect.height > 0);
 }
 
@@ -44,65 +87,76 @@ function around(rects: DOMRect[]): Box {
 /**
  * WCAG 2.2 SC 2.4.11 Focus Not Obscured. While the keyboard moves the focus the browser scrolls a focused control out
  * from under the tab (the scroll padding band, index.css), but at the start or the end of a page nothing can scroll, so a
- * control of the first screen that sits where the tab is would stay under it. Once the focus and the scroll have settled,
- * if the focused control is still under the tab, the tab steps aside (above or below it, or across to the other side)
- * for as long as that control has the focus, and comes back when the focus leaves. Only the button moves, with
- * `translate` (so the chosen place, the drag and the slide of the wrapper are untouched, and nothing is stored). It
- * moves only after a Tab key, never for the pointer, and not while the panel is open (the focus is inside it then).
- * With motion off the move is instant.
+ * control of the first screen that sits where the tab is would stay under it. When the focus is keyboard driven
+ * (:focus-visible, so Tab, a skip link, an arrow key, a hash) and the control is under the tab, the tab steps aside for as
+ * long as it has the focus: only the button moves, with `translate` (the chosen place, the drag, the panel and the stored
+ * position are untouched), and it comes back when the focus leaves. Where it goes comes from the rects of the moment
+ * (dodgeOffset), so a rotation or a scroll is just another judge: no offset is kept across layout changes. With motion off
+ * the stylesheet makes the slide instant (motion.css), and the pointer never moves the tab, except to send it home.
+ * The judge runs a frame after a focus change, a resize or the panel opening or closing, and again once a scroll settles.
  */
-export function useTabDodge({ wrapperRef, triggerRef, isOpen, isMotionAllowed, placeKey }: TabDodgeOptions): void {
-  useEffect(() => {
-    const wrapper = wrapperRef.current;
-    const trigger = triggerRef.current;
-    if (isOpen || !wrapper || !trigger) return;
-    let isKeyboard = false;
-    let timer: number | undefined;
+export function useTabDodge({ wrapperRef, triggerRef, isOpen, position }: TabDodgeOptions): void {
+  const isPointerFocus = useRef(false);
+  const lastPosition = useRef(position);
 
-    const place = (dx: number, dy: number, isInstant: boolean) => {
-      trigger.style.setProperty(DODGE_MS, isInstant || !isMotionAllowed ? '0ms' : `${TAB_SLIDE_MS}ms`);
-      trigger.style.setProperty(DODGE_X, `${dx}px`);
-      trigger.style.setProperty(DODGE_Y, `${dy}px`);
-    };
+  useEffect(() => {
+    let frame = 0;
+    let timer = 0;
 
     const judge = () => {
-      if (!isKeyboard || trigger.dataset.dragging === 'true') return;
-      const rects = focusedRects(wrapper);
-      // The box of the wrapper is where the tab is at rest: the button moves inside it, with its own translate.
-      const home = toBox(wrapper.getBoundingClientRect());
+      const widget = wrapperRef.current;
+      const trigger = triggerRef.current;
+      if (!widget || !trigger || trigger.dataset.dragging === 'true') return;
+      const rects = focusedRects(widget, isPointerFocus.current);
+      // The box of the tab at rest: the wrapper (a fixed box, with the panel inside it while it is open) and the place of the tab in it.
+      const box = widget.getBoundingClientRect();
+      const home = { left: box.left + trigger.offsetLeft, top: box.top + trigger.offsetTop, width: TAB_SIZE_PX, height: TAB_SIZE_PX };
       const isCovered = rects.length > 0 && isObscured(home, rects);
-      const offset = isCovered ? dodgeOffset({ tab: home, target: around(rects), ...readFloatingView() }) : null;
-      place(offset?.dx ?? 0, offset?.dy ?? 0, false);
+      const { dx, dy } = isCovered ? dodgeOffset({ tab: home, target: around(rects), ...readFloatingView() }) : { dx: 0, dy: 0 };
+      setDodge(trigger, dx, dy, false);
+    };
+    const judgeSoon = () => {
+      frame ||= requestAnimationFrame(() => {
+        frame = 0;
+        judge();
+      });
+    };
+    const judgeSettled = (ms: number) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(judge, ms);
     };
 
-    const schedule = () => {
-      window.clearTimeout(timer);
-      if (isKeyboard) timer = window.setTimeout(judge, SETTLE_MS);
+    const handlePointer = (event: Event) => {
+      isPointerFocus.current = true;
+      const trigger = triggerRef.current;
+      const isOnTab = trigger && event.target instanceof Node && trigger.contains(event.target);
+      if (trigger && !isOnTab) setDodge(trigger, 0, 0, false);
     };
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab') return;
-      isKeyboard = true;
-      schedule();
+    const handleKey = () => {
+      isPointerFocus.current = false;
     };
-    const handlePointer = () => {
-      isKeyboard = false;
-      window.clearTimeout(timer);
-      place(0, 0, true);
-    };
+    const handleScroll = () => judgeSettled(SETTLE_MS);
 
     document.addEventListener('keydown', handleKey, true);
-    document.addEventListener('focusin', schedule, true);
-    document.addEventListener('focusout', schedule, true);
-    window.addEventListener('scroll', schedule, { passive: true });
+    document.addEventListener('scroll', handleScroll, { capture: true, passive: true });
+    for (const name of FOCUS_EVENTS) document.addEventListener(name, judgeSoon, true);
+    for (const name of VIEW_EVENTS) window.addEventListener(name, judgeSoon);
     for (const name of POINTER_EVENTS) document.addEventListener(name, handlePointer, { capture: true, passive: true });
+
+    // A tab that was moved slides first: its box is read once it has arrived. Anything else is judged in the next frame.
+    const isMoved = lastPosition.current !== position;
+    lastPosition.current = position;
+    if (isMoved) judgeSettled(TAB_SLIDE_MS + SETTLE_MS);
+    else judgeSoon();
+
     return () => {
+      cancelAnimationFrame(frame);
       window.clearTimeout(timer);
       document.removeEventListener('keydown', handleKey, true);
-      document.removeEventListener('focusin', schedule, true);
-      document.removeEventListener('focusout', schedule, true);
-      window.removeEventListener('scroll', schedule);
+      document.removeEventListener('scroll', handleScroll, true);
+      for (const name of FOCUS_EVENTS) document.removeEventListener(name, judgeSoon, true);
+      for (const name of VIEW_EVENTS) window.removeEventListener(name, judgeSoon);
       for (const name of POINTER_EVENTS) document.removeEventListener(name, handlePointer, true);
-      place(0, 0, true);
     };
-  }, [wrapperRef, triggerRef, isOpen, isMotionAllowed, placeKey]);
+  }, [wrapperRef, triggerRef, isOpen, position]);
 }
