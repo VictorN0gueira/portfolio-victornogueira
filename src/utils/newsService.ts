@@ -13,6 +13,22 @@ export interface NewsArticle {
   language: 'pt' | 'en';
 }
 
+/** A source that did not give the list, and why. The list still comes from the next source of the chain. */
+export interface SourceFailure {
+  source: 'cache' | 'cache-write' | 'edge-function' | 'devto' | 'tabnews' | 'public-apis';
+  reason: string;
+}
+
+// The message of the error, from anything that carries one (a DOMException of the storage is not always an Error).
+function reasonOf(error: unknown): string {
+  const message = typeof error === 'object' && error !== null && 'message' in error ? error.message : undefined;
+  return typeof message === 'string' && message !== '' ? message : String(error);
+}
+
+function failureOf(source: SourceFailure['source'], error: unknown): SourceFailure {
+  return { source, reason: reasonOf(error) };
+}
+
 const CACHE_KEY = 'blog_news_cache';
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
 
@@ -156,7 +172,7 @@ export function detectCategory(article: NewsArticle): string {
 
 // O cache vive no localStorage, que qualquer script da origem pode escrever: o que volta de lá passa pela mesma checagem
 // dos artigos que vêm da rede.
-function getCachedArticles(): CachedData | null {
+function getCachedArticles(failures: SourceFailure[]): CachedData | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
@@ -165,27 +181,31 @@ function getCachedArticles(): CachedData | null {
     const { articles, timestamp, source } = parsed as Partial<Record<keyof CachedData, unknown>>;
     if (typeof timestamp !== 'number') throw new Error('cache has no timestamp');
     return { articles: sanitizeArticles(articles), timestamp, source: typeof source === 'string' ? source : undefined };
-  } catch {
-    clearNewsCache();
+  } catch (error) {
+    failures.push(failureOf('cache', error));
+    clearNewsCache(failures);
     return null;
   }
 }
 
 // localStorage pode estar bloqueado (cookies desligados, navegadores embutidos): lançar aqui derrubaria o blog inteiro.
-export function clearNewsCache(): void {
+// Quem chama pode passar a lista de falhas para saber o motivo; a tela do blog não depende disso.
+export function clearNewsCache(failures: SourceFailure[] = []): void {
   try {
     localStorage.removeItem(CACHE_KEY);
-  } catch {
+  } catch (error) {
     // Sem acesso ao armazenamento: não há cache para limpar.
+    failures.push(failureOf('cache', error));
   }
 }
 
-function setCachedArticles(articles: NewsArticle[], source: string): void {
+// localStorage cheio: a lista segue para a tela e o motivo vai para a lista de falhas.
+function setCachedArticles(articles: NewsArticle[], source: string, failures: SourceFailure[]): void {
   const data: CachedData = { articles, timestamp: Date.now(), source };
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-  } catch {
-    // localStorage cheio, ignora silenciosamente
+  } catch (error) {
+    failures.push(failureOf('cache-write', error));
   }
 }
 
@@ -194,13 +214,14 @@ function isCacheValid(cached: CachedData): boolean {
 }
 
 // Gera descrição para artigos do TabNews que não possuem campo de resumo
-function tabNewsDescription(article: TabnewsArticle): string {
+function tabNewsDescription(article: TabnewsArticle, failures: SourceFailure[]): string {
   if (article.source_url) {
     try {
       const domain = new URL(article.source_url).hostname.replace('www.', '');
       return `Via ${domain} · Publicado e discutido na comunidade brasileira TabNews.`;
-    } catch {
-      // URL inválida
+    } catch (error) {
+      // URL inválida: a descrição cai no texto sem domínio.
+      failures.push(failureOf('tabnews', error));
     }
   }
   return `Publicado por @${article.owner_username} e em destaque na comunidade brasileira TabNews.`;
@@ -276,7 +297,7 @@ async function fetchFromDevTo(): Promise<NewsArticle[]> {
 
 // Busca artigos em destaque do TabNews (plataforma brasileira de tech)
 // Filtra por keywords relevantes a IA/automação pois a API não oferece busca por tópico
-async function fetchFromTabnews(): Promise<NewsArticle[]> {
+async function fetchFromTabnews(failures: SourceFailure[]): Promise<NewsArticle[]> {
   const res = await fetch(
     'https://www.tabnews.com.br/api/v1/contents?strategy=relevant&per_page=30&page=1',
     { signal: AbortSignal.timeout(8000) }
@@ -294,7 +315,7 @@ async function fetchFromTabnews(): Promise<NewsArticle[]> {
       const url = safeHttpUrl(a.source_url) ?? `https://www.tabnews.com.br/${a.owner_username}/${a.slug}`;
       const article = sanitizeArticle({
         title: a.title,
-        description: tabNewsDescription(a),
+        description: tabNewsDescription(a, failures),
         url,
         image: pickPlaceholder(a.slug),
         publishedAt: a.published_at,
@@ -306,11 +327,13 @@ async function fetchFromTabnews(): Promise<NewsArticle[]> {
 }
 
 // Combina Dev.to + TabNews em paralelo e retorna artigos intercalados por idioma
-async function fetchFromPublicAPIs(): Promise<{ articles: NewsArticle[]; source: string }> {
+async function fetchFromPublicAPIs(failures: SourceFailure[]): Promise<{ articles: NewsArticle[]; source: string }> {
   const [devtoResult, tabnewsResult] = await Promise.allSettled([
     fetchFromDevTo(),
-    fetchFromTabnews(),
+    fetchFromTabnews(failures),
   ]);
+  if (devtoResult.status === 'rejected') failures.push(failureOf('devto', devtoResult.reason));
+  if (tabnewsResult.status === 'rejected') failures.push(failureOf('tabnews', tabnewsResult.reason));
 
   const devtoArticles = devtoResult.status === 'fulfilled' ? devtoResult.value : [];
   const tabnewsArticles = tabnewsResult.status === 'fulfilled' ? tabnewsResult.value : [];
@@ -348,13 +371,22 @@ export interface NewsResult {
   articles: NewsArticle[];
   source: string;
   origin: NewsOrigin;
+  /** Why each source that failed did not give the list. Absent when nothing failed. */
+  failures?: SourceFailure[];
+}
+
+/** The result with the failures beside it, and without the field when there is none. */
+function withFailures(result: NewsResult, failures: SourceFailure[]): NewsResult {
+  return failures.length > 0 ? { ...result, failures } : result;
 }
 
 export async function getNewsArticles(): Promise<NewsResult> {
+  const failures: SourceFailure[] = [];
+
   // 1. Cache local válido
-  const cached = getCachedArticles();
+  const cached = getCachedArticles(failures);
   if (cached && isCacheValid(cached) && cached.articles.length > 0) {
-    return { articles: cached.articles, source: 'cache', origin: 'browser-cache' };
+    return withFailures({ articles: cached.articles, source: 'cache', origin: 'browser-cache' }, failures);
   }
 
   // 2. Edge Function Supabase (proxy seguro)
@@ -373,31 +405,33 @@ export async function getNewsArticles(): Promise<NewsResult> {
     const articles = sanitizeArticles(body.articles);
     if (articles.length > 0) {
       const source = typeof body.source === 'string' && body.source !== '' ? body.source : 'edge-function';
-      setCachedArticles(articles, source);
-      return { articles, source, origin: 'live' };
+      setCachedArticles(articles, source, failures);
+      return withFailures({ articles, source, origin: 'live' }, failures);
     }
 
     throw new Error('No articles returned from edge function');
-  } catch {
-    // Edge function indisponível, tenta próxima fonte
+  } catch (error) {
+    // Edge function indisponível: o motivo fica na lista e a próxima fonte responde.
+    failures.push(failureOf('edge-function', error));
   }
 
   // 3. Dev.to + TabNews (gratuitas, sem autenticação, PT + EN)
   try {
-    const result = await fetchFromPublicAPIs();
-    setCachedArticles(result.articles, result.source);
-    return { ...result, origin: 'live' };
-  } catch {
-    // APIs públicas indisponíveis, segue para fallback
+    const result = await fetchFromPublicAPIs(failures);
+    setCachedArticles(result.articles, result.source, failures);
+    return withFailures({ ...result, origin: 'live' }, failures);
+  } catch (error) {
+    // APIs públicas indisponíveis: o motivo fica na lista e o resto da cadeia responde.
+    failures.push(failureOf('public-apis', error));
   }
 
   // 4. Cache expirado (melhor que nada)
   if (cached && cached.articles.length > 0) {
-    return { articles: cached.articles, source: 'stale-cache', origin: 'stale-browser-cache' };
+    return withFailures({ articles: cached.articles, source: 'stale-cache', origin: 'stale-browser-cache' }, failures);
   }
 
   // 5. Último recurso: artigos estáticos curados
-  return { articles: FALLBACK_ARTICLES, source: 'fallback', origin: 'fallback' };
+  return withFailures({ articles: FALLBACK_ARTICLES, source: 'fallback', origin: 'fallback' }, failures);
 }
 
 function formatDate(date: Date): string {
