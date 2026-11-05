@@ -77,6 +77,25 @@
 }
 
 /*
+ * 404 glitch: two shifted copies of the number, each shown through a few horizontal bands for one frame at a time. Only
+ * transform and clip-path move. A layer rests fully clipped (hidden behind the chrome base), so the number is clean
+ * before the bursts, after them and whenever motion is off.
+ */
+@keyframes vn-glitch-a {
+  10% { transform: translate(-.045em, 0); clip-path: inset(12% 0 62% 0); }
+  20% { transform: translate(.05em, 0); clip-path: inset(58% 0 18% 0); }
+  30% { transform: translate(-.03em, 0); clip-path: inset(34% 0 44% 0); }
+  40%, 100% { transform: translate(0, 0); clip-path: inset(0 0 100% 0); }
+}
+
+@keyframes vn-glitch-b {
+  15% { transform: translate(.05em, 0); clip-path: inset(70% 0 8% 0); }
+  25% { transform: translate(-.04em, 0); clip-path: inset(22% 0 56% 0); }
+  35% { transform: translate(.03em, 0); clip-path: inset(46% 0 32% 0); }
+  45%, 100% { transform: translate(0, 0); clip-path: inset(0 0 100% 0); }
+}
+
+/*
  * MOTION OFF. The one list. `vn-still` is the system preference for reduced motion or "Pausar animações" in the widget
  * (tokens.css), so every line below holds for both, with one near zero duration. A new animated component adds its stop
  * here, once. The first rule is the safety net for everything that is not listed (a library, a utility class): no
@@ -99,6 +118,26 @@ html.a11y-no-animations {
 }
 
 .vn-cursor {
+  @variant vn-still {
+    animation: none;
+  }
+}
+
+.vn-glitch-a,
+.vn-glitch-b {
+  clip-path: inset(0 0 100% 0);
+}
+
+.vn-glitch-a {
+  animation: vn-glitch-a 1.6s steps(1, end) 3;
+}
+
+.vn-glitch-b {
+  animation: vn-glitch-b 1.6s steps(1, end) 3;
+}
+
+.vn-glitch-a,
+.vn-glitch-b {
   @variant vn-still {
     animation: none;
   }
