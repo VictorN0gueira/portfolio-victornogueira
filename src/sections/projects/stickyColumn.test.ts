@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { getProjectBySlug, projects, type Project } from '../../data/projects';
 import { STICKY_COLUMN_CLASSES, STICKY_MIN_HEIGHT_PX, STICKY_TOP_PX, stickyColumnOf } from './stickyColumn';
 
-// What was measured on the rendered case pages (lg and up): the tallest column that sticks is the gallery of Hub081, 577px.
+// The tallest column that sticks is the gallery of Hub081, 577px at 1216px and up (measured on the rendered page). The
+// number is not the guard: e2e/page-projeto.spec.ts measures the real column at 1024x720 and 1280x720, the boundary of the
+// rule, and fails if it does not fit under the sticky offset. This unit test only keeps the constants from drifting apart.
 const TALLEST_STICKY_COLUMN_PX = 577;
 
 function projectOf(slug: string): Project {

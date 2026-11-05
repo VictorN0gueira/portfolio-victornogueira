@@ -26,11 +26,15 @@ const HUB081: PageContract = {
   readyHeading: FEATURES_LABEL,
 };
 // The windows of a laptop and a desktop where the two columns sit side by side (lg and up), the short ones included:
-// 1024x600 (a small tablet), 1280x600 and 1366x657 (a laptop with browser bars) are shorter than STICKY_MIN_HEIGHT_PX.
+// 1024x600 (a small tablet), 1280x600 and 1366x657 (a laptop with browser bars) are shorter than STICKY_MIN_HEIGHT_PX, and
+// 1024x720 and 1280x720 are the boundary of the rule (the tallest sticky column, the gallery of Hub081, has to fit there).
 const SIDE_BY_SIDE_WINDOWS = [
   { width: 1024, height: 600 },
   { width: 1280, height: 600 },
   { width: 1366, height: 657 },
+  // Exactly STICKY_MIN_HEIGHT_PX: the shortest window in which a column sticks, so the column that sticks must fit here.
+  { width: 1024, height: 720 },
+  { width: 1280, height: 720 },
   { width: 1024, height: 768 },
   { width: 1366, height: 768 },
   { width: 1440, height: 900 },
@@ -137,9 +141,10 @@ test.describe('the sticky column of a case page', () => {
           otherHeight + PIXEL_TOLERANCE,
         );
         // It fits under the header, so no part of it is clipped at the bottom of the window.
-        expect(report.stickyHeight + report.stickyTop, 'the sticky column fits the window').toBeLessThanOrEqual(
-          report.innerHeight,
-        );
+        expect(
+          report.stickyHeight + report.stickyTop,
+          'the sticky column fits the window (at 720px this is what sets STICKY_MIN_HEIGHT_PX)',
+        ).toBeLessThanOrEqual(report.innerHeight);
 
         // Inside the body it keeps its place: its top stays at the sticky offset (112px) while the body scrolls.
         const first = await boxesAt(page, 'inside');
