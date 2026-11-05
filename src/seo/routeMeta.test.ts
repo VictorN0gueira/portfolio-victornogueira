@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { coverOf, projects, REMOVED_PROJECT_SLUGS } from '../data/projects';
+import { homeCopy } from '../data/homeCopy';
 import { SITE } from '../lib/site';
 import { ROUTE_METAS, routeMetaFor, type RouteImage, type RouteKind, type RouteMeta } from './routeMeta';
 
@@ -198,5 +199,35 @@ describe('routeMetaFor', () => {
     expect(routeMetaFor('/projetos/dizpara/?a=1#b')?.path).toBe('/projetos/dizpara');
     expect(routeMetaFor('/')?.path).toBe('/');
     expect(routeMetaFor('')?.path).toBeUndefined();
+  });
+});
+
+// The titles and descriptions are written by hand. These tests tie them to what the pages and the data say, so a text that
+// drifts away from the page (a promise the page does not make, a word the data does not use) fails here.
+describe('copy that matches the pages and the data', () => {
+  it('says the term of a service the way the services page shows it: an estimated term, not an agreed one', () => {
+    const description = metaOf('/servicos').description.toLowerCase();
+
+    expect(description).toContain(homeCopy.services.term.toLowerCase());
+    expect(description).not.toContain('combinado');
+  });
+
+  it('names the diagnostic online, the way the project data does, and not a test', () => {
+    const project = projects.find((entry) => entry.slug === 'diagnostico-empresarial');
+    const title = metaOf('/projetos/diagnostico-empresarial').title;
+
+    expect(project?.category.toLowerCase()).toContain('diagnóstico online');
+    expect(title.toLowerCase()).toContain('diagnóstico');
+    expect(title.toLowerCase()).toContain('online');
+    expect(title.toLowerCase()).not.toContain('teste');
+  });
+
+  it('says the e-mail of the Spotify account, as the project data does', () => {
+    const project = projects.find((entry) => entry.slug === 'ai-playlist-maker');
+    const description = metaOf('/projetos/ai-playlist-maker').description;
+
+    expect(project?.description).toContain('e-mail da conta Spotify');
+    expect(description).toContain('e-mail da conta Spotify');
+    expect(description).not.toContain('e-mail do Spotify');
   });
 });

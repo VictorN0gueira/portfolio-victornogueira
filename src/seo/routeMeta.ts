@@ -66,7 +66,7 @@ const PAGES: readonly PageEntry[] = [
     crumb: 'Serviços',
     title: withBrand('Serviços de automação, agentes de IA e sites'),
     description:
-      'Automação de processos, agentes de IA, sites e sistemas web sob medida. Cada serviço tem o que está incluso, escopo claro e prazo combinado.',
+      'Automação de processos, agentes de IA, sites e sistemas web sob medida. Cada serviço mostra o que está incluso, tem escopo claro e prazo estimado.',
   },
   {
     path: '/sobre',
@@ -160,7 +160,7 @@ const PROJECT_ENTRIES: readonly ProjectEntry[] = [
   {
     slug: 'diagnostico-empresarial',
     name: 'Diagnóstico Empresarial',
-    title: withBrand('Diagnóstico Empresarial: teste online e leads'),
+    title: withBrand('Diagnóstico Empresarial online e painel de leads'),
     description:
       'Página com um diagnóstico de 5 minutos para o dono da empresa e painel de leads com login, indicadores e funil. Veja as telas e o que cada uma faz.',
     cover: 'diagnostico-empresarial/cover',
@@ -189,7 +189,7 @@ const PROJECT_ENTRIES: readonly ProjectEntry[] = [
     name: 'AI Playlist Maker',
     title: withBrand('AI Playlist Maker: playlists do Spotify com IA'),
     description:
-      'Formulário em que a pessoa descreve a playlist, escolhe o número de faixas e informa o e-mail do Spotify. A playlist chega por e-mail, com o botão para ouvir.',
+      'Formulário em que se descreve a playlist, escolhe o número de faixas e informa o e-mail da conta Spotify. A playlist chega por e-mail, com o botão para ouvir.',
     cover: 'ai-playlist-maker/tela-email',
     coverAlt: 'E-mail que avisa que a playlist ficou pronta, com o botão para ouvir no Spotify',
   },
