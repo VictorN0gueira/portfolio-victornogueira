@@ -129,7 +129,7 @@ describe('Footer', () => {
       expect(links.map((link) => link.textContent)).toEqual(categories);
       expect(links.map((link) => link.getAttribute('href'))).toEqual([
         '/servicos#automacao-essencial',
-        '/servicos#agente-de-ia-sob-medida',
+        '/servicos#super-agente',
         '/servicos#landing-page-ou-site',
       ]);
     });
