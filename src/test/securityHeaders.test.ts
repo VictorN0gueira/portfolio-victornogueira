@@ -2,7 +2,12 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { BLOG_IMAGE_HOSTS, BLOG_IMG_SRC, CLOUDINARY_HOST, CLOUDINARY_PATH_PREFIX } from '../../config/blogImageHosts.mjs';
+import {
+  BLOG_IMAGE_HOSTS,
+  BLOG_IMG_SRC,
+  CLOUDINARY_HOST,
+  CLOUDINARY_PATH_PREFIX,
+} from '../../config/blogImageHosts.mjs';
 import {
   BLOG_FEED_ORIGINS,
   CONTENT_SECURITY_POLICY,
@@ -69,7 +74,9 @@ describe('the content security policy', () => {
   });
 
   it('allows an image from every host safeImageUrl accepts, and the policy lists no host the sanitizer would refuse', () => {
-    const accepted = BLOG_IMAGE_HOSTS.map((host) => safeImageUrl(`https://${host}${host === CLOUDINARY_HOST ? CLOUDINARY_PATH_PREFIX : '/'}x.jpg`));
+    const accepted = BLOG_IMAGE_HOSTS.map((host) =>
+      safeImageUrl(`https://${host}${host === CLOUDINARY_HOST ? CLOUDINARY_PATH_PREFIX : '/'}x.jpg`),
+    );
     expect(accepted.every((url) => url !== '')).toBe(true);
     const origins = (policy['img-src'] ?? []).filter((source) => source.startsWith('https://'));
     expect(origins.sort()).toEqual(BLOG_IMAGE_HOSTS.map((host) => `https://${host}`).sort());
@@ -92,7 +99,9 @@ describe('the content security policy', () => {
   });
 
   it('renders a directive without sources as the bare keyword', () => {
-    expect(renderCsp({ 'default-src': ["'self'"], 'upgrade-insecure-requests': [] })).toBe("default-src 'self'; upgrade-insecure-requests");
+    expect(renderCsp({ 'default-src': ["'self'"], 'upgrade-insecure-requests': [] })).toBe(
+      "default-src 'self'; upgrade-insecure-requests",
+    );
   });
 });
 
@@ -104,8 +113,12 @@ describe('the origins the code contacts', () => {
   });
 
   it('covers every origin the blog service fetches (no GNews call with a baked key is left in the client)', () => {
-    const source = read('src/utils/newsService.ts');
-    const fetched = [...source.matchAll(/(?:fetch\(\s*|EDGE_FUNCTION_URL = )['"`](https:\/\/[^/'"`]+)/g)].map((match) => match[1]);
+    // The edge function is in the service, the public feeds in their own module.
+    const source = `${read('src/utils/newsService.ts')}
+${read('src/utils/newsFeeds.ts')}`;
+    const fetched = [...source.matchAll(/(?:fetch\(\s*|EDGE_FUNCTION_URL = )['"`](https:\/\/[^/'"`]+)/g)].map(
+      (match) => match[1],
+    );
     expect(fetched.length).toBeGreaterThanOrEqual(3);
     const uncovered = [...new Set(fetched)].filter((origin) => !connectSources.includes(origin));
     expect(uncovered).toEqual([]);
@@ -113,7 +126,7 @@ describe('the origins the code contacts', () => {
   });
 
   it('lists the origin of every fetch in the lead and blog code', () => {
-    const files = ['src/lib/contact.ts', 'src/utils/newsService.ts'];
+    const files = ['src/lib/contact.ts', 'src/utils/newsService.ts', 'src/utils/newsFeeds.ts'];
     for (const file of files) {
       const hosts = [...read(file).matchAll(/fetch\(\s*['"`](https:\/\/[^/'"`]+)/g)].map((match) => match[1]);
       for (const host of hosts) {
@@ -150,7 +163,8 @@ describe('the nginx snippet', () => {
     const directives = snippet.split('\n').filter((line) => line.startsWith('add_header '));
     expect(directives).toHaveLength(Object.keys(SECURITY_HEADERS).length);
     for (const line of directives) expect(line).toMatch(/^add_header [A-Za-z-]+ ".*" always;$/);
-    for (const [name, value] of Object.entries(SECURITY_HEADERS)) expect(snippet).toContain(`add_header ${name} "${value}" always;`);
+    for (const [name, value] of Object.entries(SECURITY_HEADERS))
+      expect(snippet).toContain(`add_header ${name} "${value}" always;`);
   });
 
   it('documents HSTS as a comment and never enables it', () => {
@@ -168,12 +182,15 @@ describe('the GitHub Pages meta policy', () => {
     const header = parseCsp(CONTENT_SECURITY_POLICY);
     const meta = parseCsp(META_CONTENT_SECURITY_POLICY);
     expect(meta['frame-ancestors']).toBeUndefined();
-    const withoutFrameAncestors = Object.fromEntries(Object.entries(header).filter(([name]) => name !== 'frame-ancestors'));
+    const withoutFrameAncestors = Object.fromEntries(
+      Object.entries(header).filter(([name]) => name !== 'frame-ancestors'),
+    );
     expect(meta).toEqual(withoutFrameAncestors);
   });
 
   it('is injected once, after the charset (which must stay in the first 1024 bytes) and before everything else', () => {
-    const html = '<!doctype html><html><head>\n    <meta charset="UTF-8" />\n    <title>x</title>\n  </head><body></body></html>';
+    const html =
+      '<!doctype html><html><head>\n    <meta charset="UTF-8" />\n    <title>x</title>\n  </head><body></body></html>';
     const result = injectCspMeta(html);
     expect(result.indexOf('<meta charset')).toBeLessThan(result.indexOf(cspMetaTag()));
     expect(result.indexOf(cspMetaTag())).toBeLessThan(result.indexOf('<title>'));

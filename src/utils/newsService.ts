@@ -2,8 +2,6 @@ import { fetchFromPublicAPIs } from './newsFeeds';
 import { createFailureLog, type FailureLog, type SourceFailure } from './newsFailures';
 import { parseNewsDate, sanitizeArticles } from './newsSanitize';
 
-export type { SourceFailure } from './newsFailures';
-
 export interface NewsArticle {
   title: string;
   description: string;

@@ -134,6 +134,7 @@ const SCANNED_FILES = [
   'src/components/ProjectTitle.tsx',
   // The fixed list the blog shows when no source answers: its strings are site copy too.
   'src/utils/newsService.ts',
+  'src/utils/newsFeeds.ts',
 ];
 // testimonials.ts holds the clients' own words, verbatim: they are not ours to edit.
 const SALES_WORDS_EXEMPT = new Set(['src/data/testimonials.ts']);
@@ -182,7 +183,9 @@ const scannedFiles = [
 const CSS_MATH_SLASH = /(\b(?:calc|max|min|clamp)\([^;'"`]*?)[ \u00A0]\/[ \u00A0]/g;
 
 function withoutPlaceholders(text: string): string {
-  return text.replace(/\$\{[^}]*\}/g, PLACEHOLDER_MARK).replace(CSS_MATH_SLASH, `$1${PLACEHOLDER_MARK}/${PLACEHOLDER_MARK}`);
+  return text
+    .replace(/\$\{[^}]*\}/g, PLACEHOLDER_MARK)
+    .replace(CSS_MATH_SLASH, `$1${PLACEHOLDER_MARK}/${PLACEHOLDER_MARK}`);
 }
 
 // A line that is only a comment is not text the visitor reads.
@@ -198,9 +201,7 @@ function findOffendingLines(
   return files.flatMap((file) =>
     readFileSync(file, 'utf8')
       .split(/\r?\n/)
-      .flatMap((line, index) =>
-        pattern.test(prepare(line)) ? [`${toPosix(file)}:${index + 1}  ${line.trim()}`] : [],
-      ),
+      .flatMap((line, index) => (pattern.test(prepare(line)) ? [`${toPosix(file)}:${index + 1}  ${line.trim()}`] : [])),
   );
 }
 
@@ -302,7 +303,10 @@ describe('copy rules', () => {
     (file) => {
       const found = findOffendingLines([resolve(ROOT, file)], FORMAL_IMPERATIVE_PATTERN, withoutCommentLine);
 
-      expect(found.length, `${file} no longer has a formal imperative: remove it from FORMAL_IMPERATIVE_HANDOFF`).toBeGreaterThan(0);
+      expect(
+        found.length,
+        `${file} no longer has a formal imperative: remove it from FORMAL_IMPERATIVE_HANDOFF`,
+      ).toBeGreaterThan(0);
     },
   );
 
@@ -311,7 +315,10 @@ describe('copy rules', () => {
     (file) => {
       const found = findOffendingLines([resolve(ROOT, file)], FIRST_PERSON_PLURAL_PATTERN, withoutCommentLine);
 
-      expect(found.length, `${file} no longer has a first person plural verb: remove it from FIRST_PERSON_HANDOFF`).toBeGreaterThan(0);
+      expect(
+        found.length,
+        `${file} no longer has a first person plural verb: remove it from FIRST_PERSON_HANDOFF`,
+      ).toBeGreaterThan(0);
     },
   );
 
@@ -320,7 +327,10 @@ describe('copy rules', () => {
     (file) => {
       const found = findOffendingLines([resolve(ROOT, file)], FIRST_PERSON_SINGULAR_PATTERN, withoutCommentLine);
 
-      expect(found.length, `${file} no longer has the first person singular: remove it from VOICE_OWNER_DECISION`).toBeGreaterThan(0);
+      expect(
+        found.length,
+        `${file} no longer has the first person singular: remove it from VOICE_OWNER_DECISION`,
+      ).toBeGreaterThan(0);
     },
   );
 
@@ -490,10 +500,23 @@ describe('copy rule patterns', () => {
   });
 
   it('catches the formal verbs a sales page reaches for, and lets the infinitive and the informal form through', () => {
-    for (const text of ['Marque uma conversa', 'Impulsione o seu negócio', 'Aproveite agora', 'Experimente grátis', 'Envie uma mensagem']) {
+    for (const text of [
+      'Marque uma conversa',
+      'Impulsione o seu negócio',
+      'Aproveite agora',
+      'Experimente grátis',
+      'Envie uma mensagem',
+    ]) {
       expect(FORMAL_IMPERATIVE_PATTERN.test(text), text).toBe(true);
     }
-    for (const text of ['Marcar uma conversa', 'Falar no WhatsApp', 'Quero automatizar', 'Ver todos os serviços', 'Marca uma conversa', 'Envia uma mensagem']) {
+    for (const text of [
+      'Marcar uma conversa',
+      'Falar no WhatsApp',
+      'Quero automatizar',
+      'Ver todos os serviços',
+      'Marca uma conversa',
+      'Envia uma mensagem',
+    ]) {
       expect(FORMAL_IMPERATIVE_PATTERN.test(text), text).toBe(false);
     }
   });

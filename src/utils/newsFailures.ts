@@ -1,5 +1,5 @@
 /** Where a note of the news chain came from. */
-export type FailureSource = 'cache' | 'cache-write' | 'edge-function' | 'devto' | 'tabnews' | 'public-apis';
+type FailureSource = 'cache' | 'cache-write' | 'edge-function' | 'devto' | 'tabnews' | 'public-apis';
 
 /**
  * Why a source did not give the list, or a note that did not stop it (a cache that could not be written, an address that
