@@ -3,7 +3,7 @@ import { services } from '../data/services';
 import { SOCIAL_LINKS } from '../lib/constants';
 import { buildFaqJsonLd } from '../lib/faqJsonLd';
 import { SITE } from '../lib/site';
-import type { RouteCrumb, RouteMeta } from './pageMeta';
+import type { RouteCrumb, RouteMeta } from './routeMeta';
 
 // Schema.org nodes as plain objects. They say only what the site itself says: no rating, no review, no offer, no price,
 // no street address (so no LocalBusiness). The services come from the data of the services page, so a change of the list

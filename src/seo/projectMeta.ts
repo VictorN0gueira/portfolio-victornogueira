@@ -1,6 +1,7 @@
 import { PROJECTS_TITLE } from '../components/projectLabels';
 import { coverOf, projects, type Project } from '../data/projects';
-import { HOME_CRUMB, PROJECTS_PATH, withBrand, type RouteMeta } from './pageMeta';
+import { HOME_CRUMB, PROJECTS_PATH, withBrand } from './pageMeta';
+import type { RouteMeta } from './routeMeta';
 
 // What the head says about each project page. Only the page of a project and the build step load this module: it reads
 // src/data/projects.ts (with its image manifest), which the main chunk must not carry. The name, the cover image and its

@@ -1,44 +1,12 @@
 import { BREADCRUMB_HOME, PROJECTS_PAGE_DESCRIPTION, PROJECTS_TITLE } from '../components/projectLabels';
 import { SITE } from '../lib/site';
+import type { RouteCrumb, RouteMeta } from './routeMeta';
 
 // What the head says about the home and the inner pages. Pure data, no React. This is the part the SEO component loads at
 // run time, so it stays small: the texts of the projects are in projectMeta.ts, which only the page of a project and the
 // build step load. src/seo/routeMeta.ts puts the two together.
 
-export type RouteKind = 'home' | 'page' | 'project' | 'legal';
-
-export interface RouteImage {
-  readonly url: string;
-  readonly alt: string;
-  readonly width: number;
-  readonly height: number;
-}
-
-export interface RouteCrumb {
-  readonly name: string;
-  readonly path: string;
-}
-
-export interface RouteMeta {
-  /** '/', '/servicos', '/projetos/dizpara': no trailing slash, except the home. */
-  readonly path: string;
-  readonly kind: RouteKind;
-  /** The whole <title>, brand included. */
-  readonly title: string;
-  readonly description: string;
-  /** False: noindex, no canonical, no og:url, left out of the sitemap. */
-  readonly isIndexable: boolean;
-  /** YYYY-MM-DD. The date of the last real change of the page content: edit it in the same commit as the content. */
-  readonly lastmod: string;
-  /** Absent: the default banner of the site. */
-  readonly image?: RouteImage;
-  /** Empty on the home. Home and the route itself on inner routes. */
-  readonly crumbs: readonly RouteCrumb[];
-  /** Only where the FAQ is visible on the page. */
-  readonly hasFaq?: boolean;
-}
-
-export const PAGES_LASTMOD = '2026-11-01';
+const PAGES_LASTMOD = '2026-11-01';
 export const PROJECTS_PATH = '/projetos';
 export const HOME_CRUMB: RouteCrumb = { name: BREADCRUMB_HOME, path: '/' };
 

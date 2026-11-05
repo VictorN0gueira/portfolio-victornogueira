@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { serializeJsonLd } from '../lib/jsonLd';
 import { SITE, pageTitle } from '../lib/site';
-import { pageMetaFor, type RouteMeta } from '../seo/pageMeta';
+import { pageMetaFor } from '../seo/pageMeta';
+import type { RouteMeta } from '../seo/routeMeta';
 import { homeEntityNodes, structuredDataFor } from '../seo/structuredData';
 
 interface SEOProps {
