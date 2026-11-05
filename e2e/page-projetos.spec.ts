@@ -8,6 +8,11 @@ const FEATURED = projects.filter((project) => project.featured);
 const WIDTHS = [320, 390, 768, 1024, 1440];
 const VIEWPORT_HEIGHT = 900;
 const PIXEL_TOLERANCE = 1;
+const SIZES_WINDOWS = [320, 390, 768, 900, 1023, 1024, 1100, 1215, 1216, 1440];
+const MEDIUM_WIDTH_PX = 768;
+// On a phone the declared width ignores the 20px gutters that start at xs, so it may be a few pixels over.
+const PHONE_EXCESS_PX = 10;
+const REGULAR_COUNT = projects.filter((project) => !project.featured).length;
 
 const CONTRACT: PageContract = {
   path: '/projetos',
@@ -52,6 +57,51 @@ test.describe('/projetos', () => {
         if (card.right > width + PIXEL_TOLERANCE || card.left < -PIXEL_TOLERANCE)
           problems.push(`${width}px ${card.href} is outside the screen`);
         if (card.hasCutContent) problems.push(`${width}px ${card.href} has content wider than the card`);
+      }
+    }
+
+    expect(problems).toEqual([]);
+  });
+
+  test('the sizes attribute of every regular card image is the width the image really gets', async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'desktop',
+      'the test sets its own viewport: it runs once, in the desktop project',
+    );
+    test.slow();
+    const problems: string[] = [];
+
+    for (const width of SIZES_WINDOWS) {
+      await page.setViewportSize({ width, height: VIEWPORT_HEIGHT });
+      await openPage(page, CONTRACT);
+      // The declared width is evaluated by the browser itself: the first entry of `sizes` whose media query holds is
+      // given to a probe element as its width, so calc() and vw mean what they mean in the page.
+      const images = await page.locator('main ul > li img').evaluateAll((all) =>
+        all.map((image) => {
+          const entry = (image.getAttribute('sizes') ?? '')
+            .split(', ')
+            .map((candidate) => /^(?:\((.+?)\) )?(.+)$/.exec(candidate))
+            .find((match) => match && (!match[1] || matchMedia(`(${match[1]})`).matches));
+          const probe = document.createElement('div');
+          probe.style.width = entry?.[2] ?? '0px';
+          probe.style.position = 'absolute';
+          document.body.append(probe);
+          const declared = probe.getBoundingClientRect().width;
+          probe.remove();
+          return { alt: image.getAttribute('alt') ?? '', declared, rendered: image.getBoundingClientRect().width };
+        }),
+      );
+      // Only the covers of the five regular cards: the featured cards and their small shots have sizes of their own.
+      for (const { alt, declared, rendered } of images.slice(-REGULAR_COUNT)) {
+        const excess = declared - rendered;
+        const tolerance = width < MEDIUM_WIDTH_PX ? PHONE_EXCESS_PX : PIXEL_TOLERANCE;
+        if (excess > tolerance || excess < -PIXEL_TOLERANCE) {
+          problems.push(
+            `${width}px "${alt.slice(0, 30)}": declared ${declared.toFixed(0)}px, rendered ${rendered.toFixed(0)}px`,
+          );
+        }
       }
     }
 
