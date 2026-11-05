@@ -21,7 +21,10 @@ function formOf(page: Page): Locator {
 }
 
 async function openForm(page: Page): Promise<Locator> {
-  await page.goto(FORM_PATH);
+  // The same URL again is a navigation inside the same document: nothing loads, and the page would not claim the focus
+  // for the heading a second time. A reload is a new visit, as the first one is.
+  if (page.url().endsWith(FORM_PATH)) await page.reload();
+  else await page.goto(FORM_PATH);
   const form = formOf(page);
   await form.scrollIntoViewIfNeeded();
   await expect(form).toBeVisible();
