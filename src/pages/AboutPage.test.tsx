@@ -28,9 +28,11 @@ describe('AboutPage', () => {
     expect(method).toHaveAttribute('id', 'metodo');
     expect(method.tagName).toBe('SECTION');
     expect(container.querySelectorAll('#metodo')).toHaveLength(1);
-    expect(within(method).getAllByRole('heading', { level: 3 }).map((title) => title.textContent)).toEqual(
-      processSteps.map((step) => step.title),
-    );
+    expect(
+      within(method)
+        .getAllByRole('heading', { level: 3 })
+        .map((title) => title.textContent),
+    ).toEqual(processSteps.map((step) => step.title));
   });
 
   it('leaves no markup of the old process section behind', () => {
@@ -84,7 +86,9 @@ describe('AboutPage', () => {
     renderWithProviders(<AboutPage />, { route: '/sobre' });
 
     expect(screen.getByRole('link', { name: aboutCopy.cta.label })).toHaveAttribute('href', '/contato');
-    expect(screen.getByRole('link', { name: 'Falar no WhatsApp' }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/5581984451243\?text=/);
+    expect(screen.getByRole('link', { name: 'Falar no WhatsApp' }).getAttribute('href')).toMatch(
+      /^https:\/\/wa\.me\/5581984451243\?text=/,
+    );
   });
 
   it('keeps the closing text readable on black: light gray, never a mid gray', () => {
@@ -99,7 +103,9 @@ describe('AboutPage', () => {
   it('never jumps a heading level on the way down: h1, then h2, then h3 (axe heading-order)', () => {
     const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
 
-    const levels = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6')).map((heading) => Number(heading.tagName[1]));
+    const levels = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6')).map((heading) =>
+      Number(heading.tagName[1]),
+    );
 
     expect(levels[0]).toBe(1);
     levels.slice(1).forEach((level, index) => {
@@ -118,7 +124,10 @@ describe('AboutPage', () => {
     const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
 
     for (const section of container.querySelectorAll('section')) {
-      expect(section.querySelectorAll('.bg-vn-accent').length, section.getAttribute('aria-labelledby') ?? '').toBeLessThanOrEqual(1);
+      expect(
+        section.querySelectorAll('.bg-vn-accent').length,
+        section.getAttribute('aria-labelledby') ?? '',
+      ).toBeLessThanOrEqual(1);
     }
     expect(container.querySelectorAll('.bg-vn-accent')).toHaveLength(1);
   });

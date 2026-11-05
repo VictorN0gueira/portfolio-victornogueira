@@ -18,7 +18,11 @@ function stringsOf(value: unknown): string[] {
 
 const texts = stringsOf(aboutCopy);
 // What the site already says in public: the facts the copy of this page is made of.
-const PUBLIC_TEXT = [SITE.description, ...faqs.map((faq) => faq.answer), ...processSteps.map((step) => `${step.duration} ${step.description}`)].join(' ');
+const PUBLIC_TEXT = [
+  SITE.description,
+  ...faqs.map((faq) => faq.answer),
+  ...processSteps.map((step) => `${step.duration} ${step.description}`),
+].join(' ');
 // The only number: the 30 minute conversation (SITE, the FAQ and the closing band of the page say it).
 const ALLOWED_NUMBERS = new Set(['30']);
 
@@ -29,7 +33,9 @@ describe('aboutCopy', () => {
   });
 
   it('has no em dash, no en dash and no " / " separator', () => {
-    expect(texts.filter((text) => text.includes(EM_DASH) || text.includes(EN_DASH) || text.includes(' / '))).toEqual([]);
+    expect(texts.filter((text) => text.includes(EM_DASH) || text.includes(EN_DASH) || text.includes(' / '))).toEqual(
+      [],
+    );
   });
 
   it('never says "chatbot": the company sells AI agents', () => {
@@ -56,7 +62,11 @@ describe('aboutCopy', () => {
     expect(PUBLIC_TEXT).toMatch(/ciclos semanais/);
     expect(PUBLIC_TEXT).toMatch(/entregas parciais/);
     expect(PUBLIC_TEXT).toMatch(/monitoramento e documentação/);
-    expect(aboutCopy.company.how.map((row) => row.title)).toEqual(['Ciclos semanais', 'Entregas parciais', 'No ar com suporte']);
+    expect(aboutCopy.company.how.map((row) => row.title)).toEqual([
+      'Ciclos semanais',
+      'Entregas parciais',
+      'No ar com suporte',
+    ]);
   });
 
   it('keeps the closing band as it was before the redesign, with a WhatsApp message that names the site', () => {

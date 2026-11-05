@@ -30,11 +30,15 @@ const cellOf = (page: Page, name: string) =>
 test.describe('/sobre', () => {
   describePageContract(ABOUT);
 
-  test('scrolls to the method section when the address is /sobre#metodo, and leaves the heading below the header', async ({ page }) => {
+  test('scrolls to the method section when the address is /sobre#metodo, and leaves the heading below the header', async ({
+    page,
+  }) => {
     await page.goto('/sobre#metodo');
     const method = page.locator('#metodo');
     await expect(method).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
-    await expect.poll(async () => (await method.boundingBox())?.y ?? Number.POSITIVE_INFINITY, { timeout: PAGE_LOAD_TIMEOUT_MS }).toBeLessThan(200);
+    await expect
+      .poll(async () => (await method.boundingBox())?.y ?? Number.POSITIVE_INFINITY, { timeout: PAGE_LOAD_TIMEOUT_MS })
+      .toBeLessThan(200);
     await expect(page.getByRole('heading', { level: 2, name: 'Do primeiro papo ao fluxo rodando' })).toBeVisible();
   });
 
@@ -44,8 +48,14 @@ test.describe('/sobre', () => {
     await expect(photo).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
     await photo.scrollIntoViewIfNeeded();
 
-    await expect.poll(() => photo.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth), { timeout: PAGE_LOAD_TIMEOUT_MS }).toBeGreaterThan(0);
-    expect(await photo.evaluate((image: HTMLImageElement) => image.currentSrc)).toMatch(/\/founder\/victor-(480|960)\.(avif|webp)$/);
+    await expect
+      .poll(() => photo.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth), {
+        timeout: PAGE_LOAD_TIMEOUT_MS,
+      })
+      .toBeGreaterThan(0);
+    expect(await photo.evaluate((image: HTMLImageElement) => image.currentSrc)).toMatch(
+      /\/founder\/victor-(480|960)\.(avif|webp)$/,
+    );
     await expect(page.getByText(aboutCopy.photoCaption)).toBeVisible();
   });
 
@@ -89,7 +99,9 @@ test.describe('/sobre', () => {
     await expect(cell.locator('svg')).toHaveCSS('color', GRAY_DARK_RGB);
   });
 
-  test('puts the tab order of the tools in the order of the page: a tab from one tile reaches the next', async ({ page }) => {
+  test('puts the tab order of the tools in the order of the page: a tab from one tile reaches the next', async ({
+    page,
+  }) => {
     await openPage(page, ABOUT);
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await cellOf(page, 'n8n').focus();

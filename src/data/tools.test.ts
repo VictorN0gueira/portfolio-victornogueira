@@ -42,7 +42,11 @@ describe('toolCategories', () => {
   });
 
   it('has no dash, no " / " separator and no "chatbot" in any text', () => {
-    const texts = toolCategories.flatMap((category) => [category.title, category.description, ...category.tools.map((tool) => tool.name)]);
+    const texts = toolCategories.flatMap((category) => [
+      category.title,
+      category.description,
+      ...category.tools.map((tool) => tool.name),
+    ]);
 
     expect(texts.filter((text) => /[–—]| \/ |chat[\s-]?bot/i.test(text))).toEqual([]);
   });

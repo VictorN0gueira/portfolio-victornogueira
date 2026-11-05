@@ -71,7 +71,11 @@ describe('ToolsGrid', () => {
     for (const category of toolCategories) {
       const list = screen.getByRole('list', { name: category.title });
 
-      expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual(category.tools.map((tool) => tool.name));
+      expect(
+        within(list)
+          .getAllByRole('listitem')
+          .map((item) => item.textContent),
+      ).toEqual(category.tools.map((tool) => tool.name));
     }
   });
 
@@ -110,8 +114,14 @@ describe('ToolsGrid', () => {
 
       expect(item, tool.name).toHaveAttribute('tabindex', '0');
       expect(item, tool.name).toHaveClass('group', 'vn-focus-ring-ink');
-      expect(item.style.getPropertyValue('--vn-tool-brand').toLowerCase(), tool.name).toBe(toolMarks[tool.id].brand.toLowerCase());
-      expect(mark, tool.name).toHaveClass('text-vn-gray-dark', 'group-hover:text-(color:--vn-tool-brand)', 'group-focus:text-(color:--vn-tool-brand)');
+      expect(item.style.getPropertyValue('--vn-tool-brand').toLowerCase(), tool.name).toBe(
+        toolMarks[tool.id].brand.toLowerCase(),
+      );
+      expect(mark, tool.name).toHaveClass(
+        'text-vn-gray-dark',
+        'group-hover:text-(color:--vn-tool-brand)',
+        'group-focus:text-(color:--vn-tool-brand)',
+      );
     }
   });
 
