@@ -5,7 +5,7 @@ import { routeMetaFor } from '../src/seo/routeMeta';
 import { describePageContract } from './pageContract';
 import { N8N_WEBHOOK_PATTERN, expect, fulfillOk, n8nRoute, test } from './n8nGuard';
 import { QUOTE_BUTTON, QUOTE_START, enableLargeFont } from './homeSupport';
-import { CONTACT_EMAIL } from '../src/lib/constants';
+import { CONTACT_EMAIL, WHATSAPP_DISPLAY } from '../src/lib/constants';
 
 // /contato mounts the real contact form, so every test here takes `test` from the guard and answers the n8n route
 // itself: nothing is typed into the form, nothing is submitted and the real webhooks are never reached.
@@ -93,7 +93,9 @@ for (const width of EMAIL_WIDTHS) {
         range.selectNodeContents(node);
         return new Set(Array.from(range.getClientRects()).map((box) => Math.round(box.top))).size;
       };
-      const [name, domain] = Array.from(anchor.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE);
+      // The text of the link is one span (a single flex item next to the icon): its two text nodes are the two halves.
+      const textRoot = anchor.firstElementChild as HTMLElement;
+      const [name, domain] = Array.from(textRoot.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE);
       const topOf = (node: Node): number => {
         const range = document.createRange();
         range.selectNodeContents(node);
@@ -119,6 +121,56 @@ for (const width of EMAIL_WIDTHS) {
     if (width === NARROWEST_WIDTH) expect(report.isBrokenAtTheAt, 'the domain goes under the name').toBe(true);
     expect(report.pastCard).toBeLessThanOrEqual(0.5);
     expect(report.scrollExcess).toBeLessThanOrEqual(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(
+      0,
+    );
+  });
+}
+
+// The WhatsApp number may break only after the area code: its digits are one word, and the icon stays on the line of
+// the last digits instead of standing alone.
+const PHONE_WIDTHS = [NARROWEST_WIDTH, 320];
+
+for (const width of PHONE_WIDTHS) {
+  test(`keeps the digits of the WhatsApp number whole and the icon beside them at ${width}px with the larger font`, async ({
+    page,
+    network,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
+    await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
+    await enableLargeFont(page);
+    await page.setViewportSize({ width, height: EMAIL_HEIGHT });
+    await page.goto('/contato');
+    const link = page
+      .locator('main dl')
+      .getByRole('link', { name: new RegExp(`^${escapeForRegExp(WHATSAPP_DISPLAY)}`) });
+    await expect(link).toBeVisible();
+
+    const report = await link.evaluate((anchor) => {
+      const digits = anchor.querySelector('.whitespace-nowrap') as HTMLElement;
+      const icon = anchor.querySelector('svg') as SVGElement;
+      const digitBoxes = Array.from(
+        (() => {
+          const range = document.createRange();
+          range.selectNodeContents(digits);
+          return range.getClientRects();
+        })(),
+      );
+      const iconBox = icon.getBoundingClientRect();
+      const card = anchor.closest('dl')?.parentElement?.getBoundingClientRect();
+      const box = anchor.getBoundingClientRect();
+      return {
+        digitLines: new Set(digitBoxes.map((rect) => Math.round(rect.top))).size,
+        digitsText: digits.textContent,
+        isIconOnTheDigitsLine: iconBox.top < digitBoxes[0].bottom && iconBox.bottom > digitBoxes[0].top,
+        pastCard: card ? Math.max(0, box.right - card.right) : Number.NaN,
+      };
+    });
+
+    expect(report.digitsText).toBe(WHATSAPP_DISPLAY.split(' ')[1]);
+    expect(report.digitLines, 'the digits are on one line').toBe(1);
+    expect(report.isIconOnTheDigitsLine, 'the icon sits beside the digits').toBe(true);
+    expect(report.pastCard).toBeLessThanOrEqual(0.5);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(
       0,
     );

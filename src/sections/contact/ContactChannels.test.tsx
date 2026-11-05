@@ -55,6 +55,35 @@ describe('ContactChannels', () => {
     expect(link.textContent).toBe(CONTACT_EMAIL);
   });
 
+  it('keeps the address in one span, so the inline-flex link has a single text item and no gap at the break', () => {
+    renderWithProviders(<ContactChannels />);
+    const link = screen.getByRole('link', { name: EMAIL_NAME });
+
+    // A flex container makes each child text and each element a flex item: the wbr must not be one of them.
+    expect(link.childNodes).toHaveLength(1);
+    const span = link.firstElementChild as HTMLElement;
+    expect(span.tagName).toBe('SPAN');
+    expect(span.querySelectorAll('wbr')).toHaveLength(1);
+    expect(span.textContent).toBe(CONTACT_EMAIL);
+  });
+
+  it('keeps the digits of the number together, so the only break in it is after the area code', () => {
+    renderWithProviders(<ContactChannels />);
+    const link = screen.getByRole('link', { name: WHATSAPP_NAME });
+    const [areaCode, digits] = WHATSAPP_DISPLAY.split(' ');
+    const nowrap = Array.from(link.querySelectorAll('span')).find((span) =>
+      span.classList.contains('whitespace-nowrap'),
+    );
+
+    expect(nowrap?.textContent).toBe(digits);
+    expect(digits).toMatch(/-/);
+    expect(link.textContent).toBe(WHATSAPP_DISPLAY);
+    expect(link.textContent?.startsWith(`${areaCode} `)).toBe(true);
+    // One text item (the span with the number) and the icon: the number is not split into flex items of its own.
+    expect(link.childNodes).toHaveLength(2);
+    expect(link.lastElementChild?.tagName.toLowerCase()).toBe('svg');
+  });
+
   it('opens WhatsApp from the shared constants, in a new tab that a screen reader is told about', () => {
     renderWithProviders(<ContactChannels />);
     const link = screen.getByRole('link', { name: WHATSAPP_NAME });
