@@ -84,11 +84,7 @@ function BlogRoute() {
             </main>
           )}>
           <Suspense fallback={<BlogFallback />}>
-            <SEO
-              title="Blog"
-              description="Artigos sobre inteligência artificial e automação, em português e em inglês, de fontes públicas."
-              path="/blog"
-            />
+            <SEO path="/blog" />
             <BlogPage />
           </Suspense>
         </ErrorBoundary>

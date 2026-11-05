@@ -1,6 +1,6 @@
 # VN One
 
-Site da VN One, a empresa de automação e IA de Victor Nogueira. É uma aplicação de página única: React 19, Vite 6, Tailwind v4, motion 12 e react-router 7. Fica em https://vnone.com.br.
+Site da VN One, a empresa de automação e IA de Victor Nogueira. É uma aplicação de página única: React 19, Vite 8, Tailwind v4, motion 12 e react-router 7. Fica em https://vnone.com.br.
 
 Requer Node 22 ou mais novo.
 

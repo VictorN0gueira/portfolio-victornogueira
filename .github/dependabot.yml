@@ -27,6 +27,14 @@ updates:
       default-days: 7
     # Grouped updates count as one pull request each, so this leaves room for the majors that stay separate.
     open-pull-requests-limit: 10
+    # react and react-dom 19.3 grow the react-vendor chunk by 8.7 kB gzip, which breaks the 160 kB bundle budget
+    # (npm run budget -- --enforce, in CI), so a pull request for them would fail by design. Revisit this when the
+    # budget is reconsidered; 19.2 patches and 19.4 or later still arrive.
+    ignore:
+      - dependency-name: "react"
+        versions: ["19.3.x"]
+      - dependency-name: "react-dom"
+        versions: ["19.3.x"]
     groups:
       # react and react-dom must run the exact same version (react-dom refuses to start otherwise), so they move in one
       # pull request. It is also apart from the rest: react grows the critical path, which CI holds under a budget,
