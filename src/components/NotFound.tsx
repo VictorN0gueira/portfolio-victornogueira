@@ -97,7 +97,7 @@ export default function NotFound() {
             <Heading as="h1" size="l" id={headingId} className="mt-6 vn-landscape:mt-3">
               <ScrambledTitle text={notFoundCopy.title} />
             </Heading>
-            <p className="mt-6 max-w-md text-pretty text-base text-vn-gray-light md:text-lg vn-landscape:mt-3 vn-landscape:max-w-xl">
+            <p className="mt-6 max-w-md text-pretty text-base text-vn-gray-light md:text-lg vn-landscape:mt-3 vn-landscape:max-w-2xl">
               {notFoundCopy.description}
             </p>
             <Button asChild tone="dark" size="lg" className="mt-10 vn-landscape:mt-5 vn-landscape:min-h-11">

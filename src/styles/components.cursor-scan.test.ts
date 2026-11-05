@@ -10,8 +10,8 @@ describe('components.css motion primitives', () => {
 
   // Decorative motion that lasts longer than 5 seconds needs a stop that is not in the widget (2.2.2): the cursor blinks
   // five times (5.5 s) and rests visible, the scan line sweeps twice and then fades out.
-  it('blinks the cursor with vn-blink for 1.1s in one step, five times, and then rests', () => {
-    expect(rule('.vn-cursor')).toContain('animation: vn-blink 1.1s steps(1) 5')
+  it('blinks the cursor with vn-blink for 1.1s in one step, four times (4.4 s, under the 5 s of WCAG 2.2.2), and then rests', () => {
+    expect(rule('.vn-cursor')).toContain('animation: vn-blink 1.1s steps(1) 4')
     expect(rule('.vn-cursor')).not.toContain('infinite')
   })
 

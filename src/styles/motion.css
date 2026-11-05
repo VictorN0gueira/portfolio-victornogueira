@@ -77,22 +77,25 @@
 }
 
 /*
- * 404 glitch: two shifted copies of the number, each shown through a few horizontal bands for one frame at a time. Only
- * transform and clip-path move. A layer rests fully clipped (hidden behind the chrome base), so the number is clean
- * before the bursts, after them and whenever motion is off.
+ * 404 glitch: two shifted copies of the number, each shown through a few horizontal bands. Only transform and clip-path
+ * move. A layer rests fully clipped (hidden behind the chrome base), so the number is clean before the bursts, after
+ * them and whenever motion is off.
+ * It does not flash (WCAG 2.3.1): each layer changes three times (shows a band, shows another, hides), the two layers
+ * together six times, all inside the first half of a 1.6 s cycle, so no window of one second holds more than 6 changes,
+ * which is 3 flashes at most. A band is under 30% of the height of the number, and the number is a small part of the
+ * screen, so the area that changes is far under the 25% of a 10 degree field that counts. The bursts are 3 cycles,
+ * 4.8 s, so the glitch stops by itself before the 5 s of WCAG 2.2.2 (NotFoundGlitch.test.tsx reads all of this).
  */
 @keyframes vn-glitch-a {
-  10% { transform: translate(-.045em, 0); clip-path: inset(12% 0 62% 0); }
-  20% { transform: translate(.05em, 0); clip-path: inset(58% 0 18% 0); }
-  30% { transform: translate(-.03em, 0); clip-path: inset(34% 0 44% 0); }
+  8% { transform: translate(-.045em, 0); clip-path: inset(12% 0 62% 0); }
+  24% { transform: translate(.05em, 0); clip-path: inset(58% 0 18% 0); }
   40%, 100% { transform: translate(0, 0); clip-path: inset(0 0 100% 0); }
 }
 
 @keyframes vn-glitch-b {
-  15% { transform: translate(.05em, 0); clip-path: inset(70% 0 8% 0); }
-  25% { transform: translate(-.04em, 0); clip-path: inset(22% 0 56% 0); }
-  35% { transform: translate(.03em, 0); clip-path: inset(46% 0 32% 0); }
-  45%, 100% { transform: translate(0, 0); clip-path: inset(0 0 100% 0); }
+  16% { transform: translate(.05em, 0); clip-path: inset(70% 0 8% 0); }
+  32% { transform: translate(-.04em, 0); clip-path: inset(22% 0 56% 0); }
+  48%, 100% { transform: translate(0, 0); clip-path: inset(0 0 100% 0); }
 }
 
 /*
