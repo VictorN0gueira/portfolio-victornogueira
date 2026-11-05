@@ -10,10 +10,11 @@ function readInsets(): Insets {
   const probe = document.createElement('div');
   probe.setAttribute('aria-hidden', 'true');
   probe.style.cssText =
-    'position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)';
+    'position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
   document.body.appendChild(probe);
   const style = window.getComputedStyle(probe);
-  const insets = { top: Number.parseFloat(style.paddingTop) || 0, bottom: Number.parseFloat(style.paddingBottom) || 0 };
+  const read = (value: string) => Number.parseFloat(value) || 0;
+  const insets = { top: read(style.paddingTop), bottom: read(style.paddingBottom), left: read(style.paddingLeft), right: read(style.paddingRight) };
   probe.remove();
   return insets;
 }

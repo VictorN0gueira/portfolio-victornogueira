@@ -47,7 +47,7 @@ describe('AccessibilityWidget position', () => {
     await user.click(within(group).getByRole('button', { name: 'Mover o botão para a esquerda' }));
 
     const wrapper = panel.closest('aside') as HTMLElement;
-    expect(wrapper).toHaveClass('left-0');
+    expect(wrapper).toHaveClass('left-[env(safe-area-inset-left)]');
     expect(wrapper).not.toHaveClass('right-0');
     expect(wrapper.style.top).not.toBe('');
     expect(stored()?.side).toBe('left');
@@ -88,7 +88,7 @@ describe('AccessibilityWidget position', () => {
 
     renderWithProviders(<AccessibilityWidget />);
 
-    expect(screen.getByRole('complementary', { name: PANEL_NAME })).toHaveClass('left-0');
+    expect(screen.getByRole('complementary', { name: PANEL_NAME })).toHaveClass('left-[env(safe-area-inset-left)]');
   });
 
   it('falls back to the default place when the stored value is garbage', () => {

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Box, TabPosition, TabSide } from '../lib/floatingLayout';
 import { useTabDrag } from './useTabDrag';
 
-const VIEW = { viewport: { width: 390, height: 844 }, insets: { top: 0, bottom: 0 } };
+const VIEW = { viewport: { width: 390, height: 844 }, insets: { top: 0, bottom: 0, left: 0, right: 0 } };
 const START_RECT = { left: 346, top: 600, width: 44, height: 44 };
 
 interface Spies {

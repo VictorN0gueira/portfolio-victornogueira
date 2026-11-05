@@ -32,9 +32,12 @@ export interface TabPosition {
   ratio: number;
 }
 
+/** The safe area insets of the window in px (a notch, a rounded corner, the home indicator). */
 export interface Insets {
   top: number;
   bottom: number;
+  left: number;
+  right: number;
 }
 
 export interface Box {
@@ -85,6 +88,11 @@ function bottomLimit(side: TabSide, insets: Insets): number {
   return side === 'left' ? base + WHATSAPP_SIZE_PX + FLOAT_GAP_PX : base;
 }
 
+/** The left of the tab on a side: flush with the edge of the window, or with its safe area inset. */
+export function tabLeft(side: TabSide, viewportWidth: number, insets: Insets): number {
+  return side === 'right' ? viewportWidth - insets.right - TAB_SIZE_PX : insets.left;
+}
+
 export function nearestSide(centerX: number, viewportWidth: number): TabSide {
   return centerX < viewportWidth / 2 ? 'left' : 'right';
 }
@@ -116,7 +124,7 @@ interface DragInput {
 export function clampDragOffset({ rect, dx, dy, viewport, insets }: DragInput): Offset {
   const { min, max } = topBounds('right', viewport.height, insets);
   return {
-    dx: clamp(dx, -rect.left, viewport.width - rect.width - rect.left),
+    dx: clamp(dx, insets.left - rect.left, viewport.width - insets.right - rect.width - rect.left),
     dy: clamp(dy, min - rect.top, max - rect.top),
   };
 }
@@ -152,9 +160,10 @@ interface PanelInput {
  */
 export function placePanel({ side, trigger, panel, viewport, insets }: PanelInput): Offset {
   const naturalLeft = side === 'right' ? trigger.left - PANEL_GAP_PX - panel.width : trigger.left + trigger.width + PANEL_GAP_PX;
-  const left = clamp(naturalLeft, FLOAT_MARGIN_PX, Math.max(FLOAT_MARGIN_PX, viewport.width - FLOAT_MARGIN_PX - panel.width));
+  const minLeft = edgeOffset(insets.left);
+  const left = clamp(naturalLeft, minLeft, Math.max(minLeft, viewport.width - edgeOffset(insets.right) - panel.width));
   // A panel that reaches the WhatsApp column (a narrow phone, or a tab on the left) stays over the WhatsApp stack.
-  const reachesWhatsApp = left < FLOAT_MARGIN_PX + WHATSAPP_SIZE_PX;
+  const reachesWhatsApp = left < minLeft + WHATSAPP_SIZE_PX;
   const minTop = edgeOffset(insets.top);
   const maxTop = Math.max(minTop, viewport.height - bottomLimit(reachesWhatsApp ? 'left' : 'right', insets) - panel.height);
   const top = clamp(trigger.top + trigger.height - panel.height, minTop, maxTop);
@@ -167,7 +176,8 @@ export function placePanel({ side, trigger, panel, viewport, insets }: PanelInpu
  * right) has to stay over the WhatsApp stack, like placePanel keeps it.
  */
 export function panelMaxHeight(side: TabSide, viewport: Size, insets: Insets): number {
-  const reachesWhatsApp = side === 'left' || viewport.width - TAB_SIZE_PX - PANEL_GAP_PX - PANEL_WIDTH_PX < FLOAT_MARGIN_PX + WHATSAPP_SIZE_PX;
+  const panelLeft = viewport.width - insets.right - TAB_SIZE_PX - PANEL_GAP_PX - PANEL_WIDTH_PX;
+  const reachesWhatsApp = side === 'left' || panelLeft < edgeOffset(insets.left) + WHATSAPP_SIZE_PX;
   return Math.max(0, viewport.height - edgeOffset(insets.top) - bottomLimit(reachesWhatsApp ? 'left' : 'right', insets));
 }
 

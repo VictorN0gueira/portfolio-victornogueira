@@ -14,13 +14,14 @@ import {
   releasePosition,
   scrollBand,
   stepPosition,
+  tabLeft,
   TAB_SIZE_PX,
   topBounds,
   topFromRatio,
   WHATSAPP_SIZE_PX,
 } from './floatingLayout';
 
-const NO_INSETS = { top: 0, bottom: 0 };
+const NO_INSETS = { top: 0, bottom: 0, left: 0, right: 0 };
 const PHONE = { width: 390, height: 844 };
 
 describe('clamp', () => {
@@ -56,7 +57,7 @@ describe('topBounds', () => {
   });
 
   it('takes the larger of the margin and the safe area, like the buttons do', () => {
-    const insets = { top: 47, bottom: 34 };
+    const insets = { top: 47, bottom: 34, left: 0, right: 0 };
     // The header sits under the notch: the inset plus 84px, like the scroll padding of anchors.
     expect(topBounds('right', 844, insets)).toEqual({ min: 47 + 84, max: 844 - 44 - 34 });
     expect(topBounds('left', 844, insets).max).toBe(844 - 44 - (34 + 52 + 16));
@@ -199,6 +200,36 @@ describe('scrollBand', () => {
 
   it('protects the top edge when the tab is in the upper half, down to its bottom plus 8px of air', () => {
     expect(scrollBand(100, 844)).toEqual({ edge: 'top', pad: 100 + 44 + 8 });
+  });
+});
+
+// F7: viewport-fit=cover puts the window under the notch of a phone on its side; the tab keeps off it like WhatsApp does.
+describe('left and right safe area insets', () => {
+  const NOTCH = { top: 0, bottom: 0, left: 47, right: 47 };
+
+  it('puts the tab at the edge, or at the safe area inset when it is there', () => {
+    expect(tabLeft('left', 844, NO_INSETS)).toBe(0);
+    expect(tabLeft('right', 844, NO_INSETS)).toBe(844 - 44);
+    expect(tabLeft('left', 844, NOTCH)).toBe(47);
+    expect(tabLeft('right', 844, NOTCH)).toBe(844 - 47 - 44);
+  });
+
+  it('holds the dragged tab inside the safe area', () => {
+    const rect = { left: 753, top: 150, width: 44, height: 44 };
+    expect(clampDragOffset({ rect, dx: 500, dy: 0, viewport: { width: 844, height: 390 }, insets: NOTCH }).dx).toBe(844 - 47 - 44 - 753);
+    expect(clampDragOffset({ rect, dx: -2000, dy: 0, viewport: { width: 844, height: 390 }, insets: NOTCH }).dx).toBe(47 - 753);
+  });
+
+  it('keeps the panel inside the safe area', () => {
+    const { dx } = placePanel({ side: 'right', trigger: { left: 100, top: 200, width: 44, height: 44 }, panel: { width: 208, height: 100 }, viewport: { width: 844, height: 390 }, insets: NOTCH });
+    // Preferred left: 100 - 8 - 208 = -116; the safe area starts at 47.
+    expect(100 - 8 - 208 + dx).toBe(47);
+  });
+
+  it('stacks over WhatsApp when the panel reaches the column of WhatsApp, which starts at the left inset', () => {
+    // WhatsApp ends at 47 + 52 = 99. The panel of this tab is pushed back to the inset (47), so it reaches that column.
+    const { dy } = placePanel({ side: 'right', trigger: { left: 200, top: 300, width: 44, height: 44 }, panel: { width: 208, height: 100 }, viewport: { width: 844, height: 390 }, insets: NOTCH });
+    expect(300 + dy + 100).toBeLessThanOrEqual(390 - 84);
   });
 });
 

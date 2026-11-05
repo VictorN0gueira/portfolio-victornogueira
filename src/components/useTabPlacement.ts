@@ -6,6 +6,7 @@ import {
   releasePosition,
   scrollBand,
   stepPosition,
+  tabLeft,
   topFromRatio,
   TAB_SIZE_PX,
   TAB_SLIDE_MS,
@@ -139,7 +140,7 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
   // At rest the panel is placed from the layout box of the tab, so a slide in progress does not disturb it.
   useLayoutEffect(() => {
     if (position === null || topPx === null || !isOpen || liveRect.current) return;
-    const left = position.side === 'right' ? view.viewport.width - TAB_SIZE_PX : 0;
+    const left = tabLeft(position.side, view.viewport.width, view.insets);
     applyPanel({ left, top: topPx, width: TAB_SIZE_PX, height: TAB_SIZE_PX }, position.side);
   }, [position, topPx, isOpen, activeCount, view, placeTick, applyPanel]);
 

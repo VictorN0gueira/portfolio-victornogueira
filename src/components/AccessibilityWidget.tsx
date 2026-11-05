@@ -25,8 +25,8 @@ const WRAPPER_CLASSES =
 // computed in src/lib/floatingLayout.ts, where the WhatsApp stack is.
 const CHOSEN_CLASSES = `pointer-events-none fixed z-(--vn-z-widget) size-[44px]`;
 const CHOSEN_SIDE_CLASSES: Record<TabSide, string> = {
-  right: `${KEEPS_PLACE_UNDER_SCROLL_LOCK} right-0`,
-  left: 'left-0',
+  right: `${KEEPS_PLACE_UNDER_SCROLL_LOCK} right-[env(safe-area-inset-right)]`,
+  left: 'left-[env(safe-area-inset-left)]',
 };
 // Spelled out because Tailwind reads class names as plain text: the 8px is PANEL_GAP_PX (pinned by a test).
 const PLACER_SIDE_CLASSES: Record<TabSide, string> = {
