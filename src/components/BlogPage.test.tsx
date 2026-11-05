@@ -3,6 +3,7 @@ import { LazyMotion, domAnimation } from 'motion/react';
 import { Link, MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AccessibilityProvider } from '../contexts/AccessibilityContext';
 import { renderWithProviders } from '../test/render';
 import type { NewsArticle } from '../utils/newsService';
 import BlogPage from './BlogPage';
@@ -41,12 +42,12 @@ describe('BlogPage states', () => {
     getNewsArticles.mockReturnValue(new Promise((resolve) => (answer = resolve)));
     const { container } = renderWithProviders(<BlogPage />, { route: '/blog' });
 
-    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('[class*="animate-pulse"]').length).toBeGreaterThan(0);
     expect(articlesText()).toHaveLength(0);
 
     answer({ articles: [newsArticle(1)], source: 'cache' });
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
-    expect(container.querySelectorAll('.animate-pulse')).toHaveLength(0);
+    expect(container.querySelectorAll('[class*="animate-pulse"]')).toHaveLength(0);
   });
 
   it('says so when the sources fail, with the reason', async () => {
@@ -215,9 +216,8 @@ describe('BlogPage tag pills', () => {
       const pills = Array.from(container.querySelectorAll(':scope > span'));
       expect(pills.length).toBeGreaterThanOrEqual(2);
       for (const pill of pills) {
-        expect(pill.className).toContain('bg-vn-black/80');
-        expect(pill.className).toContain('border-white/20');
-        expect(pill.className).not.toMatch(/bg-white\/(10|20)/);
+        expect(pill).toHaveClass('bg-vn-black', 'text-vn-white');
+        expect(pill.className).not.toMatch(/bg-vn-black\/|bg-white\//);
       }
     }
   });
@@ -271,14 +271,16 @@ describe('BlogPage focus on arrival', () => {
 
   function renderApp(entries: string[], index?: number) {
     return render(
-      <LazyMotion features={domAnimation} strict>
-        <MemoryRouter initialEntries={entries} initialIndex={index}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/blog" element={<BlogPage />} />
-          </Routes>
-        </MemoryRouter>
-      </LazyMotion>,
+      <AccessibilityProvider>
+        <LazyMotion features={domAnimation} strict>
+          <MemoryRouter initialEntries={entries} initialIndex={index}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/blog" element={<BlogPage />} />
+            </Routes>
+          </MemoryRouter>
+        </LazyMotion>
+      </AccessibilityProvider>,
     );
   }
 

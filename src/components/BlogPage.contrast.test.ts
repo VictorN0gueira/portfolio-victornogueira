@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { FALLBACK_IMAGE } from '../sections/blog/coverFallback';
 
 // jsdom paints nothing, so contrast cannot be measured there. What can be held is the choice of colors: the blog sits on
 // near black, where the muted zinc greys (500 to 700) fall under 4.5:1 and the old green and blue badges under white text
@@ -84,7 +85,7 @@ function hexContrast(foreground: string, background: string): number {
 }
 
 describe('BlogPage inline SVG colors', () => {
-  const svg = decodeURIComponent(SOURCE.match(/FALLBACK_IMAGE =\s*'data:image\/svg\+xml,([^']+)'/)?.[1] ?? '');
+  const svg = decodeURIComponent(FALLBACK_IMAGE.slice(FALLBACK_IMAGE.indexOf(',') + 1));
 
   it('reads the placeholder cover from the source', () => {
     expect(svg).toContain('<svg');

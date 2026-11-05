@@ -1,26 +1,19 @@
-import { useState, useEffect, useCallback, useId, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { m, AnimatePresence } from 'motion/react';
 import { Link, useNavigationType } from 'react-router-dom';
 import {
   ArrowLeft,
-  ExternalLink,
   RefreshCw,
   Sparkles,
   Globe,
-  Clock,
   Newspaper,
-  Bot,
-  Zap,
   AlertTriangle,
   Search,
   X,
-  ArrowUpRight,
-  BookOpen,
 } from 'lucide-react';
 import {
   clearNewsCache,
   getNewsArticles,
-  getTimeAgo,
   detectCategory,
   type NewsArticle,
   type NewsOrigin,
@@ -28,272 +21,19 @@ import {
 import { MAIN_CONTENT_ID, SkipLink } from './layout/SkipLink';
 import {
   NEW_TAB_HINT_ID,
-  cardDescribedBy,
   describeDataSource,
-  estimateReadTime,
-  getCategoryTag,
-  isNew,
   type CatFilter,
   type LangFilter,
 } from '../sections/blog/blogMeta';
 import { CAT_LABELS, LANG_LABELS, blogCopy, countLabel } from '../sections/blog/blogCopy';
+import { ArticleCard } from '../sections/blog/ArticleCard';
+import { BlogSkeletons } from '../sections/blog/BlogSkeletons';
+import { FeaturedArticle } from '../sections/blog/FeaturedArticle';
 import { NewTabHint } from './ui/NewTabHint';
-
-// The pills sit on a cover that is somebody else's picture, light or dark: they carry their own opaque dark surface.
-const TAG_PILL = 'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-vn-black/80 border border-white/20 shadow-lg';
-
-const FALLBACK_IMAGE =
-  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400" fill="%2318181b"%3E%3Crect width="800" height="400"/%3E%3Ctext x="400" y="200" fill="%23a1a1aa" font-family="sans-serif" font-size="24" text-anchor="middle" alignment-baseline="middle"%3EImagem indispon%C3%ADvel%3C/text%3E%3C/svg%3E';
 
 const FILTER_CHIP_BASE = 'px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all vn-focus-ring';
 const FILTER_CHIP_ON = 'bg-white text-black';
 const FILTER_CHIP_OFF = 'bg-white/[0.05] text-vn-gray-light border border-white/[0.08] hover:border-white/20 hover:text-white';
-
-// ─── Skeleton ────────────────────────────────────────────────────────────────
-function SkeletonCard() {
-  return (
-    <div className="rounded-2xl overflow-hidden bg-white/[0.03] border border-white/[0.06]">
-      <div className="aspect-[16/10] bg-zinc-800/50 animate-pulse" />
-      <div className="p-6 space-y-4">
-        <div className="flex gap-2">
-          <div className="w-16 h-5 rounded-full bg-zinc-800/50 animate-pulse" />
-          <div className="w-20 h-5 rounded-full bg-zinc-800/50 animate-pulse" />
-        </div>
-        <div className="space-y-2">
-          <div className="h-5 bg-zinc-800/50 rounded animate-pulse w-full" />
-          <div className="h-5 bg-zinc-800/50 rounded animate-pulse w-3/4" />
-        </div>
-        <div className="space-y-2">
-          <div className="h-3 bg-zinc-800/50 rounded animate-pulse w-full" />
-          <div className="h-3 bg-zinc-800/50 rounded animate-pulse w-5/6" />
-        </div>
-        <div className="flex justify-between pt-2">
-          <div className="h-3 bg-zinc-800/50 rounded animate-pulse w-24" />
-          <div className="h-3 bg-zinc-800/50 rounded animate-pulse w-16" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SkeletonFeatured() {
-  return (
-    <div className="rounded-3xl overflow-hidden bg-white/[0.03] border border-white/[0.06] flex flex-col md:flex-row mb-6">
-      <div className="w-full md:w-[55%] aspect-[16/10] md:aspect-auto bg-zinc-800/50 animate-pulse" style={{ minHeight: '288px' }} />
-      <div className="flex-1 p-8 space-y-4 flex flex-col justify-center">
-        <div className="flex gap-2">
-          <div className="w-20 h-5 rounded-full bg-zinc-800/50 animate-pulse" />
-          <div className="w-16 h-5 rounded-full bg-zinc-800/50 animate-pulse" />
-        </div>
-        <div className="space-y-2">
-          <div className="h-7 bg-zinc-800/50 rounded animate-pulse w-full" />
-          <div className="h-7 bg-zinc-800/50 rounded animate-pulse w-3/4" />
-        </div>
-        <div className="space-y-2">
-          <div className="h-3 bg-zinc-800/50 rounded animate-pulse w-full" />
-          <div className="h-3 bg-zinc-800/50 rounded animate-pulse w-5/6" />
-          <div className="h-3 bg-zinc-800/50 rounded animate-pulse w-4/6" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Featured Card ────────────────────────────────────────────────────────────
-function FeaturedCard({ article, isFixedList }: { article: NewsArticle; isFixedList: boolean }) {
-  const [imgError, setImgError] = useState(false);
-  const ids = useId();
-  const titleId = `${ids}-title`;
-  const tagsId = `${ids}-tags`;
-  const summaryId = `${ids}-summary`;
-  const metaId = `${ids}-meta`;
-  const textLang = article.language === 'en' ? 'en' : undefined;
-  const { langLabel, topicIcon: topicIconKind, topicLabel } = getCategoryTag(article);
-  const topicIcon = topicIconKind === 'zap' ? <Zap className="w-3 h-3" /> : <Bot className="w-3 h-3" />;
-  // The fixed list has no real dates: it never says new nor how long ago, or it would look like a fresh feed.
-  const novo = !isFixedList && isNew(article.publishedAt);
-  const timeAgo = isFixedList ? '' : getTimeAgo(article.publishedAt);
-
-  return (
-    <m.a
-      href={article.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-labelledby={titleId}
-      aria-describedby={cardDescribedBy(tagsId, summaryId, metaId)}
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="group relative rounded-3xl overflow-hidden bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.18] transition-all duration-500 hover:shadow-2xl hover:shadow-white/[0.04] flex flex-col md:flex-row mb-6"
-    >
-      {/* Imagem */}
-      <div className="relative w-full md:w-[55%] aspect-[16/10] md:aspect-auto overflow-hidden bg-zinc-900 shrink-0" style={{ minHeight: '0' }}>
-        <img
-          src={imgError || !article.image ? FALLBACK_IMAGE : article.image}
-          onError={() => setImgError(true)}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          alt=""
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/60 hidden md:block" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent md:hidden" />
-
-        <div id={tagsId} className="absolute top-5 left-5 flex gap-2 flex-wrap">
-          <span className={TAG_PILL}>
-            {langLabel}
-          </span>
-          <span className={`${TAG_PILL} flex items-center gap-1`}>
-            {topicIcon}{topicLabel}
-          </span>
-          {novo && (
-            <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-vn-black bg-vn-accent shadow-lg">
-              {blogCopy.card.isNew}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Conteúdo */}
-      <div className="flex-1 flex flex-col justify-between p-8 md:p-10 relative z-10">
-        <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-[9px] font-bold uppercase tracking-widest text-zinc-400 mb-5">
-            <Sparkles className="w-3 h-3 text-vn-accent" />
-            {blogCopy.card.featured}
-          </span>
-
-          <h3 id={titleId} lang={textLang} className="text-2xl md:text-3xl font-bold text-white font-display leading-tight mb-4 group-hover:text-zinc-100 transition-colors line-clamp-3">
-            {article.title}
-          </h3>
-
-          <p id={summaryId} lang={textLang} className="text-sm text-zinc-400 leading-relaxed line-clamp-3 font-light">
-            {article.description || blogCopy.card.noSummary}
-          </p>
-        </div>
-
-        <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/[0.06] flex-wrap gap-3">
-          <div id={metaId} className="flex items-center gap-4 text-vn-gray-light text-xs flex-wrap">
-            {timeAgo && (
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" />
-                {timeAgo}
-              </span>
-            )}
-            <span className="flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5" />
-              {estimateReadTime(article)} {blogCopy.card.readTime}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Newspaper className="w-3.5 h-3.5" />
-              <span className="truncate max-w-[120px]">{article.source.name}</span>
-            </span>
-          </div>
-
-          <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-zinc-400 group-hover:text-white transition-colors">
-            {blogCopy.card.read}
-            <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          </span>
-        </div>
-      </div>
-    </m.a>
-  );
-}
-
-// ─── News Card ────────────────────────────────────────────────────────────────
-function NewsCard({ article, index, isFixedList }: { article: NewsArticle; index: number; isFixedList: boolean }) {
-  const [imgError, setImgError] = useState(false);
-  const ids = useId();
-  const titleId = `${ids}-title`;
-  const tagsId = `${ids}-tags`;
-  const newId = `${ids}-new`;
-  const summaryId = `${ids}-summary`;
-  const metaId = `${ids}-meta`;
-  const textLang = article.language === 'en' ? 'en' : undefined;
-  const { langLabel, topicIcon: topicIconKind, topicLabel } = getCategoryTag(article);
-  const topicIcon = topicIconKind === 'zap' ? <Zap className="w-3 h-3" /> : <Bot className="w-3 h-3" />;
-  // The fixed list has no real dates: it never says new nor how long ago, or it would look like a fresh feed.
-  const novo = !isFixedList && isNew(article.publishedAt);
-  const timeAgo = isFixedList ? '' : getTimeAgo(article.publishedAt);
-
-  return (
-    <m.a
-      href={article.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-labelledby={titleId}
-      aria-describedby={cardDescribedBy(tagsId, novo && newId, summaryId, metaId)}
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: Math.min(index * 0.07, 0.5), ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="group relative rounded-2xl overflow-hidden bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.15] transition-all duration-500 hover:shadow-2xl hover:shadow-white/[0.03] flex flex-col"
-    >
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
-        <div className="absolute -inset-[1px] bg-gradient-to-br from-white/[0.08] via-transparent to-white/[0.04] rounded-2xl" />
-      </div>
-
-      <div className="relative aspect-[16/10] overflow-hidden bg-zinc-900">
-        <img
-          src={imgError || !article.image ? FALLBACK_IMAGE : article.image}
-          onError={() => setImgError(true)}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          alt=""
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-        {/* The right edge is held back from the NOVO pill (or the hover icon) that sits in the corner, so the tags wrap instead of running under it. */}
-        <div id={tagsId} className={`absolute top-4 left-4 flex gap-2 flex-wrap ${novo ? 'right-[5.5rem]' : 'right-16'}`}>
-          <span className={TAG_PILL}>
-            {langLabel}
-          </span>
-          <span className={`${TAG_PILL} flex items-center gap-1`}>
-            {topicIcon}{topicLabel}
-          </span>
-        </div>
-
-        {novo && (
-          <span id={newId} className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-vn-black bg-vn-accent shadow-lg">
-            {blogCopy.card.isNew}
-          </span>
-        )}
-
-        {!novo && (
-          <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 md:bg-white/10 backdrop-blur-none md:backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-            <ExternalLink className="w-3.5 h-3.5 text-white" />
-          </div>
-        )}
-      </div>
-
-      <div className="p-6 flex flex-col flex-1 relative z-10">
-        <h3 id={titleId} lang={textLang} className="text-base font-bold text-white leading-snug mb-3 line-clamp-2 group-hover:text-zinc-100 transition-colors font-display">
-          {article.title}
-        </h3>
-
-        <p id={summaryId} lang={textLang} className="text-sm text-zinc-400 leading-relaxed line-clamp-3 mb-auto font-light">
-          {article.description || blogCopy.card.noSummary}
-        </p>
-
-        <div id={metaId} className="flex items-center justify-between mt-5 pt-4 border-t border-white/[0.06]">
-          <div className="flex items-center gap-1.5 text-vn-gray-light">
-            <Clock className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium">
-              {timeAgo ? `${estimateReadTime(article)} · ${timeAgo}` : estimateReadTime(article)}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-vn-gray-light">
-            <Newspaper className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium truncate max-w-[100px]">
-              {article.source.name}
-            </span>
-          </div>
-        </div>
-      </div>
-    </m.a>
-  );
-}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function BlogPage() {
@@ -562,14 +302,8 @@ export default function BlogPage() {
 
             {/* Loading */}
             {loading && (
-              <m.div key="loading" role="status" aria-label={blogCopy.loadingLabel} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <span className="sr-only">{blogCopy.loadingLabel}</span>
-                <div aria-hidden="true">
-                  <SkeletonFeatured />
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
-                  </div>
-                </div>
+              <m.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <BlogSkeletons />
               </m.div>
             )}
 
@@ -608,11 +342,13 @@ export default function BlogPage() {
               <m.div key="articles" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <h2 className="sr-only">{blogCopy.listHeading}</h2>
                 <NewTabHint id={NEW_TAB_HINT_ID} />
-                <FeaturedCard article={filteredArticles[0]} isFixedList={origin === 'fallback'} />
+                <div className="mb-6">
+                  <FeaturedArticle article={filteredArticles[0]} isFixedList={origin === 'fallback'} />
+                </div>
                 {filteredArticles.length > 1 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredArticles.slice(1).map((article, idx) => (
-                      <NewsCard key={article.url} article={article} index={idx + 1} isFixedList={origin === 'fallback'} />
+                    {filteredArticles.slice(1).map((article) => (
+                      <ArticleCard key={article.url} article={article} isFixedList={origin === 'fallback'} />
                     ))}
                   </div>
                 )}
