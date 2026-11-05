@@ -32,8 +32,7 @@ export const services: Service[] = [
     slug: 'automacao-essencial',
     nome: 'Automação Essencial',
     categoria: 'Automação',
-    descricao:
-      'Um processo manual do seu negócio vira um fluxo automático, rodando sozinho todos os dias.',
+    descricao: 'Um processo manual do seu negócio vira um fluxo automático, rodando sozinho todos os dias.',
     inclui: [
       '1 fluxo de automação completo',
       'Integração entre seus sistemas atuais',
@@ -46,8 +45,7 @@ export const services: Service[] = [
     slug: 'automacao-avancada',
     nome: 'Automação Avançada',
     categoria: 'Automação',
-    descricao:
-      'Operações inteiras automatizadas, com IA onde faz diferença.',
+    descricao: 'Operações inteiras automatizadas, com IA onde faz diferença.',
     inclui: [
       'Múltiplos fluxos integrados',
       'Lógica condicional complexa',
@@ -61,7 +59,8 @@ export const services: Service[] = [
     nome: 'Super Agente',
     categoria: 'Inteligência Artificial',
     descricao:
-      'Uma IA que pega o serviço e entrega pronto: lembra do que você pediu, consulta os documentos da empresa e age nos sistemas que você já usa.',
+      'Uma IA que pega o serviço e entrega pronto: lembra do que você pediu, ' +
+      'consulta os documentos da empresa e age nos sistemas que você já usa.',
     inclui: [
       'Modelo de IA escolhido com você, trocável depois',
       'Memória de clientes e do que foi pedido',
@@ -74,8 +73,7 @@ export const services: Service[] = [
     slug: 'agente-de-ia-sob-medida',
     nome: 'Agente de IA Sob Medida',
     categoria: 'Inteligência Artificial',
-    descricao:
-      'Um agente que atende, qualifica e responde pelos seus canais, treinado no contexto do seu negócio.',
+    descricao: 'Um agente que atende, qualifica e responde pelos seus canais, treinado no contexto do seu negócio.',
     inclui: [
       'Escopo do agente definido com você',
       'Integração com 1 canal (WhatsApp ou site)',
@@ -88,8 +86,7 @@ export const services: Service[] = [
     slug: 'landing-page-ou-site',
     nome: 'Landing Page ou Site',
     categoria: 'Desenvolvimento Web',
-    descricao:
-      'Site rápido, pensado para o visitante virar contato.',
+    descricao: 'Site rápido, pensado para o visitante virar contato.',
     inclui: [
       'Funciona bem no celular e no computador',
       'Até 5 páginas',
@@ -102,8 +99,7 @@ export const services: Service[] = [
     slug: 'sistema-web-sob-medida',
     nome: 'Sistema Web Sob Medida',
     categoria: 'Desenvolvimento Web',
-    descricao:
-      'Aplicação completa para o seu processo, do zero ao ar.',
+    descricao: 'Aplicação completa para o seu processo, do zero ao ar.',
     inclui: [
       'Telas e regras do seu processo',
       'Autenticação de usuários',

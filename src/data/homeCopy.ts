@@ -20,7 +20,8 @@ const NBSP = '\u00A0';
 // line wraps, and keep "É uma" and "sai do diagnóstico" from leaving a lone word at the end of a line.
 const SAVINGS_PERCENT = Math.round(SAVINGS_RATE * 100);
 const TEAM_SIZES = TEAM_OPTIONS.map((option) => option.value.toLocaleString('pt-BR'));
-const TEAM_SIZES_TEXT = `${TEAM_SIZES.slice(0, -1).join(`;${NBSP}`)}${NBSP}ou${NBSP}${TEAM_SIZES[TEAM_SIZES.length - 1]}${NBSP}pessoas`;
+const TEAM_SIZES_TEXT =
+  `${TEAM_SIZES.slice(0, -1).join(`;${NBSP}`)}${NBSP}ou${NBSP}` + `${TEAM_SIZES[TEAM_SIZES.length - 1]}${NBSP}pessoas`;
 
 const ROI_COST_LABEL = 'Custo anual hoje';
 const ROI_SAVINGS_LABEL = 'Economia estimada por ano';
@@ -39,8 +40,13 @@ export const homeCopy = {
       { slot: 'result' },
       'por mês.',
     ] as readonly HeroSentencePart[],
-    hourOptions: HERO_HOUR_OPTIONS.map((hours) => ({ value: hours, label: `${hours} horas` })) as readonly HeroHourOption[],
-    sub: 'A gente mapeia o processo e entrega a automação rodando nas ferramentas que você já usa. Sua equipe fica com o trabalho que precisa de gente.',
+    hourOptions: HERO_HOUR_OPTIONS.map((hours) => ({
+      value: hours,
+      label: `${hours} horas`,
+    })) as readonly HeroHourOption[],
+    sub:
+      'A gente mapeia o processo e entrega a automação rodando nas ferramentas que você já usa. ' +
+      'Sua equipe fica com o trabalho que precisa de gente.',
     finePrint: 'Estimativa com R$\u00A050 por hora e 80% do tempo automatizado.',
     ctaPrimary: { label: 'Quero automatizar', to: '/#contato' },
     ctaSecondary: { label: 'Ver como funciona', to: '/#metodo' },
@@ -61,7 +67,8 @@ export const homeCopy = {
       estimate: (amount: string) => `Estimativa: ${amount} por mês`,
     },
   },
-  // Os textos da seção da frase de resultado (os quatro números estão em data/stats.ts). `heading` é o h2 da seção.
+  // Os textos da seção da frase de resultado (os quatro números estão em data/stats.ts). `heading` é o h2 da
+  // seção.
   statement: {
     kicker: 'resultado',
     heading: 'Vê o que a automação já tirou da rotina de outras empresas.',
@@ -78,8 +85,8 @@ export const homeCopy = {
     stepsTitle: 'Passo a passo',
     pause: 'Pausar troca automática',
   },
-  // Os textos dos três cartões de serviço. `term` é a palavra lida antes do prazo de cada cartão (o prazo em si vem de
-  // data/services.ts), e `link` leva à página de serviços.
+  // Os textos dos três cartões de serviço. `term` é a palavra lida antes do prazo de cada cartão (o prazo em si vem
+  // de data/services.ts), e `link` leva à página de serviços.
   services: {
     kicker: 'o que a gente faz',
     heading: 'Três jeitos de tirar trabalho manual da sua frente',
@@ -92,10 +99,10 @@ export const homeCopy = {
     heading: 'Do primeiro papo ao fluxo rodando',
     sub: 'Você conhece o negócio e a gente cuida do método e da execução.',
   },
-  // Os textos da seção de depoimentos (as falas e os autores estão em data/testimonials.ts, sem edição). `readFull` é o
-  // texto visível do botão de cada cartão; `readFullFor` é o nome dele para leitor de tela e começa com o texto visível.
-  // `dialogTitleLead` vem antes do nome do autor, só para leitor de tela (o nome visível dá o nome ao diálogo aberto, e o
-  // nome acessível fica "Depoimento de {nome}"); `close` é o nome do botão que fecha.
+  // Os textos da seção de depoimentos (as falas e os autores estão em data/testimonials.ts, sem edição).
+  // `readFull` é o texto visível do botão de cada cartão; `readFullFor` é o nome dele para leitor de tela e começa
+  // com o texto visível. `dialogTitleLead` vem antes do nome do autor, só para leitor de tela (o nome visível dá o
+  // nome ao diálogo aberto, e o nome acessível fica "Depoimento de {nome}"); `close` é o nome do botão que fecha.
   testimonials: {
     kicker: 'clientes',
     heading: 'Quem já automatizou com a gente',
@@ -108,8 +115,8 @@ export const homeCopy = {
   clients: {
     kicker: 'quem confia',
   },
-  // Os textos das perguntas frequentes (as perguntas e as respostas estão em data/faqs.ts). `message` é a primeira frase
-  // da conversa aberta pelo botão.
+  // Os textos das perguntas frequentes (as perguntas e as respostas estão em data/faqs.ts). `message` é a primeira
+  // frase da conversa aberta pelo botão.
   faq: {
     kicker: 'dúvidas',
     heading: 'Perguntas que a gente sempre ouve',
@@ -140,7 +147,9 @@ export const homeCopy = {
       cost: ROI_COST_LABEL,
       savings: ROI_SAVINGS_LABEL,
     },
-    note: `Considera ${SAVINGS_PERCENT}% do tempo automatizado. Cada faixa de equipe conta como ${TEAM_SIZES_TEXT}. É${NBSP}uma estimativa: o número real sai${NBSP}do${NBSP}diagnóstico.`,
+    note:
+      `Considera ${SAVINGS_PERCENT}% do tempo automatizado. Cada faixa de equipe conta como ${TEAM_SIZES_TEXT}. ` +
+      `É${NBSP}uma estimativa: o número real sai${NBSP}do${NBSP}diagnóstico.`,
     cta: 'Quero automatizar esse processo',
     // Aviso quando o valor da hora passa do teto: o valor já chega formatado em reais.
     rateCap: (max: string) => `A conta usa no máximo ${max} por hora.`,
