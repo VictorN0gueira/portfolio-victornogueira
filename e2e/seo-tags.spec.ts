@@ -17,9 +17,10 @@ const ONE_PER_PAGE = [
   'meta[property="og:locale"]',
 ];
 const ROUTES = [
-  { path: '/', hasOgUrl: true, title: /Automação e IA para empresas/ },
+  { path: '/', hasOgUrl: true, title: /Automação de processos e agentes de IA/ },
   { path: '/servicos', hasOgUrl: true, title: /^Serviços/ },
   { path: '/projetos/dizpara', hasOgUrl: true, title: /^DizPara/ },
+  { path: '/blog', hasOgUrl: false, title: /^Blog/ },
   { path: '/rota-que-nao-existe', hasOgUrl: false, title: /^Página não encontrada/ },
 ] as const;
 
@@ -41,6 +42,17 @@ for (const { path, hasOgUrl, title } of ROUTES) {
   });
 }
 
+// The blog only lists articles of other sites: it is out of the index (and stays crawlable, so that the noindex is seen).
+test('/blog is out of the index: noindex, no canonical, no structured data', async ({ page }) => {
+  await page.goto('/blog');
+  await expect(page).toHaveTitle(/^Blog/);
+  await expect.poll(() => page.locator('head [data-static-seo]').count()).toBe(0);
+
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
+  await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+  await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(0);
+});
+
 test('the raw HTML still carries the home share tags for crawlers that run no script', async ({ page }) => {
   const html = await (await page.request.get('/')).text();
 
@@ -53,7 +65,7 @@ test('the raw HTML still carries the home share tags for crawlers that run no sc
 // and the announcement of the new page must be its own title (not the home one).
 const SLOW_PAGE_CHUNK = /\/assets\/ServicesPage-[^/]*\.js$/;
 const SLOW_PAGE_MS = 2500;
-const HOME_TITLE_TEXT = 'VN One | Automação e IA para empresas';
+const HOME_TITLE_TEXT = 'VN One | Automação de processos e agentes de IA sob medida';
 const TITLE_SAMPLE_MS = 25;
 
 test('the title never goes back to the home title between /sobre and a slow /servicos', async ({ page }) => {

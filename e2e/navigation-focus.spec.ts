@@ -128,7 +128,7 @@ test.describe('focus and announcement on a route change', () => {
 // the heading the hash points to, instead of pulling focus back to main.
 const GUARD_WINDOW_MS = 1500;
 const SERVICE_SLUG = 'automacao-essencial';
-const HOME_TITLE = /Automação e IA para empresas/;
+const HOME_TITLE = /Automação de processos e agentes de IA/;
 
 /** The id of the element inside `#section` that holds focus, or '' when focus is elsewhere. */
 const focusedInside = (page: Page, sectionId: string) =>

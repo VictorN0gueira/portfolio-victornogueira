@@ -3,14 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title data-static-seo>VN One | Automação e IA para empresas</title>
 
     <!-- Performance & Preloads -->
     <link rel="preload" href="/fonts/SpaceGrotesk-Bold.woff2" as="font" type="font/woff2" crossorigin />
 
-    <!-- SEO. The tags marked data-static-seo are what crawlers that do not run JavaScript read (the home values). SEO.tsx
-         adds the ones of each page and removes these on mount, so a page never carries two of each. -->
-    <meta name="description" content="A gente automatiza o trabalho repetitivo da sua empresa com IA e conecta as ferramentas que você já usa. Conversa de 30 minutos, sem compromisso." data-static-seo />
     <meta name="author" content="VN One" />
     <meta name="theme-color" content="#0A0A0A" />
     <!-- canonical é gerenciado por rota pelo React, que move title, meta e link para o head (SEO.tsx) -->
@@ -24,11 +20,19 @@
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
+    <!-- SEO. The tags between the markers are the head of the home for the crawlers that do not run JavaScript, marked
+         data-static-seo. SEO.tsx adds the ones of each page and removes these on mount, so a page never carries two of
+         each. The build step swaps this block for the head of each route: keep the markers, and keep in it only the
+         title, the description, the og tags and the twitter tags. -->
+    <!-- seo:start -->
+    <title data-static-seo>VN One | Automação de processos e agentes de IA sob medida</title>
+    <meta name="description" content="A gente automatiza o trabalho repetitivo da sua empresa com IA e conecta as ferramentas que você já usa. Conversa de 30 minutos, sem compromisso." data-static-seo />
+
     <!-- Open Graph -->
     <meta property="og:type" content="website" data-static-seo />
     <meta property="og:site_name" content="VN One" data-static-seo />
     <meta property="og:url" content="https://vnone.com.br/" data-static-seo />
-    <meta property="og:title" content="VN One | Automação e IA para empresas" data-static-seo />
+    <meta property="og:title" content="VN One | Automação de processos e agentes de IA sob medida" data-static-seo />
     <meta property="og:description" content="A gente automatiza o trabalho repetitivo da sua empresa com IA e conecta as ferramentas que você já usa. Conversa de 30 minutos, sem compromisso." data-static-seo />
     <meta property="og:image" content="https://vnone.com.br/og-banner.png?v=3" data-static-seo />
     <meta property="og:image:width" content="1200" data-static-seo />
@@ -38,10 +42,11 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" data-static-seo />
-    <meta name="twitter:title" content="VN One | Automação e IA para empresas" data-static-seo />
+    <meta name="twitter:title" content="VN One | Automação de processos e agentes de IA sob medida" data-static-seo />
     <meta name="twitter:description" content="A gente automatiza o trabalho repetitivo da sua empresa com IA e conecta as ferramentas que você já usa. Conversa de 30 minutos, sem compromisso." data-static-seo />
     <meta name="twitter:image" content="https://vnone.com.br/og-banner.png?v=3" data-static-seo />
     <meta name="twitter:image:alt" content="VN One, automação e IA para empresas" data-static-seo />
+    <!-- seo:end -->
   </head>
   <body>
     <div id="root"></div>
