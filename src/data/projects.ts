@@ -45,7 +45,7 @@ export const projects: readonly Project[] = [
       'Painel para captar leads no Google Maps, importar de CSV e do Google Sheets e disparar campanhas por e-mail e por WhatsApp.',
     highlight: 'Da busca no Google Maps ao disparo no WhatsApp e no e-mail, no mesmo painel.',
     features: [
-      'Busca empresas no Google Maps por nicho e cidade e transforma o resultado em leads.',
+      'Busca empresas no Google Maps por nicho e cidade e guarda o resultado como leads.',
       'Importa leads de CSV e do Google Sheets, aceita cadastro manual e detecta duplicados.',
       'Mostra cada lead com pontuação e status: novo, em contato, qualificado ou descartado.',
       'Dispara campanhas por e-mail e por WhatsApp, em um passo a passo de criação.',
