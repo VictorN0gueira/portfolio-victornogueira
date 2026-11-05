@@ -38,7 +38,11 @@ export function WindowFrame({
         </span>
         <span
           aria-hidden={isTitleDecorative || undefined}
-          className="min-w-0 break-words font-mono text-xs text-vn-gray-light"
+          className={cn(
+            'min-w-0 font-mono text-xs text-vn-gray-light',
+            // A decorative name (a slug) shrinks and ends in an ellipsis; a real title wraps and is read in full.
+            isTitleDecorative ? 'truncate' : 'break-words',
+          )}
         >
           {title}
         </span>

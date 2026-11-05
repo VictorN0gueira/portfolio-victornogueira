@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import type { Project } from '../data/projects';
 import { BrowserShot } from '../sections/projects/BrowserShot';
 import { MotionArrow } from '../sections/projects/MotionArrow';
+import { NoBreakHyphens } from '../sections/projects/NoBreakHyphens';
 import { TagList } from '../sections/projects/TagList';
 import { Heading } from './ui/Heading';
 import { SpotlightCard } from './ui/SpotlightCard';
@@ -40,8 +41,12 @@ function FeaturedText({ project, titleId, ctaId }: { project: Project; titleId: 
       <Heading as="h2" size="l" id={titleId} className="mt-4">
         <ProjectTitle title={project.title} />
       </Heading>
-      <p className="mt-5 text-pretty text-xl font-medium leading-snug md:text-2xl">{project.highlight}</p>
-      <p className="mt-4 max-w-md text-pretty text-base text-vn-gray-light">{project.description}</p>
+      <p className="mt-5 text-pretty text-xl font-medium leading-snug md:text-2xl">
+        <NoBreakHyphens text={project.highlight ?? ''} />
+      </p>
+      <p className="mt-4 max-w-md text-pretty text-base text-vn-gray-light">
+        <NoBreakHyphens text={project.description} />
+      </p>
       <TagList tags={project.tags} tone="dark" className="mt-6" />
       <span className="mt-8 inline-flex min-h-11 items-center gap-2 self-start rounded-full bg-vn-white px-6 py-3 text-sm font-medium text-vn-black">
         <span id={ctaId}>{CARD_CTA_TEXT}</span>

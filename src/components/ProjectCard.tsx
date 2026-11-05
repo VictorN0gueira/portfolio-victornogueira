@@ -4,6 +4,7 @@ import { useMotionAllowed } from '../hooks/useMotionAllowed';
 import { cn } from '../lib/utils';
 import { BrowserShot } from '../sections/projects/BrowserShot';
 import { MotionArrow } from '../sections/projects/MotionArrow';
+import { NoBreakHyphens } from '../sections/projects/NoBreakHyphens';
 import { TagList } from '../sections/projects/TagList';
 import { Heading } from './ui/Heading';
 import { SpotlightCard } from './ui/SpotlightCard';
@@ -48,7 +49,9 @@ export function ProjectCard({ project, imageSizes }: ProjectCardProps) {
           <Heading as="h2" size="m" id={titleId} className="mt-3">
             <ProjectTitle title={project.title} />
           </Heading>
-          <p className="mt-3 max-w-md text-pretty text-base text-vn-gray-dark">{project.description}</p>
+          <p className="mt-3 max-w-md text-pretty text-base text-vn-gray-dark">
+            <NoBreakHyphens text={project.description} />
+          </p>
           <TagList tags={project.tags} className="mt-4" />
           <span className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-4 text-sm font-medium">
             <span id={ctaId}>{CARD_CTA_TEXT}</span>

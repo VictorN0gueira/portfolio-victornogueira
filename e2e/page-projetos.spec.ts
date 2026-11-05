@@ -1,6 +1,6 @@
 import { projects } from '../src/data/projects';
 import { PROJECT_CTA_TEXT } from '../src/components/projectLabels';
-import { PAGE_LOAD_TIMEOUT_MS } from './homeSupport';
+import { PAGE_LOAD_TIMEOUT_MS, enableLargeFont } from './homeSupport';
 import { expect, test } from './n8nGuard';
 import { describePageContract, openPage, type PageContract } from './pageContract';
 
@@ -10,6 +10,7 @@ const VIEWPORT_HEIGHT = 900;
 const PIXEL_TOLERANCE = 1;
 const SIZES_WINDOWS = [320, 390, 768, 900, 1023, 1024, 1100, 1215, 1216, 1440];
 const MEDIUM_WIDTH_PX = 768;
+const NARROWEST_WIDTH_PX = 280;
 // On a phone the declared width ignores the 20px gutters that start at xs, so it may be a few pixels over.
 const PHONE_EXCESS_PX = 10;
 const REGULAR_COUNT = projects.filter((project) => !project.featured).length;
@@ -106,6 +107,40 @@ test.describe('/projetos', () => {
     }
 
     expect(problems).toEqual([]);
+  });
+
+  test('at 280px with the font at 120 percent, "e-mail" and the frame slugs never wrap at their hyphen', async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'desktop',
+      'the test sets its own viewport: it runs once, in the desktop project',
+    );
+    test.slow();
+    await page.setViewportSize({ width: NARROWEST_WIDTH_PX, height: VIEWPORT_HEIGHT });
+    await enableLargeFont(page);
+    await openPage(page, CONTRACT);
+
+    const lines = await page.evaluate(() => {
+      const lineCount = (element: Element) => element.getClientRects().length;
+      const words = Array.from(document.querySelectorAll('main p span.whitespace-nowrap')).filter((span) =>
+        /e-mail/i.test(span.textContent ?? ''),
+      );
+      const slugs = Array.from(document.querySelectorAll('main [aria-hidden="true"].font-mono'));
+      return {
+        wordCount: words.length,
+        wrappedWords: words.filter((word) => lineCount(word) > 1).map((word) => word.textContent),
+        slugCount: slugs.length,
+        wrappedSlugs: slugs
+          .filter((slug) => slug.getBoundingClientRect().height > 1.6 * parseFloat(getComputedStyle(slug).lineHeight))
+          .map((slug) => slug.textContent),
+      };
+    });
+
+    expect(lines.wordCount, 'the "e-mail" words are wrapped in a no-wrap span').toBeGreaterThan(0);
+    expect(lines.wrappedWords).toEqual([]);
+    expect(lines.slugCount).toBeGreaterThan(0);
+    expect(lines.wrappedSlugs).toEqual([]);
   });
 
   test('every card is one link that goes to its case, and the closing band goes to /contato', async ({ page }) => {

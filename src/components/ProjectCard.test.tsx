@@ -13,6 +13,11 @@ function projectOf(slug: string) {
   return project;
 }
 
+/** A paragraph by its whole text: a hyphenated word sits in its own span, so the text is not one text node. */
+function paragraphWith(text: string): HTMLElement {
+  return screen.getByText((_, element) => element?.tagName === 'P' && element.textContent === text);
+}
+
 describe('ProjectCard', () => {
   it.each(REGULAR.map((project) => project.slug))(
     'is one link to the case page of %s, named by its title and "Ver detalhes"',
@@ -45,7 +50,7 @@ describe('ProjectCard', () => {
     renderWithProviders(<ProjectCard project={project} imageSizes={SIZES} />);
 
     expect(screen.getByText(project.category)).toBeInTheDocument();
-    expect(screen.getByText(project.description)).toBeInTheDocument();
+    expect(paragraphWith(project.description)).toBeInTheDocument();
   });
 
   it('frames the cover with the slug in the title bar and loads it lazily, with the sizes it was given', () => {
@@ -69,6 +74,14 @@ describe('ProjectCard', () => {
     expect(cover).toContain('group-hover:scale-[1.02]');
     expect(cover).toContain('group-focus-visible:scale-[1.02]');
     expect(arrow).toContain('group-focus-visible:translate-x-1');
+  });
+
+  it('never breaks "e-mail" at its hyphen in the description', () => {
+    renderWithProviders(<ProjectCard project={projectOf('travel-ia')} imageSizes={SIZES} />);
+
+    const word = screen.getByText('e-mail', { selector: 'span', exact: false });
+
+    expect(word.className).toContain('whitespace-nowrap');
   });
 
   it('hides the arrow of the call to action from assistive technology', () => {

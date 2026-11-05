@@ -75,6 +75,14 @@ describe('ProjectFacts', () => {
     expect(new Set(levels)).toEqual(new Set(['H2']));
   });
 
+  it('never breaks "e-mail" at its hyphen in the list of what the product does', () => {
+    renderWithProviders(<ProjectFacts project={projectOf('dizpara')} />);
+
+    const words = screen.getAllByText(/^e-mail/, { selector: 'span.whitespace-nowrap' });
+
+    expect(words.length).toBeGreaterThan(0);
+  });
+
   it('names its link by the visible text first and the project after it, so the two links to /contato of a case differ', () => {
     const project = projectOf('hub081');
     renderWithProviders(<ProjectFacts project={project} />);

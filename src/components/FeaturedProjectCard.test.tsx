@@ -10,6 +10,11 @@ function projectOf(slug: string) {
   return project;
 }
 
+/** A paragraph by its whole text: a hyphenated word sits in its own span, so the text is not one text node. */
+function paragraphWith(text: string): HTMLElement {
+  return screen.getByText((_, element) => element?.tagName === 'P' && element.textContent === text);
+}
+
 describe.each(['dizpara', 'hub081'])('FeaturedProjectCard of %s', (slug) => {
   const project = projectOf(slug);
 
@@ -27,8 +32,8 @@ describe.each(['dizpara', 'hub081'])('FeaturedProjectCard of %s', (slug) => {
     expect(screen.getAllByRole('img', { hidden: true })).toHaveLength(3);
     expect(screen.getByRole('heading', { level: 2, name: project.title })).toBeInTheDocument();
     expect(screen.getByText(project.category)).toBeInTheDocument();
-    expect(screen.getByText(project.highlight as string)).toBeInTheDocument();
-    expect(screen.getByText(project.description)).toBeInTheDocument();
+    expect(paragraphWith(project.highlight as string)).toBeInTheDocument();
+    expect(paragraphWith(project.description)).toBeInTheDocument();
   });
 
   it('loads the cover eagerly only with priority, and the two small shots always lazily', () => {

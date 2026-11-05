@@ -12,6 +12,7 @@ import type { Project } from '../../data/projects';
 import { projectsCopy } from '../../data/projectsCopy';
 import { cn } from '../../lib/utils';
 import { CONTACT_PATH } from './paths';
+import { NoBreakHyphens } from './NoBreakHyphens';
 import { STICKY_COLUMN_CLASSES } from './stickyColumn';
 import { TagList } from './TagList';
 
@@ -33,7 +34,9 @@ function Features({ items }: { items: readonly string[] }) {
         {items.map((item) => (
           <li key={item} className="flex min-w-0 items-start gap-3 text-base text-vn-ink">
             <span aria-hidden="true" className="mt-2.5 block size-1.5 shrink-0 rounded-full bg-vn-ink" />
-            <span className="min-w-0">{item}</span>
+            <span className="min-w-0">
+              <NoBreakHyphens text={item} />
+            </span>
           </li>
         ))}
       </ul>
