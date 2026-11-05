@@ -179,6 +179,15 @@ function checks(base) {
       },
     },
     {
+      // The slash rule used to capture any byte: a backslash ended up in Location, and a browser reads "/\evil.com" as "//evil.com".
+      name: 'a trailing slash path with a backslash is a 404 and never an open redirect',
+      run: async () => {
+        const response = await get(base, '/%5Cevil.com/');
+        const location = response.headers.get('location');
+        return [...statusProblem(response, 404), ...(location === null ? [] : [`open redirect to ${location}`]), ...withHeaders(response)];
+      },
+    },
+    {
       name: 'the www host is a 301 to the same path on the apex over https',
       run: async () => {
         const response = await getWithHost(base, `${INNER_ROUTE}?a=1`, WWW_HOST);

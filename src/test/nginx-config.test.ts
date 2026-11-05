@@ -218,6 +218,19 @@ describe('a trailing slash', () => {
   it('does not touch a path without the slash', () => {
     expect(directivesOf(pickLocation(server, '/servicos')!.block, 'return')).toEqual([]);
   });
+
+  // $1 is the decoded uri: a backslash or a tab in the Location header is read by a browser as "//evil.com".
+  it('never redirects a path with a backslash, a control character or any byte outside a short safe list (open redirect)', () => {
+    for (const path of ['/\\evil.com/', '/\t/evil.com/', '/x/\\evil.com/', '//evil.com/', '/ x/', '/a b/', '/café/', '/a%5Cb/']) {
+      expect(directivesOf(pickLocation(server, path)!.block, 'return'), JSON.stringify(path)).toEqual([]);
+    }
+  });
+
+  it('still redirects every public path with a slash, which only uses the safe characters', () => {
+    for (const path of ['/servicos/', '/projetos/hub081/', '/projetos/portal-link-in-bio/', '/blog/', '/a.b_c~d/']) {
+      expect(directivesOf(pickLocation(server, path)!.block, 'return')[0]?.args[0], path).toBe('301');
+    }
+  });
 });
 
 describe('the www host', () => {

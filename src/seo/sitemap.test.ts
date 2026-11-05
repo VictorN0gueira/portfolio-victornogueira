@@ -15,6 +15,16 @@ const BASE: RouteMeta = {
   crumbs: [],
 };
 
+describe('renderSitemap with a path that ends with a slash', () => {
+  it('refuses it, so the canonical and the sitemap never carry a url that nginx redirects', () => {
+    expect(() => renderSitemap([{ ...BASE, path: '/sobre/' }])).toThrow(/ends with a slash/);
+  });
+
+  it('accepts the home, which is the only path that ends with a slash', () => {
+    expect(() => renderSitemap([{ ...BASE, path: '/' }])).not.toThrow();
+  });
+});
+
 describe('renderSitemap', () => {
   const xml = renderSitemap(ROUTE_METAS);
 

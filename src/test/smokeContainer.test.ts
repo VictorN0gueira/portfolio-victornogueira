@@ -23,6 +23,7 @@ interface Faults {
   blogWithoutNoindex?: boolean;
   blogInSitemap?: boolean;
   slashNotRedirected?: boolean;
+  openRedirect?: boolean;
   wwwNotRedirected?: boolean;
   wwwToHttp?: boolean;
   noFavicon?: boolean;
@@ -56,6 +57,10 @@ function answer(request: IncomingMessage, response: ServerResponse, faults: Faul
   if (path === '/') return send(200, html, head('Home', canonical('/') + LD));
   if (path === '/servicos') return send(200, html, faults.sameHeadOnEveryRoute ? head('Home', canonical('/') + LD) : head('Servicos', canonical('/servicos') + LD));
   if (path === '/blog') return send(200, html, head('Blog', faults.blogWithoutNoindex ? canonical('/blog') : NOINDEX));
+  // The real server captures only safe characters for the slash rule: anything else is a 404, never a redirect.
+  if (path.includes('%5C') && path.endsWith('/')) {
+    return faults.openRedirect ? send(301, { Location: '/\\evil.com' }) : send(404, html, head('Not found', NOINDEX));
+  }
   if (path.endsWith('/') && path.length > 1) {
     return faults.slashNotRedirected ? send(200, html, head('Home')) : send(301, { Location: `${path.slice(0, -1)}${query ? `?${query}` : ''}` });
   }
@@ -135,6 +140,7 @@ describe('the smoke check of the container', () => {
     ['a blog without noindex', { blogWithoutNoindex: true }, /blog is crawlable and says noindex/],
     ['the blog in the sitemap', { blogInSitemap: true }, /sitemap\.xml is xml/],
     ['a trailing slash that is not redirected', { slashNotRedirected: true }, /trailing slash/],
+    ['an open redirect on a path with a backslash', { openRedirect: true }, /open redirect/],
     ['a www host that is not redirected', { wwwNotRedirected: true }, /www host/],
     ['a www host redirected to http', { wwwToHttp: true }, /www host/],
     ['a missing favicon and manifest', { noFavicon: true }, /favicon\.ico is served/],

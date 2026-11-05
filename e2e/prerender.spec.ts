@@ -97,7 +97,10 @@ test('the HTML of a route is still the app: the same script and no second head',
   expect(servicesHtml).toContain('rel="icon"');
 });
 
-test('/404.html is out of the index', async ({ page }) => {
+// The file that nginx sends as the body of a 404. Asked directly, the preview server of this suite (e2e/vite.preview.config.ts)
+// serves it with a 200, while the real nginx answers /404.html with a 404 (the location is internal): that is what
+// scripts/smoke-container.mjs checks against the image. Here only the content of the file is under test.
+test('the file of the 404 page is out of the index', async ({ page }) => {
   const html = await fetchHtml(page, '/404.html');
 
   expect(titleOf(html)).toBe('Página não encontrada | VN One');

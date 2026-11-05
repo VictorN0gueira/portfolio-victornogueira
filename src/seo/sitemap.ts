@@ -8,6 +8,8 @@ import type { RouteMeta } from './routeMeta';
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function entryOf(meta: RouteMeta): string {
+  // One url per page: the canonical has no trailing slash (decision D7), and nginx redirects the slash to the bare path.
+  if (meta.path !== '/' && meta.path.endsWith('/')) throw new Error(`the path ${meta.path} ends with a slash`);
   if (!ISO_DATE.test(meta.lastmod)) throw new Error(`the lastmod of ${meta.path} is not YYYY-MM-DD: ${meta.lastmod}`);
   return `  <url>\n    <loc>${escapeHtml(`${SITE.url}${meta.path}`)}</loc>\n    <lastmod>${meta.lastmod}</lastmod>\n  </url>`;
 }
