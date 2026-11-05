@@ -17,7 +17,7 @@ import {
   type TabSide,
 } from '../lib/floatingLayout';
 import { readFloatingView, type FloatingView } from '../lib/floatingView';
-import { clearDodge } from './useTabDodge';
+import { clearDodge, readDodge } from './useTabDodge';
 import { clearTabPosition, readTabPosition, writeTabPosition } from '../lib/tabPositionStorage';
 
 // The same token as the slide of the dodge (AccessibilityTrigger): one easing for every move of the tab.
@@ -192,7 +192,12 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
       // From the default place, the layout is pinned where the tab is, so the open panel can follow it.
       beforeDrag.current = position;
       dragCache.current = { view, panel: null };
-      if (position === null) setPosition(releasePosition(rect, view.viewport));
+      // The tab keeps the step aside it has taken (drawn = laid out + dodge), so the layout is pinned where it rests, not
+      // where it is drawn: pinned at the drawn rect the dodge would count twice and the tab would sit off the pointer.
+      if (position === null) {
+        const { dx, dy } = triggerRef.current ? readDodge(triggerRef.current) : { dx: 0, dy: 0 };
+        setPosition(releasePosition({ ...rect, left: rect.left - dx, top: rect.top - dy }, view.viewport));
+      }
     },
     onLive: (rect, side) => {
       liveRect.current = rect;

@@ -5,7 +5,7 @@ import { StrictMode, useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { dodgeOffset } from '../lib/floatingDodge';
 import { TAB_SIZE_PX, TAB_SLIDE_MS, type Box, type TabPosition } from '../lib/floatingLayout';
-import { clearDodge, useTabDodge } from './useTabDodge';
+import { clearDodge, readDodge, useTabDodge } from './useTabDodge';
 
 // jsdom has no layout. The scene below says where the window is, where the tab rests and where the focused link is, and the
 // mocks answer from it, so a test can change the scene (a rotation, a scroll) and let the hook judge again.
@@ -473,6 +473,16 @@ describe('mounting', () => {
         .sort(),
     );
     expect(reads).not.toHaveBeenCalled();
+  });
+});
+
+describe('readDodge', () => {
+  it('reads what the dodge has put in the style of the tab, and zero before it has', () => {
+    const { tab, a } = setup();
+    expect(readDodge(tab)).toEqual({ dx: 0, dy: 0 });
+    act(() => a.focus());
+    frame();
+    expect(readDodge(tab)).toEqual({ dx: 0, dy: -38 });
   });
 });
 

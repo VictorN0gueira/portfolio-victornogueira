@@ -43,6 +43,12 @@ export function clearDodge(trigger: HTMLElement): void {
   setDodge(trigger, 0, 0, true);
 }
 
+/** How far the tab is drawn from where it rests, in px: what the dodge has put in its style. */
+export function readDodge(trigger: HTMLElement): { dx: number; dy: number } {
+  const read = (name: string) => Number.parseFloat(trigger.style.getPropertyValue(name)) || 0;
+  return { dx: read(DODGE_X), dy: read(DODGE_Y) };
+}
+
 /** True when something above the widget in z order holds the element (a dialog, the skip link). */
 function isAboveWidget(element: Element, widget: Element): boolean {
   const widgetZ = Number.parseInt(getComputedStyle(widget).zIndex, 10) || DEFAULT_WIDGET_Z;

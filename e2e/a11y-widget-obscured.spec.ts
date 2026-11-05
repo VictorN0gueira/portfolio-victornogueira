@@ -316,9 +316,9 @@ test.describe('the tab is still the visitor’s: a press on a dodged tab, and th
   test.describe.configure({ timeout: TEST_TIMEOUT_MS });
 
   /** Tab until the tab has stepped aside; returns where it rests and where it is drawn. */
-  async function dodgeTheTab(page: Page) {
+  async function dodgeTheTab(page: Page, size: Size = PHONE) {
     const home = await rectOf(trigger(page));
-    const { dodges } = await walkProbe(page, { keys: tabKeys(4), home, size: PHONE });
+    const { dodges } = await walkProbe(page, { keys: tabKeys(4), home, size });
     expect(dodges).toBeGreaterThan(0);
     return { home, dodged: await rectOf(trigger(page)) };
   }
@@ -390,6 +390,40 @@ test.describe('the tab is still the visitor’s: a press on a dodged tab, and th
     const rested = await rectOf(trigger(page));
     expect(Math.abs((rested.top + rested.bottom) / 2 - endY)).toBeLessThan(SUBPIXEL * 4);
     expect(boundsProblems(rested, PHONE)).toEqual([]);
+  });
+
+  test('a drag that starts on a dodged tab at the default place keeps the tab under the pointer, during and after', async ({
+    page,
+  }) => {
+    const size = { width: 700, height: 844 };
+    await openProbe(page, { place: null, size });
+    const { dodged } = await dodgeTheTab(page, size);
+    const x = (dodged.left + dodged.right) / 2;
+    const y = (dodged.top + dodged.bottom) / 2;
+    const endY = 700;
+    const centreY = async () => {
+      const box = await rectOf(trigger(page));
+      return (box.top + box.bottom) / 2;
+    };
+
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    for (const step of [20, 60, 120]) {
+      await page.mouse.move(x, y + step, { steps: 3 });
+      expect(Math.abs((await centreY()) - (y + step)), `the tab is under the pointer at +${step}`).toBeLessThan(1);
+    }
+    await page.mouse.move(x, endY, { steps: 6 });
+    expect(Math.abs((await centreY()) - endY), 'the tab is under the pointer at the end').toBeLessThan(1);
+    await page.mouse.up();
+    await waitForCalm(page);
+
+    expect(Math.abs((await centreY()) - endY), 'the tab rests where the pointer let go').toBeLessThan(1);
+    const stored = await page.evaluate(
+      (key) => JSON.parse(window.localStorage.getItem(key) ?? 'null') as Place,
+      TAB_POSITION_STORAGE_KEY,
+    );
+    expect(stored.side).toBe('right');
+    expect(Math.abs(stored.ratio - endY / size.height)).toBeLessThan(0.02);
   });
 
   test('the tab can still be reached with the keyboard and opens its panel', async ({ page }) => {
