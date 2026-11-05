@@ -1,5 +1,5 @@
 import * as Popover from '@radix-ui/react-popover';
-import { useLayoutEffect, type ComponentProps } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ComponentProps } from 'react';
 import { useChoicePopover } from '../../hooks/useChoicePopover';
 import { cn } from '../../lib/utils';
 import { ChoiceList, type ChoiceOption } from './ChoiceList';
@@ -24,6 +24,65 @@ export interface ChoicePillHandoff {
   isOpen: boolean;
   /** The plain pill had the focus: the pill that replaces it takes it. */
   hasFocus: boolean;
+  /**
+   * The swap came while the pointer was still down. The browser's own mousedown can arrive after it and drop the focus
+   * that the list just gave to its option (the pill that was pressed is gone), so the focus is checked again when the
+   * press ends.
+   */
+  isPress: boolean;
+}
+
+/**
+ * After the pointer goes up the browser may still send the mouse events of a tap: on a touch screen they come as a task
+ * of their own, a while after the pointer events. The check stays armed this long for them.
+ */
+const COMPAT_MOUSE_WAIT_MS = 500;
+
+/**
+ * After a list that opened in the middle of a press: when the press ends, and again after the mouse events that follow
+ * it, the chosen option takes the focus if the browser dropped it (nothing has the focus). A focus the visitor moved on
+ * purpose is left alone, and a list that has closed since has no option left to focus, so the call does nothing then.
+ */
+function useFocusAfterPress(isPress: boolean, focusOption: () => void) {
+  // The latest focus function, so the listeners below need no dependency on it.
+  const latestFocusOption = useRef(focusOption);
+  useEffect(() => {
+    latestFocusOption.current = focusOption;
+  });
+
+  // A layout effect: the listeners are armed in the commit of the swap, before any later pointer event can be missed.
+  useLayoutEffect(() => {
+    if (!isPress) return undefined;
+    const timers: number[] = [];
+    const listeners: Array<[string, () => void]> = [];
+    const later = (task: () => void, delay: number) => {
+      timers.push(window.setTimeout(task, delay));
+    };
+    const stopListening = () => {
+      for (const [type, listener] of listeners) document.removeEventListener(type, listener, true);
+      listeners.length = 0;
+    };
+    const restoreIfLost = () =>
+      later(() => {
+        const active = document.activeElement;
+        if (!active || active === document.body) latestFocusOption.current();
+      }, 0);
+    // pointerup may be followed by the mouse events of a tap, so it keeps listening; mouseup and pointercancel are the end.
+    const onPointerUp = () => {
+      restoreIfLost();
+      later(stopListening, COMPAT_MOUSE_WAIT_MS);
+    };
+    const onEnd = () => {
+      restoreIfLost();
+      stopListening();
+    };
+    listeners.push(['pointerup', onPointerUp], ['pointercancel', onEnd], ['mouseup', onEnd]);
+    for (const [type, listener] of listeners) document.addEventListener(type, listener, true);
+    return () => {
+      stopListening();
+      for (const id of timers) window.clearTimeout(id);
+    };
+  }, [isPress]);
 }
 
 interface ChoiceTriggerProps {
@@ -68,6 +127,7 @@ export function ChoicePillPopover<T extends string | number>({
     initialOpen: handoff.isOpen,
   });
   const { ref: triggerRef } = triggerProps;
+  useFocusAfterPress(handoff.isPress && handoff.isOpen, listProps.onOpenFocus);
 
   // A pill that was focused when it swapped keeps the focus (a list that opens at once takes it for its option).
   useLayoutEffect(() => {
