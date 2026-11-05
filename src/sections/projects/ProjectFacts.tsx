@@ -12,14 +12,14 @@ import type { Project } from '../../data/projects';
 import { projectsCopy } from '../../data/projectsCopy';
 import { cn } from '../../lib/utils';
 import { CONTACT_PATH } from './paths';
+import { STICKY_COLUMN_CLASSES } from './stickyColumn';
 import { TagList } from './TagList';
 
 const LABEL_CLASSES = 'font-mono text-xs uppercase tracking-[.18em] text-vn-gray-dark';
-const STICKY_CLASSES = 'lg:sticky lg:top-28 lg:self-start';
 
 interface ProjectFactsProps {
   project: Project;
-  /** Sticks from lg while the gallery scrolls past. The case page turns it off when the facts are taller than the gallery. */
+  /** Sticks from lg, in a window tall enough, while the gallery scrolls past. Off when the facts are the taller column. */
   isSticky?: boolean;
 }
 
@@ -57,7 +57,7 @@ function Tags({ tags }: { tags: readonly string[] }) {
  */
 export function ProjectFacts({ project, isSticky = true }: ProjectFactsProps) {
   return (
-    <div className={cn('flex min-w-0 flex-col gap-10', isSticky && STICKY_CLASSES)}>
+    <div className={cn('flex min-w-0 flex-col gap-10', isSticky && STICKY_COLUMN_CLASSES)}>
       <div>
         <p className={LABEL_CLASSES}>{projectsCopy.categoryLabel}</p>
         <p className="mt-2 text-lg font-medium text-vn-ink">{project.category}</p>

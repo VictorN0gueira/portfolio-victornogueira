@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { FEATURES_LABEL, TAGS_LABEL } from '../src/components/projectLabels';
+import { STICKY_MIN_HEIGHT_PX, STICKY_TOP_PX } from '../src/sections/projects/stickyColumn';
 import { PAGE_LOAD_TIMEOUT_MS, nextFrames } from './homeSupport';
 import { expect, test } from './n8nGuard';
 import { describePageContract, openPage, type PageContract } from './pageContract';
@@ -18,8 +19,18 @@ const REGULAR: PageContract = {
   readyHeading: TAGS_LABEL,
   hasFloatingClearance: true,
 };
-// The three windows of a laptop and a desktop where the two columns sit side by side (lg and up).
+const HUB081: PageContract = {
+  path: '/projetos/hub081',
+  title: /^Hub081/,
+  h1: 'Hub081',
+  readyHeading: FEATURES_LABEL,
+};
+// The windows of a laptop and a desktop where the two columns sit side by side (lg and up), the short ones included:
+// 1024x600 (a small tablet), 1280x600 and 1366x657 (a laptop with browser bars) are shorter than STICKY_MIN_HEIGHT_PX.
 const SIDE_BY_SIDE_WINDOWS = [
+  { width: 1024, height: 600 },
+  { width: 1280, height: 600 },
+  { width: 1366, height: 657 },
   { width: 1024, height: 768 },
   { width: 1366, height: 768 },
   { width: 1440, height: 900 },
@@ -53,7 +64,7 @@ function readColumns(page: Page): Promise<ColumnReport> {
     const body = document.querySelector('[data-case-body]') as HTMLElement;
     const columns = Array.from(body.children) as HTMLElement[];
     const stickyIndex = columns.findIndex((column) => getComputedStyle(column).position === 'sticky');
-    const sticky = columns[stickyIndex];
+    const sticky = columns[stickyIndex] ?? columns[0];
     return {
       stickyIndex,
       innerHeight: window.innerHeight,
@@ -73,14 +84,15 @@ interface Edges {
 /** Scrolls so the body of the case sits `inside` the window by a step, or ends exactly at its bottom edge, and measures. */
 async function boxesAt(page: Page, placeBody: 'inside' | 'end'): Promise<{ column: Edges; body: Edges }> {
   await page.evaluate(
-    ({ place, step }) => {
+    ({ place, step, stickyTop }) => {
       const body = document.querySelector('[data-case-body]') as HTMLElement;
       const rect = body.getBoundingClientRect();
       const bodyTop = rect.top + window.scrollY;
-      const top = place === 'inside' ? bodyTop + step : bodyTop + rect.height - window.innerHeight;
+      // 'inside': the body starts just below the sticky offset by `step`, so the sticky column has just started to travel.
+      const top = place === 'inside' ? bodyTop - stickyTop + step : bodyTop + rect.height - window.innerHeight;
       window.scrollTo({ top, behavior: 'instant' });
     },
-    { place: placeBody, step: SCROLL_STEP_PX },
+    { place: placeBody, step: SCROLL_STEP_PX, stickyTop: STICKY_TOP_PX },
   );
   await nextFrames(page);
   return page.evaluate(() => {
@@ -96,9 +108,9 @@ async function boxesAt(page: Page, placeBody: 'inside' | 'end'): Promise<{ colum
 }
 
 test.describe('the sticky column of a case page', () => {
-  for (const contract of [FEATURED, REGULAR]) {
+  for (const contract of [FEATURED, HUB081, REGULAR]) {
     for (const size of SIDE_BY_SIDE_WINDOWS) {
-      test(`${contract.path} at ${size.width}x${size.height}: the shorter column sticks, fits the window and leaves no hole`, async ({
+      test(`${contract.path} at ${size.width}x${size.height}: the shorter column sticks only where it fits the window, and nothing is clipped`, async ({
         page,
       }, testInfo) => {
         test.skip(
@@ -109,6 +121,13 @@ test.describe('the sticky column of a case page', () => {
         await page.setViewportSize(size);
         await openPage(page, contract);
         const report = await readColumns(page);
+
+        // In a window shorter than STICKY_MIN_HEIGHT_PX nothing sticks: the page scrolls as one, so no column can be
+        // clipped at the bottom of the window.
+        if (size.height < STICKY_MIN_HEIGHT_PX) {
+          expect(report.stickyIndex, 'no column is sticky in a short window').toBe(-1);
+          return;
+        }
 
         // Exactly one column sticks, and it is the shorter of the two.
         expect(report.stickyIndex, 'one column is sticky').toBeGreaterThanOrEqual(0);

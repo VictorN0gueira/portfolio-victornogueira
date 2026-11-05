@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { getProjectBySlug, projects } from '../data/projects';
 import { renderWithProviders } from '../test/render';
+import { STICKY_COLUMN_CLASSES } from '../sections/projects/stickyColumn';
 import { ProjectDetail } from './ProjectDetail';
 
 function bodyOf(container: HTMLElement): HTMLElement {
@@ -52,18 +53,37 @@ describe('the layout classes that keep a case page from being cut', () => {
     expect(bodyOf(regular.container).previousElementSibling).toBeNull();
   });
 
-  it('sticks the shorter column from lg: the facts of a regular case, the gallery of a featured one', () => {
+  it('sticks the shorter column, in a window tall enough: the facts of a regular case, the gallery of a featured one', () => {
     const regular = renderWithProviders(<ProjectDetail project={getProjectBySlug('travel-ia')!} />);
     const [regularFacts, regularGallery] = Array.from(bodyOf(regular.container).children);
-    expect(regularFacts.className).toContain('lg:sticky');
+    expect(regularFacts.className).toContain(STICKY_COLUMN_CLASSES);
     expect(regularGallery.className).not.toContain('sticky');
     regular.unmount();
 
     const featured = renderWithProviders(<ProjectDetail project={getProjectBySlug('dizpara')!} />);
     const [featuredFacts, featuredGallery] = Array.from(bodyOf(featured.container).children);
     expect(featuredFacts.className).not.toContain('sticky');
-    expect(featuredGallery.className).toContain('lg:sticky');
-    expect(featuredGallery.className).toContain('lg:self-start');
+    expect(featuredGallery.className).toContain(STICKY_COLUMN_CLASSES);
+  });
+
+  it('chooses the sticky column from the content: a featured project without features sticks its facts', () => {
+    const project = { ...getProjectBySlug('hub081')!, features: undefined };
+    const { container } = renderWithProviders(<ProjectDetail project={project} />);
+
+    const [facts, gallery] = Array.from(bodyOf(container).children);
+
+    expect(facts.className).toContain(STICKY_COLUMN_CLASSES);
+    expect(gallery.className).not.toContain('sticky');
+  });
+
+  it('chooses the sticky column from the content: a regular project with features keeps its facts sticky', () => {
+    const project = { ...getProjectBySlug('travel-ia')!, features: ['Faz uma coisa.', 'Faz outra.'] };
+    const { container } = renderWithProviders(<ProjectDetail project={project} />);
+
+    const [facts, gallery] = Array.from(bodyOf(container).children);
+
+    expect(facts.className).toContain(STICKY_COLUMN_CLASSES);
+    expect(gallery.className).not.toContain('sticky');
   });
 
   it('lays a featured gallery out as the cover and two shots side by side, and a regular one as three stacked', () => {

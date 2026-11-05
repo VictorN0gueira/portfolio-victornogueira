@@ -5,6 +5,7 @@ import { getProjectBySlug } from '../../data/projects';
 import { projectsCopy } from '../../data/projectsCopy';
 import { renderWithProviders } from '../../test/render';
 import { ProjectFacts } from './ProjectFacts';
+import { STICKY_COLUMN_CLASSES } from './stickyColumn';
 
 function projectOf(slug: string) {
   const project = getProjectBySlug(slug);
@@ -90,7 +91,7 @@ describe('ProjectFacts', () => {
 
   it('carries the sticky classes only when asked (that it sticks is measured in e2e/page-projeto.spec.ts)', () => {
     const sticky = renderWithProviders(<ProjectFacts project={projectOf('travel-ia')} />);
-    expect(sticky.container.firstElementChild?.className).toContain('lg:sticky');
+    expect(sticky.container.firstElementChild?.className).toContain(STICKY_COLUMN_CLASSES);
     sticky.unmount();
 
     const plain = renderWithProviders(<ProjectFacts project={projectOf('travel-ia')} isSticky={false} />);
