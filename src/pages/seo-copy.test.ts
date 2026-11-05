@@ -51,7 +51,16 @@ describe('SEO elements take their head from the route metadata', () => {
 
   it('checks the elements of the pages and of the router', () => {
     expect(checked.length).toBeGreaterThanOrEqual(8);
-    expect(checked.map(({ file }) => file)).toEqual(expect.arrayContaining(['ServicesPage.tsx', 'AboutPage.tsx', 'ContactPage.tsx', 'ProjectsPage.tsx', 'ProjectDetailPage.tsx', 'App.tsx']));
+    expect(checked.map(({ file }) => file)).toEqual(
+      expect.arrayContaining([
+        'ServicesPage.tsx',
+        'AboutPage.tsx',
+        'ContactPage.tsx',
+        'ProjectsPage.tsx',
+        'ProjectDetailPage.tsx',
+        'App.tsx',
+      ]),
+    );
   });
 
   // The one exception: the 404 of the router is out of the index and has no metadata of its own, so it reads its sentence from
@@ -61,7 +70,9 @@ describe('SEO elements take their head from the route metadata', () => {
   it('passes no description prop, except the noindex 404 that reads the one sentence of notFoundCopy', () => {
     const own = checked.filter(({ block }) => /\sdescription=/.test(block));
 
-    expect(own.filter(({ block }) => !(/\snoindex\b/.test(block) && block.includes(NOT_FOUND_DESCRIPTION)))).toEqual([]);
+    expect(own.filter(({ block }) => !(/\snoindex\b/.test(block) && block.includes(NOT_FOUND_DESCRIPTION)))).toEqual(
+      [],
+    );
   });
 
   it('passes a title prop only on a page that is out of the index (the 404s)', () => {
@@ -72,7 +83,11 @@ describe('SEO elements take their head from the route metadata', () => {
 
   it('passes no image prop and no JSON-LD of its own, except the home that keeps its list', () => {
     expect(checked.filter(({ block }) => /\simage\w*=/.test(block)).map(({ file }) => file)).toEqual([]);
-    expect(checked.filter(({ file, block }) => /\sjsonLd=/.test(block) && !OWN_JSON_LD_FILES.has(file)).map(({ file }) => file)).toEqual([]);
+    expect(
+      checked
+        .filter(({ file, block }) => /\sjsonLd=/.test(block) && !OWN_JSON_LD_FILES.has(file))
+        .map(({ file }) => file),
+    ).toEqual([]);
   });
 
   it('keeps the frozen legal pages with their own props, as the metadata equals them (routeMeta.test.ts)', () => {
@@ -82,4 +97,3 @@ describe('SEO elements take their head from the route metadata', () => {
     for (const { block } of legal) expect(block).toMatch(/\sdescription=/);
   });
 });
-
