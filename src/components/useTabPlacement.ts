@@ -9,6 +9,7 @@ import {
   topFromRatio,
   TAB_SIZE_PX,
   type Box,
+  type Size,
   type StepDirection,
   type TabPosition,
   type TabSide,
@@ -99,6 +100,10 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
   const slideFrom = useRef<Box | null>(null);
   const liveRect = useRef<Box | null>(null);
   const beforeDrag = useRef<TabPosition | null>(null);
+  // While dragging: the window and the panel size, read once, so a pointer move forces no layout.
+  const dragCache = useRef<{ view: FloatingView; panel: Size | null } | null>(null);
+  // Bumped when the panel has to be placed again from the tab at rest (its size changed, or a drag was cancelled).
+  const [placeTick, setPlaceTick] = useState(0);
   const motionAllowedRef = useRef(isMotionAllowed);
   useEffect(() => {
     motionAllowedRef.current = isMotionAllowed;
@@ -119,9 +124,12 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
   const applyPanel = useCallback(
     (rect: Box, side: TabSide) => {
       const placer = placerRef.current;
-      if (!placer) return;
-      const { viewport, insets } = readFloatingView();
-      const panel = { width: placer.offsetWidth, height: placer.offsetHeight };
+      // At the default place the box of the panel is display: contents: it has no size and is not placed.
+      if (!placer || placer.offsetWidth === 0) return;
+      const cache = dragCache.current;
+      const { viewport, insets } = cache?.view ?? readFloatingView();
+      const panel = cache?.panel ?? { width: placer.offsetWidth, height: placer.offsetHeight };
+      if (cache) cache.panel = panel;
       const { dx, dy } = placePanel({ side, trigger: rect, panel, viewport, insets });
       placer.style.transform = `translate(${dx}px, ${dy}px)`;
     },
@@ -133,12 +141,23 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
     if (position === null || topPx === null || !isOpen || liveRect.current) return;
     const left = position.side === 'right' ? view.viewport.width - TAB_SIZE_PX : 0;
     applyPanel({ left, top: topPx, width: TAB_SIZE_PX, height: TAB_SIZE_PX }, position.side);
-  }, [position, topPx, isOpen, activeCount, view, applyPanel]);
+  }, [position, topPx, isOpen, activeCount, view, placeTick, applyPanel]);
 
-  // The side flipped while dragging: the panel moved to the other side of the tab, so it is placed again.
+  // The font or the options changed the size of the open panel (the page class is set after this component rendered).
+  useEffect(() => {
+    const placer = placerRef.current;
+    if (!isOpen || !placer || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => setPlaceTick((tick) => tick + 1));
+    observer.observe(placer);
+    return () => observer.disconnect();
+  }, [isOpen, placerRef]);
+
+  // The side flipped while dragging, or the layout was pinned under the drag: the panel is placed again, and measured again.
   useLayoutEffect(() => {
-    if (liveRect.current) applyPanel(liveRect.current, shownSide);
-  }, [shownSide, applyPanel]);
+    if (!liveRect.current) return;
+    if (dragCache.current) dragCache.current.panel = null;
+    applyPanel(liveRect.current, shownSide);
+  }, [shownSide, position, applyPanel]);
 
   // The slide: the new place is already laid out, so the tab starts from where it was drawn and eases into it.
   useLayoutEffect(() => {
@@ -168,6 +187,7 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
     onStart: (rect) => {
       // From the default place, the layout is pinned where the tab is, so the open panel can follow it.
       beforeDrag.current = position;
+      dragCache.current = { view, panel: null };
       if (position === null) setPosition(releasePosition(rect, view.viewport));
     },
     onLive: (rect, side) => {
@@ -177,13 +197,16 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
     },
     onRelease: (next, from) => {
       liveRect.current = null;
+      dragCache.current = null;
       setLiveSide(null);
       commit(next, from);
     },
     onCancel: () => {
       setLiveSide(null);
       liveRect.current = null;
+      dragCache.current = null;
       setPosition(beforeDrag.current);
+      setPlaceTick((tick) => tick + 1);
     },
   });
 
