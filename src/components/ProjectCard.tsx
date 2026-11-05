@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
 import type { Project } from '../data/projects';
 import { useMotionAllowed } from '../hooks/useMotionAllowed';
 import { cn } from '../lib/utils';
 import { BrowserShot } from '../sections/projects/BrowserShot';
+import { MotionArrow } from '../sections/projects/MotionArrow';
+import { TagList } from '../sections/projects/TagList';
 import { Heading } from './ui/Heading';
 import { SpotlightCard } from './ui/SpotlightCard';
 import { CARD_CTA_TEXT } from './projectLabels';
@@ -19,9 +20,9 @@ const LINK_CLASSES = 'group block h-full min-w-0 rounded-card vn-focus-ring-ink'
 const SURFACE_CLASSES =
   'flex h-full min-w-0 flex-col rounded-card border border-vn-gray-light bg-vn-cream p-3 text-vn-ink md:p-4';
 const COVER_CLASSES = 'aspect-[2.1/1] w-full object-cover object-left-top';
-// The cover grows 2% under the pointer: a transform, and only where motion is welcome.
-const COVER_HOVER_CLASSES = 'transition-transform duration-500 ease-out group-hover:scale-[1.02]';
-const CTA_ARROW_CLASSES = 'size-4 shrink-0 transition-transform duration-300 ease-out group-hover:translate-x-1';
+// The cover grows 2% under the pointer and on keyboard focus: a transform, and only where motion is welcome.
+const COVER_HOVER_CLASSES =
+  'transition-transform duration-500 ease-out group-hover:scale-[1.02] group-focus-visible:scale-[1.02]';
 
 /*
  * Card of a regular project on the /projetos grid. The whole card is one link to the case page. The cover sits in the
@@ -48,22 +49,10 @@ export function ProjectCard({ project, imageSizes }: ProjectCardProps) {
             <ProjectTitle title={project.title} />
           </Heading>
           <p className="mt-3 max-w-md text-pretty text-base text-vn-gray-dark">{project.description}</p>
-          <ul role="list" className="mt-4 flex flex-wrap gap-2">
-            {project.tags.map((tag) => (
-              <li
-                key={tag}
-                className="rounded-full border border-vn-gray-mid px-3 py-1 font-mono text-xs text-vn-gray-dark"
-              >
-                {tag}
-              </li>
-            ))}
-          </ul>
+          <TagList tags={project.tags} className="mt-4" />
           <span className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-4 text-sm font-medium">
             <span id={ctaId}>{CARD_CTA_TEXT}</span>
-            <ArrowRight
-              aria-hidden="true"
-              className={cn(CTA_ARROW_CLASSES, !isMotionAllowed && 'transition-none group-hover:translate-x-0')}
-            />
+            <MotionArrow />
           </span>
         </div>
       </SpotlightCard>

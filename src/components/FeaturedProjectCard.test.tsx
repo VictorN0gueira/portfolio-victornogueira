@@ -61,6 +61,15 @@ describe.each(['dizpara', 'hub081'])('FeaturedProjectCard of %s', (slug) => {
     expect(container.innerHTML).not.toMatch(/zinc|italic|shadow-2xl|dark:|vn-accent/);
   });
 
+  it('has an arrow that settles on keyboard focus as it does under the pointer', () => {
+    const { container } = renderWithProviders(<FeaturedProjectCard project={project} />);
+
+    const arrow = container.querySelector('svg[aria-hidden="true"]')?.getAttribute('class') ?? '';
+
+    expect(arrow).toContain('group-hover:translate-x-1');
+    expect(arrow).toContain('group-focus-visible:translate-x-1');
+  });
+
   it('hides the two small shots on a phone', () => {
     const { container } = renderWithProviders(<FeaturedProjectCard project={project} />);
 

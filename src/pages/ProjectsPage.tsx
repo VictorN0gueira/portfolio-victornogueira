@@ -3,9 +3,8 @@ import { CONTACT_LABEL, PROJECT_CTA_TEXT, PROJECTS_INTRO, PROJECTS_TITLE } from 
 import { SEO } from '../components/SEO';
 import { projectsCopy } from '../data/projectsCopy';
 import { CtaBand } from '../sections/shared/CtaBand';
+import { CONTACT_PATH } from '../sections/projects/paths';
 import { PageHero } from '../sections/shared/PageHero';
-
-const CONTACT_PATH = '/contato';
 
 export default function ProjectsPage() {
   return (

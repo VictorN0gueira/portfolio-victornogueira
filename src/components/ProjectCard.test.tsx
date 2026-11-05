@@ -14,23 +14,30 @@ function projectOf(slug: string) {
 }
 
 describe('ProjectCard', () => {
-  it.each(REGULAR.map((project) => project.slug))('is one link to the case page of %s, named by its title and "Ver detalhes"', (slug) => {
-    const project = projectOf(slug);
-    renderWithProviders(<ProjectCard project={project} imageSizes={SIZES} />);
+  it.each(REGULAR.map((project) => project.slug))(
+    'is one link to the case page of %s, named by its title and "Ver detalhes"',
+    (slug) => {
+      const project = projectOf(slug);
+      renderWithProviders(<ProjectCard project={project} imageSizes={SIZES} />);
 
-    const link = screen.getByRole('link');
+      const link = screen.getByRole('link');
 
-    expect(screen.getAllByRole('link')).toHaveLength(1);
-    expect(link).toHaveAttribute('href', `/projetos/${slug}`);
-    expect(link).toHaveAccessibleName(`${project.title} Ver detalhes`);
-  });
+      expect(screen.getAllByRole('link')).toHaveLength(1);
+      expect(link).toHaveAttribute('href', `/projetos/${slug}`);
+      expect(link).toHaveAccessibleName(`${project.title} Ver detalhes`);
+    },
+  );
 
   it('puts the title in an h2 and the tags in a list', () => {
     const project = projectOf('travel-ia');
     renderWithProviders(<ProjectCard project={project} imageSizes={SIZES} />);
 
     expect(screen.getByRole('heading', { level: 2, name: project.title })).toBeInTheDocument();
-    expect(within(screen.getByRole('list')).getAllByRole('listitem').map((item) => item.textContent)).toEqual([...project.tags]);
+    expect(
+      within(screen.getByRole('list'))
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([...project.tags]);
   });
 
   it('shows the category and the description', () => {
@@ -53,6 +60,17 @@ describe('ProjectCard', () => {
     expect(image.className).toContain('object-left-top');
   });
 
+  it('gives the keyboard what the pointer gets: the cover and the arrow react to focus as to hover', () => {
+    const { container } = renderWithProviders(<ProjectCard project={projectOf('travel-ia')} imageSizes={SIZES} />);
+
+    const cover = screen.getByRole('img').getAttribute('class') ?? '';
+    const arrow = container.querySelector('svg')?.getAttribute('class') ?? '';
+
+    expect(cover).toContain('group-hover:scale-[1.02]');
+    expect(cover).toContain('group-focus-visible:scale-[1.02]');
+    expect(arrow).toContain('group-focus-visible:translate-x-1');
+  });
+
   it('hides the arrow of the call to action from assistive technology', () => {
     const { container } = renderWithProviders(<ProjectCard project={projectOf('travel-ia')} imageSizes={SIZES} />);
 
@@ -60,7 +78,9 @@ describe('ProjectCard', () => {
   });
 
   it('has a focus ring on the link and no legacy look: no zinc, italic, shadow-2xl or dark: class', () => {
-    const { container } = renderWithProviders(<ProjectCard project={projectOf('dashboard-consumo-crm')} imageSizes={SIZES} />);
+    const { container } = renderWithProviders(
+      <ProjectCard project={projectOf('dashboard-consumo-crm')} imageSizes={SIZES} />,
+    );
 
     expect(screen.getByRole('link').className).toContain('vn-focus-ring-ink');
     expect(container.innerHTML).not.toMatch(/zinc|italic|shadow-2xl|dark:/);

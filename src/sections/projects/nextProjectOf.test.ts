@@ -4,12 +4,12 @@ import { nextProjectOf } from './nextProjectOf';
 
 describe('nextProjectOf', () => {
   it('gives the project that follows in the list', () => {
-    expect(nextProjectOf('dizpara').slug).toBe('hub081');
-    expect(nextProjectOf('hub081').slug).toBe('diagnostico-empresarial');
+    expect(nextProjectOf('dizpara')?.slug).toBe('hub081');
+    expect(nextProjectOf('hub081')?.slug).toBe('diagnostico-empresarial');
   });
 
   it('goes through the whole list once and comes back to the first', () => {
-    const walked = projects.map((project) => nextProjectOf(project.slug).slug);
+    const walked = projects.map((project) => nextProjectOf(project.slug)?.slug);
 
     expect(walked).toEqual([...projects.slice(1), projects[0]].map((project) => project.slug));
   });
@@ -29,7 +29,7 @@ describe('nextProjectOf', () => {
     expect(nextProjectOf('nao-existe', projects.slice(2))).toBe(projects[2]);
   });
 
-  it('refuses an empty list, because there is nothing to give', () => {
-    expect(() => nextProjectOf('dizpara', [])).toThrow();
+  it('gives nothing for an empty list, instead of throwing', () => {
+    expect(nextProjectOf('dizpara', [])).toBeUndefined();
   });
 });
