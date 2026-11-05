@@ -30,7 +30,7 @@ const cellOf = (page: Page, name: string) =>
 
 // The widths between a phone and a laptop, where the cards change their number of columns, with the font at 120%: the
 // contract tests only 320 and 390 at that size, and the specialty title broke in the middle at 768 to 830.
-const LARGE_FONT_WIDTHS = [768, 800, 830, 900, 1024, 1100];
+const LARGE_FONT_WIDTHS = [280, 768, 800, 830, 900, 1024, 1100];
 const TITLES = 'h1, h2, h3';
 
 test.describe('/sobre', () => {

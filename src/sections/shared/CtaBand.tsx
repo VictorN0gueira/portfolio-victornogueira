@@ -13,11 +13,12 @@ import { splitLastWord } from './splitLastWord';
 
 const WHATSAPP_LABEL = 'Falar no WhatsApp';
 
-// The heading is the large size of the brief, capped by the width of its own column (the same technique as the
-// FinalCta of the home): the longest word of the headings is about 10 letters, 5.2em wide, so 100cqi over 5.5 keeps
-// it whole at 280px and at the larger font of the accessibility option. The leading comes with it: a later font
-// size class makes tailwind-merge drop an earlier leading class.
-const HEADING_FIT_CLASSES = 'text-[length:min(clamp(2.25rem,1rem+6vw,6rem),calc(100cqi/5.5))] leading-[.95]';
+// The heading is the large size of the brief, capped by the width of its own column. The last word and the cursor
+// never wrap apart, so that block has to fit the column: a word of 12 letters ("automatizar?") plus the cursor is about
+// 6.7em wide, so 100cqi over 7.2 keeps it whole at 280px and at the larger font of the accessibility option (a 10 letter
+// budget of 5.5em overflowed there). The cap only binds on the narrowest columns: from about 390px the fluid size is
+// smaller. The leading comes with it: a later font size class makes tailwind-merge drop an earlier leading class.
+const HEADING_FIT_CLASSES = 'text-[length:min(clamp(2.25rem,1rem+6vw,6rem),calc(100cqi/7.2))] leading-[.95]';
 
 interface CtaBandProps {
   /** The h2. The last word carries the cursor in the accent. */

@@ -22,6 +22,9 @@ const CARD_STAGGER_S = 0.1;
 // (at least 248px of text per card), where 11cqi is above the floor even with the font at 120%. The e2e of /sobre checks
 // the widths where the layout changes. It replaces the font size of the size m heading.
 const TITLE_CLASSES = 'text-[length:clamp(1.125rem,11cqi,1.75rem)]';
+// The h2 is sized like the size l heading but also capped by its own column: "Especialidades" is 14 letters, about 7.6em
+// wide, so 100cqi over 8.4 keeps it whole at 280px with the large font (the 1.875rem floor of size l made it 36px there).
+const SECTION_TITLE_CLASSES = 'text-[length:min(clamp(1.875rem,1rem+4vw,4rem),calc(100cqi/8.4))]';
 const LIST_CLASSES = 'mt-10 grid grid-cols-1 gap-4 md:mt-14 lg:grid-cols-3 lg:gap-5';
 const CARD_CLASSES =
   'flex w-full min-w-0 flex-col rounded-card border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6';
@@ -39,8 +42,8 @@ export function Specialties() {
     <Section tone="cream" labelledBy={headingId}>
       <Container>
         <RevealGroup>
-          <RevealItem className="max-w-4xl">
-            <Heading id={headingId} size="l">
+          <RevealItem className="@container max-w-4xl">
+            <Heading id={headingId} size="l" className={SECTION_TITLE_CLASSES}>
               {founderVoice.specialtiesTitle}
             </Heading>
           </RevealItem>
