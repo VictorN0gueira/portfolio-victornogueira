@@ -8,11 +8,8 @@ const FEATURED = projects.filter((project) => project.featured);
 const WIDTHS = [320, 390, 768, 1024, 1440];
 const VIEWPORT_HEIGHT = 900;
 const PIXEL_TOLERANCE = 1;
-const SIZES_WINDOWS = [320, 390, 768, 900, 1023, 1024, 1100, 1215, 1216, 1440];
-const MEDIUM_WIDTH_PX = 768;
+const SIZES_WINDOWS = [320, 359, 360, 390, 767, 768, 900, 1023, 1024, 1100, 1215, 1216, 1440];
 const NARROWEST_WIDTH_PX = 280;
-// On a phone the declared width ignores the 20px gutters that start at xs, so it may be a few pixels over.
-const PHONE_EXCESS_PX = 10;
 const REGULAR_COUNT = projects.filter((project) => !project.featured).length;
 
 const CONTRACT: PageContract = {
@@ -96,9 +93,7 @@ test.describe('/projetos', () => {
       );
       // Only the covers of the five regular cards: the featured cards and their small shots have sizes of their own.
       for (const { alt, declared, rendered } of images.slice(-REGULAR_COUNT)) {
-        const excess = declared - rendered;
-        const tolerance = width < MEDIUM_WIDTH_PX ? PHONE_EXCESS_PX : PIXEL_TOLERANCE;
-        if (excess > tolerance || excess < -PIXEL_TOLERANCE) {
+        if (Math.abs(declared - rendered) > PIXEL_TOLERANCE) {
           problems.push(
             `${width}px "${alt.slice(0, 30)}": declared ${declared.toFixed(0)}px, rendered ${rendered.toFixed(0)}px`,
           );

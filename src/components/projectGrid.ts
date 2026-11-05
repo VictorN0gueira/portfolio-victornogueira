@@ -18,10 +18,14 @@ interface ProjectCardLayout {
 //   cell of 2 columns, lg: (content - 200) / 3 + 40   -> 310.7px at 1216px and up, (window - 284px) / 3 image
 //   cell of 3 columns, lg: (content - 200) / 2 + 80   -> 504px at 1216px and up, (window - 208px) / 2 image
 //   cell of 6 columns, lg: the content                -> 1084px at 1216px and up, window - 132px image
+//   under md: the window minus 60px, and minus 68px from 360px (the gutters grow from 16px to 20px)
 //   cell at md: (content - 32) / 2, so (window - 200px) / 2 image, or the content, so window - 132px, for the odd card
 // projectGrid.test.ts holds the measured values and e2e/page-projetos.spec.ts compares them with the real layout.
 const LARGE_BREAKPOINT_PX = 1216;
-const PHONE_SIZE = 'calc(100vw - 60px)';
+// Under md the page has 16px gutters (20px from the xs breakpoint, 360px) and the card 12px of padding and a border, so
+// the image is the window minus 60px, and minus 68px from 360px.
+const SMALL_PHONE_SIZE = 'calc(100vw - 60px)';
+const PHONE_SIZE = 'calc(100vw - 68px)';
 const MEDIUM_PAIR_SIZE = 'calc((100vw - 200px) / 2)';
 const MEDIUM_FULL_SIZE = 'calc(100vw - 132px)';
 const LARGE_SIZES = {
@@ -34,7 +38,7 @@ const LARGE_SIZES = {
 function sizesOf(large: 2 | 3 | 6, isOddOnMedium: boolean): string {
   const { fluid, fixed } = LARGE_SIZES[large];
   const medium = isOddOnMedium ? MEDIUM_FULL_SIZE : MEDIUM_PAIR_SIZE;
-  return `(min-width: ${LARGE_BREAKPOINT_PX}px) ${fixed}, (min-width: 1024px) ${fluid}, (min-width: 768px) ${medium}, ${PHONE_SIZE}`;
+  return `(min-width: ${LARGE_BREAKPOINT_PX}px) ${fixed}, (min-width: 1024px) ${fluid}, (min-width: 768px) ${medium}, (min-width: 360px) ${PHONE_SIZE}, ${SMALL_PHONE_SIZE}`;
 }
 
 /** How many of the 6 columns of the lg grid a card takes, and whether it is the odd card of the md grid. */

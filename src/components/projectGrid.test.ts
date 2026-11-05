@@ -96,7 +96,16 @@ describe('the grid of the regular projects', () => {
     expect(Math.abs(declared - expected)).toBeLessThanOrEqual(1);
   });
 
-  it('declares one honest width on a phone: the window minus the gutters and the card', () => {
-    expect(widthDeclared(cardLayout(0, 5).imageSizes, 390)).toBe(330);
-  });
+  it.each([
+    [320, 260],
+    [359, 299],
+    [360, 292],
+    [390, 322],
+    [767, 699],
+  ])(
+    'declares on a phone of %spx the width it really gets, %spx: the window minus the gutters (16px, 20px from 360px) and the card',
+    (windowWidth, expected) => {
+      expect(widthDeclared(cardLayout(0, 5).imageSizes, windowWidth)).toBe(expected);
+    },
+  );
 });
