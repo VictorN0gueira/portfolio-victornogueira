@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import { contactFormCopy } from '../src/components/contact/contactFormCopy';
 import { serviceOptions } from '../src/data/services';
+import { takeFocusFromHashGuard } from './hashFocus';
 import { N8N_WEBHOOK_PATTERN, expect, fulfillOk, n8nRoute, test } from './n8nGuard';
 
 // The ids of the contact form come from React useId, so no test can name one. What matters is the wiring: every label
@@ -57,6 +58,7 @@ async function openForm(page: Page) {
   const form = page.locator('form[name="contact"]');
   await expect(form).toHaveCount(1);
   await form.scrollIntoViewIfNeeded();
+  await takeFocusFromHashGuard(page);
   return form;
 }
 
