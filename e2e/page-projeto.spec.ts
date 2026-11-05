@@ -36,6 +36,7 @@ const SIDE_BY_SIDE_WINDOWS = [
   { width: 1440, height: 900 },
 ];
 const PIXEL_TOLERANCE = 2;
+const LONG_HYPHENATED_WORD = 'diagnostico-empresarial-completo';
 // Small enough for the column to stay inside its travel on DizPara at 1366 and 1440, where the gallery is about 157px
 // shorter than the facts and so can travel only that far.
 const SCROLL_STEP_PX = 10;
@@ -204,6 +205,35 @@ test.describe('the case pages', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Projetos' })).toBeVisible({
       timeout: PAGE_LOAD_TIMEOUT_MS,
     });
+  });
+
+  test('a long hyphenated word in the lead wraps at its hyphens at 280px and does not overflow', async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'desktop',
+      'the test sets its own viewport: it runs once, in the desktop project',
+    );
+    test.slow();
+    await page.setViewportSize({ width: 280, height: 700 });
+    await enableLargeFont(page);
+    await openPage(page, REGULAR);
+
+    // NoBreakHyphens leaves a word longer than MAX_NOWRAP_WORD_LENGTH as plain text: the lead gets it that way here, and
+    // then once more inside the no-wrap span the component would have made, to show what the limit protects from.
+    const widths = await page.evaluate((longWord) => {
+      const lead = Array.from(document.querySelectorAll('main section:first-of-type p')).find((item) =>
+        /e-mail/.test(item.textContent ?? ''),
+      ) as HTMLElement;
+      const overflow = () => document.documentElement.scrollWidth - document.documentElement.clientWidth;
+      lead.textContent = `Veja o ${longWord} agora`;
+      const plain = overflow();
+      lead.innerHTML = `Veja o <span class="whitespace-nowrap">${longWord}</span> agora`;
+      return { plain, wrapped: overflow() };
+    }, LONG_HYPHENATED_WORD);
+
+    expect(widths.plain, 'plain text wraps at its hyphens').toBeLessThanOrEqual(0);
+    expect(widths.wrapped, 'the no-wrap span is what would overflow').toBeGreaterThan(0);
   });
 
   test('the next project comes after the facts and the gallery, before the closing band, and it opens that case', async ({
