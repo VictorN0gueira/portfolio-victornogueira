@@ -426,6 +426,36 @@ test.describe('the tab is still the visitor’s: a press on a dodged tab, and th
     expect(Math.abs(stored.ratio - endY / size.height)).toBeLessThan(0.02);
   });
 
+  test('after a dodge the tab takes the colours for the page under the place it moved to, and back when it comes home', async ({
+    page,
+  }, testInfo) => {
+    await openProbe(page, { place: PHONE_PLACE });
+    const home = await rectOf(trigger(page));
+    // A dark band right under the link that covers the tab: the tab steps down onto it.
+    await page.evaluate(
+      (top) => {
+        const band = document.createElement('div');
+        band.style.cssText = `position:absolute;left:0;right:0;top:${top}px;height:400px;z-index:1;background:rgb(10,10,10)`;
+        document.body.prepend(band);
+      },
+      Math.round(home.bottom) - 2,
+    );
+    const background = () => trigger(page).evaluate((node) => getComputedStyle(node).backgroundColor);
+    const atHome = await background();
+
+    const { dodged } = await dodgeTheTab(page);
+    expect(dodged.top).toBeGreaterThan(home.top);
+    await expect.poll(background, { message: 'the tab over the dark band takes the light colours' }).not.toBe(atHome);
+    await testInfo.attach('dodged-over-dark', { body: await page.screenshot(), contentType: 'image/png' });
+
+    await page.evaluate(() => (document.activeElement as HTMLElement).blur());
+    await waitForCalm(page);
+    await expect
+      .poll(background, { message: 'the tab at home over the light page takes its colours back' })
+      .toBe(atHome);
+    await testInfo.attach('home-over-light', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
   test('the tab can still be reached with the keyboard and opens its panel', async ({ page }) => {
     await openProbe(page, { place: PHONE_PLACE });
     await trigger(page).focus();

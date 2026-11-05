@@ -27,7 +27,8 @@ function getBrightness(element: Element): number | null {
 
 /**
  * True when the page under the centre of the trigger is dark, so the trigger can take the opposite colors.
- * Read on mount, when `placeKey` changes (the trigger was moved) and, throttled, while the page scrolls or the window resizes.
+ * Read on mount, when `placeKey` changes (the trigger was moved), when a translate of the trigger ends (a step aside) and,
+ * throttled, while the page scrolls or the window resizes.
  */
 export function useBackdropIsDark(triggerRef: RefObject<HTMLElement | null>, placeKey?: unknown): boolean {
   const [isDark, setIsDark] = useState(false);
@@ -72,6 +73,18 @@ export function useBackdropIsDark(triggerRef: RefObject<HTMLElement | null>, pla
     const timeout = setTimeout(check, TAB_SLIDE_MS + SETTLE_MARGIN_MS);
     return () => clearTimeout(timeout);
   }, [check, placeKey]);
+
+  // A step aside (useTabDodge) draws the tab somewhere else with a translate, with no scroll, resize or move of its place:
+  // the page under it is read again when that slide ends.
+  useEffect(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const handleEnd = (event: Event) => {
+      if ((event as TransitionEvent).propertyName === 'translate') check();
+    };
+    trigger.addEventListener('transitionend', handleEnd);
+    return () => trigger.removeEventListener('transitionend', handleEnd);
+  }, [check, triggerRef]);
 
   return isDark;
 }

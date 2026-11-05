@@ -647,7 +647,22 @@ describe('motion off', () => {
     const motion = readFileSync(resolve(__dirname, '../styles/motion.css'), 'utf8');
     expect(TAB_SLIDE_MS).toBe(220);
     expect(widget).toContain('translate-x-[var(--vn-dodge-x,0px)]');
-    expect(widget).toContain('[transition-duration:300ms,300ms,300ms,220ms]');
+    // Every property the old transition-colors covered keeps its 300ms, and only the translate takes the slide length.
+    for (const property of [
+      'color',
+      'background-color',
+      'border-color',
+      'outline-color',
+      'text-decoration-color',
+      'fill',
+      'stroke',
+    ]) {
+      expect(widget).toContain(property);
+    }
+    expect(widget).toContain(
+      '[transition-property:color,background-color,border-color,outline-color,text-decoration-color,fill,stroke,translate]',
+    );
+    expect(widget).toContain('[transition-duration:300ms,300ms,300ms,300ms,300ms,300ms,300ms,220ms]');
     expect(widget).toContain('[transition-timing-function:var(--ease-out)]');
     expect(motion).toContain('transition-duration: .01ms !important');
   });
