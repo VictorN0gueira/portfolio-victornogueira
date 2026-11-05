@@ -54,8 +54,14 @@ describe('SEO elements take their head from the route metadata', () => {
     expect(checked.map(({ file }) => file)).toEqual(expect.arrayContaining(['ServicesPage.tsx', 'AboutPage.tsx', 'ContactPage.tsx', 'ProjectsPage.tsx', 'ProjectDetailPage.tsx', 'App.tsx']));
   });
 
-  it('passes no description prop', () => {
-    expect(checked.filter(({ block }) => /\sdescription=/.test(block)).map(({ file }) => file)).toEqual([]);
+  // The one exception: the 404 of the router is out of the index and has no metadata of its own, so it reads its sentence from
+  // src/data/notFoundCopy.ts, the same module the static 404.html is built from (src/seo/headHtml.ts).
+  const NOT_FOUND_DESCRIPTION = 'description={notFoundCopy.description}';
+
+  it('passes no description prop, except the noindex 404 that reads the one sentence of notFoundCopy', () => {
+    const own = checked.filter(({ block }) => /\sdescription=/.test(block));
+
+    expect(own.filter(({ block }) => !(/\snoindex\b/.test(block) && block.includes(NOT_FOUND_DESCRIPTION)))).toEqual([]);
   });
 
   it('passes a title prop only on a page that is out of the index (the 404s)', () => {

@@ -17,7 +17,7 @@ interface Run {
   frame: string;
 }
 
-export interface Scramble {
+interface Scramble {
   /** The text to draw: the real one, or a frame of the scramble while `isScrambling`. */
   shown: string;
   isScrambling: boolean;
