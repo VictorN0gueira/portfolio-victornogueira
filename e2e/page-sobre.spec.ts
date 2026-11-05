@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 import { aboutCopy } from '../src/data/aboutCopy';
 import { toolCategories } from '../src/data/tools';
 import { toolMarks } from '../src/sections/about/toolMarks';
-import { PAGE_LOAD_TIMEOUT_MS, walkPage } from './homeSupport';
+import { PAGE_LOAD_TIMEOUT_MS, brokenWordsIn, enableLargeFont, measureOverflow, walkPage } from './homeSupport';
 import { describePageContract, openPage, type PageContract } from './pageContract';
 import { expect, test } from './n8nGuard';
 
@@ -27,8 +27,32 @@ function toRgb(hex: string): string {
 const cellOf = (page: Page, name: string) =>
   page.getByRole('listitem').filter({ hasText: new RegExp(`^${name.replace(REGEX_SPECIALS, '\\$&')}$`) });
 
+// The widths between a phone and a laptop, where the cards change their number of columns, with the font at 120%: the
+// contract tests only 320 and 390 at that size, and the specialty title broke in the middle at 768 to 830.
+const LARGE_FONT_WIDTHS = [768, 800, 830, 900, 1024, 1100];
+const TITLES = 'h1, h2, h3';
+
 test.describe('/sobre', () => {
   describePageContract(ABOUT);
+
+  for (const width of LARGE_FONT_WIDTHS) {
+    test(`keeps every title whole and the page inside ${width}px with the font at 120 percent`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        testInfo.project.name !== 'desktop',
+        'the test sets its own viewport: it runs once, in the desktop project',
+      );
+      await page.setViewportSize({ width, height: 900 });
+      await enableLargeFont(page);
+      await openPage(page, ABOUT);
+
+      expect(await brokenWordsIn(page, TITLES), 'no word of a title is broken in the middle').toEqual([]);
+      const overflow = await measureOverflow(page, width);
+      expect(overflow.documentExcess, 'no horizontal scroll').toBeLessThanOrEqual(0);
+      expect(overflow.elements, 'nothing past the right edge').toEqual([]);
+    });
+  }
 
   test('scrolls to the method section when the address is /sobre#metodo, and leaves the heading below the header', async ({
     page,

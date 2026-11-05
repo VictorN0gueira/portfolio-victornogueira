@@ -16,11 +16,13 @@ const ICONS: Record<(typeof founderVoice.specialties)[number]['id'], Icon> = {
   '03': Globe,
 };
 const CARD_STAGGER_S = 0.1;
-// The title is sized from the width of its own card (cqi, the @container wrapper around it), at most 1.75rem: the longest
-// word, "Desenvolvimento", is about 7.7em wide, so 11cqi keeps it whole in the three columns of md and with the large font.
-// It replaces the font size of the size m heading.
+// The title is sized from the width of its own card (cqi, the @container wrapper around it), at most 1.75rem. The longest
+// word, "Desenvolvimento", is about 7.7em wide, so 11cqi keeps it whole. The 1.125rem floor only wins in a card narrower
+// than about 164px, which the layout never makes: the cards stack in one column below lg and share three columns from lg
+// (at least 248px of text per card), where 11cqi is above the floor even with the font at 120%. The e2e of /sobre checks
+// the widths where the layout changes. It replaces the font size of the size m heading.
 const TITLE_CLASSES = 'text-[length:clamp(1.125rem,11cqi,1.75rem)]';
-const LIST_CLASSES = 'mt-10 grid grid-cols-1 gap-4 md:mt-14 md:grid-cols-3 md:gap-5';
+const LIST_CLASSES = 'mt-10 grid grid-cols-1 gap-4 md:mt-14 lg:grid-cols-3 lg:gap-5';
 const CARD_CLASSES =
   'flex w-full min-w-0 flex-col rounded-card border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6';
 
