@@ -1,7 +1,8 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { combos, services } from '../data/services';
 import { stubMatchMedia } from '../test/matchMedia';
+import { routeMetaFor } from '../seo/routeMeta';
 import { renderWithProviders } from '../test/render';
 import ServicesPage from './ServicesPage';
 
@@ -20,6 +21,18 @@ describe('ServicesPage', () => {
     renderWithProviders(<ServicesPage />, { route: `/servicos#${HASH_SLUG}` });
 
     expect(scrollToIdWhenMounted).toHaveBeenCalledWith(HASH_SLUG, { focus: 'heading' });
+  });
+
+  it('takes its head from the route metadata: title, description, canonical, one breadcrumb and one Service per service', async () => {
+    renderWithProviders(<ServicesPage />, { route: '/servicos' });
+    const meta = routeMetaFor('/servicos')!;
+
+    await waitFor(() => expect(document.title).toBe(meta.title));
+    expect(document.querySelector('meta[name="description"]')).toHaveAttribute('content', meta.description);
+    expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute('href', 'https://vnone.com.br/servicos');
+    const types = Array.from(document.querySelectorAll('script[type="application/ld+json"]')).map((node) => JSON.parse(node.textContent ?? '{}')['@type']);
+    expect(types.filter((type) => type === 'BreadcrumbList')).toHaveLength(1);
+    expect(types.filter((type) => type === 'Service')).toHaveLength(services.length);
   });
 
   it('does not scroll anywhere when the address has no hash', () => {

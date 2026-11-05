@@ -76,7 +76,14 @@ function projectMeta(entry: ProjectEntry, project: Project): RouteMeta {
     isIndexable: true,
     lastmod: PROJECTS_LASTMOD,
     ...(cover.shareUrl
-      ? { image: { url: cover.shareUrl, alt: project.shots[0].alt, width: SHARE_IMAGE_WIDTH, height: SHARE_IMAGE_HEIGHT } }
+      ? {
+          image: {
+            url: cover.shareUrl,
+            alt: project.shots[0].alt,
+            width: SHARE_IMAGE_WIDTH,
+            height: SHARE_IMAGE_HEIGHT,
+          },
+        }
       : {}),
     crumbs: [HOME_CRUMB, { name: PROJECTS_TITLE, path: PROJECTS_PATH }, { name: project.title, path }],
   };
@@ -88,7 +95,9 @@ export const PROJECT_METAS: readonly RouteMeta[] = projects.flatMap((project) =>
   return entry ? [projectMeta(entry, project)] : [];
 });
 
-const PROJECT_BY_SLUG: ReadonlyMap<string, RouteMeta> = new Map(PROJECT_METAS.map((meta) => [meta.path.slice(PROJECTS_PATH.length + 1), meta]));
+const PROJECT_BY_SLUG: ReadonlyMap<string, RouteMeta> = new Map(
+  PROJECT_METAS.map((meta) => [meta.path.slice(PROJECTS_PATH.length + 1), meta]),
+);
 
 /** The meta of the page of a project, by its slug. A slug that is not a project (or has no entry) gives undefined. */
 export function projectMetaFor(slug: string): RouteMeta | undefined {

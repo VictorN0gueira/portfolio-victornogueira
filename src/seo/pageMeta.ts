@@ -1,4 +1,4 @@
-import { BREADCRUMB_HOME, PROJECTS_TITLE } from '../components/projectLabels';
+import { BREADCRUMB_HOME, PROJECTS_PAGE_DESCRIPTION, PROJECTS_TITLE } from '../components/projectLabels';
 import { SITE } from '../lib/site';
 
 // What the head says about the home and the inner pages. Pure data, no React. This is the part the SEO component loads at
@@ -78,8 +78,7 @@ const PAGES: readonly PageEntry[] = [
     kind: 'page',
     crumb: PROJECTS_TITLE,
     title: withBrand('Projetos de automação, agentes de IA e sistemas web'),
-    description:
-      'Sistemas de atendimento, automação e IA que a gente construiu, com as telas de cada um: DizPara, Hub081, diagnóstico empresarial, dashboard de CRM e outros.',
+    description: PROJECTS_PAGE_DESCRIPTION,
   },
   {
     path: '/contato',
