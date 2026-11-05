@@ -50,7 +50,11 @@ export function stressArticles(): SampleArticle[] {
       publishedAt: fresh,
       source: longSource,
     },
-    { ...sampleArticle(2, 'pt'), title: 'Automação de fluxos com n8n e inteligência artificial', description: 'Resumo' },
+    {
+      ...sampleArticle(2, 'pt'),
+      title: 'Automação de fluxos com n8n e inteligência artificial',
+      description: 'Resumo',
+    },
     { ...sampleArticle(3, 'pt'), title: 'Workflow n8n do começo ao fim', publishedAt: fresh },
     { ...sampleArticle(4, 'en'), title: 'Autonomous agent loop', source: longSource },
     { ...sampleArticle(5, 'pt'), title: 'Machine learning em produção' },
@@ -72,13 +76,21 @@ export function addressTitleArticles(): SampleArticle[] {
   ];
 }
 
-/** Answers the blog's news source with these articles. Call it before the page opens. */
-export async function routeNews(page: Page, articles: SampleArticle[] = defaultArticles()): Promise<void> {
+/**
+ * Answers the blog's news source with these articles. Call it before the page opens. With a `gate`, the answer waits for it
+ * to settle, so a spec can look at the page while the sources are still loading.
+ */
+export async function routeNews(
+  page: Page,
+  articles: SampleArticle[] = defaultArticles(),
+  gate?: Promise<void>,
+): Promise<void> {
   await page.route(EDGE_FUNCTION, async (route) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: CORS_JSON });
       return;
     }
+    await gate;
     await route.fulfill({
       status: 200,
       headers: CORS_JSON,

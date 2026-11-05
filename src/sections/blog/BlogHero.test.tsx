@@ -71,3 +71,13 @@ describe('BlogHero', () => {
     expect(regions[0]).toHaveClass('text-vn-gray-dark');
   });
 });
+
+describe('BlogHero keeps its height while the status text comes and goes', () => {
+  it('puts the status line under the button and reserves its room, so a load does not move the page', () => {
+    renderHero({ status: '' });
+
+    const status = screen.getByRole('status');
+    expect(status).toHaveClass('min-h-10', 'sm:min-h-5');
+    expect(status.previousElementSibling).toBe(screen.getByRole('button', { name: /Atualizar/ }));
+  });
+});

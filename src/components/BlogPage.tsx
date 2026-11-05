@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { detectCategory } from '../utils/newsService';
 import { BlogFilters } from '../sections/blog/BlogFilters';
 import { BlogHero } from '../sections/blog/BlogHero';
@@ -16,6 +16,7 @@ export default function BlogPage() {
   const [langFilter, setLangFilter] = useState<LangFilter>('all');
   const [catFilter, setCatFilter] = useState<CatFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const visibleArticles = useMemo(() => {
     const query = searchQuery.toLowerCase();
@@ -35,6 +36,8 @@ export default function BlogPage() {
     setLangFilter('all');
     setCatFilter('all');
     setSearchQuery('');
+    // The clear buttons go away with the filters: the focus goes to the search field, not to the body (WCAG 2.4.3).
+    searchRef.current?.focus();
   };
 
   return (
@@ -45,19 +48,19 @@ export default function BlogPage() {
         status={origin && !isLoading ? describeDataSource(origin) : ''}
         onRefresh={refresh}
       />
-      {!isLoading && !error && articles.length > 0 && (
-        <BlogFilters
-          searchQuery={searchQuery}
-          langFilter={langFilter}
-          catFilter={catFilter}
-          resultCount={visibleArticles.length}
-          hasActiveFilters={hasActiveFilters}
-          onSearchChange={setSearchQuery}
-          onLangChange={setLangFilter}
-          onCatChange={setCatFilter}
-          onClear={clearFilters}
-        />
-      )}
+      <BlogFilters
+        searchQuery={searchQuery}
+        langFilter={langFilter}
+        catFilter={catFilter}
+        resultCount={visibleArticles.length}
+        hasActiveFilters={hasActiveFilters}
+        isDisabled={isLoading || error !== null || articles.length === 0}
+        searchRef={searchRef}
+        onSearchChange={setSearchQuery}
+        onLangChange={setLangFilter}
+        onCatChange={setCatFilter}
+        onClear={clearFilters}
+      />
       <BlogResults
         isLoading={isLoading}
         error={error}

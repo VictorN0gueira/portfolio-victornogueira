@@ -21,12 +21,14 @@ const REFRESH_CLASSES =
 export function BlogHero({ isLoading, status, onRefresh }: BlogHeroProps) {
   return (
     <PageHero kicker={blogCopy.kicker} title={blogCopy.title} lead={blogCopy.lead}>
-      <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3">
+      <div className="mt-8">
         <button type="button" onClick={onRefresh} aria-disabled={isLoading} className={REFRESH_CLASSES}>
           <RefreshCw className={cn('size-4', isLoading && 'motion-safe:animate-spin')} />
           {blogCopy.refresh}
         </button>
-        <p role="status" className="max-w-md text-sm text-vn-gray-dark">
+        {/* Under the button, with its room kept (two lines on a phone, one from sm): the text is empty while a load runs
+            and comes back with the answer, and the page below must not move with it. */}
+        <p role="status" className="mt-3 min-h-10 max-w-md text-sm text-vn-gray-dark sm:min-h-5">
           {status}
         </p>
       </div>

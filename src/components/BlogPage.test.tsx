@@ -408,3 +408,66 @@ describe('BlogPage third party content', () => {
     }
   });
 });
+
+describe('BlogPage keeps the focus and the band of the filters', () => {
+  it('keeps the filter band in the page while the sources answer, disabled, and enables it with the list', async () => {
+    let answer: (value: unknown) => void = () => undefined;
+    getNewsArticles.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+
+    expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Todos idiomas' })).toBeDisabled();
+
+    answer({ articles: [newsArticle(1)], source: 'edge-function', origin: 'live' });
+
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toBeEnabled());
+  });
+
+  it('keeps the band mounted, disabled, while Atualizar loads again, and keeps what was typed', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+    await user.type(await screen.findByLabelText('Buscar artigos'), 'Artigo');
+    getNewsArticles.mockReturnValue(new Promise(() => undefined));
+
+    await user.click(screen.getByRole('button', { name: /Atualizar/ }));
+
+    const search = screen.getByRole('textbox', { name: 'Buscar artigos' });
+    expect(search).toBeDisabled();
+    expect(search).toHaveValue('Artigo');
+    expect(screen.getByRole('button', { name: /Atualizar/ })).toHaveFocus();
+  });
+
+  it('keeps the band, disabled, when the sources fail', async () => {
+    getNewsArticles.mockRejectedValue(new Error('A rede caiu'));
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+
+    await screen.findByText('A rede caiu');
+
+    expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toBeDisabled();
+  });
+
+  it('puts the focus on the search field after the Limpar filtros of the empty block, and the field is empty', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+    await user.type(await screen.findByLabelText('Buscar artigos'), 'nada disso existe');
+    await screen.findByText('Tenta outros filtros ou limpa a busca.');
+
+    await user.click(screen.getByRole('button', { name: 'Limpar filtros' }));
+
+    expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toHaveFocus();
+    expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toHaveValue('');
+    expect(screen.getAllByRole('button', { name: 'Limpar filtros' })).toHaveLength(1);
+  });
+
+  it('puts the focus on the search field after Limpar filtros when only a chip filter is on, and goes back to Todos tópicos', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+    await user.click(await screen.findByRole('button', { name: 'N8N' }));
+    await screen.findByText('Tenta outros filtros ou limpa a busca.');
+
+    await user.click(screen.getByRole('button', { name: 'Limpar filtros' }));
+
+    expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Todos tópicos' })).toHaveAttribute('aria-pressed', 'true');
+  });
+});

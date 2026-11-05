@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import { createRef } from 'react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../test/render';
@@ -20,6 +21,8 @@ function renderFilters(props: Partial<FiltersProps> = {}) {
       catFilter="all"
       resultCount={5}
       hasActiveFilters={false}
+      isDisabled={false}
+      searchRef={createRef<HTMLInputElement>()}
       {...handlers}
       {...props}
     />,
@@ -141,6 +144,8 @@ describe('BlogFilters count', () => {
         catFilter="all"
         resultCount={3}
         hasActiveFilters
+        isDisabled={false}
+        searchRef={createRef<HTMLInputElement>()}
         onSearchChange={vi.fn()}
         onLangChange={vi.fn()}
         onCatChange={vi.fn()}
@@ -170,5 +175,50 @@ describe('BlogFilters look', () => {
 
     expect(container.querySelector('section')).toHaveAttribute('data-tone', 'white');
     expect(container.innerHTML).not.toMatch(/accent|zinc|purple|cyan|gradient|blur|italic|dark:|white\/|text-\[10px\]/);
+  });
+});
+
+describe('BlogFilters keeps the focus when a control goes away (WCAG 2.4.3)', () => {
+  it('puts the focus on the search field after Limpar busca, which disappears with the query', async () => {
+    const user = userEvent.setup();
+    renderFilters({ searchQuery: 'agentes' });
+
+    await user.click(screen.getByRole('button', { name: 'Limpar busca' }));
+
+    expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toHaveFocus();
+  });
+
+  it('puts the focus on the search field after Limpar filtros, which disappears with the filters', async () => {
+    const user = userEvent.setup();
+    const { onClear } = renderFilters({ hasActiveFilters: true });
+
+    await user.click(screen.getByRole('button', { name: 'Limpar filtros' }));
+
+    expect(onClear).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toHaveFocus();
+  });
+
+  it('keeps one Limpar filtros on the screen when nothing matches: the empty block has its own', () => {
+    renderFilters({ hasActiveFilters: true, resultCount: 0 });
+
+    expect(screen.queryByRole('button', { name: 'Limpar filtros' })).toBeNull();
+    expect(screen.getByRole('status')).toHaveTextContent('0 artigos encontrados');
+  });
+});
+
+describe('BlogFilters while there is nothing to filter (loading, error, no article)', () => {
+  it('stays in the page with every control disabled, so the band keeps its height and nothing moves', () => {
+    renderFilters({ isDisabled: true, searchQuery: 'x', hasActiveFilters: true });
+
+    expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toBeDisabled();
+    for (const button of screen.getAllByRole('button')) expect(button).toBeDisabled();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+  });
+
+  it('is enabled again as soon as there is a list', () => {
+    renderFilters({ isDisabled: false });
+
+    expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toBeEnabled();
+    for (const button of screen.getAllByRole('button')) expect(button).toBeEnabled();
   });
 });
