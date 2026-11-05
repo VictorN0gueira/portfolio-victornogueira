@@ -81,7 +81,6 @@ function setup(props: HarnessProps = {}, isStrict = false) {
   const element = <Harness {...props} />;
   const view = render(isStrict ? <StrictMode>{element}</StrictMode> : element);
   const wrapper = view.getByTestId('wrapper');
-  vi.spyOn(wrapper, 'getBoundingClientRect').mockImplementation(() => rectOf(scene.tab));
   for (const id of ['link-a', 'link-b', 'link-c']) {
     vi.spyOn(view.getByTestId(id), 'getClientRects').mockImplementation(
       () =>
@@ -131,6 +130,12 @@ beforeEach(() => {
   vi.useFakeTimers();
   scene = { ...PHONE_SCENE };
   isFocusVisible = true;
+  // The wrapper is mounted before a test could spy on it, and the hook reads its box when it mounts.
+  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+    return rectOf(
+      this.getAttribute('data-testid') === 'wrapper' ? scene.tab : { left: 0, top: 0, width: 0, height: 0 },
+    );
+  });
   const matches = Element.prototype.matches;
   vi.spyOn(Element.prototype, 'matches').mockImplementation(function (this: Element, selector: string) {
     return selector === ':focus-visible' ? isFocusVisible : matches.call(this, selector);
@@ -186,15 +191,15 @@ describe('the tab steps aside for a control the keyboard focused under it', () =
   });
 
   it('judges the last focus of a quick run once per frame, so a held Tab never waits for a quiet moment', () => {
-    const { tab, a, b, wrapper } = setup();
-    const spy = wrapper.getBoundingClientRect as ReturnType<typeof vi.fn>;
+    const { tab, a, b } = setup();
+    const reads = a.getClientRects as ReturnType<typeof vi.fn>;
     act(() => {
       a.focus();
       b.focus();
       a.focus();
     });
     frame();
-    expect(spy).toHaveBeenCalledTimes(1);
+    expect(reads).toHaveBeenCalledTimes(1);
     expect(dy(tab)).toBe('-38px');
   });
 
@@ -252,6 +257,78 @@ describe('the pointer', () => {
     act(() => a.focus());
     frame();
     expect(dy(tab)).toBe('-38px');
+  });
+});
+
+describe('a press on the tab', () => {
+  it('holds the tab where it is drawn until the pointer lets go: the focus the press brings does not send it home', () => {
+    const { tab, a } = setup();
+    act(() => a.focus());
+    frame();
+    expect(dy(tab)).toBe('-38px');
+
+    fireEvent.pointerDown(tab);
+    act(() => tab.focus());
+    frame();
+    expect(dy(tab)).toBe('-38px');
+
+    fireEvent.pointerUp(tab);
+    frame();
+    expect(dy(tab)).toBe('0px');
+  });
+
+  it('is held only by a press, so a wheel turn over the tab sends it home like any other pointer use', () => {
+    const { tab, a } = setup();
+    act(() => a.focus());
+    frame();
+    fireEvent.wheel(tab);
+    expect(dy(tab)).toBe('0px');
+  });
+});
+
+describe('a page that has room to scroll the control clear', () => {
+  const root = document.documentElement;
+  const LOW_TAB = { left: 346, top: 500, width: TAB_SIZE_PX, height: TAB_SIZE_PX };
+  const LOW_LINK = { left: 0, top: 510, width: 390, height: 40 };
+  let scrollY = 0;
+
+  beforeEach(() => {
+    scrollY = 0;
+    Object.defineProperty(root, 'scrollHeight', { value: 2000, configurable: true });
+    Object.defineProperty(window, 'scrollY', { get: () => scrollY, configurable: true });
+    scene = { ...scene, tab: LOW_TAB, link: LOW_LINK };
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(root, 'scrollHeight');
+    Reflect.deleteProperty(window, 'scrollY');
+  });
+
+  it('waits for the scroll to settle instead of hopping while the browser is on its way', () => {
+    const { tab, a } = setup();
+    act(() => a.focus());
+    frame();
+    expect(dy(tab)).toBe('');
+
+    scene = { ...scene, link: { ...LOW_LINK, top: 300 } };
+    act(() => vi.advanceTimersByTime(SETTLE_MS));
+    expect(dy(tab)).toBe('');
+  });
+
+  it('still steps aside once the scroll has settled and the control is under the tab', () => {
+    const { tab, a } = setup();
+    act(() => a.focus());
+    act(() => vi.advanceTimersByTime(SETTLE_MS));
+    expect(Number.parseFloat(dy(tab))).not.toBe(0);
+    expect(dy(tab)).not.toBe('');
+  });
+
+  it('judges at once when the page is at its end, where nothing can scroll', () => {
+    scrollY = 2000 - PHONE.height;
+    const { tab, a } = setup();
+    act(() => a.focus());
+    frame();
+    expect(dy(tab)).not.toBe('');
   });
 });
 
@@ -335,7 +412,12 @@ describe('the judge never keeps an offset of its own', () => {
     const { tab, a } = setup();
     act(() => a.focus());
     frame();
-    const offset = dodgeOffset({ tab: scene.tab, target: scene.link, viewport: PHONE, insets: { top: 0, bottom: 0, left: 0, right: 0 } });
+    const offset = dodgeOffset({
+      tab: scene.tab,
+      target: scene.link,
+      viewport: PHONE,
+      insets: { top: 0, bottom: 0, left: 0, right: 0 },
+    });
 
     expect(Number.parseFloat(dx(tab) || '0')).toBe(offset.dx);
     expect(Number.parseFloat(dy(tab) || '0')).toBe(offset.dy);
@@ -358,8 +440,8 @@ describe('mounting', () => {
     const names = (spy: { mock: { calls: unknown[][] } }) => spy.mock.calls.map(([name]) => String(name)).sort();
     const added = [vi.spyOn(document, 'addEventListener'), vi.spyOn(window, 'addEventListener')];
     const removed = [vi.spyOn(document, 'removeEventListener'), vi.spyOn(window, 'removeEventListener')];
-    const { view, a, wrapper } = setup();
-    const spy = wrapper.getBoundingClientRect as ReturnType<typeof vi.fn>;
+    const { view, a } = setup();
+    const reads = a.getClientRects as ReturnType<typeof vi.fn>;
     const mine = (list: string[]) =>
       list.filter((name) =>
         [
@@ -372,6 +454,8 @@ describe('mounting', () => {
           'pointerdown',
           'touchstart',
           'wheel',
+          'pointerup',
+          'pointercancel',
         ].includes(name),
       );
     act(() => a.focus());
@@ -387,7 +471,7 @@ describe('mounting', () => {
         .concat(mine(names(added[1]!)))
         .sort(),
     );
-    expect(spy).not.toHaveBeenCalled();
+    expect(reads).not.toHaveBeenCalled();
   });
 });
 

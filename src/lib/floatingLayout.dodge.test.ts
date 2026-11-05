@@ -10,7 +10,11 @@ const tabAt = (left: number, top: number): Box => ({ left, top, width: TAB_SIZE_
 const overlapArea = (a: Box, b: Box) =>
   Math.max(0, Math.min(a.left + a.width, b.left + b.width) - Math.max(a.left, b.left)) *
   Math.max(0, Math.min(a.top + a.height, b.top + b.height) - Math.max(a.top, b.top));
-const moved = (tab: Box, offset: { dx: number; dy: number }): Box => ({ ...tab, left: tab.left + offset.dx, top: tab.top + offset.dy });
+const moved = (tab: Box, offset: { dx: number; dy: number }): Box => ({
+  ...tab,
+  left: tab.left + offset.dx,
+  top: tab.top + offset.dy,
+});
 
 function dodge(tab: Box, target: Box, viewport: Size = PHONE, insets: Insets = NO_INSETS) {
   const offset = dodgeOffset({ tab, target, viewport, insets });
@@ -22,7 +26,12 @@ describe('isObscured', () => {
 
   it('is true when any rect of the focused element overlaps the tab', () => {
     expect(isObscured(tab, [{ left: 0, top: 330, width: 390, height: 40 }])).toBe(true);
-    expect(isObscured(tab, [{ left: 0, top: 0, width: 50, height: 20 }, { left: 300, top: 300, width: 90, height: 40 }])).toBe(true);
+    expect(
+      isObscured(tab, [
+        { left: 0, top: 0, width: 50, height: 20 },
+        { left: 300, top: 300, width: 90, height: 40 },
+      ]),
+    ).toBe(true);
   });
 
   it('is false for rects that only touch the tab or lie clear of it', () => {

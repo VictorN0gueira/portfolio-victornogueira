@@ -2,6 +2,7 @@ import { useEffect, useRef, type RefObject } from 'react';
 import {
   dodgeOffset,
   isObscured,
+  scrollBand,
   TAB_SIZE_PX,
   TAB_SLIDE_MS,
   type Box,
@@ -19,6 +20,7 @@ const DEFAULT_WIDGET_Z = 150;
 const POINTER_EVENTS = ['pointerdown', 'touchstart', 'wheel'] as const;
 const VIEW_EVENTS = ['resize', 'orientationchange'] as const;
 const FOCUS_EVENTS = ['focusin', 'focusout'] as const;
+const RELEASE_EVENTS = ['pointerup', 'pointercancel'] as const;
 
 interface TabDodgeOptions {
   wrapperRef: RefObject<HTMLElement | null>;
@@ -28,7 +30,6 @@ interface TabDodgeOptions {
   /** The place the tab was moved to: it slides there, and is judged once it has arrived. */
   position: TabPosition | null;
 }
-
 
 /** Puts the dodge in the style of the tab. The same values write nothing; `isInstant` skips the transition once. */
 function setDodge(trigger: HTMLElement, dx: number, dy: number, isInstant: boolean): void {
@@ -84,6 +85,28 @@ function around(rects: DOMRect[]): Box {
   };
 }
 
+/** The box of the tab at rest: the wrapper (a fixed box, with the panel inside it while it is open) and the place of the tab in it. */
+function restBox(widget: HTMLElement, trigger: HTMLElement): Box {
+  const box = widget.getBoundingClientRect();
+  return {
+    left: box.left + trigger.offsetLeft,
+    top: box.top + trigger.offsetTop,
+    width: TAB_SIZE_PX,
+    height: TAB_SIZE_PX,
+  };
+}
+
+/**
+ * True when the page has room to scroll a control out of the band of the tab (up for a tab in the upper half, down for the
+ * lower half): the browser is about to do it, so judging now would only make the tab hop while the scroll is on its way.
+ */
+function hasRoomToScroll(home: Box): boolean {
+  const { edge } = scrollBand(home.top, window.innerHeight);
+  const room =
+    edge === 'top' ? window.scrollY : document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+  return room > 1;
+}
+
 /**
  * WCAG 2.2 SC 2.4.11 Focus Not Obscured. While the keyboard moves the focus the browser scrolls a focused control out
  * from under the tab (the scroll padding band, index.css), but at the start or the end of a page nothing can scroll, so a
@@ -93,10 +116,13 @@ function around(rects: DOMRect[]): Box {
  * position are untouched), and it comes back when the focus leaves. Where it goes comes from the rects of the moment
  * (dodgeOffset), so a rotation or a scroll is just another judge: no offset is kept across layout changes. With motion off
  * the stylesheet makes the slide instant (motion.css), and the pointer never moves the tab, except to send it home.
- * The judge runs a frame after a focus change, a resize or the panel opening or closing, and again once a scroll settles.
+ * The judge runs a frame after a focus change (once the scroll settles, when the page has room to scroll the control clear),
+ * a resize or the panel opening or closing, and again once a scroll settles. A press on the tab holds it where it is until
+ * the pointer lets go, so the click and the drag start under the pointer.
  */
 export function useTabDodge({ wrapperRef, triggerRef, isOpen, position }: TabDodgeOptions): void {
   const isPointerFocus = useRef(false);
+  const isHolding = useRef(false);
   const lastPosition = useRef(position);
 
   useEffect(() => {
@@ -106,13 +132,13 @@ export function useTabDodge({ wrapperRef, triggerRef, isOpen, position }: TabDod
     const judge = () => {
       const widget = wrapperRef.current;
       const trigger = triggerRef.current;
-      if (!widget || !trigger || trigger.dataset.dragging === 'true') return;
+      if (!widget || !trigger || isHolding.current || trigger.dataset.dragging === 'true') return;
       const rects = focusedRects(widget, isPointerFocus.current);
-      // The box of the tab at rest: the wrapper (a fixed box, with the panel inside it while it is open) and the place of the tab in it.
-      const box = widget.getBoundingClientRect();
-      const home = { left: box.left + trigger.offsetLeft, top: box.top + trigger.offsetTop, width: TAB_SIZE_PX, height: TAB_SIZE_PX };
+      const home = restBox(widget, trigger);
       const isCovered = rects.length > 0 && isObscured(home, rects);
-      const { dx, dy } = isCovered ? dodgeOffset({ tab: home, target: around(rects), ...readFloatingView() }) : { dx: 0, dy: 0 };
+      const { dx, dy } = isCovered
+        ? dodgeOffset({ tab: home, target: around(rects), ...readFloatingView() })
+        : { dx: 0, dy: 0 };
       setDodge(trigger, dx, dy, false);
     };
     const judgeSoon = () => {
@@ -126,11 +152,25 @@ export function useTabDodge({ wrapperRef, triggerRef, isOpen, position }: TabDod
       timer = window.setTimeout(judge, ms);
     };
 
+    const handleFocus = () => {
+      const widget = wrapperRef.current;
+      const trigger = triggerRef.current;
+      if (widget && trigger && hasRoomToScroll(restBox(widget, trigger))) judgeSettled(SETTLE_MS);
+      else judgeSoon();
+    };
     const handlePointer = (event: Event) => {
       isPointerFocus.current = true;
       const trigger = triggerRef.current;
-      const isOnTab = trigger && event.target instanceof Node && trigger.contains(event.target);
-      if (trigger && !isOnTab) setDodge(trigger, 0, 0, false);
+      if (!trigger) return;
+      if (event.type !== 'wheel' && event.target instanceof Node && trigger.contains(event.target)) {
+        isHolding.current ||= event.type === 'pointerdown';
+        return;
+      }
+      setDodge(trigger, 0, 0, false);
+    };
+    const handleRelease = () => {
+      isHolding.current = false;
+      judgeSoon();
     };
     const handleKey = () => {
       isPointerFocus.current = false;
@@ -139,7 +179,8 @@ export function useTabDodge({ wrapperRef, triggerRef, isOpen, position }: TabDod
 
     document.addEventListener('keydown', handleKey, true);
     document.addEventListener('scroll', handleScroll, { capture: true, passive: true });
-    for (const name of FOCUS_EVENTS) document.addEventListener(name, judgeSoon, true);
+    for (const name of FOCUS_EVENTS) document.addEventListener(name, handleFocus, true);
+    for (const name of RELEASE_EVENTS) document.addEventListener(name, handleRelease, true);
     for (const name of VIEW_EVENTS) window.addEventListener(name, judgeSoon);
     for (const name of POINTER_EVENTS) document.addEventListener(name, handlePointer, { capture: true, passive: true });
 
@@ -147,14 +188,15 @@ export function useTabDodge({ wrapperRef, triggerRef, isOpen, position }: TabDod
     const isMoved = lastPosition.current !== position;
     lastPosition.current = position;
     if (isMoved) judgeSettled(TAB_SLIDE_MS + SETTLE_MS);
-    else judgeSoon();
+    else handleFocus();
 
     return () => {
       cancelAnimationFrame(frame);
       window.clearTimeout(timer);
       document.removeEventListener('keydown', handleKey, true);
       document.removeEventListener('scroll', handleScroll, true);
-      for (const name of FOCUS_EVENTS) document.removeEventListener(name, judgeSoon, true);
+      for (const name of FOCUS_EVENTS) document.removeEventListener(name, handleFocus, true);
+      for (const name of RELEASE_EVENTS) document.removeEventListener(name, handleRelease, true);
       for (const name of VIEW_EVENTS) window.removeEventListener(name, judgeSoon);
       for (const name of POINTER_EVENTS) document.removeEventListener(name, handlePointer, true);
     };
