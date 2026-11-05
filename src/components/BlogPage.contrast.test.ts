@@ -24,7 +24,8 @@ const OFF_PALETTE_FAMILY =
 const TRANSLUCENT_TEXT = /(?:text|placeholder:text)-(?:white|black|vn-white|vn-black|vn-ink)\/(?:\[[\d.]+\]|\d+)/g;
 // A gray-mid text falls under 4.5:1 on cream and on white at a small size.
 const WEAK_GRAY_TEXT = /(?:text|placeholder:text)-vn-gray-mid/g;
-const BANNED_VISUALS = /\bdark:|\bitalic\b|text-\[10px\]|bg-gradient|bg-linear|bg-\[radial|\bblur-|backdrop-blur|\bfrom-|\bvia-/g;
+const BANNED_VISUALS =
+  /\bdark:|\bitalic\b|text-\[10px\]|bg-gradient|bg-linear|bg-\[radial|\bblur-|backdrop-blur|\bfrom-|\bvia-/g;
 const ACCENT = /\b(?:bg|text)-vn-accent\b/g;
 
 function findIn(pattern: RegExp): string[] {
@@ -69,7 +70,13 @@ describe('the blog colors', () => {
   });
 
   it('catches what it is meant to catch', () => {
-    for (const bad of ['text-zinc-400', 'bg-purple-500', 'border-emerald-500', 'text-gray-500', 'placeholder:text-slate-700']) {
+    for (const bad of [
+      'text-zinc-400',
+      'bg-purple-500',
+      'border-emerald-500',
+      'text-gray-500',
+      'placeholder:text-slate-700',
+    ]) {
       expect(bad.match(OFF_PALETTE_FAMILY), bad).not.toBeNull();
     }
     for (const fine of ['text-vn-gray-dark', 'bg-vn-black', 'border-vn-gray-light', 'text-vn-white']) {

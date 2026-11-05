@@ -1,8 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
+import { defaultArticles, routeNews, sampleArticle, type SampleArticle } from './blogFixtures';
 import { expect, test } from './n8nGuard';
 
-const EDGE_FUNCTION = '**/functions/v1/gnews-proxy*';
-const CORS_JSON = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' };
 const SKIP_LINK_NAME = 'Pular para o conteúdo';
 const VIEWPORTS = [
   { width: 320, height: 640 },
@@ -10,44 +9,20 @@ const VIEWPORTS = [
   { width: 768, height: 1024 },
   { width: 1440, height: 900 },
 ];
-const MIN_TARGET_PX = 24;
+const MIN_TARGET_PX = 44;
 const MIN_TEXT_CONTRAST = 4.5;
-// The page background (zinc-950) and the lightest surface a chip sits on (white at 5 percent over it).
-const PAGE_BACKGROUND = [9, 9, 11];
-const CHIP_BACKGROUND = [22, 22, 24];
-
-function sampleArticle(index: number, language: 'pt' | 'en') {
-  return {
-    title: `Artigo de teste ${index}`,
-    description: `Resumo do artigo ${index}`,
-    url: `https://example.com/artigo-${index}`,
-    image: '',
-    publishedAt: new Date(Date.now() - (index + 1) * 86_400_000).toISOString(),
-    source: { name: 'Fonte', url: 'https://example.com' },
-    language,
-  };
-}
-
-type SampleArticle = ReturnType<typeof sampleArticle>;
-
-function defaultArticles(): SampleArticle[] {
-  return [sampleArticle(1, 'pt'), sampleArticle(2, 'en'), sampleArticle(3, 'pt'), sampleArticle(4, 'pt')];
-}
+// The cream of the hero and of the list, and the white of the filter band, where the chips and the field sit.
+const CREAM = [242, 242, 242];
+const WHITE_BAND = [255, 255, 255];
+const INK_RING = 'rgb(26, 26, 26)';
 
 async function openBlog(page: Page, articles: SampleArticle[] = defaultArticles()) {
-  await page.route(EDGE_FUNCTION, async (route) => {
-    if (route.request().method() === 'OPTIONS') {
-      await route.fulfill({ status: 204, headers: CORS_JSON });
-      return;
-    }
-    await route.fulfill({ status: 200, headers: CORS_JSON, contentType: 'application/json', body: JSON.stringify({ articles, source: 'edge-function' }) });
-  });
+  await routeNews(page, articles);
   await page.goto('/blog');
   await expect(page.locator('main a[target="_blank"]').first()).toBeVisible();
 }
 
-// The page root has overflow-hidden, so the scroll width of the document can never show a box that sticks out. These
-// helpers look at the boxes themselves.
+// These helpers look at the boxes themselves, so a box that sticks out is found even where the document does not scroll.
 const VIEWPORT_SLACK_PX = 0.5;
 const LAYOUT_TARGETS: Record<string, string> = {
   title: 'h1',
@@ -155,12 +130,11 @@ for (const viewport of VIEWPORTS) {
 test.describe('blog controls', () => {
   test.use({ viewport: VIEWPORTS[1] });
 
-  test('has a clear button of at least 24px and a visible focus ring on the search field', async ({ page }) => {
+  test('has a clear button of at least 44px and a visible focus ring on the search field', async ({ page }) => {
     await openBlog(page);
     const search = page.getByRole('textbox', { name: 'Buscar artigos' });
 
     await search.focus();
-    // The field animates its properties (transition-all), so the ring is read once it has settled.
     const readRing = () =>
       search.evaluate((input) => {
         const style = getComputedStyle(input);
@@ -169,7 +143,7 @@ test.describe('blog controls', () => {
     await expect.poll(async () => (await readRing()).width).toBeGreaterThanOrEqual(2);
     const ring = await readRing();
     expect(ring.style).not.toBe('none');
-    expect(ring.color).toBe('rgb(255, 255, 255)');
+    expect(ring.color).toBe(INK_RING);
 
     await search.fill('Artigo');
     const box = await page.getByRole('button', { name: 'Limpar busca' }).boundingBox();
@@ -190,7 +164,7 @@ for (const viewport of VIEWPORTS) {
         const chips = page.getByRole('group', { name: row }).getByRole('button');
         for (const chip of [chips.first(), chips.last()]) {
           await chip.focus();
-          // The chips animate their properties (transition-all), so the ring is read once its width has settled.
+          // The ring is read once its width has settled.
           await expect.poll(() => chip.evaluate((node) => parseFloat(getComputedStyle(node).outlineWidth))).toBeGreaterThanOrEqual(2);
           expect(await clippedRingSides(chip), `${row}: ${await chip.textContent()}`).toEqual([]);
         }
@@ -210,22 +184,22 @@ test.describe('blog controls, contrast', () => {
       const read = (element: Element | null, pseudo?: string) => (element ? getComputedStyle(element, pseudo).color : '');
       const search = document.getElementById('search');
       const chip = Array.from(document.querySelectorAll('button[aria-pressed="false"]'))[0];
-      const status = document.querySelector('[role="status"]');
-      const footer = document.querySelector('footer p');
+      const status = document.querySelector('main [role="status"]');
+      const note = Array.from(document.querySelectorAll('p')).find((p) => /sites de terceiros/.test(p.textContent ?? ''));
       const count = Array.from(document.querySelectorAll('p')).find((p) => /encontrado/.test(p.textContent ?? ''));
       const clear = Array.from(document.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Limpar filtros');
       return {
         placeholder: read(search, '::placeholder'),
         chip: read(chip ?? null),
         status: read(status),
-        footer: read(footer),
+        note: read(note ?? null),
         count: read(count ?? null),
         clear: read(clear ?? null),
       };
     });
 
     for (const [name, value] of Object.entries(colors)) {
-      const background = name === 'chip' || name === 'placeholder' ? CHIP_BACKGROUND : PAGE_BACKGROUND;
+      const background = ['status', 'note'].includes(name) ? CREAM : WHITE_BAND;
       expect(contrast(parseRgb(value), background), name).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);
     }
   });

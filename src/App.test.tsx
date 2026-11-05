@@ -92,7 +92,7 @@ describe('App pages that fail to load', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('announces the blog chunk loading as a status inside a main landmark', () => {
+  it('announces the blog chunk loading as a status inside the main landmark of the site layout', () => {
     renderWithProviders(<App />, { route: '/blog' });
 
     const status = screen.getByRole('status', { name: shellCopy.pageLoading });
@@ -100,11 +100,13 @@ describe('App pages that fail to load', () => {
     expect(within(screen.getByRole('main')).getByRole('status', { name: shellCopy.pageLoading })).toBe(status);
   });
 
-  it('shows the recovery panel for the blog, which has its own layout, inside a main landmark', async () => {
+  it('shows the recovery panel for the blog inside the site layout, with the header and the footer still there', async () => {
     renderWithProviders(<App />, { route: '/blog' });
 
     expect(await screen.findByRole('button', { name: shellCopy.errorBoundary.retry }, LAZY_WAIT)).toBeInTheDocument();
     expect(within(screen.getByRole('main')).getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: new RegExp(shellCopy.errorBoundary.whatsapp) })).toBeInTheDocument();
   });
 });

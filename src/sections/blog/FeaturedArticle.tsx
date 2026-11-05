@@ -69,7 +69,7 @@ export function FeaturedArticle({ article, isFixedList }: FeaturedArticleProps) 
             >
               {article.title}
             </h3>
-            <p id={summaryId} lang={textLang} className="mt-4 line-clamp-4 break-words text-base text-vn-gray-light">
+            <p id={summaryId} lang={textLang} className="mt-4 break-words text-base text-vn-gray-light">
               {article.description || blogCopy.card.noSummary}
             </p>
           </div>

@@ -41,30 +41,31 @@ async function renderLoaded() {
   return { user, ...view };
 }
 
-describe('BlogPage landmarks', () => {
-  it('has a banner with the way back, one main landmark, and a footer', async () => {
+describe('BlogPage inside the site layout', () => {
+  it('brings no banner, main, footer or skip link of its own: the layout owns them', async () => {
     await renderLoaded();
 
-    const main = screen.getByRole('main');
-    expect(main).toHaveAttribute('id', 'main-content');
-    expect(main).toHaveAttribute('tabindex', '-1');
-    expect(screen.getAllByRole('main')).toHaveLength(1);
-    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Voltar para a VN One' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
-    expect(within(main).queryByRole('banner')).toBeNull();
+    expect(screen.queryByRole('main')).toBeNull();
+    expect(screen.queryByRole('banner')).toBeNull();
+    expect(screen.queryByRole('contentinfo')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Pular para o conteúdo' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Voltar para a VN One' })).toBeNull();
+    expect(document.getElementById('main-content')).toBeNull();
   });
 
-  it('starts with the skip link, which moves focus to the main landmark', async () => {
-    const { user } = await renderLoaded();
+  it('names its sections: the hero by the title, and no section without a name', async () => {
+    const { container } = await renderLoaded();
 
-    await user.tab();
-    const skip = screen.getByRole('link', { name: 'Pular para o conteúdo' });
-    expect(skip).toHaveFocus();
+    const title = screen.getByRole('heading', { level: 1 });
+    expect(container.querySelector(`section[aria-labelledby="${title.id}"]`)).not.toBeNull();
+    expect(screen.getAllByRole('search')).toHaveLength(1);
+  });
 
-    await user.keyboard('{Enter}');
+  it('does not move focus or scroll by itself: the layout does it', async () => {
+    await renderLoaded();
 
-    expect(screen.getByRole('main')).toHaveFocus();
-    expect(window.location.hash).toBe('');
+    expect(document.body).toHaveFocus();
+    expect(window.scrollTo).not.toHaveBeenCalled();
   });
 
   it('keeps the heading levels in order: one h1, then h2, then h3, never a jump', async () => {
@@ -92,12 +93,6 @@ describe('BlogPage landmarks', () => {
 
     const empty = await screen.findByRole('heading', { name: 'Nenhuma notícia encontrada' });
     expect(empty.tagName).toBe('H2');
-  });
-
-  it('does not move focus when the page is the first one the visitor opened', async () => {
-    await renderLoaded();
-
-    expect(screen.getByRole('main')).not.toHaveFocus();
   });
 
   it('announces the loading as a status while the sources answer', async () => {

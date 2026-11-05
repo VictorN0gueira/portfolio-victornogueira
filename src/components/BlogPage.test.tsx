@@ -1,9 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { LazyMotion, domAnimation } from 'motion/react';
-import { Link, MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AccessibilityProvider } from '../contexts/AccessibilityContext';
 import { renderWithProviders } from '../test/render';
 import type { NewsArticle } from '../utils/newsService';
 import BlogPage from './BlogPage';
@@ -255,60 +252,6 @@ describe('BlogPage refresh button', () => {
     await user.keyboard('{Enter}');
 
     expect(getNewsArticles).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe('BlogPage focus on arrival', () => {
-  function Home() {
-    const navigate = useNavigate();
-    return (
-      <>
-        <Link to="/blog">Ir para o blog</Link>
-        <button type="button" onClick={() => void navigate(-1)}>Voltar</button>
-      </>
-    );
-  }
-
-  function renderApp(entries: string[], index?: number) {
-    return render(
-      <AccessibilityProvider>
-        <LazyMotion features={domAnimation} strict>
-          <MemoryRouter initialEntries={entries} initialIndex={index}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/blog" element={<BlogPage />} />
-            </Routes>
-          </MemoryRouter>
-        </LazyMotion>
-      </AccessibilityProvider>,
-    );
-  }
-
-  it('leaves the first tab stop to the skip link when the blog is the page that was opened (a reload)', async () => {
-    renderApp(['/blog']);
-    await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
-
-    expect(screen.getByRole('main')).not.toHaveFocus();
-    expect(document.body).toHaveFocus();
-  });
-
-  it('leaves the focus alone after back or forward to the blog', async () => {
-    renderApp(['/', '/blog', '/'], 2);
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole('button', { name: 'Voltar' }));
-    await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
-
-    expect(screen.getByRole('main')).not.toHaveFocus();
-  });
-
-  it('moves the focus to the main landmark when the visitor arrives by a link of the site', async () => {
-    renderApp(['/']);
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole('link', { name: 'Ir para o blog' }));
-
-    await waitFor(() => expect(screen.getByRole('main')).toHaveFocus());
   });
 });
 

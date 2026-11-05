@@ -97,6 +97,7 @@ export function BlogResults({ isLoading, error, origin, articles, visibleArticle
             </m.div>
           )}
         </AnimatePresence>
+        <p className="mt-12 max-w-2xl text-sm text-vn-gray-dark">{blogCopy.thirdPartyNote}</p>
       </Container>
     </Section>
   );

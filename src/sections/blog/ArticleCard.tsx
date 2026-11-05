@@ -61,7 +61,7 @@ export function ArticleCard({ article, isFixedList }: ArticleCardProps) {
         >
           {article.title}
         </h3>
-        <p id={summaryId} lang={textLang} className="mb-auto mt-3 line-clamp-3 break-words text-base text-vn-gray-dark">
+        <p id={summaryId} lang={textLang} className="mb-auto mt-3 break-words text-base text-vn-gray-dark">
           {article.description || blogCopy.card.noSummary}
         </p>
         <div

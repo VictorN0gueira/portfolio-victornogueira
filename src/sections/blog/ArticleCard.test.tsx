@@ -118,6 +118,7 @@ describe('ArticleCard', () => {
     const title = screen.getByRole('heading', { level: 3 });
     expect(title).toHaveClass('break-words');
     expect(title.className).not.toMatch(/line-clamp|truncate/);
+    expect(screen.getByText('Resumo do artigo').className).not.toMatch(/line-clamp|truncate/);
     expect(within(screen.getByRole('link')).getByText('Fonte'.repeat(20))).toHaveClass('break-words');
     expect(screen.getByRole('link').innerHTML).not.toMatch(/truncate/);
   });
