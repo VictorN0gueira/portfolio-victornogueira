@@ -26,28 +26,25 @@ import {
   type NewsOrigin,
 } from '../utils/newsService';
 import { MAIN_CONTENT_ID, SkipLink } from './layout/SkipLink';
+import {
+  CAT_LABELS,
+  NEW_TAB_HINT_ID,
+  cardDescribedBy,
+  describeDataSource,
+  estimateReadTime,
+  getCategoryTag,
+  isNew,
+  type CatFilter,
+  type LangFilter,
+} from '../sections/blog/blogMeta';
 import { NewTabHint } from './ui/NewTabHint';
 
 const LOADING_LABEL = 'Carregando artigos';
-/** The one hint that tells a screen reader every article link opens a new tab (see NewTabHint). */
-const NEW_TAB_HINT_ID = 'blog-new-tab-hint';
-
-/**
- * The name of a card link is the title of the article. The rest of the card (language and topic, summary, time and source)
- * is its description, together with the new tab hint, so the name stays short and nothing is lost.
- */
-function cardDescribedBy(...ids: Array<string | false>): string {
-  return [...ids, NEW_TAB_HINT_ID].filter(Boolean).join(' ');
-}
-
 // The pills sit on a cover that is somebody else's picture, light or dark: they carry their own opaque dark surface.
 const TAG_PILL = 'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white bg-vn-black/80 border border-white/20 shadow-lg';
 
 const FALLBACK_IMAGE =
   'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400" fill="%2318181b"%3E%3Crect width="800" height="400"/%3E%3Ctext x="400" y="200" fill="%23a1a1aa" font-family="sans-serif" font-size="24" text-anchor="middle" alignment-baseline="middle"%3EImagem indispon%C3%ADvel%3C/text%3E%3C/svg%3E';
-
-type LangFilter = 'all' | 'pt' | 'en';
-type CatFilter  = 'all' | 'ia' | 'automação' | 'n8n' | 'agentes' | 'llms' | 'ml';
 
 // The flags are decoration: the name of a filter is its word.
 const LANG_LABELS: Record<LangFilter, { text: string; flag?: string; lang?: string }> = {
@@ -59,46 +56,6 @@ const LANG_LABELS: Record<LangFilter, { text: string; flag?: string; lang?: stri
 const FILTER_CHIP_BASE = 'px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all vn-focus-ring';
 const FILTER_CHIP_ON = 'bg-white text-black';
 const FILTER_CHIP_OFF = 'bg-white/[0.05] text-vn-gray-light border border-white/[0.08] hover:border-white/20 hover:text-white';
-
-const CAT_LABELS: Record<CatFilter, string> = {
-  all:       'Todos tópicos',
-  ia:        'IA',
-  automação: 'Automação',
-  n8n:       'N8N',
-  agentes:   'Agentes',
-  llms:      'LLMs',
-  ml:        'Machine Learning',
-};
-
-/**
- * Says where the list on screen comes from, and only what is true of it: a list that is not fresh never says it was loaded now.
- * It goes by the origin the browser knows (see NewsOrigin), never by the source name a server reports, which can be any string.
- */
-function describeDataSource(origin: NewsOrigin): string {
-  if (origin === 'browser-cache') return 'Lista salva neste navegador';
-  if (origin === 'stale-browser-cache') return 'As fontes não responderam. Esta é a última lista salva neste navegador.';
-  if (origin === 'fallback') return 'As fontes não responderam. Esta é uma lista fixa de artigos.';
-  return 'Lista carregada agora';
-}
-
-function isNew(publishedAt: string): boolean {
-  return Date.now() - new Date(publishedAt).getTime() < 6 * 60 * 60 * 1000;
-}
-
-function estimateReadTime(article: NewsArticle): string {
-  const words = `${article.title} ${article.description || ''}`.split(/\s+/).length;
-  return `${Math.max(1, Math.round(words / 200))} min`;
-}
-
-function getCategoryTag(article: NewsArticle) {
-  const cat = detectCategory(article);
-  const langLabel = article.language === 'en' ? 'English' : 'Português';
-  const topicIcon = cat === 'automação' || cat === 'n8n'
-    ? <Zap className="w-3 h-3" />
-    : <Bot className="w-3 h-3" />;
-  const topicLabel = CAT_LABELS[cat as CatFilter] || 'IA';
-  return { langLabel, topicIcon, topicLabel };
-}
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 function SkeletonCard() {
@@ -159,7 +116,8 @@ function FeaturedCard({ article, isFixedList }: { article: NewsArticle; isFixedL
   const summaryId = `${ids}-summary`;
   const metaId = `${ids}-meta`;
   const textLang = article.language === 'en' ? 'en' : undefined;
-  const { langLabel, topicIcon, topicLabel } = getCategoryTag(article);
+  const { langLabel, topicIcon: topicIconKind, topicLabel } = getCategoryTag(article);
+  const topicIcon = topicIconKind === 'zap' ? <Zap className="w-3 h-3" /> : <Bot className="w-3 h-3" />;
   // The fixed list has no real dates: it never says new nor how long ago, or it would look like a fresh feed.
   const novo = !isFixedList && isNew(article.publishedAt);
   const timeAgo = isFixedList ? '' : getTimeAgo(article.publishedAt);
@@ -260,7 +218,8 @@ function NewsCard({ article, index, isFixedList }: { article: NewsArticle; index
   const summaryId = `${ids}-summary`;
   const metaId = `${ids}-meta`;
   const textLang = article.language === 'en' ? 'en' : undefined;
-  const { langLabel, topicIcon, topicLabel } = getCategoryTag(article);
+  const { langLabel, topicIcon: topicIconKind, topicLabel } = getCategoryTag(article);
+  const topicIcon = topicIconKind === 'zap' ? <Zap className="w-3 h-3" /> : <Bot className="w-3 h-3" />;
   // The fixed list has no real dates: it never says new nor how long ago, or it would look like a fresh feed.
   const novo = !isFixedList && isNew(article.publishedAt);
   const timeAgo = isFixedList ? '' : getTimeAgo(article.publishedAt);
