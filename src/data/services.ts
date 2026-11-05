@@ -8,10 +8,11 @@ export interface Service {
   prazo: string;
 }
 
-interface ServiceCombo {
+export interface ServiceCombo {
   nome: string;
   composicao: string;
-  desconto: string;
+  /** Only when the discount is real and checked. The page draws it when it is here and leaves no gap when it is not. */
+  desconto?: string;
   descricao: string;
 }
 
@@ -116,19 +117,16 @@ export const combos: ServiceCombo[] = [
   {
     nome: 'Presença + Automação',
     composicao: 'Landing Page + Automação Essencial',
-    desconto: '10% de desconto',
     descricao: 'Site no ar e o primeiro processo automatizado num pacote só.',
   },
   {
     nome: 'Automação + IA',
     composicao: 'Automação Avançada + Agente de IA',
-    desconto: '12% de desconto',
     descricao: 'Operação automatizada com um agente de IA na frente.',
   },
   {
     nome: 'Sistema + Automação',
     composicao: 'Sistema Web + Automação Avançada',
-    desconto: '15% de desconto',
     descricao: 'Sistema sob medida já com os fluxos integrados.',
   },
 ];

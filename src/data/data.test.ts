@@ -260,11 +260,12 @@ describe('services', () => {
     expect(descriptions).not.toMatch(/converter|A solução completa/);
   });
 
-  it('writes every combo discount in Portuguese, with the same percentages as before', () => {
-    const discounts = combos.map((combo) => combo.desconto);
-
-    expect(discounts).toEqual(['10% de desconto', '12% de desconto', '15% de desconto']);
-    expect(discounts.join(' ')).not.toMatch(/\boff\b/i);
+  it('carries no discount percentage in the combos: the old 10, 12 and 15 percent were never checked', () => {
+    for (const combo of combos) {
+      expect(combo).not.toHaveProperty('desconto');
+      expect(Object.values(combo).join(' ')).not.toMatch(/\d+\s*%|desconto/i);
+    }
+    expect(combos).toHaveLength(3);
   });
 
   it('gives every service a unique kebab case slug for the /servicos#slug anchors', () => {
