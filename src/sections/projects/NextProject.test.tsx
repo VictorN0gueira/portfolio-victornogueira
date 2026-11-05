@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { CARD_CTA_TEXT } from '../../components/projectLabels';
 import { getProjectBySlug } from '../../data/projects';
 import { projectsCopy } from '../../data/projectsCopy';
 import { renderWithProviders } from '../../test/render';
@@ -22,13 +23,15 @@ describe('NextProject', () => {
     expect(screen.getByText(next.category)).toBeInTheDocument();
   });
 
-  it('is one link to the case of the next project, named by the kicker and the title', () => {
+  it('is one link to the case of the next project, named by all the text it shows (WCAG 2.5.3 Label in Name)', () => {
     const next = projectOf('travel-ia');
     renderWithProviders(<NextProject project={next} currentSlug="dizpara" />);
 
     expect(screen.getAllByRole('link')).toHaveLength(1);
     expect(screen.getByRole('link')).toHaveAttribute('href', '/projetos/travel-ia');
-    expect(screen.getByRole('link')).toHaveAccessibleName(`${projectsCopy.nextKicker} ${next.title}`);
+    expect(screen.getByRole('link')).toHaveAccessibleName(
+      `${projectsCopy.nextKicker} ${next.title} ${next.category} ${CARD_CTA_TEXT}`,
+    );
   });
 
   it('shows the small cover in a browser frame, lazily', () => {

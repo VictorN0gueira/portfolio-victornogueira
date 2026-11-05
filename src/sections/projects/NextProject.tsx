@@ -29,12 +29,14 @@ const SURFACE_CLASSES =
 
 /**
  * The end of a case page: the next project of the list in one card (the last one leads back to the first). The link is the
- * whole card, named by the kicker and the title, with an ink focus ring. The spotlight is for a fine pointer only: on
+ * whole card, named by every text it shows (kicker, title, category and "Ver detalhes": WCAG 2.5.3), with an ink focus ring. The spotlight is for a fine pointer only: on
  * touch and with motion off the card is static and the arrow is the cue, and it also settles on keyboard focus.
  */
 export function NextProject({ project, currentSlug }: NextProjectProps) {
   const kickerId = useId();
   const titleId = useId();
+  const categoryId = useId();
+  const ctaId = useId();
 
   if (!project || project.slug === currentSlug) return null;
 
@@ -43,7 +45,7 @@ export function NextProject({ project, currentSlug }: NextProjectProps) {
       <Container>
         <Link
           to={`/projetos/${project.slug}`}
-          aria-labelledby={`${kickerId} ${titleId}`}
+          aria-labelledby={`${kickerId} ${titleId} ${categoryId} ${ctaId}`}
           className="group block min-w-0 rounded-card vn-focus-ring-ink"
         >
           <SpotlightCard as="div" className={SURFACE_CLASSES}>
@@ -54,9 +56,11 @@ export function NextProject({ project, currentSlug }: NextProjectProps) {
               <Heading as="h2" size="l" id={titleId} className="mt-6">
                 <ProjectTitle title={project.title} />
               </Heading>
-              <p className="mt-4 font-mono text-xs uppercase tracking-[.18em] text-vn-gray-dark">{project.category}</p>
+              <p id={categoryId} className="mt-4 font-mono text-xs uppercase tracking-[.18em] text-vn-gray-dark">
+                {project.category}
+              </p>
               <span className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-medium">
-                {CARD_CTA_TEXT}
+                <span id={ctaId}>{CARD_CTA_TEXT}</span>
                 <MotionArrow />
               </span>
             </div>
