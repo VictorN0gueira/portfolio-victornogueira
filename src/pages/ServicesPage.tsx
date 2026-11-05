@@ -27,11 +27,7 @@ export default function ServicesPage() {
 
   return (
     <>
-      <SEO
-        title="Serviços"
-        description="Automação de processos, agentes de IA e desenvolvimento web. Escopo claro e prazo definido."
-        path="/servicos"
-      />
+      <SEO path="/servicos" />
       <div className="pt-32 md:pt-40 bg-brand-white">
         {/* Cabeçalho da página */}
         <m.div

@@ -196,6 +196,10 @@ async function main() {
   }
 
   process.stdout.write(`Banner salvo em: ${bannerPath}\nRecorte quadrado: ${squarePath}\n`);
+  // WhatsApp and LinkedIn keep the card per URL: a new banner under the same URL shows nothing new.
+  process.stdout.write(
+    'Suba o ?v= de SITE.ogImage (src/lib/site.ts) e do og:image e twitter:image do index.html, e registre o novo hash em src/test/ogBanner.test.ts.\n',
+  );
 }
 
 main().catch((error) => {

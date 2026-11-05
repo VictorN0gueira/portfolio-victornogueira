@@ -27,7 +27,7 @@ export default defineConfig({
   workers: WORKERS,
   outputDir: `test-results/e2e-${PORT}`,
   webServer: {
-    command: `npx vite build --outDir ${BUILD_DIR} --emptyOutDir && npx vite preview --outDir ${BUILD_DIR} --port ${PORT} --strictPort`,
+    command: `npx vite build --outDir ${BUILD_DIR} --emptyOutDir && node scripts/build-seo.mjs --outDir ${BUILD_DIR} && npx vite preview --config e2e/vite.preview.config.ts --outDir ${BUILD_DIR} --port ${PORT} --strictPort`,
     url: BASE_URL,
     reuseExistingServer: false,
     timeout: 180000,

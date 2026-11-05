@@ -6,7 +6,7 @@ const MAX_DESCRIPTION_LENGTH = 160;
 
 describe('pageTitle', () => {
   it('returns the default site title when no page title is given', () => {
-    expect(pageTitle()).toBe('VN One | Automação e IA para empresas');
+    expect(pageTitle()).toBe('VN One | Automação de processos e agentes de IA sob medida');
   });
 
   it('suffixes the page title with the brand name', () => {
@@ -15,6 +15,12 @@ describe('pageTitle', () => {
 });
 
 describe('SITE', () => {
+  it('keeps the home title inside the 50 to 60 character range, in the pattern "VN One | <proposal>"', () => {
+    expect(SITE.title.startsWith('VN One | ')).toBe(true);
+    expect(SITE.title.length).toBeGreaterThanOrEqual(50);
+    expect(SITE.title.length).toBeLessThanOrEqual(60);
+  });
+
   it('keeps the description within the 160 character snippet limit', () => {
     expect(SITE.description.length).toBeLessThanOrEqual(MAX_DESCRIPTION_LENGTH);
   });

@@ -26,7 +26,7 @@ describe('SEO', () => {
   it('uses the VN One default title on the home route', () => {
     renderSeo();
 
-    expect(document.title).toContain('VN One | Automação e IA para empresas');
+    expect(document.title).toContain('VN One | Automação de processos e agentes de IA sob medida');
   });
 
   it('suffixes a page title with VN One', () => {
@@ -45,8 +45,9 @@ describe('SEO', () => {
     expect(organization).toMatchObject({
       name: 'VN One',
       url: 'https://vnone.com.br',
-      logo: 'https://vnone.com.br/brand/vn-one-logo-dark.webp',
+      logo: { '@type': 'ImageObject', url: 'https://vnone.com.br/brand/favicon-512.png', width: 512, height: 512 },
       areaServed: 'BR',
+      address: { '@type': 'PostalAddress', addressLocality: 'Recife', addressCountry: 'BR' },
       founder: {
         '@type': 'Person',
         name: 'Victor Nogueira',
@@ -107,6 +108,12 @@ describe('SEO', () => {
     expect(organization?.sameAs).toEqual([SOCIAL_LINKS.find((link) => link.label === 'Instagram')?.href]);
   });
 
+  it('keeps the entity schemas of the home when the page passes its own JSON-LD, with no second FAQ', () => {
+    renderSeo({ path: '/', jsonLd: [{ '@type': 'FAQPage' }] });
+
+    expect(readJsonLd().map((schema) => schema['@type']).sort()).toEqual(['FAQPage', 'Organization', 'WebSite']);
+  });
+
   it('skips the entity schemas on inner routes', () => {
     renderSeo({ title: 'Contato', path: '/contato' });
 
@@ -126,7 +133,7 @@ describe('SEO', () => {
     );
   });
 
-  it('keeps the Organization schema to the agreed fields, without a description', () => {
+  it('keeps the Organization schema to the agreed fields, without a description, a street or a tax id', () => {
     renderSeo();
 
     const organization = readJsonLd().find((schema) => schema['@type'] === 'Organization');
@@ -134,8 +141,11 @@ describe('SEO', () => {
     expect(organization).not.toHaveProperty('description');
     expect(Object.keys(organization ?? {}).sort()).toEqual([
       '@context',
+      '@id',
       '@type',
+      'address',
       'areaServed',
+      'contactPoint',
       'email',
       'founder',
       'logo',
@@ -248,12 +258,12 @@ describe('SEO', () => {
       const title = rawHtml.match(/<title[^>]*>([^<]*)<\/title>/);
 
       expect(title?.[0]).toContain(STATIC_ATTR);
-      expect(title?.[1]).toBe('VN One | Automação e IA para empresas');
+      expect(title?.[1]).toBe('VN One | Automação de processos e agentes de IA sob medida');
     });
 
     it('never lets the static home title come back as the title between two pages', () => {
       const staticTitle = document.createElement('title');
-      staticTitle.textContent = 'VN One | Automação e IA para empresas';
+      staticTitle.textContent = 'VN One | Automação de processos e agentes de IA sob medida';
       staticTitle.setAttribute(STATIC_ATTR, '');
       document.head.appendChild(staticTitle);
       staticTags.push(staticTitle);
@@ -263,7 +273,7 @@ describe('SEO', () => {
       about.unmount();
 
       // The old page is gone and the next one is still loading: the home title must not show up in between.
-      expect(document.title).not.toBe('VN One | Automação e IA para empresas');
+      expect(document.title).not.toBe('VN One | Automação de processos e agentes de IA sob medida');
       renderSeo({ title: 'Serviços', path: '/servicos' });
       expect(document.title).toBe('Serviços | VN One');
     });
@@ -296,7 +306,7 @@ describe('SEO', () => {
     it('still publishes the home JSON-LD and the canonical of an indexed home page', () => {
       renderSeo();
 
-      expect(readJsonLd().map((schema) => schema['@type']).sort()).toEqual(['Organization', 'WebSite']);
+      expect(readJsonLd().map((schema) => schema['@type']).sort()).toEqual(['FAQPage', 'Organization', 'WebSite']);
       expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://vnone.com.br/');
     });
   });
