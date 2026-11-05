@@ -135,9 +135,8 @@ const SCANNED_FILES = [
   // The fixed list the blog shows when no source answers: its strings are site copy too.
   'src/utils/newsService.ts',
 ];
-// projects.ts is rebuilt with the projects page (plan 3), so its claims are not scanned for sales wording yet.
 // testimonials.ts holds the clients' own words, verbatim: they are not ours to edit.
-const SALES_WORDS_EXEMPT = new Set(['src/data/projects.ts', 'src/data/testimonials.ts']);
+const SALES_WORDS_EXEMPT = new Set(['src/data/testimonials.ts']);
 // Files allowed to keep a formal imperative until their owner rewrites the text. Empty since the merge of the batches:
 // the contact form, the blog and the shell copy were all put in the informal imperative.
 const FORMAL_IMPERATIVE_HANDOFF = new Set<string>([]);

@@ -2,51 +2,107 @@ import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { getProjectBySlug, projects } from '../data/projects';
 import { renderWithProviders } from '../test/render';
-import { ProjectDetail, CLEAR_FLOATING_BUTTONS } from './ProjectDetail';
+import { STICKY_COLUMN_CLASSES } from '../sections/projects/stickyColumn';
+import { ProjectDetail } from './ProjectDetail';
 
-function panelOf(container: HTMLElement): HTMLElement {
-  return container.querySelector('[class*="overflow-clip"]') as HTMLElement;
+function bodyOf(container: HTMLElement): HTMLElement {
+  return container.querySelector('[data-case-body]') as HTMLElement;
 }
 
 describe('the layout classes that keep a case page from being cut', () => {
-  it.each(projects.map((project) => project.slug))('lets the text column of %s shrink: min-w-0 on it and on its content', (slug) => {
-    const { container } = renderWithProviders(<ProjectDetail project={getProjectBySlug(slug)!} />);
+  it.each(projects.map((project) => project.slug))(
+    'lets both columns of %s shrink: min-w-0 on the grid items',
+    (slug) => {
+      const { container } = renderWithProviders(<ProjectDetail project={getProjectBySlug(slug)!} />);
 
-    const column = screen.getByRole('heading', { level: 1 }).closest('[class*="flex-1"]') as HTMLElement;
+      const [facts, gallery] = Array.from(bodyOf(container).children);
 
-    expect(column.className).toContain('min-w-0');
-    expect(column.firstElementChild?.className).toContain('min-w-0');
-    expect(panelOf(container)).toBeTruthy();
-  });
+      expect(facts.className).toContain('min-w-0');
+      expect(gallery.className).toContain('min-w-0');
+    },
+  );
 
-  it('stacks the gallery above the text below lg, and puts them side by side only from lg', () => {
+  it('stacks the columns below lg and puts them side by side only from lg', () => {
     const { container } = renderWithProviders(<ProjectDetail project={getProjectBySlug('portal-link-in-bio')!} />);
 
-    const panel = panelOf(container);
+    const body = bodyOf(container);
 
-    expect(panel.className).toContain('flex-col');
-    expect(panel.className).toContain('lg:flex-row');
-    expect(panel.className).not.toContain('md:flex-row');
-    expect(screen.getByRole('group').className).toContain('lg:w-[60%]');
-    expect(screen.getByRole('group').className).not.toContain('md:w-[60%]');
+    expect(body.className).toContain('grid-cols-1');
+    expect(body.className).toMatch(/lg:grid-cols-\[/);
+    expect(body.className).not.toMatch(/md:grid-cols-\[/);
   });
 
-  it('keeps the padding of the text small below lg, so a narrow column keeps its width', () => {
-    renderWithProviders(<ProjectDetail project={getProjectBySlug('diagnostico-empresarial')!} />);
+  it('puts the column of facts before the gallery in the markup, so the text is read before the images', () => {
+    const { container } = renderWithProviders(<ProjectDetail project={getProjectBySlug('hub081')!} />);
 
-    const column = screen.getByRole('heading', { level: 1 }).closest('[class*="flex-1"]') as HTMLElement;
+    const [facts, gallery] = Array.from(bodyOf(container).children);
 
-    expect(column.className).toContain('p-3');
-    expect(column.className).toContain('min-[321px]:p-4');
-    expect(column.className).toContain('md:p-10');
-    expect(column.className).not.toContain('md:p-16');
+    expect(facts.compareDocumentPosition(gallery) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(gallery).toContainElement(screen.getByRole('group'));
+    // On a phone the screenshots come first. Only the visual order changes, and the gallery has nothing to focus.
+    expect(gallery.className).toContain('max-lg:order-first');
+    expect(gallery.querySelector('a, button, [tabindex]')).toBeNull();
   });
 
-  it('keeps text clear of the floating buttons on a phone: 48 px up to 320, 36 px under 360, 56 px up to the tablet layout, none from md', () => {
-    expect(CLEAR_FLOATING_BUTTONS).toBe('pr-12 min-[321px]:pr-9 xs:pr-14 md:pr-0');
-    renderWithProviders(<ProjectDetail project={getProjectBySlug('hub081')!} />);
+  it('shows the highlight phrase of a featured project above the columns and nothing above them for a regular one', () => {
+    const featured = renderWithProviders(<ProjectDetail project={getProjectBySlug('dizpara')!} />);
+    expect(bodyOf(featured.container).previousElementSibling?.textContent).toBe(getProjectBySlug('dizpara')!.highlight);
+    featured.unmount();
 
-    expect(screen.getByRole('heading', { level: 1 }).parentElement?.className).toContain(CLEAR_FLOATING_BUTTONS);
-    for (const list of screen.getAllByRole('list')) expect(list.className).toContain(CLEAR_FLOATING_BUTTONS);
+    const regular = renderWithProviders(<ProjectDetail project={getProjectBySlug('travel-ia')!} />);
+    expect(bodyOf(regular.container).previousElementSibling).toBeNull();
+  });
+
+  it('sticks the shorter column, in a window tall enough: the facts of a regular case, the gallery of a featured one', () => {
+    const regular = renderWithProviders(<ProjectDetail project={getProjectBySlug('travel-ia')!} />);
+    const [regularFacts, regularGallery] = Array.from(bodyOf(regular.container).children);
+    expect(regularFacts.className).toContain(STICKY_COLUMN_CLASSES);
+    expect(regularGallery.className).not.toContain('sticky');
+    regular.unmount();
+
+    const featured = renderWithProviders(<ProjectDetail project={getProjectBySlug('dizpara')!} />);
+    const [featuredFacts, featuredGallery] = Array.from(bodyOf(featured.container).children);
+    expect(featuredFacts.className).not.toContain('sticky');
+    expect(featuredGallery.className).toContain(STICKY_COLUMN_CLASSES);
+  });
+
+  it('chooses the sticky column from the content: a featured project without features sticks its facts', () => {
+    const project = { ...getProjectBySlug('hub081')!, features: undefined };
+    const { container } = renderWithProviders(<ProjectDetail project={project} />);
+
+    const [facts, gallery] = Array.from(bodyOf(container).children);
+
+    expect(facts.className).toContain(STICKY_COLUMN_CLASSES);
+    expect(gallery.className).not.toContain('sticky');
+  });
+
+  it('chooses the sticky column from the content: a regular project with features keeps its facts sticky', () => {
+    const project = { ...getProjectBySlug('travel-ia')!, features: ['Faz uma coisa.', 'Faz outra.'] };
+    const { container } = renderWithProviders(<ProjectDetail project={project} />);
+
+    const [facts, gallery] = Array.from(bodyOf(container).children);
+
+    expect(facts.className).toContain(STICKY_COLUMN_CLASSES);
+    expect(gallery.className).not.toContain('sticky');
+  });
+
+  it('lays a featured gallery out as the cover and two shots side by side, and a regular one as three stacked', () => {
+    const featured = renderWithProviders(<ProjectDetail project={getProjectBySlug('dizpara')!} />);
+    expect(featured.container.querySelector('[data-gallery-pair]')?.children).toHaveLength(2);
+    featured.unmount();
+
+    const regular = renderWithProviders(<ProjectDetail project={getProjectBySlug('portal-link-in-bio')!} />);
+    expect(regular.container.querySelector('[data-gallery-pair]')).toBeNull();
+    expect(screen.getByRole('group').className).toContain('flex-col');
+    expect(screen.getByRole('group').children).toHaveLength(3);
+  });
+
+  it('uses the brand only: no zinc, italic, dark: or legacy shadow in the markup', () => {
+    for (const slug of ['dizpara', 'ai-playlist-maker']) {
+      const { container, unmount } = renderWithProviders(<ProjectDetail project={getProjectBySlug(slug)!} />);
+
+      expect(container.innerHTML).not.toMatch(/zinc|italic|dark:|shadow-2xl/);
+      unmount();
+    }
   });
 });

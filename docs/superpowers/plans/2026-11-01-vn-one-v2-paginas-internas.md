@@ -96,7 +96,7 @@ src/sections/shared/               (novo)  PageHero, CtaBand, splitLastWord, Ser
 src/sections/services/             (novo)  ServicesGrid, ComboCards, ComboCard (o `ComboDiscount` previsto foi apagado em 14dff03)
 src/sections/about/                (novo)  founderVoice.ts, FounderIntro, FounderPhoto, founderPhoto.ts, Specialties,
                                            CompanySection, ToolsGrid, toolMarks.tsx
-src/sections/projects/             (novo)  BrowserShot, ProjectFacts, ProjectHighlight, NextProject, nextProject.ts
+src/sections/projects/             (novo)  BrowserShot, ProjectFacts, ProjectHighlight, NextProject, nextProjectOf.ts
 src/sections/contact/              (novo)  ContactChannels, ContactFormSection
 src/sections/blog/                 (novo)  BlogHero, BlogFilters, ArticleCard, FeaturedArticle, BlogSkeletons,
                                            blogCopy.ts, blogMeta.ts
@@ -451,17 +451,17 @@ export const FOUNDER_PHOTO = {
 - [ ] **Step 1 a 5:** RED, GREEN, e2e, capturas, commit `feat: rebuild /projetos with page hero, framed cards and a closing band`.
 
 ### Task P6: o caso (`/projetos/:slug`)
-**Files:** Create: `src/sections/projects/{ProjectFacts,ProjectHighlight,NextProject}.tsx`, `src/sections/projects/nextProject.ts` e testes. Modify: `src/pages/ProjectDetailPage.tsx`, `src/components/ProjectDetail.tsx`, `src/components/ProjectDetailGallery.tsx` (e os testes `ProjectDetailPage.test.tsx`, `ProjectDetail.layout.test.tsx`). Create: `e2e/page-projeto.spec.ts`.
+**Files:** Create: `src/sections/projects/{ProjectFacts,ProjectHighlight,NextProject}.tsx`, `src/sections/projects/nextProjectOf.ts` (nome diferente de `NextProject.tsx` porque no Windows os dois colidem por caixa) e testes. Modify: `src/pages/ProjectDetailPage.tsx`, `src/components/ProjectDetail.tsx`, `src/components/ProjectDetailGallery.tsx` (e os testes `ProjectDetailPage.test.tsx`, `ProjectDetail.layout.test.tsx`). Create: `e2e/page-projeto.spec.ts`.
 
 **Interfaces:**
 ```ts
-// nextProject.ts
-export function nextProjectOf(slug: string, list?: readonly Project[]): Project; // o seguinte; o último volta ao primeiro
+// nextProjectOf.ts
+export function nextProjectOf(slug: string, list?: readonly Project[]): Project | undefined; // o seguinte; o último volta ao primeiro; lista vazia: undefined
 ```
 **Design:**
-- `PageHero`: kicker = categoria, título = nome do projeto, lead = `description`. Uma linha de volta ("Todos os projetos", alvo ≥ 44px, `ArrowLeft` `aria-hidden`) antes do hero.
+- `PageHero`: kicker = categoria, título = nome do projeto, lead = `description`. Uma linha de volta ("Todos os projetos", alvo ≥ 44px, `ArrowLeft` `aria-hidden`) dentro do `PageHero`, abaixo do lead: um link colocado antes do hero ficaria sob o header fixo.
 - **Frase de destaque** (`ProjectHighlight`): só para projetos com `highlight` (DizPara e Hub081): o texto em tipografia grande dentro de uma faixa com a régua de 3px em tinta. **Sem count-up e sem número.** Para os outros 5, o componente devolve `null` e nada ocupa o lugar.
-- **Corpo:** duas colunas a partir de `lg`. A coluna de fatos (`ProjectFacts`: "O que faz" com `features` quando existem, "Tecnologias e recursos" com as tags, a categoria, e o convite `PROJECT_CTA_TEXT` com o botão `CONTACT_LABEL` para `/contato`) fica **antes** da galeria no DOM e é `lg:sticky lg:top-28 lg:self-start`. A galeria (`role="group"` com `galleryLabel`) mostra os 3 screenshots em `BrowserShot`: destaque = capa grande mais 2 miniaturas; regular = 3 empilhados. Imagens retratos mantêm `reservedSize` e o limite de altura de `ProjectDetailGallery.tsx`.
+- **Corpo:** duas colunas a partir de `lg`. A coluna de fatos (`ProjectFacts`: "O que faz" com `features` quando existem, "Tecnologias e recursos" com as tags, a categoria, e o convite `PROJECT_CTA_TEXT` com o botão `CONTACT_LABEL` para `/contato`) fica **antes** da galeria no DOM e fica fixa a partir de `lg` só quando é a coluna mais curta (nos destaques com `features` a coluna que fixa é a galeria, que é a mais curta; `stickyColumnOf` decide pelo conteúdo) e só em janela com altura de pelo menos 720px (`STICKY_MIN_HEIGHT_PX`, a coluna mais alta que fixa mais o deslocamento de 112px); em janela mais baixa nada fixa e a página rola inteira, para nada ficar cortado embaixo (`STICKY_COLUMN_CLASSES`). A galeria (`role="group"` com `galleryLabel`) mostra os 3 screenshots em `BrowserShot`: destaque = capa grande mais 2 miniaturas; regular = 3 empilhados. Imagens retratos mantêm `reservedSize` e o limite de altura de `ProjectDetailGallery.tsx`.
 - `NextProject`: kicker `próximo projeto`, `h2` com o título, categoria, a capa pequena no `BrowserShot`, link para o caso seguinte. `CtaBand` fecha.
 - **Mantém:** `REMOVED_PROJECT_SLUGS` redireciona (`Navigate replace` para `/projetos`); slug inexistente mostra `NotFound` lazy dentro de `Suspense` com o `NotFoundFallback` da Task A3 (a cópia local sai), com `SEO noindex`; `SEO` com imagem de compartilhamento 1200x630 e `breadcrumbSchema`; o recuo dos botões flutuantes (`CLEAR_FLOATING_BUTTONS`) ou o equivalente do `Container`, conferido em 320 e 390.
 - [ ] **Step 1 (RED):** `nextProject.test.ts` (sequência, volta ao início, lista de um item devolve o próprio, slug desconhecido devolve o primeiro), `ProjectHighlight.test.tsx` (renderiza para destaque, `null` para regular, nenhum dígito vindo do componente), `ProjectFacts.test.tsx` (features só se existirem, tags, link do CTA), e os testes da página: redirect, 404 com `noindex`, h1 único, `NotFound` ainda não importado estático (o teste "does not import NotFound statically" continua).

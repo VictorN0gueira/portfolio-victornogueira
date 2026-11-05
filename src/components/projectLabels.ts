@@ -16,6 +16,11 @@ export const PROJECT_CTA_TEXT = 'Quer algo assim no seu negócio?';
 export const NOT_FOUND_TITLE = 'Projeto não encontrado';
 export const BREADCRUMB_HOME = 'Início';
 
+/** The accessible name of the link to /contato in the facts of a case: it starts with the visible CONTACT_LABEL. */
+export function contactAboutLabel(title: string): string {
+  return `${CONTACT_LABEL} sobre ${title}`;
+}
+
 /** The accessible name of the group of screenshots of a case page. */
 export function galleryLabel(title: string): string {
   return `Telas de ${title}`;
