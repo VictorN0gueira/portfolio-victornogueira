@@ -44,4 +44,28 @@ describe('ContactFormSection', () => {
     await user.type(screen.getByRole('textbox', { name: 'Mensagem' }), 'oi');
     expect(onMessageEdit).toHaveBeenCalledTimes(2);
   });
+
+  it('has exactly one textarea and it is the message, which is what the edit listener relies on', () => {
+    stubMatchMedia();
+    renderWithProviders(<ContactFormSection />);
+    const section = document.getElementById('contato') as HTMLElement;
+    const areas = section.querySelectorAll('textarea');
+
+    expect(areas).toHaveLength(1);
+    expect(areas[0]).toBe(screen.getByRole('textbox', { name: 'Mensagem' }));
+    expect(areas[0].id).toMatch(/-mensagem$/);
+  });
+
+  it('does not take another textarea inside the panel for the message', () => {
+    stubMatchMedia();
+    const onMessageEdit = vi.fn();
+    renderWithProviders(<ContactFormSection onMessageEdit={onMessageEdit} />);
+    const stranger = document.createElement('textarea');
+    stranger.id = 'something-else';
+    (document.querySelector('[data-contact-panel]') as HTMLElement).appendChild(stranger);
+
+    stranger.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(onMessageEdit).not.toHaveBeenCalled();
+  });
 });

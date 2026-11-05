@@ -8,6 +8,9 @@ import { ScanGrid } from '../../components/ui/ScanGrid';
 import { Section } from '../../components/ui/Section';
 import { homeCopy } from '../../data/homeCopy';
 
+/** The id of the message field is the prefix of the form and this ending (ContactMessage builds it from contactIds). */
+const MESSAGE_ID_SUFFIX = '-mensagem';
+
 /** The id the links to /contato#contato and the quote of the simulator point at. */
 const SECTION_ID = 'contato';
 
@@ -37,7 +40,7 @@ export function ContactFormSection({ prefillMessage, prefillNonce, onMessageEdit
   const { kicker, heading } = homeCopy.finalCta;
   // The input event bubbles from the field: a listener on the wrapper hears the visitor without touching the form.
   const handleInput = (event: FormEvent<HTMLDivElement>) => {
-    if (event.target instanceof HTMLTextAreaElement) onMessageEdit?.();
+    if (event.target instanceof HTMLTextAreaElement && event.target.id.endsWith(MESSAGE_ID_SUFFIX)) onMessageEdit?.();
   };
 
   return (
