@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { founderVoice, type FounderSegment } from './founderVoice';
 
@@ -54,5 +56,28 @@ describe('founderVoice', () => {
     expect(founderVoice.cvLabel).toBe(APPROVED.cvLabel);
     expect(founderVoice.cvUrlPath).toBe(APPROVED.cvUrlPath);
     expect(founderVoice.cvFileName).toBe(APPROVED.cvFileName);
+  });
+});
+
+// The two guards of the old About.cv test, now against the module that holds the founder's words (and the component
+// that draws the link): the CV file the button points at must exist, or the link is a silent 404, and the source must
+// not carry a storage URL or an env override.
+describe('the CV the founder voice points at', () => {
+  const ROOT = resolve(__dirname, '../../..');
+  const CV_DISK_PATH = resolve(ROOT, 'public/cv/cv-joao-victor-nogueira.pdf');
+  const PDF_MAGIC = '%PDF-';
+
+  it('is a real PDF under public/cv, served from the path the link uses', () => {
+    expect(existsSync(CV_DISK_PATH)).toBe(true);
+    expect(statSync(CV_DISK_PATH).size).toBeGreaterThan(0);
+    expect(readFileSync(CV_DISK_PATH).subarray(0, PDF_MAGIC.length).toString('latin1')).toBe(PDF_MAGIC);
+    expect(CV_DISK_PATH.split(sep).join('/').endsWith(`public${founderVoice.cvUrlPath}`)).toBe(true);
+  });
+
+  it.each(['founderVoice.ts', 'FounderIntro.tsx'])('keeps no MinIO URL or env override in %s', (file) => {
+    const source = readFileSync(resolve(__dirname, file), 'utf8');
+
+    expect(source).not.toMatch(/minio/i);
+    expect(source).not.toContain('VITE_CV_URL');
   });
 });

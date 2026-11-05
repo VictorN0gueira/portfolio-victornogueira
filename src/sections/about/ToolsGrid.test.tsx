@@ -67,13 +67,26 @@ describe('ToolsGrid', () => {
     expect(within(section).getByText(aboutCopy.tools.lead)).toBeInTheDocument();
   });
 
-  it('writes the heading in sentence case ("Stack tecnológica", the lowercase comes from CSS) and has no "Soluções completas"', () => {
+  it('names the heading "Stack tecnológica" once, in sentence case (the lowercase comes from CSS), and has no "Soluções completas"', () => {
     renderWithProviders(<ToolsGrid />);
 
     expect(aboutCopy.tools.heading).toBe('Stack tecnológica');
-    expect(screen.getByRole('heading', { level: 2, name: 'Stack tecnológica' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /Stack Tecnológica/ })).toBeNull();
+    expect(screen.getAllByRole('heading', { level: 2, name: 'Stack tecnológica' })).toHaveLength(1);
+    expect(screen.queryByText('Stack Tecnológica')).toBeNull();
+    expect(screen.getByText('Da automação de fluxos às interfaces rápidas.')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/Soluções completas/);
+  });
+
+  it('keeps the lead and the category notes at readable contrast: the dark gray, never a zinc or the mid gray', () => {
+    renderWithProviders(<ToolsGrid />);
+
+    for (const line of [
+      screen.getByText('Da automação de fluxos às interfaces rápidas.'),
+      screen.getByText('Fluxos automáticos e agentes de IA.'),
+    ]) {
+      expect(line.className).not.toMatch(/zinc|gray-mid/);
+      expect(line).toHaveClass('text-vn-gray-dark');
+    }
   });
 
   it('has one h3 per category, with its line, and never a heading of level 4', () => {
