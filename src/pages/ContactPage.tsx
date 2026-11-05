@@ -52,6 +52,9 @@ export default function ContactPage() {
     });
   }, []);
 
+  // What the status said is about the field as the quote filled it: once the visitor edits the message it no longer is.
+  const handleMessageEdit = useCallback(() => setStatus(''), []);
+
   return (
     <>
       <SEO path="/contato" />
@@ -62,7 +65,7 @@ export default function ContactPage() {
         aside={<ContactChannels />}
       />
       <RoiSimulator onQuoteRequest={handleQuoteRequest} />
-      <ContactFormSection prefillMessage={prefill?.message} prefillNonce={prefill?.nonce} />
+      <ContactFormSection prefillMessage={prefill?.message} prefillNonce={prefill?.nonce} onMessageEdit={handleMessageEdit} />
       <FaqSection />
 
       {/* Always in the page, empty until the quote is in the form: a live region speaks what is put into it. */}

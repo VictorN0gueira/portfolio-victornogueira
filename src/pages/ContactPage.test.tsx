@@ -81,10 +81,12 @@ describe('ContactPage', () => {
     expect(document.querySelectorAll('#contato')).toHaveLength(1);
   });
 
-  it('keeps the old visual out: no dark variant, no italic, no zinc, no green and no gradient hues', () => {
+  it('keeps the old visual out: no dark variant, italic, zinc, green or gradient, no blur glow, no 10px text', () => {
     const { container } = renderPage();
 
-    expect(container.innerHTML).not.toMatch(/dark:|italic|zinc-|green-|emerald|purple|cyan/);
+    // What the old Contact block carried (italic title, zinc grays, a green icon, a blurred circle) and what the system bans.
+    expect(container.innerHTML).not.toMatch(/dark:|italic|zinc-|green-|emerald|purple|cyan|blur-\[|gradient|text-\[10px\]/);
+    expect(container.innerHTML).not.toMatch(/[\s"'](from|to|via)-/);
   });
 
   it('after "Quero automatizar esse processo" scrolls to the form and moves focus into the message once it holds the quote', async () => {
@@ -120,6 +122,32 @@ describe('ContactPage', () => {
     firstScrollOptions().onFocused?.();
 
     await waitFor(() => expect(status()).toHaveTextContent(shellCopy.quoteFilled));
+  });
+
+  it('clears the announcement as soon as the visitor edits the message, so it never describes a changed field', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const status = () => document.querySelector('div[role="status"]') as HTMLElement;
+    await user.click(screen.getByRole('button', { name: QUOTE_BUTTON }));
+    firstScrollOptions().onFocused?.();
+    await waitFor(() => expect(status()).toHaveTextContent(shellCopy.quoteFilled));
+
+    await user.type(screen.getByRole('textbox', { name: 'Mensagem' }), ' e mais uma coisa');
+
+    expect(status()).toHaveTextContent('');
+  });
+
+  it('keeps the announcement while the visitor only edits another field', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const status = () => document.querySelector('div[role="status"]') as HTMLElement;
+    await user.click(screen.getByRole('button', { name: QUOTE_BUTTON }));
+    firstScrollOptions().onFocused?.();
+    await waitFor(() => expect(status()).toHaveTextContent(shellCopy.quoteFilled));
+
+    await user.type(screen.getByRole('textbox', { name: 'Nome' }), 'Ana');
+
+    expect(status()).toHaveTextContent(shellCopy.quoteFilled);
   });
 
   it('cancels the pending scroll when the visitor leaves the page, so Back within seconds cannot scroll the next page', async () => {

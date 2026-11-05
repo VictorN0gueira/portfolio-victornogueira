@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type FormEvent } from 'react';
 import { ContactForm } from '../../components/ContactForm';
 import { Container } from '../../components/ui/Container';
 import { Heading } from '../../components/ui/Heading';
@@ -21,17 +21,24 @@ interface ContactFormSectionProps {
   prefillMessage?: string;
   /** Bumped by the parent for each request, so the same message fills the field again after the visitor edited it. */
   prefillNonce?: number;
+  /** Called each time the visitor types in the message field (not in the other fields), so the page can drop what it said about the quote. */
+  onMessageEdit?: () => void;
 }
 
 /**
  * The form of /contato, id contato: a cream section with the title (the call to action of the home) and, in a black
  * rounded panel with the dark scan grid, the one contact form (it only has a dark surface, see contactStyles). The
  * form is the same component the home uses, with its prefill. The panel and the section carry no accent. Two columns
- * from lg, stacked below it. One RevealGroup for the one container.
+ * from lg, stacked below it. One RevealGroup for the one container. A listener on the panel reports typing in the
+ * message (onMessageEdit), which the form itself does not expose.
  */
-export function ContactFormSection({ prefillMessage, prefillNonce }: ContactFormSectionProps) {
+export function ContactFormSection({ prefillMessage, prefillNonce, onMessageEdit }: ContactFormSectionProps) {
   const headingId = useId();
   const { kicker, heading } = homeCopy.finalCta;
+  // The input event bubbles from the field: a listener on the wrapper hears the visitor without touching the form.
+  const handleInput = (event: FormEvent<HTMLDivElement>) => {
+    if (event.target instanceof HTMLTextAreaElement) onMessageEdit?.();
+  };
 
   return (
     <Section id={SECTION_ID} tone="cream" labelledBy={headingId}>
@@ -46,6 +53,7 @@ export function ContactFormSection({ prefillMessage, prefillNonce }: ContactForm
           <RevealItem className="min-w-0">
             <div
               data-contact-panel=""
+              onInput={handleInput}
               className="relative isolate overflow-hidden rounded-shell bg-vn-black p-3 text-vn-white xs:p-4 md:p-8"
             >
               <ScanGrid tone="dark" />

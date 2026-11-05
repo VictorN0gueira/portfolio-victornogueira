@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import { homeCopy } from '../../data/homeCopy';
 import { renderWithProviders } from '../../test/render';
 import { stubMatchMedia } from '../../test/matchMedia';
@@ -29,5 +30,18 @@ describe('ContactFormSection', () => {
     expect(panel).toHaveClass('bg-vn-black', 'rounded-shell');
     expect(panel.querySelector('form')).not.toBeNull();
     expect(section.innerHTML).not.toMatch(/vn-accent/);
+  });
+
+  it('tells the page when the visitor types in the message, and only then', async () => {
+    stubMatchMedia();
+    const onMessageEdit = vi.fn();
+    const user = userEvent.setup();
+    renderWithProviders(<ContactFormSection onMessageEdit={onMessageEdit} />);
+
+    await user.type(screen.getByRole('textbox', { name: 'Nome' }), 'Ana');
+    expect(onMessageEdit).not.toHaveBeenCalled();
+
+    await user.type(screen.getByRole('textbox', { name: 'Mensagem' }), 'oi');
+    expect(onMessageEdit).toHaveBeenCalledTimes(2);
   });
 });
