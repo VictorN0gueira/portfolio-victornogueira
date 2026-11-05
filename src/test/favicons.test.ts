@@ -76,6 +76,22 @@ describe('the PNG set', () => {
     });
   }
 
+  // Some browsers pick the icon by size and take the 32x32 link of the head. It has to be the image the ICO holds for 32 px
+  // (the tiny-size recipe with the contrast lift), not an older render with faint strokes.
+  it('has a favicon-32.png that is the 32 px image of the ICO, byte for byte', () => {
+    const ico = read('favicon.ico');
+    const entry = icoEntries(ico).find((candidate) => candidate.width === 32)!;
+
+    expect(read('brand/favicon-32.png').equals(ico.subarray(entry.offset, entry.offset + entry.size))).toBe(true);
+    expect(pngSize(read('brand/favicon-32.png'))).toEqual({ width: 32, height: 32 });
+  });
+
+  it('leaves favicon-32.png to the favicon script: the brand assets script no longer writes it', () => {
+    const brandScript = readFileSync(resolve(__dirname, '../../scripts/build-brand-assets.mjs'), 'utf8');
+
+    expect(brandScript).not.toContain('favicon-32.png');
+  });
+
   it('keeps the 48 px icon apart from the old 32 px one', () => {
     expect(read('brand/favicon-48.png').equals(read('brand/favicon-32.png'))).toBe(false);
   });
@@ -169,5 +185,17 @@ describe('robots.txt', () => {
         path,
       ).toEqual([]);
     }
+  });
+});
+
+// git must never rewrite the bytes of the ICO (a line ending change breaks the embedded PNGs), and the manifest is text.
+describe('.gitattributes', () => {
+  const rules = readFileSync(resolve(ROOT, '.gitattributes'), 'utf8')
+    .split(/\r?\n/)
+    .map((line) => line.trim());
+
+  it('keeps the ICO binary and the web manifest text', () => {
+    expect(rules).toContain('*.ico binary');
+    expect(rules).toContain('*.webmanifest text');
   });
 });

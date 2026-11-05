@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { projects } from '../data/projects';
 import { renderWithProviders } from '../test/render';
 import { PROJECTS_PAGE_DESCRIPTION } from '../components/projectLabels';
+import { routeMetaFor } from '../seo/routeMeta';
 import ProjectsPage from './ProjectsPage';
 
 const PAGE_TITLE = 'Projetos';
@@ -102,7 +103,7 @@ describe('ProjectsPage', { timeout: TEST_TIMEOUT_MS }, () => {
   it('sets the head of the page: title, description, canonical and a share image of its own', async () => {
     await renderPage();
 
-    await waitFor(() => expect(document.title).toBe('Projetos | VN One'));
+    await waitFor(() => expect(document.title).toBe(routeMetaFor('/projetos')?.title));
     expect(document.querySelector('meta[name="description"]')).toHaveAttribute('content', PROJECTS_PAGE_DESCRIPTION);
     expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute('href', 'https://vnone.com.br/projetos');
     expect(document.querySelector('meta[name="robots"]')).toBeNull();

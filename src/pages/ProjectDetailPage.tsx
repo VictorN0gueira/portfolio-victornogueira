@@ -4,11 +4,11 @@ import { m } from 'motion/react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { SEO } from '../components/SEO';
 import { ProjectDetail } from '../components/ProjectDetail';
-import { BACK_LABEL, BREADCRUMB_HOME, CONTACT_LABEL, NOT_FOUND_TITLE, PROJECT_CTA_TEXT, PROJECTS_TITLE } from '../components/projectLabels';
-import { coverOf, getProjectBySlug, REMOVED_PROJECT_SLUGS, type Project } from '../data/projects';
+import { BACK_LABEL, CONTACT_LABEL, NOT_FOUND_TITLE, PROJECT_CTA_TEXT } from '../components/projectLabels';
+import { getProjectBySlug, REMOVED_PROJECT_SLUGS } from '../data/projects';
 import { shellCopy } from '../data/shellCopy';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
-import { SITE } from '../lib/site';
+import { projectMetaFor } from '../seo/projectMeta';
 
 // The same lazy chunk App.tsx uses for its 404: a project page that exists never downloads it.
 const NotFound = lazyWithRetry(() => import('../components/NotFound'));
@@ -24,21 +24,6 @@ function NotFoundFallback() {
       <span className="sr-only">{shellCopy.pageLoading}</span>
     </div>
   );
-}
-
-const SHARE_IMAGE_WIDTH = 1200;
-const SHARE_IMAGE_HEIGHT = 630;
-
-function breadcrumbSchema(project: Project): object {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: BREADCRUMB_HOME, item: `${SITE.url}/` },
-      { '@type': 'ListItem', position: 2, name: PROJECTS_TITLE, item: `${SITE.url}/projetos` },
-      { '@type': 'ListItem', position: 3, name: project.title, item: `${SITE.url}/projetos/${project.slug}` },
-    ],
-  };
 }
 
 export default function ProjectDetailPage() {
@@ -61,16 +46,7 @@ export default function ProjectDetailPage() {
 
   return (
     <>
-      <SEO
-        title={project.title}
-        description={project.description}
-        path={`/projetos/${project.slug}`}
-        image={coverOf(project).shareUrl}
-        imageAlt={project.shots[0].alt}
-        imageWidth={SHARE_IMAGE_WIDTH}
-        imageHeight={SHARE_IMAGE_HEIGHT}
-        jsonLd={[breadcrumbSchema(project)]}
-      />
+      <SEO path={`/projetos/${project.slug}`} meta={projectMetaFor(project.slug)} />
       <div className="min-h-screen bg-brand-white px-3 pb-24 pt-28 min-[321px]:px-4 md:px-12 md:pt-36">
         <div className="mx-auto max-w-6xl">
           <m.div

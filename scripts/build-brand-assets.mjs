@@ -19,10 +19,7 @@ const WEBP_QUALITY = 90;
 const BANNER_PNG_HEIGHT = 240;
 const ICON_BACKGROUND = '#0A0A0A';
 const APPLE_TOUCH_PADDING_RATIO = 0.12;
-// The 2:1 mark would be only ~24x12 inside a 32px favicon with the 12% padding, so the
-// favicon uses a much smaller padding to stay legible in a browser tab.
-const FAVICON_PADDING_RATIO = 0.04;
-const FAVICON_SIZE = 32;
+// The favicons (the 32 px one too) come from scripts/build-favicons.mjs, which has the tiny-size recipe.
 const APPLE_TOUCH_SIZE = 180;
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -104,7 +101,6 @@ async function main() {
   await writeResized(chrome, 'vn-one-logo-chrome.webp', WEBP_HEIGHT, 'webp');
   await writeResized(dark, 'vn-one-logo-dark.webp', WEBP_HEIGHT, 'webp');
   await writeResized(chrome, 'vn-one-logo-chrome.png', BANNER_PNG_HEIGHT, 'png', bannerSourceDir);
-  await writeIcon(chrome, 'favicon-32.png', FAVICON_SIZE, FAVICON_PADDING_RATIO);
   await writeIcon(chrome, 'apple-touch-icon.png', APPLE_TOUCH_SIZE, APPLE_TOUCH_PADDING_RATIO);
 }
 

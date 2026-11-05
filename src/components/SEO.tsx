@@ -1,13 +1,19 @@
 import { useEffect } from 'react';
 import { serializeJsonLd } from '../lib/jsonLd';
 import { SITE, pageTitle } from '../lib/site';
-import { routeMetaFor, type RouteMeta } from '../seo/routeMeta';
+import { pageMetaFor } from '../seo/pageMeta';
+import type { RouteMeta } from '../seo/routeMeta';
 import { homeEntityNodes, structuredDataFor } from '../seo/structuredData';
 
 interface SEOProps {
   title?: string;
   description?: string;
   path?: string;
+  /**
+   * The metadata of the route, when it is not one of the home and the inner pages (those are found by `path`). The page of a
+   * project passes its own, from seo/projectMeta, so that the texts of the projects stay out of the main chunk.
+   */
+  meta?: RouteMeta;
   image?: string;
   /** Texto alternativo da imagem de compartilhamento. Padrão: o do banner do site */
   imageAlt?: string;
@@ -56,7 +62,8 @@ function resolveShareTags({ title, description, path = '/', image, imageAlt, ima
   return {
     fullTitle: title ? pageTitle(title) : (meta?.title ?? SITE.title),
     description: description || meta?.description || SITE.description,
-    pageUrl: `${SITE.url}${path}`,
+    // The path of the metadata is already normalized (no trailing slash, no query), so decision D7 holds for any spelling.
+    pageUrl: `${SITE.url}${meta?.path ?? path}`,
     image: image || routeImage?.url || SITE.ogImage,
     imageAlt: imageAlt || routeImage?.alt || SITE.ogImageAlt,
     imageWidth: isDefaultImage ? DEFAULT_IMAGE_WIDTH : (routeImage?.width ?? imageWidth),
@@ -119,7 +126,7 @@ function schemasFor(path: string, meta: RouteMeta | undefined, isNoindex: boolea
 export function SEO(props: SEOProps) {
   const { path = '/', jsonLd } = props;
   useDropStaticTags();
-  const meta = routeMetaFor(path);
+  const meta = props.meta ?? pageMetaFor(path);
   // An explicit noindex wins; without one, the route metadata decides (the blog is out of the index).
   const isNoindex = props.noindex ?? meta?.isIndexable === false;
   const tags = resolveShareTags(props, meta);

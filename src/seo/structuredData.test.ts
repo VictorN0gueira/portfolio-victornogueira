@@ -124,7 +124,7 @@ describe('serviceNodes', () => {
         description: service.descricao,
         serviceType: service.categoria,
         url: `${SITE.url}/servicos#${service.slug}`,
-        provider: { '@id': `${SITE.url}/#organization` },
+        provider: { '@type': 'Organization', '@id': `${SITE.url}/#organization`, name: SITE.name, url: SITE.url },
         areaServed: 'BR',
       });
     });
@@ -197,14 +197,29 @@ describe('structuredDataFor', () => {
     expect(nodesOfType(all, 'LocalBusiness')).toHaveLength(0);
   });
 
-  it('references only ids that a node of the home defines', () => {
-    const home = structuredDataFor(metaOf('/'));
-    const defined = new Set(walk(home).flatMap((node) => (typeof node['@id'] === 'string' && Object.keys(node).length > 1 ? [node['@id']] : [])));
-    const all = ROUTE_METAS.flatMap((meta) => structuredDataFor(meta));
-    const references = walk(all).filter((node) => Object.keys(node).length === 1 && typeof node['@id'] === 'string');
+  it('resolves every @id reference inside the nodes of its own page: a crawler does not follow an id to another page', () => {
+    let referencesChecked = 0;
 
-    expect(references.length).toBeGreaterThan(0);
-    for (const reference of references) expect(defined.has(reference['@id'] as string), String(reference['@id'])).toBe(true);
+    for (const meta of ROUTE_METAS) {
+      const nodes = structuredDataFor(meta);
+      const defined = new Set(walk(nodes).flatMap((node) => (typeof node['@id'] === 'string' && Object.keys(node).length > 1 ? [node['@id']] : [])));
+      const references = walk(nodes).filter((node) => Object.keys(node).length === 1 && typeof node['@id'] === 'string');
+
+      for (const reference of references) {
+        referencesChecked += 1;
+        expect(defined.has(reference['@id'] as string), `${meta.path} references ${String(reference['@id'])}`).toBe(true);
+      }
+    }
+    expect(referencesChecked).toBeGreaterThan(0);
+  });
+
+  it('describes the provider of each Service in the page itself, with the id of the organization of the home', () => {
+    const services = nodesOfType(structuredDataFor(metaOf('/servicos')), 'Service');
+
+    expect(services.length).toBeGreaterThan(0);
+    for (const service of services) {
+      expect(service.provider).toEqual({ '@type': 'Organization', '@id': `${SITE.url}/#organization`, name: SITE.name, url: SITE.url });
+    }
   });
 
   it('follows the copy rules in every text', () => {
