@@ -74,15 +74,13 @@ const ONLY_IN_DESKTOP = 'the test sets its own viewport: it runs once, in the de
 const slugOf = (path: string): string => (path === '/' ? 'home' : path.replace(/^\//, '').replace(/[^a-z0-9]+/gi, '-'));
 const sizeLabel = (viewport: Viewport): string => `${viewport.width}x${viewport.height}`;
 
-/** The page is ready when its h1, one heading of level 2 of the lazy part (if it has one) and (if it has one) the form are in the page. */
+/** The page is ready when its h1, one heading of level 2 of the lazy part and (if it has one) the form are in the page. */
 export async function openPage(page: Page, contract: PageContract): Promise<void> {
   await page.goto(contract.path);
   if (contract.hasContactForm) {
     await expect(page.locator('form[name="contact"]')).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
   }
-  await expect(page.getByRole('heading', { level: 1, name: contract.h1 })).toBeAttached({
-    timeout: PAGE_LOAD_TIMEOUT_MS,
-  });
+  await expect(page.getByRole('heading', { level: 1, name: contract.h1 })).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
   if (contract.readyHeading !== undefined) {
     await expect(page.getByRole('heading', { level: 2, name: contract.readyHeading }).first()).toBeAttached({
       timeout: PAGE_LOAD_TIMEOUT_MS,
@@ -157,10 +155,7 @@ async function auditLayout(page: Page, { viewport, contract, hasShot = false }: 
   await walkPage(page, async () => {
     if (!viewport.isTouch) return;
     for (const target of await measureSmallTargets(page, MIN_TOUCH_PX - TOUCH_ROUNDING_PX)) {
-      small.set(
-        `${target.element}|${Math.round(target.width)}x${Math.round(target.height)}`,
-        `${target.element} ${target.width.toFixed(1)}x${target.height.toFixed(1)}`,
-      );
+      small.set(`${target.element}|${Math.round(target.width)}x${Math.round(target.height)}`, `${target.element} ${target.width.toFixed(1)}x${target.height.toFixed(1)}`);
     }
   });
   const overflow = await measureOverflow(page, viewport.width);
@@ -238,10 +233,7 @@ async function checkEnviar(page: Page): Promise<string[]> {
   const problems: string[] = [];
   const box = await rectOf(submit);
 
-  for (const [name, target] of [
-    ['WhatsApp button', whatsAppLink(page)],
-    ['tab', accessibilityTab(page)],
-  ] as const) {
+  for (const [name, target] of [['WhatsApp button', whatsAppLink(page)], ['tab', accessibilityTab(page)]] as const) {
     if (overlaps(box, await rectOf(target))) problems.push(`Enviar (centred) is overlapped by the ${name}`);
   }
   const coveredBy = await submit.evaluate((button) => {
@@ -267,8 +259,7 @@ async function checkFooter(page: Page): Promise<string[]> {
   for (const link of await footerLinkRects(page)) {
     if (link.right <= link.left || link.bottom <= 0 || link.top >= height) continue;
     for (const [name, box] of buttons) {
-      if (overlaps(link, box))
-        problems.push(`footer link "${link.name}" is overlapped by the ${name} at the end of the page`);
+      if (overlaps(link, box)) problems.push(`footer link "${link.name}" is overlapped by the ${name} at the end of the page`);
     }
   }
   return problems;
@@ -307,18 +298,11 @@ async function expectNothingHidden(page: Page, contract: PageContract): Promise<
   expect(await findInvisibleContent(page), 'nothing stays at opacity 0').toEqual([]);
 }
 
-async function expectNoAxeViolation(
-  page: Page,
-  testInfo: { attach: (name: string, options: { body: string; contentType: string }) => Promise<void> },
-): Promise<void> {
+async function expectNoAxeViolation(page: Page, testInfo: { attach: (name: string, options: { body: string; contentType: string }) => Promise<void> }): Promise<void> {
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
 
   await testInfo.attach('axe-incomplete', {
-    body: JSON.stringify(
-      results.incomplete.map((item) => ({ id: item.id, nodes: item.nodes.length })),
-      null,
-      2,
-    ),
+    body: JSON.stringify(results.incomplete.map((item) => ({ id: item.id, nodes: item.nodes.length })), null, 2),
     contentType: 'application/json',
   });
   const summary = results.violations.map((violation) => ({
@@ -340,9 +324,7 @@ function defineWidthTests(contract: PageContract): void {
         userAgent: viewport.isTouch ? TOUCH_AGENT : DESKTOP_AGENT,
       });
 
-      test('has no overflow, no broken title word, 44px targets and at most one accent per section', async ({
-        page,
-      }, testInfo) => {
+      test('has no overflow, no broken title word, 44px targets and at most one accent per section', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'desktop', ONLY_IN_DESKTOP);
         test.slow();
         await auditLayout(page, { viewport, contract, hasShot: true });
