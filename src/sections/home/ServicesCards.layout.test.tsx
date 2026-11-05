@@ -39,6 +39,17 @@ describe('ServicesCards alignment', () => {
     for (const item of items) expect(item).toHaveClass('md:mb-5');
   });
 
+  it('starts the term at the top of its row, so a term that wraps to two lines never moves the one line terms of the other cards', () => {
+    const { surfaces } = renderCards();
+
+    for (const surface of surfaces) {
+      const term = surface.lastElementChild as HTMLElement;
+
+      expect(term).toHaveClass('self-start', 'pt-6');
+      expect(term).not.toHaveClass('mt-auto');
+    }
+  });
+
   it('keeps the last card across both columns of md and back to one column at lg', () => {
     const { items } = renderCards();
 

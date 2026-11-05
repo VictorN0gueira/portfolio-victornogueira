@@ -21,14 +21,27 @@ describe('scroll padding at the bottom of the window', () => {
   it('clears the accessibility tab on a phone held upright (under sm, taller than 30rem)', () => {
     const phone = blockBody(indexCss, '@media (width < 40rem) and (min-height: 30rem)');
 
-    // The tab sits 96px over max(16px, the bottom inset) and is 2.75rem (size-11) tall; a few px of air on top of it.
+    // The tab sits 96px over max(16px, the bottom inset) and is 2.75rem tall (the default offset; the tab itself is size-[44px] since the larger font must not grow it); a few px of air on top of it.
     expect(phone).toContain('scroll-padding-bottom: calc(max(16px, env(safe-area-inset-bottom)) + 96px + 2.75rem + 8px)');
   });
 
-  it('matches how the widget is placed: 96px over the safe area, size-11, centred from sm up and under 30rem', () => {
+  it('matches how the widget is placed: 96px over the safe area, size-[44px], centred from sm up and under 30rem', () => {
     expect(widgetSource).toContain('bottom-[calc(max(16px,env(safe-area-inset-bottom))+96px)]');
-    expect(widgetSource).toContain('size-11');
+    expect(widgetSource).toContain('size-[44px]');
     expect(widgetSource).toContain('sm:top-1/2');
     expect(widgetSource).toContain('[@media(max-height:30rem)]:top-1/2');
+  });
+
+  // The tab can be moved (src/components/useTabPlacement.ts sets the band on the root): the padding follows it.
+  it('follows a tab the visitor moved, at the bottom or the top edge, without touching the default rules', () => {
+    expect(blockBody(indexCss, "html[data-vn-tab-band='bottom']")).toContain('scroll-padding-bottom: max(var(--vn-tab-pad), 5rem)');
+    expect(blockBody(indexCss, "html[data-vn-tab-band='top']")).toContain('scroll-padding-top: max(var(--vn-tab-pad), 96px, calc(env(safe-area-inset-top) + 84px))');
+  });
+
+  // At the end of the page the scroll cannot help: the footer grows by what the tab still covers past 4rem, the least bottom padding a footer has (the blog one).
+  it('grows the footer at the end of the page when the tab sits low, past its own bottom padding', () => {
+    const footer = blockBody(indexCss, "html[data-vn-tab-band='bottom'] footer::after");
+
+    expect(footer).toContain('height: max(0px, calc(var(--vn-tab-pad) - 4rem))');
   });
 });

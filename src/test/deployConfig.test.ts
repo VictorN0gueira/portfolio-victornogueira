@@ -94,6 +94,18 @@ describe('the workflows', () => {
     expect(text).toMatch(/package-ecosystem: npm/);
   });
 
+  it('does not propose react or react-dom 19.3.x, which grow the critical path past the 160 kB budget', () => {
+    const text = read('.github/dependabot.yml');
+    const npmEntry = text.slice(text.indexOf('package-ecosystem: npm'));
+    for (const name of ['react', 'react-dom']) {
+      expect(npmEntry, name).toMatch(new RegExp(`- dependency-name: "${name}"\\n\\s+versions: \\["19\\.3\\.x"\\]`));
+    }
+    // The reason stays next to the rule, so it is not dropped without anyone deciding to revisit the budget.
+    expect(npmEntry).toMatch(/# react and react-dom 19\.3 grow the react-vendor chunk by 8\.7 kB gzip/);
+    // Only the 19.3 line is ignored: every other release still reaches the project.
+    expect(npmEntry.match(/versions:/g)).toHaveLength(2);
+  });
+
   it.each(files)('%s runs on Node 22 and installs with npm ci', (file) => {
     const text = read(file);
     if (text.includes('setup-node')) expect(text).toMatch(/node-version: 22/);
@@ -122,10 +134,18 @@ describe('the workflows', () => {
     const text = read('.github/workflows/ci.yml');
     expect(text).toMatch(/pull_request:/);
     expect(text).toMatch(/workflow_call:/);
-    // A pushed branch with an open pull request must not run the whole suite twice: push only for the integration branches.
-    expect(text).toMatch(/push:\n\s+branches: \["redesign\/\*\*"\]/);
+    // A pushed branch with an open pull request must not run the whole suite twice: push only for main and the
+    // integration branches. main is there because the Pages deploy is manual and no longer calls ci on every push.
+    expect(text).toMatch(/push:\n\s+branches: \["main", "redesign\/\*\*"\]/);
     expect(text).not.toMatch(/branches-ignore/);
     expect(text).toMatch(/permissions:\n {2}contents: read/);
+  });
+
+  it('the Pages copy runs only by hand, so a merge to main never fails on a repository without Pages', () => {
+    const text = read('.github/workflows/deploy.yml');
+    expect(text).toMatch(/\non:\n\s+workflow_dispatch:/);
+    expect(text).not.toMatch(/\n\s+push:/);
+    expect(text).not.toMatch(/\n\s+pull_request:/);
   });
 
   it('deploy waits for ci, builds for Pages, copies index.html to 404.html and holds the Pages permissions', () => {

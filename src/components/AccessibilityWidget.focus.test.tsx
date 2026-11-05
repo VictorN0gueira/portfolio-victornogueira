@@ -32,7 +32,7 @@ describe('AccessibilityWidget order and landmark (X:I-3, X:M-3)', () => {
   it('puts the trigger before the panel in the DOM, and flips them with flex-row-reverse, not direction: rtl', async () => {
     const { panel } = await openPanel();
     const trigger = screen.getByRole('button', { name: TRIGGER_NAME });
-    const wrapper = panel.parentElement as HTMLElement;
+    const wrapper = panel.closest('aside') as HTMLElement;
 
     expect(trigger.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(wrapper).toHaveClass('flex-row-reverse');
@@ -195,7 +195,7 @@ describe('AccessibilityWidget closure gaps (C2-4)', () => {
     expect(badge()).toHaveTextContent('1');
   });
 
-  it('closes the panel when a Tab leaves the last option for the next control of the page', async () => {
+  it('closes the panel when a Tab leaves the last control (Voltar ao padrão, since the position group) for the next control of the page', async () => {
     const user = userEvent.setup();
     renderWithProviders(
       <>
@@ -205,7 +205,7 @@ describe('AccessibilityWidget closure gaps (C2-4)', () => {
     );
     await user.click(screen.getByRole('button', { name: TRIGGER_NAME }));
     const panel = await screen.findByRole('dialog', { name: PANEL_NAME });
-    within(panel).getByRole('button', { name: 'Fonte legível' }).focus();
+    within(panel).getByRole('button', { name: 'Voltar ao padrão' }).focus();
 
     await user.tab();
 
@@ -285,7 +285,7 @@ describe('AccessibilityWidget trigger ring (X:M-1)', () => {
 describe('AccessibilityWidget stacking with the WhatsApp button (contract 3, X:M-6, V:D9)', () => {
   it('sits right above the WhatsApp button below sm: its offset plus 52px plus a 12px gap, safe area aware', async () => {
     const { panel } = await openPanel();
-    const wrapper = panel.parentElement as HTMLElement;
+    const wrapper = panel.closest('aside') as HTMLElement;
 
     expect(wrapper).toHaveClass('bottom-[calc(max(16px,env(safe-area-inset-bottom))+96px)]');
     expect(wrapper).toHaveClass('items-end', 'sm:items-center');
@@ -294,12 +294,12 @@ describe('AccessibilityWidget stacking with the WhatsApp button (contract 3, X:M
   it('keeps its place from sm up, centred on the right edge', async () => {
     const { panel } = await openPanel();
 
-    expect(panel.parentElement).toHaveClass('sm:bottom-auto', 'sm:top-1/2', 'sm:-translate-y-1/2', 'right-0');
+    expect(panel.closest('aside')).toHaveClass('sm:bottom-auto', 'sm:top-1/2', 'sm:-translate-y-1/2', 'right-0');
   });
 
   it('keeps centring on a short window, where the WhatsApp button is at the corner', async () => {
     const { panel } = await openPanel();
 
-    expect(panel.parentElement).toHaveClass('[@media(max-height:30rem)]:items-center');
+    expect(panel.closest('aside')).toHaveClass('[@media(max-height:30rem)]:items-center');
   });
 });

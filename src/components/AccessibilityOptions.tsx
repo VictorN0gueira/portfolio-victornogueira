@@ -29,7 +29,7 @@ interface AccessibilityOptionsProps {
 /** The six switches, each a button with aria-pressed and at least 44px tall. */
 export function AccessibilityOptions({ state, onToggle, firstOptionRef }: AccessibilityOptionsProps) {
   return (
-    <ul className="overflow-y-auto py-1">
+    <ul className="py-1">
       {OPTION_KEYS.map((key, position) => {
         const Icon = OPTION_ICONS[key];
         const isActive = state[key];

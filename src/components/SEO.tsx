@@ -1,12 +1,19 @@
 import { useEffect } from 'react';
-import { SOCIAL_LINKS } from '../lib/constants';
 import { serializeJsonLd } from '../lib/jsonLd';
 import { SITE, pageTitle } from '../lib/site';
+import { pageMetaFor } from '../seo/pageMeta';
+import type { RouteMeta } from '../seo/routeMeta';
+import { homeEntityNodes, structuredDataFor } from '../seo/structuredData';
 
 interface SEOProps {
   title?: string;
   description?: string;
   path?: string;
+  /**
+   * The metadata of the route, when it is not one of the home and the inner pages (those are found by `path`). The page of a
+   * project passes its own, from seo/projectMeta, so that the texts of the projects stay out of the main chunk.
+   */
+  meta?: RouteMeta;
   image?: string;
   /** Texto alternativo da imagem de compartilhamento. Padrão: o do banner do site */
   imageAlt?: string;
@@ -19,42 +26,9 @@ interface SEOProps {
   jsonLd?: object[];
 }
 
-const LOGO_URL = `${SITE.url}/brand/vn-one-logo-dark.webp`;
-// O banner padrão tem 1200x630. Uma imagem própria pode ter outro tamanho.
+// The banner of the site is 1200x630. A share image of a page can have another size.
 const DEFAULT_IMAGE_WIDTH = 1200;
 const DEFAULT_IMAGE_HEIGHT = 630;
-
-/** The profile links of the constants for these networks. A network with no link (an empty href) is left out, never written as "". */
-function profileUrls(...labels: Array<'LinkedIn' | 'GitHub' | 'Instagram'>): string[] {
-  return labels.flatMap((label) => SOCIAL_LINKS.find((link) => link.label === label)?.href || []);
-}
-
-const organizationProfiles = profileUrls('Instagram');
-
-const organizationSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: SITE.name,
-  url: SITE.url,
-  logo: LOGO_URL,
-  email: SITE.email,
-  telephone: SITE.telephone,
-  areaServed: 'BR',
-  ...(organizationProfiles.length > 0 ? { sameAs: organizationProfiles } : {}),
-  founder: {
-    '@type': 'Person',
-    name: 'Victor Nogueira',
-    sameAs: profileUrls('LinkedIn', 'GitHub'),
-  },
-};
-
-const websiteSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: SITE.name,
-  url: SITE.url,
-  description: SITE.description,
-};
 
 // React hoists the title, meta and link elements into the document head, so these builders are plain functions that return
 // elements (arrays are flattened), never components.
@@ -78,17 +52,22 @@ interface ShareTags {
   imageHeight: number | undefined;
 }
 
-/** What the head says about the page, with the site defaults filled in. */
-function resolveShareTags({ title, description, path = '/', image, imageAlt, imageWidth, imageHeight }: SEOProps): ShareTags {
-  const isDefaultImage = !image;
+/**
+ * What the head says about the page: what the page passes, else what the route metadata says, else the site defaults. A
+ * title the page passes still goes through pageTitle (the brand suffix); the title of the metadata already has the brand.
+ */
+function resolveShareTags({ title, description, path = '/', image, imageAlt, imageWidth, imageHeight }: SEOProps, meta: RouteMeta | undefined): ShareTags {
+  const routeImage = image ? undefined : meta?.image;
+  const isDefaultImage = !image && !routeImage;
   return {
-    fullTitle: pageTitle(title),
-    description: description || SITE.description,
-    pageUrl: `${SITE.url}${path}`,
-    image: image || SITE.ogImage,
-    imageAlt: imageAlt || SITE.ogImageAlt,
-    imageWidth: isDefaultImage ? DEFAULT_IMAGE_WIDTH : imageWidth,
-    imageHeight: isDefaultImage ? DEFAULT_IMAGE_HEIGHT : imageHeight,
+    fullTitle: title ? pageTitle(title) : (meta?.title ?? SITE.title),
+    description: description || meta?.description || SITE.description,
+    // The path of the metadata is already normalized (no trailing slash, no query), so decision D7 holds for any spelling.
+    pageUrl: `${SITE.url}${meta?.path ?? path}`,
+    image: image || routeImage?.url || SITE.ogImage,
+    imageAlt: imageAlt || routeImage?.alt || SITE.ogImageAlt,
+    imageWidth: isDefaultImage ? DEFAULT_IMAGE_WIDTH : (routeImage?.width ?? imageWidth),
+    imageHeight: isDefaultImage ? DEFAULT_IMAGE_HEIGHT : (routeImage?.height ?? imageHeight),
   };
 }
 
@@ -134,27 +113,36 @@ function useDropStaticTags(): void {
   }, []);
 }
 
+/**
+ * The JSON-LD of a page. A page that passes its own list keeps it (and the home keeps its entities next to it); a page
+ * that passes none gets the nodes of its route. A page out of the index has none.
+ */
+function schemasFor(path: string, meta: RouteMeta | undefined, isNoindex: boolean, jsonLd: object[] | undefined): object[] {
+  if (isNoindex) return [];
+  if (jsonLd) return [...(path === '/' ? homeEntityNodes() : []), ...jsonLd];
+  return meta ? structuredDataFor(meta) : [];
+}
+
 export function SEO(props: SEOProps) {
-  const { path = '/', noindex, jsonLd } = props;
+  const { path = '/', jsonLd } = props;
   useDropStaticTags();
-  const tags = resolveShareTags(props);
-  // Uma página noindex (404, projeto removido) não declara canonical, og:url nem entidades da home.
-  const isHome = path === '/' && !noindex;
+  const meta = props.meta ?? pageMetaFor(path);
+  // An explicit noindex wins; without one, the route metadata decides (the blog is out of the index).
+  const isNoindex = props.noindex ?? meta?.isIndexable === false;
+  const tags = resolveShareTags(props, meta);
 
   return (
     <>
       <title>{tags.fullTitle}</title>
       <meta name="description" content={tags.description} />
-      {!noindex && <link rel="canonical" href={tags.pageUrl} />}
-      {noindex && <meta name="robots" content="noindex, nofollow" />}
+      {!isNoindex && <link rel="canonical" href={tags.pageUrl} />}
+      {isNoindex && <meta name="robots" content="noindex, nofollow" />}
 
-      {openGraphMeta(tags, noindex)}
-      {twitterMeta(tags, noindex)}
+      {openGraphMeta(tags, isNoindex)}
+      {twitterMeta(tags, isNoindex)}
 
-      {/* Dados estruturados: Organization e WebSite só na home para evitar entidade duplicada */}
-      {isHome && jsonLdScript(organizationSchema, 'organization')}
-      {isHome && jsonLdScript(websiteSchema, 'website')}
-      {!noindex && jsonLd?.map((schema, index) => jsonLdScript(schema, index))}
+      {/* Uma página noindex (404, projeto removido, blog) não declara canonical, og:url nem dados estruturados. */}
+      {schemasFor(path, meta, isNoindex, jsonLd).map((schema, index) => jsonLdScript(schema, index))}
     </>
   );
 }

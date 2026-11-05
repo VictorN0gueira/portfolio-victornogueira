@@ -1,15 +1,18 @@
 import { useId } from 'react';
 import { WHATSAPP_GREETING, whatsappUrl } from '../../lib/constants';
+import { FLOAT_MARGIN_PX } from '../../lib/floatingLayout';
 import { BrandIcon } from '../ui/BrandIcon';
 import { NewTabHint } from '../ui/NewTabHint';
 
 // The offsets are inline because the safe area inset has to be compared with the 16px margin:
 // the pt-safe family of utilities replaces the padding instead of taking the larger of the two.
+// The margin is FLOAT_MARGIN_PX, shared with the accessibility tab, which stacks above this button when it is on the
+// left (src/lib/floatingLayout.ts); the 52px of size-[52px] is WHATSAPP_SIZE_PX there.
 // The button sits in the bottom left corner, opposite the accessibility tab on the right edge. A modal removes the page
 // scrollbar on the right, so nothing anchored on the left needs the scroll lock compensation the right edge needs.
 const POSITION = {
-  left: 'max(16px, env(safe-area-inset-left))',
-  bottom: 'max(16px, env(safe-area-inset-bottom))',
+  left: `max(${FLOAT_MARGIN_PX}px, env(safe-area-inset-left))`,
+  bottom: `max(${FLOAT_MARGIN_PX}px, env(safe-area-inset-bottom))`,
 } as const;
 
 /**
