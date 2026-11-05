@@ -43,11 +43,11 @@
   }
 
   /* At the very end of the page nothing can scroll further, so a tab low on the window would stay over the last links of the
-     footer. The footer grows by what its own bottom padding (6rem plus the inset) does not already clear. */
+     footer. The footer grows by what 4rem does not clear, the least bottom padding of the two footers (the blog one has py-16, the site one 6rem plus the inset). */
   html[data-vn-tab-band='bottom'] footer::after {
     content: '';
     display: block;
-    height: max(0px, calc(var(--vn-tab-pad) - 6rem - env(safe-area-inset-bottom)));
+    height: max(0px, calc(var(--vn-tab-pad) - 4rem));
   }
 
   html[data-vn-tab-band='top'] {

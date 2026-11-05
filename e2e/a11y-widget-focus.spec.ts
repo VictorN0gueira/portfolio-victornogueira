@@ -22,6 +22,8 @@ const PLACES = [
 const PAGES = [
   { name: 'services', path: '/servicos' },
   { name: 'contact', path: '/contato' },
+  // The blog has its own footer, with less bottom padding than the site footer.
+  { name: 'blog', path: '/blog' },
 ];
 const MIN_STOPS = 8;
 const TEST_TIMEOUT_MS = 240_000;

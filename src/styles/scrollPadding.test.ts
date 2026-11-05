@@ -38,10 +38,10 @@ describe('scroll padding at the bottom of the window', () => {
     expect(blockBody(indexCss, "html[data-vn-tab-band='top']")).toContain('scroll-padding-top: max(var(--vn-tab-pad), 96px, calc(env(safe-area-inset-top) + 84px))');
   });
 
-  // At the end of the page the scroll cannot help: the footer grows by what the tab still covers over its own 6rem.
+  // At the end of the page the scroll cannot help: the footer grows by what the tab still covers past 4rem, the least bottom padding a footer has (the blog one).
   it('grows the footer at the end of the page when the tab sits low, past its own bottom padding', () => {
     const footer = blockBody(indexCss, "html[data-vn-tab-band='bottom'] footer::after");
 
-    expect(footer).toContain('height: max(0px, calc(var(--vn-tab-pad) - 6rem - env(safe-area-inset-bottom)))');
+    expect(footer).toContain('height: max(0px, calc(var(--vn-tab-pad) - 4rem))');
   });
 });

@@ -71,6 +71,17 @@ async function touchDrag(page: Page, from: TouchPoint, to: TouchPoint, beforeRel
   await cdp.detach();
 }
 
+/** Counts the transform transitions the browser starts on the box of the tab (the slide into place). */
+async function countSlides(page: Page) {
+  await page.evaluate((name) => {
+    const w = window as unknown as { __tabSlides: number };
+    w.__tabSlides = 0;
+    document.querySelector(`aside[aria-label="${name}"]`)?.addEventListener('transitionrun', (event) => {
+      if ((event as TransitionEvent).propertyName === 'transform' && event.target === event.currentTarget) w.__tabSlides += 1;
+    });
+  }, PANEL);
+}
+
 async function startAt(page: Page, size: { width: number; height: number }, stored?: unknown) {
   await page.setViewportSize(size);
   if (stored !== undefined) {
@@ -229,21 +240,25 @@ test.describe('the accessibility tab with a mouse', () => {
     await startAt(page, { width: 1440, height: 900 });
     const start = await settled(page);
 
+    await countSlides(page);
     await mouseDrag(page, centre(start), { x: 200, y: 300 });
     await nextFrames(page);
+    expect(await page.evaluate(() => (window as unknown as { __tabSlides: number }).__tabSlides), 'no transition ran').toBe(0);
     const instant = await rectOf(trigger(page));
     expect(instant.left, 'on the left edge one frame after the release').toBeCloseTo(0, 0);
     expect(await trigger(page).evaluate((button) => (button.closest('aside') as HTMLElement).style.transition)).toBe('none');
   });
 
-  test('slides into place with the motion allowed: right after the release it is not yet at the edge', async ({ page }) => {
+  test('slides into place with the motion allowed: the browser runs a transform transition on release', async ({ page }) => {
     test.slow();
     await startAt(page, { width: 1440, height: 900 });
     const start = await settled(page);
+    await countSlides(page);
 
     await mouseDrag(page, centre(start), { x: 600, y: 300 });
-    const justAfter = await rectOf(trigger(page));
-    expect(justAfter.left, 'still on its way to the left edge').toBeGreaterThan(5);
+
+    // The event, not the clock: a slow runner that passes the 220ms of the slide does not change what is asserted.
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __tabSlides: number }).__tabSlides)).toBe(1);
     expect((await settled(page)).left).toBeCloseTo(0, 0);
   });
 });

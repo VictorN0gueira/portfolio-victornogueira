@@ -1,47 +1,12 @@
-import type { Locator, Page } from '@playwright/test';
-import { a11yWidgetCopy } from '../src/components/a11yWidgetCopy';
-import { TAB_POSITION_STORAGE_KEY } from '../src/lib/tabPositionStorage';
+import type { Page } from '@playwright/test';
 import { PAGE_LOAD_TIMEOUT_MS, waitForSteadyHeight } from './homeSupport';
 import { expect, test } from './n8nGuard';
+import { PLACES, store } from './tabSupport';
 
-// Closure review of the movable accessibility tab: what a moved tab must not change (anchors, the open panel after the
-// font grows, a resize, a cancelled drag, a modal that locks the scroll). The drag itself is in a11y-widget-drag.spec.ts.
+// A moved accessibility tab must not change where an in page anchor lands (the top scroll band used to push every hash
+// and anchor down by the height of the band: 200px too low with the tab a third of the way down).
 
-const TRIGGER = a11yWidgetCopy.triggerLabel;
-const PANEL = a11yWidgetCopy.panelLabel;
-const SUBPIXEL = 0.75;
 const ANCHOR_TOLERANCE_PX = 3;
-
-interface Rect {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-}
-
-type Side = 'left' | 'right';
-
-const trigger = (page: Page) => page.locator(`aside[aria-label="${PANEL}"] button[aria-label="${TRIGGER}"]`);
-const whatsApp = (page: Page) => page.locator('aside[aria-label="Contato rápido"] a');
-const panelOf = (page: Page) => page.getByRole('dialog', { name: PANEL });
-
-async function rectOf(target: Locator): Promise<Rect> {
-  const box = await target.boundingBox();
-  if (!box) throw new Error('the element has no box');
-  return { left: box.x, top: box.y, right: box.x + box.width, bottom: box.y + box.height };
-}
-
-const overlaps = (a: Rect, b: Rect) => Math.min(a.right, b.right) > Math.max(a.left, b.left) && Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top);
-
-async function store(page: Page, place: { side: Side; ratio: number } | null) {
-  await page.addInitScript(
-    ([key, value]) => {
-      if (value) window.localStorage.setItem(key as string, value as string);
-      else window.localStorage.removeItem(key as string);
-    },
-    [TAB_POSITION_STORAGE_KEY, place ? JSON.stringify(place) : null],
-  );
-}
 
 /** The top of an anchored section once the page stopped scrolling. */
 async function landingOf(page: Page, path: string, id: string): Promise<number> {
@@ -63,8 +28,6 @@ async function landingOf(page: Page, path: string, id: string): Promise<number> 
     .toBe(true);
   return last;
 }
-
-const PLACES: Array<{ side: Side; ratio: number }> = [0, 0.3, 0.5, 0.9].flatMap((ratio) => (['right', 'left'] as const).map((side) => ({ side, ratio })));
 
 test.describe('in page anchors with a moved tab', () => {
   for (const { path, id } of [
