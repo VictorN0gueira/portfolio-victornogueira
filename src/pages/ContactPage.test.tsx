@@ -1,8 +1,9 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RETRY_DELAY_MS } from '../lib/lazyWithRetry';
 import { stubMatchMedia } from '../test/matchMedia';
+import { routeMetaFor } from '../seo/routeMeta';
 import { renderWithProviders } from '../test/render';
 import ContactPage from './ContactPage';
 
@@ -47,6 +48,16 @@ describe('ContactPage', () => {
     expect(await screen.findByRole('button', { name: /meu negócio é pequeno demais/i }, LAZY_WAIT)).toBeInTheDocument();
     expect(failedFirstLoads.count).toBe(3);
   }, 20_000);
+
+  it('takes its head from the route metadata and writes the FAQ once, with one breadcrumb', async () => {
+    renderWithProviders(<ContactPage />, { route: '/contato' });
+    const meta = routeMetaFor('/contato')!;
+
+    await waitFor(() => expect(document.title).toBe(meta.title));
+    expect(document.querySelector('meta[name="description"]')).toHaveAttribute('content', meta.description);
+    const types = Array.from(document.querySelectorAll('script[type="application/ld+json"]')).map((node) => JSON.parse(node.textContent ?? '{}')['@type']);
+    expect(types.sort()).toEqual(['BreadcrumbList', 'FAQPage']);
+  });
 
   it('has one h1, the simulator title, and keeps the form and the questions below it', async () => {
     renderWithProviders(<ContactPage />, { route: '/contato' });

@@ -1,7 +1,7 @@
 export const SITE = {
   name: 'VN One',
   url: 'https://vnone.com.br',
-  title: 'VN One | Automação e IA para empresas',
+  title: 'VN One | Automação de processos e agentes de IA sob medida',
   description:
     'A gente automatiza o trabalho repetitivo da sua empresa com IA e conecta as ferramentas que você já usa. Conversa de 30 minutos, sem compromisso.',
   ogImage: 'https://vnone.com.br/og-banner.png?v=3',

@@ -20,11 +20,7 @@ export default function AboutPage() {
 
   return (
     <>
-      <SEO
-        title="Sobre"
-        description="Quem é Victor Nogueira, como a gente trabalha e a stack que usa para trocar processos manuais por fluxos automatizados e inteligentes."
-        path="/sobre"
-      />
+      <SEO path="/sobre" />
       <div className="pt-24 md:pt-28">
         <m.div {...revealProps}><About /></m.div>
 
