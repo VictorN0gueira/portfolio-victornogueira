@@ -65,29 +65,40 @@ export function useTabDrag(options: UseTabDragOptions): TabDrag {
   const optionsRef = useRef(options);
   const stateRef = useRef<DragState | null>(null);
   const suppressClick = useRef(false);
+  // A drag cancelled with the pointer still down: when it is released, however late, the browser fires a click on the
+  // button (the pointer is captured there) and that click must not toggle the panel.
+  const awaitingRelease = useRef<number | null>(null);
 
   useEffect(() => {
     optionsRef.current = options;
   });
 
-  const finish = useCallback((isCancel: boolean) => {
-    const state = stateRef.current;
-    if (!state) return;
-    stateRef.current = null;
-    const { triggerRef, wrapperRef, onRelease, onCancel } = optionsRef.current;
-    if (triggerRef.current) delete triggerRef.current.dataset.dragging;
-    if (!state.moved) return;
+  const suppressNextClick = useCallback(() => {
     suppressClick.current = true;
     window.setTimeout(() => {
       suppressClick.current = false;
     }, 0);
-    if (isCancel) {
-      if (wrapperRef.current) wrapperRef.current.style.transform = '';
-      onCancel();
-    } else {
-      onRelease(releasePosition(state.last, state.view.viewport), state.last);
-    }
   }, []);
+
+  const finish = useCallback(
+    (isCancel: boolean) => {
+      const state = stateRef.current;
+      if (!state) return;
+      stateRef.current = null;
+      const { triggerRef, wrapperRef, onRelease, onCancel } = optionsRef.current;
+      if (triggerRef.current) delete triggerRef.current.dataset.dragging;
+      if (!state.moved) return;
+      suppressNextClick();
+      if (isCancel) {
+        awaitingRelease.current = state.pointerId;
+        if (wrapperRef.current) wrapperRef.current.style.transform = '';
+        onCancel();
+      } else {
+        onRelease(releasePosition(state.last, state.view.viewport), state.last);
+      }
+    },
+    [suppressNextClick],
+  );
 
   useEffect(() => {
     const cancelOnEscape = (event: KeyboardEvent) => {
@@ -103,6 +114,7 @@ export function useTabDrag(options: UseTabDragOptions): TabDrag {
     const trigger = optionsRef.current.triggerRef.current;
     if (!trigger) return;
     suppressClick.current = false;
+    awaitingRelease.current = null;
     const rect = toBox(trigger.getBoundingClientRect());
     stateRef.current = {
       pointerId: event.pointerId,
@@ -142,7 +154,14 @@ export function useTabDrag(options: UseTabDragOptions): TabDrag {
   };
 
   const onPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
-    if (stateRef.current && event.pointerId === stateRef.current.pointerId) finish(false);
+    if (stateRef.current && event.pointerId === stateRef.current.pointerId) {
+      finish(false);
+      return;
+    }
+    if (!stateRef.current && awaitingRelease.current === event.pointerId) {
+      awaitingRelease.current = null;
+      suppressNextClick();
+    }
   };
 
   return {

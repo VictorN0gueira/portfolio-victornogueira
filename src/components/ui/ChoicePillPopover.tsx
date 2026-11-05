@@ -1,5 +1,5 @@
 import * as Popover from '@radix-ui/react-popover';
-import { useLayoutEffect, type ComponentProps } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ComponentProps } from 'react';
 import { useChoicePopover } from '../../hooks/useChoicePopover';
 import { cn } from '../../lib/utils';
 import { ChoiceList, type ChoiceOption } from './ChoiceList';
@@ -24,6 +24,44 @@ export interface ChoicePillHandoff {
   isOpen: boolean;
   /** The plain pill had the focus: the pill that replaces it takes it. */
   hasFocus: boolean;
+  /**
+   * The swap came while the pointer was still down. The browser's own mousedown can arrive after it and drop the focus
+   * that the list just gave to its option (the pill that was pressed is gone), so the focus is checked again when the
+   * press ends.
+   */
+  isPress: boolean;
+}
+
+/** The press that opened the list has ended: one task later the browser is done with its mouse events. */
+const PRESS_END_EVENTS = ['pointerup', 'pointercancel'] as const;
+
+/**
+ * After a list that opened in the middle of a press: when the press ends and the focus is nowhere (the browser dropped
+ * it), the chosen option takes it again. A focus the visitor moved on purpose is left alone.
+ */
+function useFocusAfterPress(isPress: boolean, focusOption: () => void) {
+  // The latest focus function, so the listener below needs no dependency on it. A list that has closed since has no
+  // options left to focus, so the call does nothing then.
+  const latestFocusOption = useRef(focusOption);
+  useEffect(() => {
+    latestFocusOption.current = focusOption;
+  });
+
+  useEffect(() => {
+    if (!isPress) return undefined;
+    let timer: number | undefined;
+    const restore = () => {
+      timer = window.setTimeout(() => {
+        const active = document.activeElement;
+        if (!active || active === document.body) latestFocusOption.current();
+      }, 0);
+    };
+    for (const type of PRESS_END_EVENTS) document.addEventListener(type, restore, { capture: true, once: true });
+    return () => {
+      for (const type of PRESS_END_EVENTS) document.removeEventListener(type, restore, { capture: true });
+      window.clearTimeout(timer);
+    };
+  }, [isPress]);
 }
 
 interface ChoiceTriggerProps {
@@ -68,6 +106,7 @@ export function ChoicePillPopover<T extends string | number>({
     initialOpen: handoff.isOpen,
   });
   const { ref: triggerRef } = triggerProps;
+  useFocusAfterPress(handoff.isPress && handoff.isOpen, listProps.onOpenFocus);
 
   // A pill that was focused when it swapped keeps the focus (a list that opens at once takes it for its option).
   useLayoutEffect(() => {

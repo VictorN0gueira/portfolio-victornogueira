@@ -178,6 +178,37 @@ describe('useTabDrag', () => {
     expect(spies.onRelease).not.toHaveBeenCalled();
   });
 
+  it('swallows the click of the release that comes after Escape, even when the release is late', () => {
+    const { spies, button } = setup();
+
+    fireEvent.pointerDown(button, point(360, 620, 1, 'mouse'));
+    fireEvent.pointerMove(button, point(200, 620, 1, 'mouse'));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    // The finger or the mouse button is still down: the release comes well after the Escape key.
+    vi.advanceTimersByTime(250);
+    fireEvent.pointerUp(button, point(200, 620, 1, 'mouse'));
+    fireEvent.click(button);
+
+    expect(spies.suppressed).toEqual([true]);
+    expect(spies.onClick).not.toHaveBeenCalled();
+    expect(spies.onRelease).not.toHaveBeenCalled();
+  });
+
+  it('does not swallow a keyboard click after an Escape drag that was already released', () => {
+    const { spies, button } = setup();
+
+    fireEvent.pointerDown(button, point(360, 620, 1, 'mouse'));
+    fireEvent.pointerMove(button, point(200, 620, 1, 'mouse'));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.pointerUp(button, point(200, 620, 1, 'mouse'));
+    fireEvent.click(button);
+    vi.advanceTimersByTime(250);
+    fireEvent.click(button);
+
+    expect(spies.suppressed).toEqual([true, false]);
+    expect(spies.onClick).toHaveBeenCalledTimes(1);
+  });
+
   it('ignores another finger and the right mouse button', () => {
     const { spies, button } = setup();
 

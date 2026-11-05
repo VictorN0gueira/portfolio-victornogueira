@@ -10,7 +10,7 @@ import { TRIGGER_CLASSES } from './choicePillStyles';
 const IDLE_LOAD_TIMEOUT_MS = 2000;
 const OPEN_KEYS = new Set(['ArrowDown', 'ArrowUp']);
 const PRIMARY_BUTTON = 0;
-const NOTHING_RECEIVED: ChoicePillHandoff = { isOpen: false, hasFocus: false };
+const NOTHING_RECEIVED: ChoicePillHandoff = { isOpen: false, hasFocus: false, isPress: false };
 
 /**
  * A pill that opens a listbox of options, written to be in the entry without the popover behind it.
@@ -26,10 +26,11 @@ export function ChoicePill<T extends string | number>(props: ChoicePillProps<T>)
   const [handoff, setHandoff] = useState<ChoicePillHandoff | null>(loadedChoicePopover() ? NOTHING_RECEIVED : null);
   const wantsOpen = useRef(false);
   const hasFocus = useRef(false);
+  const isPressing = useRef(false);
 
   const load = useCallback(() => {
     preloadChoicePopover().then(
-      () => setHandoff({ isOpen: wantsOpen.current, hasFocus: hasFocus.current }),
+      () => setHandoff({ isOpen: wantsOpen.current, hasFocus: hasFocus.current, isPress: isPressing.current }),
       () => undefined,
     );
   }, []);
@@ -48,7 +49,10 @@ export function ChoicePill<T extends string | number>(props: ChoicePillProps<T>)
     load();
   };
   const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
-    if (event.button === PRIMARY_BUTTON) wantsOpen.current = true;
+    if (event.button === PRIMARY_BUTTON) {
+      wantsOpen.current = true;
+      isPressing.current = true;
+    }
     load();
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -67,8 +71,12 @@ export function ChoicePill<T extends string | number>(props: ChoicePillProps<T>)
       className={cn(TRIGGER_CLASSES, className)}
       onPointerEnter={load}
       onPointerDown={handlePointerDown}
+      onPointerUp={() => {
+        isPressing.current = false;
+      }}
       onPointerCancel={() => {
         wantsOpen.current = false;
+        isPressing.current = false;
       }}
       onFocus={() => {
         hasFocus.current = true;
