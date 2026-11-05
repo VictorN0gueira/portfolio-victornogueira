@@ -38,11 +38,15 @@ test.describe('page /contato', () => {
         .filter((node) => node['@type'] === 'FAQPage')
         .map((node) => (node.mainEntity as Array<{ name: string }>).map((question) => question.name)),
     );
-    const visible = await page.locator('section details summary').allTextContents();
+    // The questions that the page shows: the summaries of the FAQ section, the one named by the heading above.
+    const faqSection = page.locator('section').filter({ has: page.getByRole('heading', { level: 2, name: homeCopy.faq.heading }) });
+    const visible = (await faqSection.locator('details summary').allTextContents()).map((text) => text.trim());
 
     expect(faqPages).toHaveLength(1);
-    expect(faqPages[0].length).toBeGreaterThan(0);
-    for (const question of faqPages[0]) expect(visible.map((text) => text.trim())).toContain(question);
+    expect(visible.length).toBeGreaterThan(0);
+    // Both ways: the same number of questions and the same set, so neither a missing nor an extra one goes unseen.
+    expect(faqPages[0]).toHaveLength(visible.length);
+    expect(new Set(faqPages[0])).toEqual(new Set(visible));
   });
 
   test('takes the estimate of the simulator to the message, with the n8n route answered and nothing sent', async ({

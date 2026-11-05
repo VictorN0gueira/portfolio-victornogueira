@@ -1,24 +1,40 @@
 import { homeCopy } from '../src/data/homeCopy';
+import { enableLargeFont } from './homeSupport';
 import { expect, test } from './n8nGuard';
 
-// The simulator of /contato at its largest inputs prints "R$ 312.000.000" and "R$ 249.600.000" (80 hours, more than 10 people,
-// R$ 5.000 an hour). The figures must stay inside their box on the narrowest phones: the old calculator pushed them
-// 27 px past it at 280 px. The page mounts the real form, so this file takes its `test` from the guard: nothing here
-// fills the form or sends anything.
+// The simulator of /contato at its largest inputs (80 hours, more than 10 people, R$ 5.000 an hour) prints two figures
+// in full: "R$ 312.000.000" for the cost of a year and "R$ 249.600.000" for the savings. Both must stay inside their box
+// on the narrowest phones, and also with the font at 120 percent (the option of the accessibility widget) at 320 and 390.
+// The page mounts the real form, so this file takes its `test` from the guard: nothing here fills the form or sends anything.
 const WIDTHS = [280, 300, 320, 360, 390];
+const LARGE_FONT_WIDTHS = [320, 390];
 const MAX_HOURS = '80';
 const MAX_RATE = '5000';
 const LARGEST_TEAM = /mais de 10 pessoas/;
 const TEAM_GROUP = { name: homeCopy.roi.labels.team };
+const EXPECTED_FIGURES = ['312.000.000', '249.600.000'];
+const FIGURE_TOLERANCE_PX = 0.5;
 
 // The figures are in the hidden-from-assistive-tech block of the result panel, written in full (14 characters at most).
 const BIG_FIGURES = '[aria-hidden="true"] .tabular-nums';
 
-for (const width of WIDTHS) {
-  test(`keeps the big figures of the /contato simulator inside their box at ${width}px with the largest inputs`, async ({
+interface FiguresCase {
+  width: number;
+  hasLargeFont: boolean;
+}
+
+const CASES: FiguresCase[] = [
+  ...WIDTHS.map((width) => ({ width, hasLargeFont: false })),
+  ...LARGE_FONT_WIDTHS.map((width) => ({ width, hasLargeFont: true })),
+];
+
+for (const { width, hasLargeFont } of CASES) {
+  const font = hasLargeFont ? ' with the font at 120 percent' : '';
+  test(`keeps both big figures of the /contato simulator inside their box at ${width}px${font} with the largest inputs`, async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
+    if (hasLargeFont) await enableLargeFont(page);
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/contato');
 
@@ -32,8 +48,10 @@ for (const width of WIDTHS) {
     await page.getByLabel(homeCopy.roi.labels.rate).fill(MAX_RATE);
 
     const figures = page.locator(BIG_FIGURES).filter({ hasText: /^R\$/ });
-    await expect(figures).toHaveCount(2);
-    await expect(figures.first()).toContainText('312.000.000');
+    await expect(figures).toHaveCount(EXPECTED_FIGURES.length);
+    // The count runs to its final value in a fraction of a second: wait for both.
+    for (const [index, figure] of EXPECTED_FIGURES.entries()) await expect(figures.nth(index)).toContainText(figure);
+    if (hasLargeFont) await expect(page.locator('html')).toHaveClass(/a11y-font-large/);
     const overflow = await figures.evaluateAll((nodes) => nodes.map((node) => node.scrollWidth - node.clientWidth));
     const past = await figures.evaluateAll((nodes) =>
       nodes.map((node) => {
@@ -44,7 +62,7 @@ for (const width of WIDTHS) {
     );
 
     expect(overflow).toEqual([0, 0]);
-    expect(past.every((value) => value <= 0.5)).toBe(true);
+    expect(past.every((value) => value <= FIGURE_TOLERANCE_PX)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(
       0,
     );
