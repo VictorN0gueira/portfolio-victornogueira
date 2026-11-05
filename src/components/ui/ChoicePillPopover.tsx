@@ -50,7 +50,8 @@ function useFocusAfterPress(isPress: boolean, focusOption: () => void) {
     latestFocusOption.current = focusOption;
   });
 
-  useEffect(() => {
+  // A layout effect: the listeners are armed in the commit of the swap, before any later pointer event can be missed.
+  useLayoutEffect(() => {
     if (!isPress) return undefined;
     const timers: number[] = [];
     const listeners: Array<[string, () => void]> = [];

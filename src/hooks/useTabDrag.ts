@@ -180,12 +180,13 @@ export function useTabDrag(options: UseTabDragOptions): TabDrag {
     optionsRef.current = options;
   });
 
+  // `isPointerDown` is false for a pointercancel: the browser took the pointer, so no release (and no click) will come.
   const finish = useCallback(
-    (isCancel: boolean) => {
+    (isCancel: boolean, isPointerDown = true) => {
       const state = stateRef.current;
       if (!state) return;
       stateRef.current = null;
-      if (state.moved && isCancel) awaitRelease(state.pointerId);
+      if (state.moved && isCancel && isPointerDown) awaitRelease(state.pointerId);
       if (state.moved && !isCancel) suppressNext();
       endDrag(state, isCancel, optionsRef.current);
     },
@@ -213,7 +214,7 @@ export function useTabDrag(options: UseTabDragOptions): TabDrag {
   };
 
   return {
-    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: () => finish(true), onBlur: () => finish(true) },
+    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: () => finish(true, false), onBlur: () => finish(true) },
     takeSuppressedClick: take,
   };
 }
