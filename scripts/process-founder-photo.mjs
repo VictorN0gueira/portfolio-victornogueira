@@ -4,7 +4,7 @@
 //
 // The source is scripts/assets/victor-photo.jpg (982x1024), which is not part of the build. Nothing is fetched. The
 // widths are narrower than the source on purpose: the script never enlarges a photo. The output is read by
-// src/sections/about/founderPhoto.ts, which lists the same widths.
+// src/sections/about/founderPhotoSource.ts, which lists the same widths.
 
 import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';

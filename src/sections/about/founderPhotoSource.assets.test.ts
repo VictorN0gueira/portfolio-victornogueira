@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { founderPhotoPlan } from '../../../scripts/process-founder-photo.mjs';
-import { FOUNDER_PHOTO } from './founderPhoto';
+import { FOUNDER_PHOTO } from './founderPhotoSource';
 
 const ROOT = resolve(__dirname, '../../..');
 const SOURCE_WIDTH = 982;
