@@ -17,7 +17,7 @@ describe('ProjectFacts', () => {
     const project = projectOf('dizpara');
     renderWithProviders(<ProjectFacts project={project} />);
 
-    const features = screen.getByRole('region', { name: FEATURES_LABEL });
+    const features = screen.getByRole('heading', { level: 2, name: FEATURES_LABEL }).parentElement as HTMLElement;
 
     expect(
       within(features)
@@ -29,7 +29,7 @@ describe('ProjectFacts', () => {
   it('has no "O que faz" block for a project that has no features', () => {
     renderWithProviders(<ProjectFacts project={projectOf('travel-ia')} />);
 
-    expect(screen.queryByRole('region', { name: FEATURES_LABEL })).toBeNull();
+    expect(screen.queryByRole('heading', { name: FEATURES_LABEL })).toBeNull();
     expect(screen.queryByText(FEATURES_LABEL)).toBeNull();
   });
 
@@ -37,7 +37,7 @@ describe('ProjectFacts', () => {
     const project = projectOf(slug);
     renderWithProviders(<ProjectFacts project={project} />);
 
-    const tags = screen.getByRole('region', { name: TAGS_LABEL });
+    const tags = screen.getByRole('heading', { level: 2, name: TAGS_LABEL }).parentElement as HTMLElement;
 
     expect(
       within(tags)
@@ -59,11 +59,10 @@ describe('ProjectFacts', () => {
 
     expect(screen.getByText(PROJECT_CTA_TEXT)).toBeInTheDocument();
     expect(screen.getAllByRole('link')).toHaveLength(1);
-    expect(screen.getByRole('link', { name: CONTACT_LABEL })).toHaveAttribute('href', '/contato');
-    expect(screen.getByRole('link', { name: CONTACT_LABEL }).querySelector('svg')).toHaveAttribute(
-      'aria-hidden',
-      'true',
-    );
+    const link = screen.getByRole('link');
+
+    expect(link).toHaveAttribute('href', '/contato');
+    expect(link.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('uses h2 for its headings only, so no level is skipped under the h1 of the page', () => {
@@ -75,12 +74,32 @@ describe('ProjectFacts', () => {
     expect(new Set(levels)).toEqual(new Set(['H2']));
   });
 
-  it('is sticky from lg, and the brand only: no zinc, italic or dark: class', () => {
+  it('names its link by the visible text first and the project after it, so the two links to /contato of a case differ', () => {
+    const project = projectOf('hub081');
+    renderWithProviders(<ProjectFacts project={project} />);
+
+    expect(screen.getByRole('link')).toHaveAccessibleName(`${CONTACT_LABEL} sobre ${project.title}`);
+    expect(screen.getByRole('link').textContent).toContain(CONTACT_LABEL);
+  });
+
+  it('adds no region landmark: the blocks are headings with their content, not sections', () => {
     const { container } = renderWithProviders(<ProjectFacts project={projectOf('dizpara')} />);
 
-    expect(container.firstElementChild?.className).toContain('lg:sticky');
-    expect(container.firstElementChild?.className).toContain('lg:top-28');
-    expect(container.firstElementChild?.className).toContain('lg:self-start');
+    expect(container.querySelector('section, [role="region"], [aria-labelledby]')).toBeNull();
+  });
+
+  it('carries the sticky classes only when asked (that it sticks is measured in e2e/page-projeto.spec.ts)', () => {
+    const sticky = renderWithProviders(<ProjectFacts project={projectOf('travel-ia')} />);
+    expect(sticky.container.firstElementChild?.className).toContain('lg:sticky');
+    sticky.unmount();
+
+    const plain = renderWithProviders(<ProjectFacts project={projectOf('travel-ia')} isSticky={false} />);
+    expect(plain.container.firstElementChild?.className).not.toContain('sticky');
+  });
+
+  it('uses the brand only: no zinc, italic or dark: class', () => {
+    const { container } = renderWithProviders(<ProjectFacts project={projectOf('dizpara')} />);
+
     expect(container.innerHTML).not.toMatch(/zinc|italic|dark:/);
   });
 });

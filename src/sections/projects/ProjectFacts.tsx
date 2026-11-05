@@ -1,23 +1,33 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { CONTACT_LABEL, FEATURES_LABEL, PROJECT_CTA_TEXT, TAGS_LABEL } from '../../components/projectLabels';
+import {
+  CONTACT_LABEL,
+  FEATURES_LABEL,
+  PROJECT_CTA_TEXT,
+  TAGS_LABEL,
+  contactAboutLabel,
+} from '../../components/projectLabels';
 import { Button } from '../../components/ui/Button';
 import type { Project } from '../../data/projects';
 import { projectsCopy } from '../../data/projectsCopy';
+import { cn } from '../../lib/utils';
+import { CONTACT_PATH } from './paths';
+import { TagList } from './TagList';
 
-const CONTACT_PATH = '/contato';
 const LABEL_CLASSES = 'font-mono text-xs uppercase tracking-[.18em] text-vn-gray-dark';
+const STICKY_CLASSES = 'lg:sticky lg:top-28 lg:self-start';
 
 interface ProjectFactsProps {
   project: Project;
+  /** Sticks from lg while the gallery scrolls past. The case page turns it off when the facts are taller than the gallery. */
+  isSticky?: boolean;
 }
 
+// The blocks are a heading and its content in a div: two tiny groups are not worth a region landmark each.
 function Features({ items }: { items: readonly string[] }) {
   return (
-    <section aria-labelledby="projeto-faz">
-      <h2 id="projeto-faz" className={LABEL_CLASSES}>
-        {FEATURES_LABEL}
-      </h2>
+    <div>
+      <h2 className={LABEL_CLASSES}>{FEATURES_LABEL}</h2>
       {/* role="list": Tailwind preflight removes the markers, and Safari then drops the list semantics. */}
       <ul role="list" className="mt-4 flex flex-col gap-3">
         {items.map((item) => (
@@ -27,37 +37,27 @@ function Features({ items }: { items: readonly string[] }) {
           </li>
         ))}
       </ul>
-    </section>
+    </div>
   );
 }
 
 function Tags({ tags }: { tags: readonly string[] }) {
   return (
-    <section aria-labelledby="projeto-tecnologias">
-      <h2 id="projeto-tecnologias" className={LABEL_CLASSES}>
-        {TAGS_LABEL}
-      </h2>
-      <ul role="list" className="mt-4 flex flex-wrap gap-2">
-        {tags.map((tag) => (
-          <li
-            key={tag}
-            className="rounded-full border border-vn-gray-mid px-3 py-1 font-mono text-xs text-vn-gray-dark"
-          >
-            {tag}
-          </li>
-        ))}
-      </ul>
-    </section>
+    <div>
+      <h2 className={LABEL_CLASSES}>{TAGS_LABEL}</h2>
+      <TagList tags={tags} className="mt-4" />
+    </div>
   );
 }
 
 /**
  * The column of facts of a case page: the category, what the product does (when the data says), the tags and the invite
- * to talk. It comes before the gallery in the markup and, from lg, stays in place beside it while the screenshots scroll.
+ * to talk. It comes before the gallery in the markup. The link to /contato has an accessible name of its own (it starts
+ * with the visible text), so it is told apart from the one of the closing band.
  */
-export function ProjectFacts({ project }: ProjectFactsProps) {
+export function ProjectFacts({ project, isSticky = true }: ProjectFactsProps) {
   return (
-    <div className="flex min-w-0 flex-col gap-10 lg:sticky lg:top-28 lg:self-start">
+    <div className={cn('flex min-w-0 flex-col gap-10', isSticky && STICKY_CLASSES)}>
       <div>
         <p className={LABEL_CLASSES}>{projectsCopy.categoryLabel}</p>
         <p className="mt-2 text-lg font-medium text-vn-ink">{project.category}</p>
@@ -67,7 +67,7 @@ export function ProjectFacts({ project }: ProjectFactsProps) {
       <div className="border-t border-vn-gray-light pt-8">
         <p className="max-w-xs text-pretty text-lg font-medium text-vn-ink">{PROJECT_CTA_TEXT}</p>
         <Button asChild size="lg" className="mt-5">
-          <Link to={CONTACT_PATH}>
+          <Link to={CONTACT_PATH} aria-label={contactAboutLabel(project.title)}>
             {CONTACT_LABEL}
             <ArrowRight aria-hidden="true" className="size-5 shrink-0" />
           </Link>

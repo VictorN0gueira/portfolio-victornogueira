@@ -15,7 +15,7 @@ export const SALES_RULE =
 export const FIRST_PERSON_RULE = /\b(eu|meu|meus|minha|minhas)\b/i;
 
 /** The only numbers the copy may carry: names, and what is printed on a screen (the "5 minutos" of the diagnostic page). */
-const ALLOWED_NUMBERS = /hub081|5 minutos/gi;
+const ALLOWED_NUMBERS = /Hub081|hub081|5 minutos/g;
 export const NUMBER_RULE = /\d/;
 
 /** Every fixed sentence the components render: the constants themselves, and the gallery label for each project. */
@@ -23,6 +23,7 @@ export const COMPONENT_LITERALS: readonly string[] = [
   ...(Object.values(labels) as unknown[]).filter((value): value is string => typeof value === 'string'),
   ...Object.values(projectsCopy),
   ...projects.map((project) => labels.galleryLabel(project.title)),
+  ...projects.map((project) => labels.contactAboutLabel(project.title)),
 ];
 
 /** Every sentence a visitor can read on the projects pages, plus the alt texts of the images, as { where, text }. */
