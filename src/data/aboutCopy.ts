@@ -30,6 +30,7 @@ export const aboutCopy = {
     kicker: 'Ferramentas',
     heading: 'Stack tecnológica',
     lead: 'Da automação de fluxos às interfaces rápidas.',
+    trademarkNote: 'As logos são marcas dos seus donos e aparecem só para dizer com o que a gente trabalha.',
   },
   cta: {
     heading: 'Pronto para automatizar?',

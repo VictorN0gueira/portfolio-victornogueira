@@ -23,13 +23,19 @@ describe('FounderIntro', () => {
     renderWithProviders(<FounderIntro />);
 
     expect(
-      screen.getByText((_, element) => element?.tagName === 'P' && element.textContent === 'Especialista em montar fluxos automatizados e inteligentes, sem precisar de equipes grandes.'),
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === 'P' &&
+          element.textContent ===
+            'Especialista em montar fluxos automatizados e inteligentes, sem precisar de equipes grandes.',
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
         (_, element) =>
           element?.tagName === 'P' &&
-          element.textContent === 'Foco em Inteligência Artificial e Desenvolvimento Web, para a operação gastar menos tempo com tarefa manual.',
+          element.textContent ===
+            'Foco em Inteligência Artificial e Desenvolvimento Web, para a operação gastar menos tempo com tarefa manual.',
       ),
     ).toBeInTheDocument();
   });

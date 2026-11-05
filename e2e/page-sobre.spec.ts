@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 import { aboutCopy } from '../src/data/aboutCopy';
 import { toolCategories } from '../src/data/tools';
 import { toolMarks } from '../src/sections/about/toolMarks';
-import { PAGE_LOAD_TIMEOUT_MS, brokenWordsIn, enableLargeFont, measureOverflow, walkPage } from './homeSupport';
+import { PAGE_LOAD_TIMEOUT_MS, brokenWordsIn, enableLargeFont, measureOverflow } from './homeSupport';
 import { describePageContract, openPage, type PageContract } from './pageContract';
 import { expect, test } from './n8nGuard';
 
@@ -109,30 +109,20 @@ test.describe('/sobre', () => {
     }
   });
 
-  test('shows the brand color with the keyboard focus too, and gray again when the focus leaves', async ({ page }) => {
+  test('keeps the tool tiles out of the tab order: they are decoration, not controls', async ({ page }) => {
     await openPage(page, ABOUT);
-    const cell = cellOf(page, 'Docker');
-    await cell.scrollIntoViewIfNeeded();
-    await page.mouse.move(0, 0);
+    const tiles = page.locator('li[style*="--vn-tool-brand"]');
 
-    await cell.focus();
-    await expect(cell.locator('svg')).toHaveCSS('color', toRgb(toolMarks.docker.brand));
-    await expect(cell).toBeFocused();
-
-    await cell.evaluate((element: HTMLElement) => element.blur());
-    await expect(cell.locator('svg')).toHaveCSS('color', GRAY_DARK_RGB);
-  });
-
-  test('puts the tab order of the tools in the order of the page: a tab from one tile reaches the next', async ({
-    page,
-  }) => {
-    await openPage(page, ABOUT);
-    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-    await cellOf(page, 'n8n').focus();
-
-    await page.keyboard.press('Tab');
-
-    await expect(cellOf(page, 'Make')).toBeFocused();
-    await walkPage(page);
+    expect(await tiles.count()).toBe(14);
+    expect(await page.locator('li[tabindex]').count()).toBe(0);
+    await cellOf(page, 'n8n').scrollIntoViewIfNeeded();
+    // Tab across the whole page: the focus never lands on a tile, nor inside one.
+    for (let step = 0; step < 80; step += 1) {
+      await page.keyboard.press('Tab');
+      const isOnTile = await page.evaluate(
+        () => document.activeElement?.closest('li[style*="--vn-tool-brand"]') != null,
+      );
+      expect(isOnTile, 'the focus is on a tool tile').toBe(false);
+    }
   });
 });

@@ -25,15 +25,18 @@ describe('founder photo files', () => {
     ]);
   });
 
-  it.each(plan)('writes $file at $width wide in the right format, in proportion, under its weight ceiling', async ({ file, width, format }) => {
-    const path = resolve(ROOT, file);
-    const { width: realWidth, height, format: realFormat } = await sharp(path).metadata();
+  it.each(plan)(
+    'writes $file at $width wide in the right format, in proportion, under its weight ceiling',
+    async ({ file, width, format }) => {
+      const path = resolve(ROOT, file);
+      const { width: realWidth, height, format: realFormat } = await sharp(path).metadata();
 
-    expect(realWidth).toBe(width);
-    expect(Math.abs((height ?? 0) - (width * SOURCE_HEIGHT) / SOURCE_WIDTH)).toBeLessThanOrEqual(1);
-    expect(realFormat).toBe(FORMAT_OF[format]);
-    expect(statSync(path).size).toBeLessThanOrEqual(MAX_BYTES[width]);
-  });
+      expect(realWidth).toBe(width);
+      expect(Math.abs((height ?? 0) - (width * SOURCE_HEIGHT) / SOURCE_WIDTH)).toBeLessThanOrEqual(1);
+      expect(realFormat).toBe(FORMAT_OF[format]);
+      expect(statSync(path).size).toBeLessThanOrEqual(MAX_BYTES[width]);
+    },
+  );
 
   it('never enlarges the source: both sizes are narrower than the 982px original', () => {
     expect(Math.max(...plan.map((item) => item.width))).toBeLessThan(SOURCE_WIDTH);

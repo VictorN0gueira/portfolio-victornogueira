@@ -43,7 +43,13 @@ export function FounderIntro() {
       <NewTabHint id={newTabHintId} />
       <div className="mt-8">
         <Button asChild intent="secondary" size="lg">
-          <a href={CV_URL} download={founderVoice.cvFileName} target="_blank" rel="noopener noreferrer" aria-describedby={newTabHintId}>
+          <a
+            href={CV_URL}
+            download={founderVoice.cvFileName}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-describedby={newTabHintId}
+          >
             <Download aria-hidden="true" className="size-4 shrink-0" />
             {founderVoice.cvLabel}
           </a>

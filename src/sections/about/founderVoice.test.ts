@@ -18,7 +18,11 @@ const APPROVED = {
   specialtiesTitle: 'Minhas Especialidades',
   specialties: [
     { id: '01', title: 'Automação de Processos', desc: 'Fluxos automáticos que tiram o retrabalho da rotina.' },
-    { id: '02', title: 'Inteligência Artificial', desc: 'LLMs e agentes inteligentes integrados às operações do negócio.' },
+    {
+      id: '02',
+      title: 'Inteligência Artificial',
+      desc: 'LLMs e agentes inteligentes integrados às operações do negócio.',
+    },
     { id: '03', title: 'Desenvolvimento Web', desc: 'Interfaces rápidas, feitas para o visitante virar contato.' },
   ],
 };

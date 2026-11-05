@@ -16,9 +16,11 @@ describe('Specialties', () => {
     const section = screen.getByRole('region', { name: 'Minhas Especialidades' });
 
     expect(within(section).getByRole('heading', { level: 2, name: 'Minhas Especialidades' })).toBeInTheDocument();
-    expect(within(section).getAllByRole('heading', { level: 3 }).map((title) => title.textContent)).toEqual(
-      founderVoice.specialties.map((specialty) => specialty.title),
-    );
+    expect(
+      within(section)
+        .getAllByRole('heading', { level: 3 })
+        .map((title) => title.textContent),
+    ).toEqual(founderVoice.specialties.map((specialty) => specialty.title));
     expect(screen.queryAllByRole('heading', { level: 4 })).toHaveLength(0);
   });
 
