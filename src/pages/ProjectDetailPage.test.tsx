@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import { coverOf, projects, REMOVED_PROJECT_SLUGS } from '../data/projects';
+import { coverOf, getProjectBySlug, projects, REMOVED_PROJECT_SLUGS } from '../data/projects';
+import { projectsCopy } from '../data/projectsCopy';
 import { projectMetaFor } from '../seo/projectMeta';
 import { renderWithProviders } from '../test/render';
 import { PROJECT_CTA_TEXT } from '../components/projectLabels';
@@ -31,10 +32,21 @@ describe('ProjectDetailPage', () => {
 
       expect(screen.getByRole('heading', { level: 1, name: title })).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /todos os projetos/i })).toHaveAttribute('href', '/projetos');
-      expect(screen.getByRole('link', { name: /vamos conversar/i })).toHaveAttribute('href', '/contato');
+      for (const link of screen.getAllByRole('link', { name: /vamos conversar/i })) expect(link).toHaveAttribute('href', '/contato');
       expect(screen.getByText(PROJECT_CTA_TEXT)).toBeInTheDocument();
     },
   );
+
+  it('opens with the page hero: the category as the kicker, the name as the one h1, the description as the lead', () => {
+    const project = getProjectBySlug('travel-ia')!;
+    renderAt('/projetos/travel-ia');
+
+    const hero = screen.getByRole('region', { name: project.title });
+
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(within(hero).getByText(project.category)).toBeInTheDocument();
+    expect(within(hero).getByText(project.description)).toBeInTheDocument();
+  });
 
   it('makes the way back a target of at least 44 px and hides its arrow from assistive technology', () => {
     renderAt('/projetos/dizpara');
@@ -45,11 +57,44 @@ describe('ProjectDetailPage', () => {
     expect(back.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('has no link that opens a new tab or leaves the site', () => {
+  it.each(['dizpara', 'hub081'])('shows the highlight phrase of %s', (slug) => {
+    renderAt(`/projetos/${slug}`);
+
+    expect(screen.getByText(getProjectBySlug(slug)?.highlight as string)).toBeInTheDocument();
+  });
+
+  it('shows no highlight phrase for a project that has none, and no number made up', () => {
+    const { container } = renderAt('/projetos/travel-ia');
+
+    expect(container.querySelector('[class*="border-t-[3px]"]')).toBeNull();
+  });
+
+  it('ends with the next project of the list, and the last one leads back to the first', () => {
+    const { unmount } = renderAt('/projetos/dizpara');
+    expect(screen.getByRole('link', { name: new RegExp(`${projectsCopy.nextKicker} Hub081`) })).toHaveAttribute('href', '/projetos/hub081');
+    unmount();
+
+    renderAt(`/projetos/${projects[projects.length - 1].slug}`);
+    expect(screen.getByRole('link', { name: new RegExp(`${projectsCopy.nextKicker} DizPara`) })).toHaveAttribute('href', '/projetos/dizpara');
+  });
+
+  it.each(['dizpara', 'travel-ia'])('goes h1 then h2 only on %s, with one h1 first and no level skipped', (slug) => {
+    renderAt(`/projetos/${slug}`);
+
+    const levels = screen.getAllByRole('heading').map((heading) => Number(heading.tagName.slice(1)));
+
+    expect(levels[0]).toBe(1);
+    expect(levels.filter((level) => level === 1)).toHaveLength(1);
+    expect(levels.every((level) => level <= 2)).toBe(true);
+  });
+
+  it('has no link that opens a new tab to a place outside the site except the WhatsApp of the closing band', () => {
     const { container } = renderAt('/projetos/dizpara');
 
-    expect(container.querySelector('a[target="_blank"]')).toBeNull();
-    expect(container.querySelector('a[href^="http"]')).toBeNull();
+    const outside = [...container.querySelectorAll<HTMLAnchorElement>('a[target="_blank"], a[href^="http"]')];
+
+    expect(outside).toHaveLength(1);
+    expect(outside[0].href).toContain('https://wa.me/5581984451243');
   });
 
   it.each(projects.map((project) => project.slug))('sets the head of %s: title, canonical, share image and its alt text, breadcrumb', async (slug) => {

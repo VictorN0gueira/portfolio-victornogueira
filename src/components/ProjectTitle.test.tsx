@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react';
+import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { getProjectBySlug } from '../data/projects';
 import { renderWithProviders } from '../test/render';
 import { ProjectCard } from './ProjectCard';
-import { ProjectDetail } from './ProjectDetail';
+import ProjectDetailPage from '../pages/ProjectDetailPage';
 import { ProjectTitle } from './ProjectTitle';
 
 describe('ProjectTitle', () => {
@@ -23,8 +24,14 @@ describe('ProjectTitle', () => {
 
   it('leaves the heading of the case page and of the card named "Portal Link-in-Bio"', () => {
     const project = getProjectBySlug('portal-link-in-bio')!;
-    const { unmount } = renderWithProviders(<ProjectDetail project={project} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Portal Link-in-Bio' })).toBeInTheDocument();
+    const { unmount } = renderWithProviders(
+      <Routes>
+        <Route path="/projetos/:slug" element={<ProjectDetailPage />} />
+      </Routes>,
+      { route: '/projetos/portal-link-in-bio' },
+    );
+    const heading = screen.getByRole('heading', { level: 1, name: 'Portal Link-in-Bio' });
+    expect(heading.querySelector('span.whitespace-nowrap')?.textContent).toBe('Link-in-Bio');
     unmount();
 
     renderWithProviders(<ProjectCard project={project} imageSizes="92vw" />);

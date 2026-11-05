@@ -68,7 +68,9 @@ describe('ProjectsPage', () => {
     const headings = screen.getAllByRole('heading');
 
     expect(headings.map((heading) => heading.tagName)).toEqual(['H1', ...projects.map(() => 'H2'), 'H2']);
-    expect(headings.slice(1, -1).map((heading) => heading.textContent)).toEqual(projects.map((project) => project.title));
+    expect(headings.slice(1, -1).map((heading) => heading.textContent)).toEqual(
+      projects.map((project) => project.title),
+    );
     expect(headings.at(-1)).toHaveTextContent(PROJECT_CTA_TEXT);
   });
 
@@ -77,7 +79,12 @@ describe('ProjectsPage', () => {
 
     const names = caseLinks()
       .map((link) => link.getAttribute('aria-labelledby'))
-      .map((ids) => (ids ?? '').split(' ').map((id) => document.getElementById(id)?.textContent).join(' '));
+      .map((ids) =>
+        (ids ?? '')
+          .split(' ')
+          .map((id) => document.getElementById(id)?.textContent)
+          .join(' '),
+      );
 
     expect(names).toEqual(projects.map((project) => `${project.title} Ver detalhes`));
     expect(new Set(names).size).toBe(projects.length);
@@ -112,9 +119,11 @@ describe('ProjectsPage', () => {
 
     expect(within(band).getByText(projectsCopy.ctaBody)).toBeInTheDocument();
     expect(within(band).getByRole('link', { name: 'Vamos conversar' })).toHaveAttribute('href', '/contato');
-    expect(within(band).getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).toContain(
-      encodeURIComponent(projectsCopy.ctaWhatsappMessage),
-    );
+    expect(
+      within(band)
+        .getByRole('link', { name: /WhatsApp/ })
+        .getAttribute('href'),
+    ).toContain(encodeURIComponent(projectsCopy.ctaWhatsappMessage));
   });
 
   it('shows no project that was removed', () => {

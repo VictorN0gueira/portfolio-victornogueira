@@ -8,6 +8,8 @@ export const projectsCopy = {
   /** The closing band of /projetos and of a case page, under the heading PROJECT_CTA_TEXT. */
   ctaBody: 'Conta o que você quer montar e a gente diz por onde começar.',
   ctaWhatsappMessage: 'Olá! Vi os projetos no site da VN One e quero conversar sobre algo parecido.',
+  /** The heading of the closing band of a case page. The invite in the column of facts keeps PROJECT_CTA_TEXT. */
+  caseCtaHeading: 'Tem uma ideia parecida?',
   /** The label of the category in the column of facts of a case page. */
   categoryLabel: 'Categoria',
   /** The kicker of the next project, at the end of a case page. */

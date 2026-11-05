@@ -21,30 +21,36 @@ test.describe('/projetos', () => {
   describePageContract(CONTRACT);
 
   test('no card is wider than the screen or cuts its own content, at the five widths', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'the test sets its own viewport: it runs once, in the desktop project');
+    test.skip(
+      testInfo.project.name !== 'desktop',
+      'the test sets its own viewport: it runs once, in the desktop project',
+    );
     test.slow();
     const problems: string[] = [];
 
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: VIEWPORT_HEIGHT });
       await openPage(page, CONTRACT);
-      const cards = await page.locator('main ul > li > * a[href^="/projetos/"], main ul > li > a[href^="/projetos/"]').evaluateAll(
-        (links, limit) =>
-          links.map((link) => {
-            const box = link.getBoundingClientRect();
-            return {
-              href: link.getAttribute('href'),
-              right: box.right,
-              left: box.left,
-              hasCutContent: link.scrollWidth > link.clientWidth + limit,
-            };
-          }),
-        PIXEL_TOLERANCE,
-      );
+      const cards = await page
+        .locator('main ul > li > * a[href^="/projetos/"], main ul > li > a[href^="/projetos/"]')
+        .evaluateAll(
+          (links, limit) =>
+            links.map((link) => {
+              const box = link.getBoundingClientRect();
+              return {
+                href: link.getAttribute('href'),
+                right: box.right,
+                left: box.left,
+                hasCutContent: link.scrollWidth > link.clientWidth + limit,
+              };
+            }),
+          PIXEL_TOLERANCE,
+        );
 
       expect(cards.length, `${width}px: all the cards are there`).toBe(projects.length);
       for (const card of cards) {
-        if (card.right > width + PIXEL_TOLERANCE || card.left < -PIXEL_TOLERANCE) problems.push(`${width}px ${card.href} is outside the screen`);
+        if (card.right > width + PIXEL_TOLERANCE || card.left < -PIXEL_TOLERANCE)
+          problems.push(`${width}px ${card.href} is outside the screen`);
         if (card.hasCutContent) problems.push(`${width}px ${card.href} has content wider than the card`);
       }
     }
@@ -55,7 +61,9 @@ test.describe('/projetos', () => {
   test('every card is one link that goes to its case, and the closing band goes to /contato', async ({ page }) => {
     await openPage(page, CONTRACT);
 
-    const hrefs = await page.locator('main a[href^="/projetos/"]').evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+    const hrefs = await page
+      .locator('main a[href^="/projetos/"]')
+      .evaluateAll((links) => links.map((link) => link.getAttribute('href')));
     expect(hrefs).toEqual(projects.map((project) => `/projetos/${project.slug}`));
 
     const band = page.getByRole('region', { name: PROJECT_CTA_TEXT });
@@ -68,6 +76,8 @@ test.describe('/projetos', () => {
     await page.getByRole('link', { name: /^Hub081 Ver detalhes$/ }).click();
 
     await expect(page).toHaveURL(/\/projetos\/hub081$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Hub081' })).toBeVisible({ timeout: PAGE_LOAD_TIMEOUT_MS });
+    await expect(page.getByRole('heading', { level: 1, name: 'Hub081' })).toBeVisible({
+      timeout: PAGE_LOAD_TIMEOUT_MS,
+    });
   });
 });

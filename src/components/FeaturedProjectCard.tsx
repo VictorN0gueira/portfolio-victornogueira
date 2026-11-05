@@ -51,14 +51,20 @@ export function FeaturedProjectCard({ project, priority = false }: FeaturedProje
           <p className="mt-4 max-w-md text-pretty text-base text-vn-gray-light">{project.description}</p>
           <ul role="list" className="mt-6 flex flex-wrap gap-2">
             {project.tags.map((tag) => (
-              <li key={tag} className="rounded-full border border-vn-gray-dark px-3 py-1 font-mono text-xs text-vn-gray-light">
+              <li
+                key={tag}
+                className="rounded-full border border-vn-gray-dark px-3 py-1 font-mono text-xs text-vn-gray-light"
+              >
                 {tag}
               </li>
             ))}
           </ul>
           <span className="mt-8 inline-flex min-h-11 items-center gap-2 self-start rounded-full bg-vn-white px-6 py-3 text-sm font-medium text-vn-black">
             <span id={ctaId}>{CARD_CTA_TEXT}</span>
-            <ArrowRight aria-hidden="true" className={cn(CTA_ARROW_CLASSES, !isMotionAllowed && 'transition-none group-hover:translate-x-0')} />
+            <ArrowRight
+              aria-hidden="true"
+              className={cn(CTA_ARROW_CLASSES, !isMotionAllowed && 'transition-none group-hover:translate-x-0')}
+            />
           </span>
         </div>
 
@@ -66,7 +72,13 @@ export function FeaturedProjectCard({ project, priority = false }: FeaturedProje
           <BrowserShot shot={cover} slug={project.slug} sizes={COVER_SIZES} priority={priority} />
           <div data-featured-strip="" className="mt-3 hidden grid-cols-2 gap-3 sm:grid md:mt-4 md:gap-4">
             {strip.map((shot) => (
-              <BrowserShot key={shot.image.src} shot={shot} slug={project.slug} sizes={STRIP_SIZES} imageClassName={SMALL_SHOT_CLASSES} />
+              <BrowserShot
+                key={shot.image.src}
+                shot={shot}
+                slug={project.slug}
+                sizes={STRIP_SIZES}
+                imageClassName={SMALL_SHOT_CLASSES}
+              />
             ))}
           </div>
         </div>

@@ -26,12 +26,12 @@ describe('ProjectDetailPage while the chunk of the not found page is on its way'
     expect(document.querySelector('link[rel="canonical"]')).toBeNull();
   });
 
-  it('holds the place of the final page: as tall as the screen and on the same dark background', () => {
+  it('holds the place of the final page: as tall as the screen and on the brand black', () => {
     renderMissingProject();
 
     const placeholder = screen.getByRole('status', { name: shellCopy.pageLoading });
 
-    expect(placeholder.className).toContain('min-h-screen');
-    expect(placeholder.className).toContain('bg-zinc-950');
+    expect(placeholder.className).toContain('min-h-dvh');
+    expect(placeholder.className).toContain('bg-vn-black');
   });
 });

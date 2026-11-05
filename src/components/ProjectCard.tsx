@@ -50,14 +50,20 @@ export function ProjectCard({ project, imageSizes }: ProjectCardProps) {
           <p className="mt-3 max-w-md text-pretty text-base text-vn-gray-dark">{project.description}</p>
           <ul role="list" className="mt-4 flex flex-wrap gap-2">
             {project.tags.map((tag) => (
-              <li key={tag} className="rounded-full border border-vn-gray-mid px-3 py-1 font-mono text-xs text-vn-gray-dark">
+              <li
+                key={tag}
+                className="rounded-full border border-vn-gray-mid px-3 py-1 font-mono text-xs text-vn-gray-dark"
+              >
                 {tag}
               </li>
             ))}
           </ul>
           <span className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-4 text-sm font-medium">
             <span id={ctaId}>{CARD_CTA_TEXT}</span>
-            <ArrowRight aria-hidden="true" className={cn(CTA_ARROW_CLASSES, !isMotionAllowed && 'transition-none group-hover:translate-x-0')} />
+            <ArrowRight
+              aria-hidden="true"
+              className={cn(CTA_ARROW_CLASSES, !isMotionAllowed && 'transition-none group-hover:translate-x-0')}
+            />
           </span>
         </div>
       </SpotlightCard>
