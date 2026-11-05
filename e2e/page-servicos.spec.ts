@@ -1,10 +1,8 @@
 import { describePageContract } from './pageContract';
+import { ANCHOR_MAX_TOP_PX, ANCHOR_MIN_TOP_PX } from './headerBounds';
 import { expect, test } from './n8nGuard';
 
 const SLUG = 'sistema-web-sob-medida';
-// The card sits under the fixed header (scroll-mt-28 is 112 px) and well inside the first screen.
-const MIN_TOP_PX = 40;
-const MAX_TOP_PX = 200;
 
 test.describe('page contract of /servicos', () => {
   describePageContract({
@@ -25,8 +23,10 @@ test.describe('/servicos cases of its own', () => {
     await expect(card).toBeVisible();
     await expect
       .poll(() => card.evaluate((element) => element.getBoundingClientRect().top))
-      .toBeGreaterThan(MIN_TOP_PX);
-    await expect.poll(() => card.evaluate((element) => element.getBoundingClientRect().top)).toBeLessThan(MAX_TOP_PX);
+      .toBeGreaterThan(ANCHOR_MIN_TOP_PX);
+    await expect
+      .poll(() => card.evaluate((element) => element.getBoundingClientRect().top))
+      .toBeLessThan(ANCHOR_MAX_TOP_PX);
     await expect(card.getByRole('heading', { level: 2 })).toBeFocused();
   });
 

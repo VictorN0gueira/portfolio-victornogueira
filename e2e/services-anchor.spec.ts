@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { ANCHOR_MAX_TOP_PX, ANCHOR_MIN_TOP_PX } from './headerBounds';
 import { expect, test } from './n8nGuard';
 
 // The six slugs of data/services.ts. The footer links of batch D point at /servicos#<slug>; this is what they need.
@@ -14,9 +15,6 @@ const VIEWPORTS = [
   { name: '390', width: 390, height: 844 },
   { name: '1440', width: 1440, height: 900 },
 ];
-// The card sits under the fixed header (scroll-mt-28 is 112 px) and well inside the first screen.
-const MIN_TOP_PX = 40;
-const MAX_TOP_PX = 200;
 
 async function cardTop(page: Page, slug: string): Promise<number> {
   return page.evaluate((id) => document.getElementById(id)?.getBoundingClientRect().top ?? Number.NaN, slug);
@@ -25,8 +23,8 @@ async function cardTop(page: Page, slug: string): Promise<number> {
 async function expectCardUnderHeader(page: Page, slug: string) {
   await expect
     .poll(() => cardTop(page, slug), { message: `${slug} lands under the header` })
-    .toBeGreaterThan(MIN_TOP_PX);
-  await expect.poll(() => cardTop(page, slug)).toBeLessThan(MAX_TOP_PX);
+    .toBeGreaterThan(ANCHOR_MIN_TOP_PX);
+  await expect.poll(() => cardTop(page, slug)).toBeLessThan(ANCHOR_MAX_TOP_PX);
 }
 
 test.describe('/servicos#slug', () => {
