@@ -6,10 +6,11 @@
 // Outputs:
 //   public/favicon.ico                16, 32 and 48 px images in one file (what a browser asks for on its own)
 //   public/brand/favicon-{48,96,192,512}.png   Google wants a multiple of 48 px, square
+//   public/brand/favicon-32.png       the 32x32 link of the head: the same image as the 32 px frame of the ICO
 //
 // The mark is wide (about 2:1), so inside a square it is limited by its width. Small icons therefore use a thin margin
 // (the mark has to be as large as possible to read at 16 px) and the big ones a normal margin.
-// public/brand/favicon-32.png and apple-touch-icon.png come from scripts/build-brand-assets.mjs and are not touched here.
+// public/brand/apple-touch-icon.png comes from scripts/build-brand-assets.mjs and is not touched here.
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -109,6 +110,10 @@ async function main() {
   for (const size of ICO_SIZES) {
     images.push({ size, data: await renderIcon(trimmedLogo, size) });
   }
+  // Browsers that pick an icon by size take the 32x32 link of the head: it must carry the contrast lift of the ICO frame.
+  const icon32 = images.find(({ size }) => size === TINY_ICON_MAX).data;
+  writeFileSync(join(brandDir, 'favicon-32.png'), icon32);
+  log(`brand/favicon-32.png: 32x32 (${icon32.length} bytes)`);
   const ico = buildIco(images);
   writeFileSync(join(publicDir, 'favicon.ico'), ico);
   log(`favicon.ico: ${ICO_SIZES.join(', ')} px (${ico.length} bytes)`);
