@@ -220,17 +220,20 @@ interface CountBadgeProps {
   isDark: boolean;
 }
 
-/** The number of options that are on, on the corner of the trigger. Decoration: the description says it. */
+/**
+ * The number of options that are on, on the corner of the trigger. Decoration: the description says it. The digit is
+ * drawn by CSS from data-count and is not text of the button, so the visible label is not left out of the name of the
+ * button (WCAG 2.5.3 Label in Name: aria-hidden text still counts as visible text for that rule).
+ */
 function CountBadge({ count, isDark }: CountBadgeProps) {
   return (
     <span
       aria-hidden="true"
+      data-count={count}
       className={cn(
-        'absolute -top-1 right-0 flex size-5 items-center justify-center rounded-full text-xs font-bold',
+        'absolute -top-1 right-0 flex size-5 items-center justify-center rounded-full text-xs font-bold after:content-[attr(data-count)]',
         isDark ? 'bg-zinc-950 text-white' : 'border border-zinc-200 bg-white text-zinc-950',
       )}
-    >
-      {count}
-    </span>
+    />
   );
 }

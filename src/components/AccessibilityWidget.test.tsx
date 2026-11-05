@@ -106,7 +106,10 @@ describe('AccessibilityWidget', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog', { name: PANEL_NAME })).toBeNull());
     const badge = screen.getByRole('button', { name: TRIGGER_NAME }).querySelector('span[aria-hidden="true"]');
-    expect(badge).toHaveTextContent('1');
+    // WCAG 2.5.3 Label in Name: the digit is drawn by CSS (data-count), so no visible text in the button is missing from its name.
+    expect(badge).toHaveAttribute('data-count', '1');
+    expect(badge).toBeEmptyDOMElement();
+    expect(screen.getByRole('button', { name: TRIGGER_NAME })).toHaveTextContent('');
     expect(badge).toHaveClass('right-0');
     expect(badge).not.toHaveClass('-right-1');
   });
