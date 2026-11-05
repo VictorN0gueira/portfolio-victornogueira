@@ -25,7 +25,9 @@ describe('ContactChannels when a constant is not in the shape it splits on', () 
     const link = screen.getByRole('link', { name: '81984451243, WhatsApp' });
 
     expect(link.textContent).toBe('81984451243');
-    expect(link.childNodes).toHaveLength(2);
-    expect(link.querySelector('.whitespace-nowrap')?.textContent).toBe('81984451243');
+    expect(link.childNodes).toHaveLength(1);
+    const word = link.querySelector('.whitespace-nowrap');
+    expect(word?.textContent).toBe('81984451243');
+    expect(word?.querySelector('svg')).not.toBeNull();
   });
 });

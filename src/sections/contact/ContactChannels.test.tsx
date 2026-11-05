@@ -79,9 +79,10 @@ describe('ContactChannels', () => {
     expect(digits).toMatch(/-/);
     expect(link.textContent).toBe(WHATSAPP_DISPLAY);
     expect(link.textContent?.startsWith(`${areaCode} `)).toBe(true);
-    // One text item (the span with the number) and the icon: the number is not split into flex items of its own.
-    expect(link.childNodes).toHaveLength(2);
-    expect(link.lastElementChild?.tagName.toLowerCase()).toBe('svg');
+    // One text item in the flex link, and the mark inside the nowrap word: it is drawn in the line of the last digits.
+    expect(link.childNodes).toHaveLength(1);
+    expect(nowrap?.querySelector('svg')).not.toBeNull();
+    expect(nowrap?.lastElementChild?.tagName.toLowerCase()).toBe('svg');
   });
 
   it('opens WhatsApp from the shared constants, in a new tab that a screen reader is told about', () => {

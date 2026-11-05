@@ -40,14 +40,32 @@ function AddressText({ address }: { address: string }) {
   );
 }
 
-/** The number with its digits as one word that cannot break. Another shape is shown whole, as one word. */
+/** The WhatsApp mark, inline and centred on the text, so it is drawn in the line of the last digits. */
+function WhatsappMark() {
+  return <BrandIcon id="whatsapp" className="ml-3 inline-block size-6 shrink-0 align-middle" />;
+}
+
+/**
+ * The number with its digits and the mark as one word that cannot break, so the only break is after the area code and
+ * the mark always sits on the line of the last digits. Another shape of constant is shown whole, as one word.
+ */
 function NumberText({ display }: { display: string }) {
   const halves = splitNumber(display);
-  if (!halves) return <span className="whitespace-nowrap">{display}</span>;
+  if (!halves) {
+    return (
+      <span className="whitespace-nowrap">
+        {display}
+        <WhatsappMark />
+      </span>
+    );
+  }
   return (
     <span>
       {`${halves[0]} `}
-      <span className="whitespace-nowrap">{halves[1]}</span>
+      <span className="whitespace-nowrap">
+        {halves[1]}
+        <WhatsappMark />
+      </span>
     </span>
   );
 }
@@ -66,9 +84,9 @@ function NumberText({ display }: { display: string }) {
  * Each link is named by its visible text followed by the channel, so the accessible name contains what is drawn (WCAG
  * 2.5.3) and a screen reader still says which channel it is. The text of each link is one span: the link is
  * inline-flex, so every loose text and every wbr would be a flex item of its own, with the gap between them. The
- * address breaks at the @ (the wbr) and the number after the area code (its digits are one nowrap word); overflow-wrap
- * anywhere is the last resort, only for a box too narrow for either half. A constant that is not in the shape these
- * two rely on is shown whole.
+ * address breaks at the @ (the wbr) and the number after the area code (its digits and the mark are one nowrap word);
+ * overflow-wrap anywhere is the last resort, only for a box too narrow for either half. A constant that is not in the
+ * shape these two rely on is shown whole.
  */
 export function ContactChannels() {
   const newTabHintId = useId();
@@ -102,7 +120,6 @@ export function ContactChannels() {
               className={LINK_CLASSES}
             >
               <NumberText display={WHATSAPP_DISPLAY} />
-              <BrandIcon id="whatsapp" className="size-6 shrink-0" />
             </a>
           </dd>
         </div>
