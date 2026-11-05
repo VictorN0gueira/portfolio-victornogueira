@@ -69,7 +69,7 @@ describe('ContactPage', () => {
     renderPage();
     const hero = screen.getByRole('heading', { level: 1 }).closest('section') as HTMLElement;
 
-    expect(within(hero).getByRole('link', { name: CONTACT_EMAIL })).toHaveAttribute('href', `mailto:${CONTACT_EMAIL}`);
+    expect(within(hero).getByRole('link', { name: `${CONTACT_EMAIL}, ${contactCopy.channels.email}` })).toHaveAttribute('href', `mailto:${CONTACT_EMAIL}`);
     expect(hero).toHaveTextContent(contactCopy.lead);
   });
 

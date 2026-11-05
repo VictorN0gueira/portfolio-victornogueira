@@ -4,7 +4,8 @@ import { homeCopy } from '../src/data/homeCopy';
 import { routeMetaFor } from '../src/seo/routeMeta';
 import { describePageContract } from './pageContract';
 import { N8N_WEBHOOK_PATTERN, expect, fulfillOk, n8nRoute, test } from './n8nGuard';
-import { QUOTE_BUTTON, QUOTE_START } from './homeSupport';
+import { QUOTE_BUTTON, QUOTE_START, enableLargeFont } from './homeSupport';
+import { CONTACT_EMAIL } from '../src/lib/constants';
 
 // /contato mounts the real contact form, so every test here takes `test` from the guard and answers the n8n route
 // itself: nothing is typed into the form, nothing is submitted and the real webhooks are never reached.
@@ -60,3 +61,55 @@ test.describe('page /contato', () => {
     expect(network.calls).toHaveLength(0);
   });
 });
+
+// The address of the channels card breaks only after the @ (a wbr there): at the narrowest phones and with the larger
+// font each half stays whole on its own line, and the link never grows past the card.
+const NARROWEST_WIDTH = 280;
+const EMAIL_WIDTHS = [NARROWEST_WIDTH, 320];
+const EMAIL_HEIGHT = 700;
+
+for (const width of EMAIL_WIDTHS) {
+  test(`breaks the e-mail only at the @ and keeps it inside the card at ${width}px with the larger font`, async ({ page, network }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
+    await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
+    await enableLargeFont(page);
+    await page.setViewportSize({ width, height: EMAIL_HEIGHT });
+    await page.goto('/contato');
+    const link = page.locator('main dl').getByRole('link', { name: new RegExp(`^${escapeForRegExp(CONTACT_EMAIL)}`) });
+    await expect(link).toBeVisible();
+
+    const report = await link.evaluate((anchor) => {
+      const lines = (node: Node): number => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return new Set(Array.from(range.getClientRects()).map((box) => Math.round(box.top))).size;
+      };
+      const [name, domain] = Array.from(anchor.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE);
+      const topOf = (node: Node): number => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return Math.round(range.getBoundingClientRect().top);
+      };
+      const card = anchor.closest('dl')?.parentElement?.getBoundingClientRect();
+      const box = anchor.getBoundingClientRect();
+      return {
+        isBrokenAtTheAt: topOf(domain) > topOf(name),
+        nameLines: lines(name),
+        domainLines: lines(domain),
+        pastCard: card ? Math.max(0, box.right - card.right) : Number.NaN,
+        scrollExcess: anchor.scrollWidth - anchor.clientWidth,
+        nameText: name.textContent,
+        domainText: domain.textContent,
+      };
+    });
+
+    expect(report.nameText).toMatch(/@$/);
+    expect(report.nameLines, 'the part before the @ is on one line').toBe(1);
+    expect(report.domainLines, 'the part after the @ is on one line').toBe(1);
+    // At 280px there is no room for the whole address: the only break is the one after the @.
+    if (width === NARROWEST_WIDTH) expect(report.isBrokenAtTheAt, 'the domain goes under the name').toBe(true);
+    expect(report.pastCard).toBeLessThanOrEqual(0.5);
+    expect(report.scrollExcess).toBeLessThanOrEqual(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+  });
+}

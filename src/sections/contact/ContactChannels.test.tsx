@@ -1,12 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { contactCopy } from '../../data/contactCopy';
 import { CONTACT_EMAIL, WHATSAPP_DISPLAY, WHATSAPP_GREETING, whatsappUrl } from '../../lib/constants';
 import { NEW_TAB_HINT } from '../../components/ui/NewTabHint';
 import { renderWithProviders } from '../../test/render';
 import { ContactChannels } from './ContactChannels';
+
+const EMAIL_NAME = `${CONTACT_EMAIL}, ${contactCopy.channels.email}`;
+const WHATSAPP_NAME = `${WHATSAPP_DISPLAY}, ${contactCopy.channels.whatsapp}`;
 
 describe('ContactChannels', () => {
   it('lists the place first (not a control), then the e-mail and the WhatsApp, each with its label', () => {
@@ -21,12 +24,40 @@ describe('ContactChannels', () => {
   it('takes the e-mail from the shared constants', () => {
     renderWithProviders(<ContactChannels />);
 
-    expect(screen.getByRole('link', { name: CONTACT_EMAIL })).toHaveAttribute('href', `mailto:${CONTACT_EMAIL}`);
+    expect(screen.getByRole('link', { name: EMAIL_NAME })).toHaveAttribute('href', `mailto:${CONTACT_EMAIL}`);
+  });
+
+  it('names the e-mail link by its visible text first and then the channel, so the name contains what is drawn (WCAG 2.5.3)', () => {
+    renderWithProviders(<ContactChannels />);
+    const link = screen.getByRole('link', { name: EMAIL_NAME });
+
+    expect(link.textContent).toBe(CONTACT_EMAIL);
+    expect(link.getAttribute('aria-label')).toContain(link.textContent);
+    expect(link.getAttribute('aria-label')?.startsWith(CONTACT_EMAIL)).toBe(true);
+  });
+
+  it('names the WhatsApp link by its visible text first and then the channel', () => {
+    renderWithProviders(<ContactChannels />);
+    const link = screen.getByRole('link', { name: WHATSAPP_NAME });
+
+    expect(link.textContent).toBe(WHATSAPP_DISPLAY);
+    expect(link.getAttribute('aria-label')).toBe(WHATSAPP_NAME);
+    expect(WHATSAPP_NAME.startsWith(WHATSAPP_DISPLAY)).toBe(true);
+  });
+
+  it('lets the address break after the @ and nowhere else, so it never splits in the middle of a word', () => {
+    renderWithProviders(<ContactChannels />);
+    const link = screen.getByRole('link', { name: EMAIL_NAME });
+    const breaks = link.querySelectorAll('wbr');
+
+    expect(breaks).toHaveLength(1);
+    expect(breaks[0].previousSibling?.textContent).toMatch(/@$/);
+    expect(link.textContent).toBe(CONTACT_EMAIL);
   });
 
   it('opens WhatsApp from the shared constants, in a new tab that a screen reader is told about', () => {
     renderWithProviders(<ContactChannels />);
-    const link = screen.getByRole('link', { name: WHATSAPP_DISPLAY });
+    const link = screen.getByRole('link', { name: WHATSAPP_NAME });
 
     expect(link).toHaveAttribute('href', whatsappUrl(WHATSAPP_GREETING));
     expect(link).toHaveAttribute('target', '_blank');
@@ -36,21 +67,34 @@ describe('ContactChannels', () => {
 
   it('draws the WhatsApp icon hidden from assistive tech, in the text color and not in green', () => {
     renderWithProviders(<ContactChannels />);
-    const icon = screen.getByRole('link', { name: WHATSAPP_DISPLAY }).querySelector('svg');
+    const icon = screen.getByRole('link', { name: WHATSAPP_NAME }).querySelector('svg');
 
     expect(icon).toHaveAttribute('aria-hidden', 'true');
     expect(icon?.getAttribute('class') ?? '').not.toMatch(/green|emerald|zinc/);
   });
 
-  it('gives each link a 44px target and the ink focus ring of a light surface', () => {
+  it('gives each link the ink focus ring of a light surface (the 44px size is measured in the browser by the page contract)', () => {
     renderWithProviders(<ContactChannels />);
-    const group = screen.getAllByRole('link');
+    const links = screen.getAllByRole('link');
 
-    expect(group).toHaveLength(2);
-    for (const link of group) {
-      expect(link).toHaveClass('min-h-11', 'vn-focus-ring-ink');
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link).toHaveClass('vn-focus-ring-ink');
     }
-    expect(within(document.body).queryByText(/chat[\s-]?bot/i)).toBeNull();
+  });
+
+  it('centres the place in its 44px row with flex, not with a grid alignment that a block does not honour', () => {
+    renderWithProviders(<ContactChannels />);
+    const place = screen.getByText(contactCopy.channels.locationValue);
+
+    expect(place).toHaveClass('flex', 'items-center', 'min-h-11');
+    expect(place.className).not.toMatch(/content-center/);
+  });
+
+  it('keeps the word of the old product out of the card', () => {
+    const { container } = renderWithProviders(<ContactChannels />);
+
+    expect(container.textContent).not.toMatch(/chat[\s-]?bot/i);
   });
 
   it('writes no wa.me address and no phone number in its source', () => {
