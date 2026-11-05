@@ -8,7 +8,9 @@ import { trigger } from './tabSupport';
 // text that its name leaves out, and the digit is still on screen. The home mounts the real form: the guard of ./n8nGuard
 // is on and nothing here sends it.
 
-test('the count of options on is drawn by CSS: the tab has no visible text outside its name, and axe finds no mismatch', async ({ page }) => {
+test('the count of options on is drawn by CSS: the tab has no visible text outside its name, and axe finds no mismatch', async ({
+  page,
+}) => {
   await enableLargeFont(page);
   await openHome(page);
   const tab = trigger(page);
@@ -21,6 +23,9 @@ test('the count of options on is drawn by CSS: the tab has no visible text outsi
   });
   expect(drawn).toBe('"1"');
 
-  const results = await new AxeBuilder({ page }).include('aside button[aria-expanded]').withRules(['label-content-name-mismatch']).analyze();
+  const results = await new AxeBuilder({ page })
+    .include('aside button[aria-expanded]')
+    .withRules(['label-content-name-mismatch'])
+    .analyze();
   expect(results.violations).toEqual([]);
 });
