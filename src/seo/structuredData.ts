@@ -75,6 +75,14 @@ export function websiteNode(): object {
   };
 }
 
+/**
+ * The provider of a Service, written out in the page. The full Organization is only on the home, and a crawler does not follow
+ * an @id to another page, so a bare reference would name nobody. The same @id ties it to the Organization of the home.
+ */
+function providerNode(): object {
+  return { '@type': 'Organization', '@id': ORGANIZATION_ID, name: SITE.name, url: SITE.url };
+}
+
 /** One Service per entry of the services data. No Offer and no price: the site does not publish prices. */
 export function serviceNodes(): object[] {
   return services.map((service) => ({
@@ -84,7 +92,7 @@ export function serviceNodes(): object[] {
     description: service.descricao,
     serviceType: service.categoria,
     url: `${SITE.url}${SERVICES_PATH}#${service.slug}`,
-    provider: idRef(ORGANIZATION_ID),
+    provider: providerNode(),
     areaServed: COUNTRY,
   }));
 }
