@@ -1,0 +1,181 @@
+import type { Page } from '@playwright/test';
+import { contactCopy } from '../src/data/contactCopy';
+import { homeCopy } from '../src/data/homeCopy';
+import { routeMetaFor } from '../src/seo/routeMeta';
+import { describePageContract } from './pageContract';
+import { N8N_WEBHOOK_PATTERN, expect, fulfillOk, n8nRoute, test } from './n8nGuard';
+import { QUOTE_BUTTON, QUOTE_START, enableLargeFont } from './homeSupport';
+import { CONTACT_EMAIL, WHATSAPP_DISPLAY } from '../src/lib/constants';
+
+// /contato mounts the real contact form, so every test here takes `test` from the guard and answers the n8n route
+// itself: nothing is typed into the form, nothing is submitted and the real webhooks are never reached.
+const escapeForRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const TITLE = new RegExp(`^${escapeForRegExp(routeMetaFor('/contato')?.title ?? '')}$`);
+const messageField = (page: Page) => page.getByLabel('Mensagem', { exact: true });
+
+test.describe('page /contato', () => {
+  describePageContract({
+    path: '/contato',
+    title: TITLE,
+    h1: contactCopy.title,
+    readyHeading: homeCopy.roi.heading,
+    hasContactForm: true,
+    hasFloatingClearance: true,
+  });
+
+  test('writes the FAQPage of the questions once, and it matches the questions on the page', async ({
+    page,
+    network,
+  }) => {
+    await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
+    await page.goto('/contato');
+    await expect(page.getByRole('heading', { level: 2, name: homeCopy.faq.heading })).toBeAttached();
+
+    const faqPages = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
+        .map((node) => JSON.parse(node.textContent ?? '{}'))
+        .flatMap((data) => (Array.isArray(data['@graph']) ? data['@graph'] : [data]))
+        .filter((node) => node['@type'] === 'FAQPage')
+        .map((node) => (node.mainEntity as Array<{ name: string }>).map((question) => question.name)),
+    );
+    // The questions that the page shows: the summaries of the FAQ section, the one named by the heading above.
+    const faqSection = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { level: 2, name: homeCopy.faq.heading }) });
+    const visible = (await faqSection.locator('details summary').allTextContents()).map((text) => text.trim());
+
+    expect(faqPages).toHaveLength(1);
+    expect(visible.length).toBeGreaterThan(0);
+    // Both ways: the same number of questions and the same set, so neither a missing nor an extra one goes unseen.
+    expect(faqPages[0]).toHaveLength(visible.length);
+    expect(new Set(faqPages[0])).toEqual(new Set(visible));
+  });
+
+  test('takes the estimate of the simulator to the message, with the n8n route answered and nothing sent', async ({
+    page,
+    network,
+  }) => {
+    await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
+    await page.goto('/contato');
+    const quote = page.getByRole('button', { name: QUOTE_BUTTON });
+    await quote.scrollIntoViewIfNeeded();
+    await quote.click();
+
+    await expect(messageField(page)).toHaveValue(new RegExp(`^${escapeForRegExp(QUOTE_START)}`));
+    await expect(messageField(page)).toBeFocused();
+    await expect(page.locator('div[role="status"]').filter({ hasText: /preenchida/ })).toHaveCount(1);
+    expect(network.calls).toHaveLength(0);
+  });
+});
+
+// The address of the channels card breaks only after the @ (a wbr there): at the narrowest phones and with the larger
+// font each half stays whole on its own line, and the link never grows past the card.
+const NARROWEST_WIDTH = 280;
+const EMAIL_WIDTHS = [NARROWEST_WIDTH, 320];
+const EMAIL_HEIGHT = 700;
+
+for (const width of EMAIL_WIDTHS) {
+  test(`breaks the e-mail only at the @ and keeps it inside the card at ${width}px with the larger font`, async ({
+    page,
+    network,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
+    await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
+    await enableLargeFont(page);
+    await page.setViewportSize({ width, height: EMAIL_HEIGHT });
+    await page.goto('/contato');
+    const link = page.locator('main dl').getByRole('link', { name: new RegExp(`^${escapeForRegExp(CONTACT_EMAIL)}`) });
+    await expect(link).toBeVisible();
+
+    const report = await link.evaluate((anchor) => {
+      const lines = (node: Node): number => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return new Set(Array.from(range.getClientRects()).map((box) => Math.round(box.top))).size;
+      };
+      // The text of the link is one span (a single flex item next to the icon): its two text nodes are the two halves.
+      const textRoot = anchor.firstElementChild as HTMLElement;
+      const [name, domain] = Array.from(textRoot.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE);
+      const topOf = (node: Node): number => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return Math.round(range.getBoundingClientRect().top);
+      };
+      const card = anchor.closest('dl')?.parentElement?.getBoundingClientRect();
+      const box = anchor.getBoundingClientRect();
+      return {
+        isBrokenAtTheAt: topOf(domain) > topOf(name),
+        nameLines: lines(name),
+        domainLines: lines(domain),
+        pastCard: card ? Math.max(0, box.right - card.right) : Number.NaN,
+        scrollExcess: anchor.scrollWidth - anchor.clientWidth,
+        nameText: name.textContent,
+        domainText: domain.textContent,
+      };
+    });
+
+    expect(report.nameText).toMatch(/@$/);
+    expect(report.nameLines, 'the part before the @ is on one line').toBe(1);
+    expect(report.domainLines, 'the part after the @ is on one line').toBe(1);
+    // At 280px there is no room for the whole address: the only break is the one after the @.
+    if (width === NARROWEST_WIDTH) expect(report.isBrokenAtTheAt, 'the domain goes under the name').toBe(true);
+    expect(report.pastCard).toBeLessThanOrEqual(0.5);
+    expect(report.scrollExcess).toBeLessThanOrEqual(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(
+      0,
+    );
+  });
+}
+
+// The digits of the WhatsApp number are one word that never splits. The proof is at a width where plain text DOES split
+// them: at 240px with the larger font the card is too narrow for "98445-1243" on the line after "(81)", and a link that is
+// plain text breaks it at the hyphen (or anywhere, with overflow-wrap anywhere) and leaves the icon alone on the last
+// line. 240px is under the 280px floor of the site on purpose: this is the one width that tells the nowrap from its
+// absence. 280 and 320 stay as the supported widths, where the digits must also be whole.
+const SPLIT_WIDTH = 240;
+const PHONE_WIDTHS = [SPLIT_WIDTH, NARROWEST_WIDTH, 320];
+
+for (const width of PHONE_WIDTHS) {
+  test(`keeps the digits of the WhatsApp number on one line, with the icon level with them, at ${width}px and the larger font`, async ({
+    page,
+    network,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
+    await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
+    await enableLargeFont(page);
+    await page.setViewportSize({ width, height: EMAIL_HEIGHT });
+    await page.goto('/contato');
+    const link = page
+      .locator('main dl')
+      .getByRole('link', { name: new RegExp(`^${escapeForRegExp(WHATSAPP_DISPLAY)}`) });
+    await expect(link).toBeVisible();
+
+    const report = await link.evaluate((anchor, digits) => {
+      // The digits are found in the text of the link, whatever markup holds them, and measured as drawn.
+      const walker = document.createTreeWalker(anchor, NodeFilter.SHOW_TEXT);
+      let digitBoxes: DOMRect[] = [];
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const start = (node.textContent ?? '').indexOf(digits);
+        if (start === -1) continue;
+        const range = document.createRange();
+        range.setStart(node, start);
+        range.setEnd(node, start + digits.length);
+        digitBoxes = Array.from(range.getClientRects());
+      }
+      const iconBox = (anchor.querySelector('svg') as SVGElement).getBoundingClientRect();
+      const iconCentre = (iconBox.top + iconBox.bottom) / 2;
+      const card = anchor.closest('dl')?.parentElement?.getBoundingClientRect();
+      const box = anchor.getBoundingClientRect();
+      const first = digitBoxes[0];
+      return {
+        digitLines: new Set(digitBoxes.map((rect) => Math.round(rect.top))).size,
+        isIconCentreInDigits: first !== undefined && iconCentre >= first.top && iconCentre <= first.bottom,
+        pastCard: card ? Math.max(0, box.right - card.right) : Number.NaN,
+      };
+    }, WHATSAPP_DISPLAY.split(' ')[1]);
+
+    expect(report.digitLines, 'the digits are on one line').toBe(1);
+    expect(report.isIconCentreInDigits, 'the centre of the icon is within the height of the digits').toBe(true);
+    expect(report.pastCard).toBeLessThanOrEqual(0.5);
+  });
+}

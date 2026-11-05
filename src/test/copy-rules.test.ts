@@ -119,13 +119,9 @@ const SCANNED_FILES = [
   'index.html',
   'src/components/SEO.tsx',
   'src/components/ContactForm.tsx',
-  'src/components/ServiceSelect.tsx',
   // Older files that still carry user facing text.
-  'src/components/ROICalculator.tsx',
   'src/components/ProjectCard.tsx',
   'src/components/ProjectDetail.tsx',
-  'src/components/Contact.tsx',
-  'src/components/FAQ.tsx',
   'src/components/Projects.tsx',
   'src/components/NotFound.tsx',
   'src/components/FeaturedProjectCard.tsx',

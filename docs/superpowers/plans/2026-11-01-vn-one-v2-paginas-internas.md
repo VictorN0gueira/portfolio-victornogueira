@@ -111,7 +111,8 @@ e2e/page-{servicos,sobre,projetos,projeto,contato,legal,blog,404}.spec.ts (novos
 src/test/frozenFiles.test.ts       (novo)  hash do canal de leads e das 2 páginas legais
 src/test/pageHygiene.test.ts       (novo, Z2) guarda de visual legado
 (remover ao fim) About.tsx, Skills.tsx, Contact.tsx, FAQ.tsx, ROICalculator.tsx, AnimatedText.tsx (se sem uso),
-                 src/lib/reveal.ts, .roi-slider* e glitch-* do index.css
+                 .roi-slider* e glitch-* do index.css
+                 (Contact, FAQ, ROICalculator e src/lib/reveal.ts já saíram no lote C; ver a Task Z1)
 ```
 
 ---
@@ -130,7 +131,7 @@ Máximo de 4 implementadores ao mesmo tempo. Cada lote é um branch (`batch/p3-<
 | 2 (entra quando houver vaga, nunca passando de 4) | **N** 404 | glitch cromado, cursor, scramble extraído | `src/components/NotFound*`, `src/hooks/useScramble*`, `src/styles/motion.css`, `e2e/page-404.spec.ts` |
 | 2 | **B** `/blog` | divisão, cards, filtros, `SiteLayout` | `src/components/BlogPage*`, `src/sections/blog/**`, `src/utils/newsService.ts` (só os `catch`), `src/App.tsx` (corpo), `e2e/{blog.spec.ts,page-blog.spec.ts}` |
 | 2 | **L** legais | `LegalFrame`, sumário, CSS por descendente | `src/pages/legal/**`, `src/App.tsx` (só as 2 linhas dos imports lazy de `/privacidade` e `/lgpd`), `e2e/page-legal.spec.ts` |
-| 3 (sozinho, por último) | **Z** fecha | remover legado, guarda de higiene, docs, esqueletos, gates | `src/index.css`, `src/lib/reveal.ts`, `src/test/pageHygiene.test.ts`, `README.md`, `docs/**`, `src/styles/skeleton.css` |
+| 3 (sozinho, por último) | **Z** fecha | remover legado, guarda de higiene, docs, esqueletos, gates | `src/index.css`, `src/test/pageHygiene.test.ts`, `README.md`, `docs/**`, `src/styles/skeleton.css` |
 
 **Arquivos compartilhados e a regra de cada um**
 - `src/test/copy-rules.test.ts`: o **A** reescreve a lista de arquivos varridos. Depois do merge do A, o **U** troca **uma** linha (`VOICE_OWNER_DECISION`: sai `About.tsx`, entra `src/sections/about/founderVoice.ts`) e o **P** troca **uma** linha (sai `src/data/projects.ts` de `SALES_WORDS_EXEMPT`). Cada um só faz isso, como último commit, depois de rebasear.
@@ -613,9 +614,9 @@ Editar `PrivacyPage.tsx` e `LgpdPage.tsx` **só no layout**: `className`, tags d
 ## Batch Z: fechamento (serial, depois de todos)
 
 ### Task Z1: remover o legado que ficou sem uso
-**Files:** Modify: `src/index.css`. Delete: `src/lib/reveal.ts` (e `reveal.test.tsx` se testar só `revealProps`), `src/components/AnimatedText.tsx` e o teste (se `grep` mostrar zero usos), o ramo compacto de `SectionSkeleton` se zero usos, `public/victor-photo.webp` (junto com a troca do arquivo de amostra em `src/test/nginx-config.test.ts` para um arquivo de `public/founder/`) e a alteração de `repoHygiene` se citar o arquivo.
+**Files:** Modify: `src/index.css`. Já feito no lote C: `src/lib/reveal.ts` foi removido (o `ContactPage` antigo era o último a importá-lo e o teste de exports falhava sem a remoção), e `src/lib/reveal.test.tsx`, que na verdade testava o `SectionSkeleton` (nome errado), virou `src/lib/SectionSkeleton.test.tsx` com `git mv`. Delete: `src/components/AnimatedText.tsx` e o teste (se `grep` mostrar zero usos), o ramo compacto de `SectionSkeleton` se zero usos, `public/victor-photo.webp` (junto com a troca do arquivo de amostra em `src/test/nginx-config.test.ts` para um arquivo de `public/founder/`) e a alteração de `repoHygiene` se citar o arquivo.
 - Em `index.css`: sai o bloco `.roi-slider*`, as variáveis `--roi-slider-*`, e os `@keyframes glitch-1` e `glitch-2`. **Ficam** `.custom-scrollbar` (usado pelo `ServiceSelect` do formulário), o alias `--color-brand-white` e o `@custom-variant dark` (as duas páginas legais congeladas ainda usam `bg-brand-white` e `dark:`), salvo se a Task L5 foi aprovada e feita.
-- [ ] **Step 1 (RED):** `src/test/legacyCss.test.ts` afirma que `index.css` não contém `.roi-slider`, `--roi-slider` nem `glitch-`, e que nenhum arquivo de `src` importa `lib/reveal`. FAIL. **Step 2 (GREEN):** remover. **Step 3:** `npm run lint && npm test && npm run build`. Commit `chore: remove the legacy CSS and helpers the rebuilt pages no longer use`.
+- [ ] **Step 1 (RED):** `src/test/legacyCss.test.ts` afirma que `index.css` não contém `.roi-slider`, `--roi-slider` nem `glitch-`, e que nenhum arquivo de `src` importa `lib/reveal` (esse trecho já passa: o arquivo não existe mais). FAIL no resto. **Step 2 (GREEN):** remover. **Step 3:** `npm run lint && npm test && npm run build`. Commit `chore: remove the legacy CSS and helpers the rebuilt pages no longer use`.
 
 ### Task Z2: guarda de higiene visual
 **Files:** Create: `src/test/pageHygiene.test.ts`
