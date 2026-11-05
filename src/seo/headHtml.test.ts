@@ -308,6 +308,15 @@ describe('applyNoscriptToTemplate', () => {
     expect(result.indexOf('<noscript>x</noscript>')).toBeLessThan(result.indexOf('</body>'));
   });
 
+  it('leaves one noscript block when it is applied twice', () => {
+    const once = applyNoscriptToTemplate(TEMPLATE, '<noscript>one</noscript>');
+    const twice = applyNoscriptToTemplate(once, '<noscript>two</noscript>');
+
+    expect(twice.match(/<noscript>/g)).toHaveLength(1);
+    expect(twice).toContain('<noscript>two</noscript>');
+    expect(twice).not.toContain('one');
+  });
+
   it('fails loudly when the template has no body end', () => {
     expect(() => applyNoscriptToTemplate('<html></html>', '<noscript></noscript>')).toThrow(/body/);
   });

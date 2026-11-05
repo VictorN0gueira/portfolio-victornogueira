@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { REMOVED_PROJECT_SLUGS } from '../data/projects';
 import { ROUTE_METAS, type RouteMeta } from './routeMeta';
 import { renderSitemap } from './sitemap';
 
@@ -29,6 +30,14 @@ describe('renderSitemap', () => {
     expect(LOCATIONS(xml)).toHaveLength(expected);
     expect(LOCATIONS(xml)).not.toContain('https://vnone.com.br/blog');
     expect(xml).not.toContain('/blog');
+  });
+
+  it('lists no route that is out of the index and no removed project, whatever the data holds', () => {
+    const locations = LOCATIONS(xml);
+
+    for (const meta of ROUTE_METAS.filter((entry) => !entry.isIndexable)) expect(locations, meta.path).not.toContain(`https://vnone.com.br${meta.path}`);
+    for (const slug of REMOVED_PROJECT_SLUGS) expect(xml, slug).not.toContain(slug);
+    expect(ROUTE_METAS.some((meta) => !meta.isIndexable)).toBe(true);
   });
 
   it('writes an absolute url per route, with no trailing slash except the home', () => {

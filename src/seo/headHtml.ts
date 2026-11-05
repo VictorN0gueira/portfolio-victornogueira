@@ -134,9 +134,15 @@ export function renderNoscript(meta: RouteMeta, links: readonly RouteCrumb[]): s
   return `<noscript><h1>${escapeHtml(topicOf(meta))}</h1><p>${escapeHtml(meta.description)}</p>${list}</noscript>`;
 }
 
-/** Puts a block at the end of the body, after the root and the script. Fails loudly when the template has no body end. */
+const NOSCRIPT_BLOCK = /[ \t]*<noscript>[\s\S]*?<\/noscript>\n?/g;
+
+/**
+ * Puts a block at the end of the body, after the root and the script, in place of any noscript block the template has (so
+ * applying it twice leaves one). Fails loudly when the template has no body end.
+ */
 export function applyNoscriptToTemplate(template: string, noscript: string): string {
-  const end = template.lastIndexOf(BODY_END);
+  const clean = template.replace(NOSCRIPT_BLOCK, '');
+  const end = clean.lastIndexOf(BODY_END);
   if (end === -1) throw new Error(`the template has no ${BODY_END}`);
-  return `${template.slice(0, end)}  ${noscript}\n  ${template.slice(end)}`;
+  return `${clean.slice(0, end)}  ${noscript}\n  ${clean.slice(end)}`;
 }
