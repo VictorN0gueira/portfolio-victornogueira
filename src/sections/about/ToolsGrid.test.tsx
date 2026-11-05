@@ -11,7 +11,7 @@ const ACCENT = '#00e5a0';
 const ALL_TOOLS = toolCategories.flatMap((category) => category.tools);
 
 /** The cell of a tool, found by the name it shows (a list item takes no name from its content). */
-const itemOf = (name: string): HTMLElement => screen.getByText(name).closest('li') as HTMLElement;
+const tileOf = (name: string): HTMLElement => screen.getByText(name).closest('li') as HTMLElement;
 
 describe('toolMarks', () => {
   it('has a mark for every tool: a path from the 24 by 24 box of Simple Icons and the brand color', () => {
@@ -87,7 +87,7 @@ describe('ToolsGrid', () => {
       expect(mark).toHaveAttribute('fill', 'currentColor');
     }
     for (const tool of ALL_TOOLS) {
-      expect(itemOf(tool.name)).toBeInTheDocument();
+      expect(tileOf(tool.name)).toBeInTheDocument();
     }
   });
 
@@ -95,7 +95,7 @@ describe('ToolsGrid', () => {
     renderWithProviders(<ToolsGrid />);
 
     for (const tool of ALL_TOOLS) {
-      const item = itemOf(tool.name);
+      const item = tileOf(tool.name);
 
       expect(item.querySelector('svg path')).toHaveAttribute('d', toolMarks[tool.id].path);
     }
@@ -105,7 +105,7 @@ describe('ToolsGrid', () => {
     renderWithProviders(<ToolsGrid />);
 
     for (const tool of ALL_TOOLS) {
-      const item = itemOf(tool.name);
+      const item = tileOf(tool.name);
       const mark = item.querySelector('svg') as SVGElement;
 
       expect(item, tool.name).toHaveAttribute('tabindex', '0');

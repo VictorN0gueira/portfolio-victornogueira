@@ -40,7 +40,7 @@ export async function preloadHomeSections(skip: readonly number[] = []): Promise
  * Renders `ui` once, waits until `isReady` stops throwing, and unmounts it. The first render of a big tree in a file pays for
  * the first run of every component (and, in a coverage run, of the instrumented code): done here, in a hook with a generous
  * timeout, the first test of the file is as fast as the others and never fails on a loaded machine. Call it after
- * preloadHomeSections or preloadAboutSections, so only rendering is left to warm.
+ * preloadHomeSections, so only rendering is left to warm.
  * The tree is unmounted whether the page got ready or the wait ran out, so a failed warm up leaves nothing in the document.
  */
 export async function warmUpRender(ui: ReactElement, isReady: () => void, timeoutMs = PRELOAD_TIMEOUT_MS): Promise<void> {
@@ -50,9 +50,4 @@ export async function warmUpRender(ui: ReactElement, isReady: () => void, timeou
   } finally {
     view.unmount();
   }
-}
-
-/** Loads the lazy chunks of AboutPage (the skills). */
-export async function preloadAboutSections(): Promise<void> {
-  await import('../components/Skills');
 }

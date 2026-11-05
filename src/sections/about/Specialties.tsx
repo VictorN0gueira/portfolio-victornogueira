@@ -16,6 +16,10 @@ const ICONS: Record<(typeof founderVoice.specialties)[number]['id'], Icon> = {
   '03': Globe,
 };
 const CARD_STAGGER_S = 0.1;
+// The title is sized from the width of its own card (cqi, the @container wrapper around it), at most 1.75rem: the longest
+// word, "Desenvolvimento", is about 7.7em wide, so 11cqi keeps it whole in the three columns of md and with the large font.
+// It replaces the font size of the size m heading.
+const TITLE_CLASSES = 'text-[length:clamp(1.125rem,11cqi,1.75rem)]';
 const LIST_CLASSES = 'mt-10 grid grid-cols-1 gap-4 md:mt-14 md:grid-cols-3 md:gap-5';
 const CARD_CLASSES =
   'flex w-full min-w-0 flex-col rounded-card border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6';
@@ -53,9 +57,11 @@ export function Specialties() {
                           {id}
                         </span>
                       </div>
-                      <Heading as="h3" size="m" className="mt-8">
-                        {title}
-                      </Heading>
+                      <div className="@container mt-8">
+                        <Heading as="h3" size="m" className={TITLE_CLASSES}>
+                          {title}
+                        </Heading>
+                      </div>
                       <p className="mt-3 grow text-pretty text-base text-vn-gray-dark">{desc}</p>
                       <span aria-hidden="true" className="mt-6 block h-[3px] bg-vn-ink" />
                     </SpotlightCard>

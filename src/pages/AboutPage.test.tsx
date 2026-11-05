@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { aboutCopy } from '../data/aboutCopy';
 import { processSteps } from '../data/process';
-import { WARM_UP_HOOK_TIMEOUT_MS, preloadAboutSections, warmUpRender } from '../test/lazyPages';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../test/scroll';
@@ -12,11 +12,6 @@ const METHOD_HEADING = 'Do primeiro papo ao fluxo rodando';
 describe('AboutPage', () => {
   let scrollIntoView: ReturnType<typeof stubScrollIntoViewEverywhere>;
 
-  beforeAll(async () => {
-    await preloadAboutSections();
-    await warmUpRender(<AboutPage />, () => expect(document.getElementById('metodo')).not.toBeNull());
-  }, WARM_UP_HOOK_TIMEOUT_MS);
-
   beforeEach(() => {
     stubMatchMedia();
     // jsdom has no scrollIntoView. It is put back to nothing after every test, so a failing one cannot leak it.
@@ -25,10 +20,10 @@ describe('AboutPage', () => {
 
   afterEach(removeScrollIntoViewStub);
 
-  it('shows the method section, id metodo, where the old process section was', async () => {
+  it('shows the method section, id metodo, where the old process section was', () => {
     const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
 
-    const method = await screen.findByRole('region', { name: METHOD_HEADING });
+    const method = screen.getByRole('region', { name: METHOD_HEADING });
 
     expect(method).toHaveAttribute('id', 'metodo');
     expect(method.tagName).toBe('SECTION');
@@ -38,9 +33,8 @@ describe('AboutPage', () => {
     );
   });
 
-  it('leaves no markup of the old process section behind', async () => {
+  it('leaves no markup of the old process section behind', () => {
     const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
-    await screen.findByRole('region', { name: METHOD_HEADING });
 
     expect(container.querySelector('#processo')).toBeNull();
     expect(screen.queryByText('Metodologia')).toBeNull();
@@ -55,48 +49,77 @@ describe('AboutPage', () => {
     expect(scrollIntoView.mock.contexts[0]).toBe(document.getElementById('metodo'));
   });
 
-  it('does not scroll anywhere when the address has no hash', async () => {
+  it('does not scroll anywhere when the address has no hash', () => {
     renderWithProviders(<AboutPage />, { route: '/sobre' });
-    await screen.findByRole('region', { name: METHOD_HEADING });
 
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
-  it('has one h1, the Sobre mim heading, and the other sections stay below it', async () => {
-    renderWithProviders(<AboutPage />, { route: '/sobre' });
-    await screen.findByRole('region', { name: METHOD_HEADING });
+  it('has one h1, "Sobre mim", and it is the first heading of the page', () => {
+    const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
 
     const titles = screen.getAllByRole('heading', { level: 1 });
+
     expect(titles.map((title) => title.textContent)).toEqual(['Sobre mim']);
-    expect(titles[0]).toHaveClass('text-4xl', 'md:text-6xl');
+    expect(container.querySelector('h1, h2, h3')).toBe(titles[0]);
   });
 
-  it('keeps the rest of the page: the closing call to action still links to /contato', async () => {
+  it('puts the sections in order: the founder, the company, the specialties, the method, the tools and the closing band', () => {
     renderWithProviders(<AboutPage />, { route: '/sobre' });
-    await screen.findByRole('region', { name: METHOD_HEADING });
 
-    expect(screen.getByRole('link', { name: /Vamos conversar/ })).toHaveAttribute('href', '/contato');
+    const titles = screen.getAllByRole('heading', { level: 1 }).concat(screen.getAllByRole('heading', { level: 2 }));
+    const order = titles.map((title) => title.textContent);
+
+    expect(order).toEqual([
+      'Sobre mim',
+      'A VN One',
+      'Minhas Especialidades',
+      METHOD_HEADING,
+      aboutCopy.tools.heading,
+      aboutCopy.cta.heading,
+    ]);
   });
 
-  it('keeps the closing call to action text readable: 18px light text on the page white needs a dark gray, not zinc 500 (4.3 to 1)', async () => {
+  it('closes with a call to action that links to /contato, and a WhatsApp button next to it', () => {
     renderWithProviders(<AboutPage />, { route: '/sobre' });
-    await screen.findByRole('region', { name: METHOD_HEADING });
 
-    const line = screen.getByText(/Uma conversa de 30 minutos/);
-
-    expect(line.className).not.toMatch(/zinc-[3-5]00/);
-    expect(line).toHaveClass('text-vn-gray-dark');
+    expect(screen.getByRole('link', { name: aboutCopy.cta.label })).toHaveAttribute('href', '/contato');
+    expect(screen.getByRole('link', { name: 'Falar no WhatsApp' }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/5581984451243\?text=/);
   });
 
-  it('never jumps a heading level on the way down: h1, then h2, then h3 (axe heading-order)', async () => {
+  it('keeps the closing text readable on black: light gray, never a mid gray', () => {
+    renderWithProviders(<AboutPage />, { route: '/sobre' });
+
+    const line = screen.getByText(aboutCopy.cta.body);
+
+    expect(line.className).not.toMatch(/zinc|gray-mid/);
+    expect(line).toHaveClass('text-vn-gray-light');
+  });
+
+  it('never jumps a heading level on the way down: h1, then h2, then h3 (axe heading-order)', () => {
     const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
-    await screen.findByRole('region', { name: METHOD_HEADING });
 
     const levels = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6')).map((heading) => Number(heading.tagName[1]));
 
     expect(levels[0]).toBe(1);
     levels.slice(1).forEach((level, index) => {
-      expect(level - levels[index], 'heading ' + (index + 2) + ' of ' + levels.join(",")).toBeLessThanOrEqual(1);
+      expect(level - levels[index], `heading ${index + 2} of ${levels.join(',')}`).toBeLessThanOrEqual(1);
     });
+  });
+
+  it('has no italic, no dark: variant, no zinc and no "chatbot" anywhere on the page', () => {
+    const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
+
+    expect(container.innerHTML).not.toMatch(/italic|dark:|zinc/);
+    expect(document.body.textContent).not.toMatch(/chat[\s-]?bot/i);
+  });
+
+  it('has no more than one accent element in a section: the cursor of the closing band is the only one', () => {
+    const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
+
+    for (const section of container.querySelectorAll('section')) {
+      expect(section.querySelectorAll('.bg-vn-accent').length, section.getAttribute('aria-labelledby') ?? '').toBeLessThanOrEqual(1);
+    }
+    expect(container.querySelectorAll('.bg-vn-accent')).toHaveLength(1);
   });
 });

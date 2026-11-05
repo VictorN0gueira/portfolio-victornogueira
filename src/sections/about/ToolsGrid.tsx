@@ -13,10 +13,12 @@ const { tools: copy } = aboutCopy;
 const TILE_STAGGER_S = 0.04;
 
 // The categories stack on a phone and a tablet and sit side by side from lg. Inside each one the tiles make two
-// columns; with an odd number the last tile takes the whole row, so no cell is ever empty. The grid draws the lines of
-// its top and left edges and each tile closes itself with the line of its right and bottom edges.
-const CATEGORIES_CLASSES = 'mt-12 grid grid-cols-1 gap-12 md:mt-14 lg:grid-cols-3 lg:gap-8';
-const LIST_CLASSES = 'mt-6 grid grid-cols-2 border-t border-l border-vn-gray-light';
+// columns; with an odd number the last tile takes the whole row, so no cell is ever empty. From lg each category spans
+// the same three rows (title, line, tiles) through a subgrid, so the tiles of the three columns start at the same height
+// whatever the line above them wraps to. The grid draws the lines of its top and left edges and each tile closes itself
+// with the line of its right and bottom edges.
+const CATEGORIES_CLASSES = 'mt-12 grid grid-cols-1 gap-12 md:mt-14 lg:grid-cols-3 lg:grid-rows-[auto_auto_1fr] lg:gap-x-8 lg:gap-y-0';
+const LIST_CLASSES = 'mt-6 grid lg:self-start grid-cols-2 border-t border-l border-vn-gray-light';
 // The tile is focusable on purpose: the brand color a logo takes on hover has to be reachable by keyboard and by tap.
 // The ring is drawn above the neighbours (z-10, local stacking) so a later tile does not cover it.
 const TILE_CLASSES =
@@ -65,7 +67,7 @@ export function ToolsGrid() {
           {toolCategories.map((category, categoryPosition) => {
             const titleId = `${baseId}-${categoryPosition}`;
             return (
-              <RevealGroup key={category.title} stagger={TILE_STAGGER_S} className="min-w-0">
+              <RevealGroup key={category.title} stagger={TILE_STAGGER_S} className="min-w-0 lg:row-span-3 lg:grid lg:grid-rows-subgrid">
                 <Heading as="h3" size="m" id={titleId}>
                   {category.title}
                 </Heading>
