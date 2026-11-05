@@ -375,7 +375,9 @@ test.describe('the scroll padding follows the tab', () => {
     await page.reload();
     await expect(trigger(page)).toBeVisible();
     const high = await settled(page);
-    expect((await padding()).top, 'the top band reaches the bottom of the tab').toBeGreaterThanOrEqual(high.bottom);
+    expect((await padding()).top, 'at rest the top padding is the default one, so anchors land where they always do').toBe(base.top);
+    await page.keyboard.press('Tab');
+    expect((await padding()).top, 'while the keyboard moves the focus the top band reaches the bottom of the tab').toBeGreaterThanOrEqual(high.bottom);
 
     await page.evaluate((key) => window.localStorage.removeItem(key), TAB_POSITION_STORAGE_KEY);
     await page.reload();
