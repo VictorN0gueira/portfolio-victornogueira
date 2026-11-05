@@ -150,3 +150,76 @@ describe('the workflows', () => {
     for (const file of files) expect(read(file)).not.toMatch(/secrets\./);
   });
 });
+
+describe('the Dependabot automation', () => {
+  const dependabot = read('.github/dependabot.yml');
+  const workflow = read('.github/workflows/ci.yml');
+  const jobStart = workflow.indexOf('\n  dependabot-merge:\n');
+  // The job is the last one in the file: its block runs to the end.
+  const job = workflow.slice(jobStart);
+
+  it('groups the minor and patch updates of npm and of the actions, and never groups a major', () => {
+    expect(dependabot.match(/update-types: \["minor", "patch"\]/g)).toHaveLength(4);
+    expect(code('.github/dependabot.yml').join('\n')).not.toMatch(/major/);
+    for (const group of ['github-actions', 'react', 'production-dependencies', 'development-dependencies']) {
+      expect(dependabot, group).toMatch(new RegExp(`\\n {6}${group}:\\n`));
+    }
+    expect(dependabot.match(/interval: weekly/g)).toHaveLength(2);
+  });
+
+  it('moves react and react-dom together, in a group of their own that comes before the others', () => {
+    expect(dependabot).toMatch(/\n {6}react:\n\s+patterns: \["react", "react-dom"\]/);
+    expect(dependabot.indexOf('      react:')).toBeLessThan(dependabot.indexOf('production-dependencies:'));
+  });
+
+  it('waits out a cooldown before proposing a release, for both ecosystems', () => {
+    expect(dependabot.match(/cooldown:\n\s+default-days: 7/g)).toHaveLength(2);
+  });
+
+  it('adds one job, the last, that runs only for pull requests Dependabot opened', () => {
+    expect(jobStart).toBeGreaterThan(-1);
+    expect(workflow.match(/\n {2}dependabot-merge:\n/g)).toHaveLength(1);
+    expect(job).toMatch(/\n {4}if: github\.event_name == 'pull_request' && github\.actor == 'dependabot\[bot\]'\n/);
+    // No other job key (two spaces of indent) after it.
+    expect(job.slice(1)).not.toMatch(/\n {2}(?!dependabot-merge)[\w-]+:\n/);
+  });
+
+  it('waits for verify and image, so a failed check means no merge', () => {
+    expect(job).toMatch(/\n {4}needs: \[verify, image\]\n/);
+  });
+
+  it('holds the write permissions on that job alone: the workflow default stays read only', () => {
+    expect(job).toMatch(/\n {4}permissions:\n {6}contents: write\n {6}pull-requests: write\n/);
+    expect(workflow.slice(0, workflow.indexOf('\njobs:\n'))).toMatch(/permissions:\n {2}contents: read\n/);
+    expect(workflow.match(/permissions:/g)).toHaveLength(2);
+    expect(workflow.match(/: write/g)).toHaveLength(2);
+  });
+
+  it('uses only the default token and pins the one action it adds by commit SHA', () => {
+    expect(workflow).not.toMatch(/secrets\./);
+    expect(job).toMatch(/GH_TOKEN: \$\{\{ github\.token \}\}/);
+    expect(job).toMatch(/uses: dependabot\/fetch-metadata@[0-9a-f]{40} # v\d+\.\d+\.\d+\n/);
+    expect(job).not.toMatch(/actions\/checkout/);
+  });
+
+  it('merges only a patch or a minor update, squashed, and only the commit CI checked', () => {
+    const allCode = code('.github/workflows/ci.yml').join('\n');
+    const jobCode = allCode.slice(allCode.indexOf('dependabot-merge:'));
+    expect(job).toMatch(
+      /if: steps\.metadata\.outputs\.update-type == 'version-update:semver-patch' \|\| steps\.metadata\.outputs\.update-type == 'version-update:semver-minor'\n/,
+    );
+    expect(jobCode.match(/gh pr merge/g)).toHaveLength(1);
+    expect(jobCode).toContain('gh pr merge --squash --match-head-commit "$HEAD_SHA" "$PR_URL"');
+  });
+
+  it('leaves a major update open', () => {
+    const majorStep = job.slice(job.indexOf("update-type == 'version-update:semver-major'"));
+    expect(majorStep).not.toMatch(/gh pr merge/);
+    expect(majorStep).toMatch(/never merged by itself/);
+  });
+
+  it('passes the metadata through env, never through the script text', () => {
+    const script = job.slice(job.indexOf('run: |'), job.indexOf('- name: Leave a major update'));
+    expect(script).not.toMatch(/\$\{\{/);
+  });
+});

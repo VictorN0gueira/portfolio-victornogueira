@@ -106,3 +106,52 @@ jobs:
       - name: Stop the container
         if: always()
         run: docker rm -f vnone
+
+  # Merges a Dependabot pull request by itself, so a patch or minor update never waits for a person. It runs only for
+  # pull requests Dependabot opened, and only after verify and image passed (a failed job above skips this one, and a
+  # skipped merge leaves the pull request open). A major update is left open for a person to read. Nothing here is
+  # checked out or built: the job runs no code of the pull request, it only reads the metadata Dependabot wrote and
+  # calls the GitHub API. The only token is the default GITHUB_TOKEN, raised to write for this job alone.
+  dependabot-merge:
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
+    needs: [verify, image]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Read the update type
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+
+      # An unknown update type (empty output) matches neither condition and is left open.
+      - name: Merge a patch or minor update
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          MAINTAINER_CHANGES: ${{ steps.metadata.outputs.maintainer-changes }}
+        run: |
+          set -euo pipefail
+          # Dependabot flags a package whose maintainers changed. That is a reason for a person to look.
+          if [ "$MAINTAINER_CHANGES" = "true" ]; then
+            echo "::warning::The maintainers of a dependency changed. Left open for a person to review."
+            exit 0
+          fi
+          # CI tested the pull request as it was. When main moved since, the merge would be a result nobody tested:
+          # ask Dependabot to rebase (that runs CI again, and this job merges after it) instead of merging.
+          behind=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BASE_REF...$HEAD_SHA" --jq .behind_by)
+          if [ "$behind" != "0" ]; then
+            echo "::warning::main moved $behind commits ahead of this branch. Asking Dependabot to rebase."
+            gh pr comment "$PR_URL" --body "@dependabot rebase"
+            exit 0
+          fi
+          # --match-head-commit refuses the merge if the branch changed after the checks that just passed.
+          gh pr merge --squash --match-head-commit "$HEAD_SHA" "$PR_URL"
+
+      - name: Leave a major update for a person
+        if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+        run: echo "::notice::A major update is never merged by itself. Read the release notes and merge it by hand."
