@@ -22,27 +22,33 @@ export function Projects() {
   return (
     <Section tone="white">
       <Container>
-        <RevealGroup as="ul" className={FEATURED_LIST_CLASSES}>
-          {featuredProjects.map((project, index) => (
-            <li key={project.slug} className="min-w-0">
-              <RevealItem>
-                <FeaturedProjectCard project={project} priority={index === 0} />
-              </RevealItem>
-            </li>
-          ))}
-        </RevealGroup>
-
-        <RevealGroup as="ul" className={REGULAR_LIST_CLASSES}>
-          {regularProjects.map((project, index) => {
-            const { cellClassName, imageSizes } = cardLayout(index, regularProjects.length);
-            return (
-              <li key={project.slug} className={`min-w-0 ${cellClassName}`}>
-                <RevealItem className="h-full">
-                  <ProjectCard project={project} imageSizes={imageSizes} />
+        {/* The ul keeps role="list" (list-none makes Safari drop the semantics) and sits inside the group, because the
+            group renders a div and a li may only have a ul for parent. */}
+        <RevealGroup>
+          <ul role="list" className={FEATURED_LIST_CLASSES}>
+            {featuredProjects.map((project, index) => (
+              <li key={project.slug} className="min-w-0">
+                <RevealItem>
+                  <FeaturedProjectCard project={project} priority={index === 0} />
                 </RevealItem>
               </li>
-            );
-          })}
+            ))}
+          </ul>
+        </RevealGroup>
+
+        <RevealGroup>
+          <ul role="list" className={REGULAR_LIST_CLASSES}>
+            {regularProjects.map((project, index) => {
+              const { cellClassName, imageSizes } = cardLayout(index, regularProjects.length);
+              return (
+                <li key={project.slug} className={`min-w-0 ${cellClassName}`}>
+                  <RevealItem className="h-full">
+                    <ProjectCard project={project} imageSizes={imageSizes} />
+                  </RevealItem>
+                </li>
+              );
+            })}
+          </ul>
         </RevealGroup>
       </Container>
     </Section>

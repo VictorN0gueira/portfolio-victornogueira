@@ -62,6 +62,17 @@ describe('ProjectsPage', () => {
     expect(regular.querySelectorAll(':scope > li')).toHaveLength(5);
   });
 
+  it('keeps role="list" on both lists of projects, because list-none makes Safari drop the list semantics', () => {
+    const container = renderPage();
+
+    const lists = [...container.querySelectorAll('ul')].filter((list) =>
+      list.querySelector(`:scope > li a[href^="${CASE_HREF}"]`),
+    );
+
+    expect(lists).toHaveLength(2);
+    for (const list of lists) expect(list).toHaveAttribute('role', 'list');
+  });
+
   it('goes h1, then every project title as an h2, then the closing h2, with no level skipped', () => {
     renderPage();
 
