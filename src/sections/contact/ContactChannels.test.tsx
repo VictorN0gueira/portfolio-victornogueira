@@ -9,12 +9,12 @@ import { renderWithProviders } from '../../test/render';
 import { ContactChannels } from './ContactChannels';
 
 describe('ContactChannels', () => {
-  it('lists the e-mail, the WhatsApp and the place, each with its label', () => {
+  it('lists the place first (not a control), then the e-mail and the WhatsApp, each with its label', () => {
     const { container } = renderWithProviders(<ContactChannels />);
     const terms = Array.from(container.querySelectorAll('dt')).map((term) => term.textContent);
 
     expect(container.querySelector('dl')).not.toBeNull();
-    expect(terms).toEqual([contactCopy.channels.email, contactCopy.channels.whatsapp, contactCopy.channels.location]);
+    expect(terms).toEqual([contactCopy.channels.location, contactCopy.channels.email, contactCopy.channels.whatsapp]);
     expect(screen.getByText(contactCopy.channels.locationValue)).toBeInTheDocument();
   });
 

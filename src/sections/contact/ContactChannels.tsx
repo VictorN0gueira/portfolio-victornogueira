@@ -11,7 +11,10 @@ const VALUE_CLASSES = '[overflow-wrap:anywhere] text-lg font-medium text-vn-ink 
 const LINK_CLASSES = `${VALUE_CLASSES} inline-flex min-h-11 items-center gap-3 rounded-md underline-offset-4 hover:underline vn-focus-ring-ink`;
 
 /**
- * The three ways to reach VN One, as a description list on a white card: the e-mail, the WhatsApp and the place. The
+ * The three ways to reach VN One, as a description list on a white card: the place, the e-mail and the WhatsApp. The place
+ * (not a control) comes first on purpose: stacked under the lead of a phone, the first link would sit in the band that the
+ * accessibility tab claims when the visitor parks it at the middle of the left edge, and a link at the very top of the page
+ * cannot be scrolled out of that band (see e2e/a11y-widget-focus.spec.ts). The
  * address and the number come from lib/constants, never from this file. Meant for the aside of the PageHero (a light
  * surface), so the icon is ink and the focus ring is the ink one.
  */
@@ -23,6 +26,10 @@ export function ContactChannels() {
     <div className="rounded-card border border-vn-gray-light bg-vn-white p-5 sm:p-6 md:p-8">
       <NewTabHint id={newTabHintId} />
       <dl className="m-0">
+        <div className={ROW_CLASSES}>
+          <dt className={LABEL_CLASSES}>{location}</dt>
+          <dd className={`${VALUE_CLASSES} m-0 min-h-11 content-center`}>{locationValue}</dd>
+        </div>
         <div className={ROW_CLASSES}>
           <dt className={LABEL_CLASSES}>{email}</dt>
           <dd className="m-0">
@@ -45,10 +52,6 @@ export function ContactChannels() {
               <BrandIcon id="whatsapp" className="size-6 shrink-0" />
             </a>
           </dd>
-        </div>
-        <div className={ROW_CLASSES}>
-          <dt className={LABEL_CLASSES}>{location}</dt>
-          <dd className={`${VALUE_CLASSES} m-0 min-h-11 content-center`}>{locationValue}</dd>
         </div>
       </dl>
     </div>
