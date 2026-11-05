@@ -3,7 +3,8 @@
 // Usage: npm run founder-photo
 //
 // The source is scripts/assets/victor-photo.jpg (982x1024), which is not part of the build. Nothing is fetched. The
-// widths are narrower than the source on purpose: the script never enlarges a photo. The output is read by
+// widths are narrower than the source on purpose: the script never enlarges a photo. It applies the EXIF orientation
+// (rotate() with no argument), so a photo shot sideways is not written sideways. The output is read by
 // src/sections/about/founderPhotoSource.ts, which lists the same widths.
 
 import { mkdirSync } from 'node:fs';
@@ -33,7 +34,7 @@ export function founderPhotoPlan() {
 async function main() {
   mkdirSync(resolve(ROOT, OUTPUT_DIR), { recursive: true });
   for (const { width, format, file } of founderPhotoPlan()) {
-    const image = sharp(resolve(ROOT, SOURCE)).resize({ width, withoutEnlargement: true });
+    const image = sharp(resolve(ROOT, SOURCE)).rotate().resize({ width, withoutEnlargement: true });
     const info = await ENCODERS[format](image).toFile(resolve(ROOT, file));
     process.stdout.write(`${file}: ${info.width}x${info.height}  ${(info.size / 1024).toFixed(1)} KB\n`);
   }

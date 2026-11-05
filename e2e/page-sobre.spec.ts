@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { aboutCopy } from '../src/data/aboutCopy';
 import { toolCategories } from '../src/data/tools';
+import { FOUNDER_PHOTO } from '../src/sections/about/founderPhotoSource';
 import { toolMarks } from '../src/sections/about/toolMarks';
 import { PAGE_LOAD_TIMEOUT_MS, brokenWordsIn, enableLargeFont, measureOverflow } from './homeSupport';
 import { describePageContract, openPage, type PageContract } from './pageContract';
@@ -68,7 +69,7 @@ test.describe('/sobre', () => {
 
   test('loads the photo of the founder in a modern format, with a real size', async ({ page }) => {
     await page.goto('/sobre');
-    const photo = page.getByRole('img', { name: 'Victor Nogueira' });
+    const photo = page.getByRole('img', { name: FOUNDER_PHOTO.alt });
     await expect(photo).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
     await photo.scrollIntoViewIfNeeded();
 

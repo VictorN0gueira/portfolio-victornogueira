@@ -4,6 +4,7 @@ import { aboutCopy } from '../data/aboutCopy';
 import { processSteps } from '../data/process';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
+import { findAccentElements } from '../test/accent';
 import { removeScrollIntoViewStub, stubScrollIntoViewEverywhere } from '../test/scroll';
 import AboutPage from './AboutPage';
 
@@ -120,15 +121,15 @@ describe('AboutPage', () => {
     expect(document.body.textContent).not.toMatch(/chat[\s-]?bot/i);
   });
 
-  it('has no more than one accent element in a section: the cursor of the closing band is the only one', () => {
+  it('has no more than one accent element in a section, in any attribute (background, text, border, fill): the cursor of the closing band is the only one', () => {
     const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
 
-    for (const section of container.querySelectorAll('section')) {
-      expect(
-        section.querySelectorAll('.bg-vn-accent').length,
-        section.getAttribute('aria-labelledby') ?? '',
-      ).toBeLessThanOrEqual(1);
+    for (const section of container.querySelectorAll<HTMLElement>('section')) {
+      expect(findAccentElements(section).length, section.getAttribute('aria-labelledby') ?? '').toBeLessThanOrEqual(1);
     }
-    expect(container.querySelectorAll('.bg-vn-accent')).toHaveLength(1);
+    const accents = findAccentElements(container);
+
+    expect(accents).toHaveLength(1);
+    expect(accents[0].closest('section')).toHaveAttribute('data-tone', 'black');
   });
 });

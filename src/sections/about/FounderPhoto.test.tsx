@@ -4,6 +4,25 @@ import { aboutCopy } from '../../data/aboutCopy';
 import { FounderPhoto } from './FounderPhoto';
 import { FOUNDER_PHOTO } from './founderPhotoSource';
 
+const ALT = 'Retrato de Victor Nogueira';
+const REM_PX = 16;
+
+/** The width of the slot for a viewport width, from a sizes attribute made of (min-width: Npx) lengths and a last length. */
+function slotWidth(sizes: string, viewport: number): number {
+  const toPx = (length: string): number =>
+    length.endsWith('vw')
+      ? (parseFloat(length) * viewport) / 100
+      : length.endsWith('rem')
+        ? parseFloat(length) * REM_PX
+        : parseFloat(length);
+  for (const entry of sizes.split(',').map((item) => item.trim())) {
+    const media = /^\(min-width:\s*(\d+)px\)\s+(\S+)$/.exec(entry);
+    if (!media) return toPx(entry);
+    if (viewport >= Number(media[1])) return toPx(media[2]);
+  }
+  throw new Error(`no length in sizes: ${sizes}`);
+}
+
 describe('FounderPhoto', () => {
   it('is a figure with the photo and a caption that names the founder and the company', () => {
     render(<FounderPhoto />);
@@ -19,7 +38,7 @@ describe('FounderPhoto', () => {
     const { container } = render(<FounderPhoto />);
 
     const source = container.querySelector('picture > source');
-    const image = screen.getByRole('img', { name: 'Victor Nogueira' });
+    const image = screen.getByRole('img', { name: ALT });
 
     expect(source).toHaveAttribute('type', 'image/avif');
     expect(source).toHaveAttribute('srcset', FOUNDER_PHOTO.avifSrcSet);
@@ -33,18 +52,41 @@ describe('FounderPhoto', () => {
   it('is the picture of the first fold of /sobre: eager and high priority, decoded off the main thread', () => {
     render(<FounderPhoto />);
 
-    const image = screen.getByRole('img', { name: 'Victor Nogueira' });
+    const image = screen.getByRole('img', { name: ALT });
 
     expect(image).toHaveAttribute('loading', 'eager');
     expect(image).toHaveAttribute('fetchpriority', 'high');
     expect(image).toHaveAttribute('decoding', 'async');
   });
 
-  it('gives the sizes of the column the photo sits in, so the browser does not pick the big file for a phone', () => {
+  it('maps a phone to the 480 file on a normal screen and to the 960 file only on a dense one', () => {
     const { container } = render(<FounderPhoto />);
+    const sizes = container.querySelector('source')?.getAttribute('sizes') ?? '';
 
-    expect(container.querySelector('source')).toHaveAttribute('sizes');
-    expect(screen.getByRole('img', { name: 'Victor Nogueira' })).toHaveAttribute('sizes');
+    expect(screen.getByRole('img', { name: ALT })).toHaveAttribute('sizes', sizes);
+    // What a browser does: the slot width the first matching condition gives, times the density, and the smallest file
+    // that is at least that wide.
+    const pickedFile = (viewport: number, density: number): number => {
+      const slot = slotWidth(sizes, viewport);
+      return FOUNDER_PHOTO.sizes.find((width) => width >= slot * density) ?? Math.max(...FOUNDER_PHOTO.sizes);
+    };
+
+    expect(pickedFile(320, 1)).toBe(480);
+    expect(pickedFile(390, 1)).toBe(480);
+    expect(pickedFile(390, 2)).toBe(960);
+    expect(pickedFile(768, 1)).toBe(480);
+    expect(pickedFile(1440, 1)).toBe(480);
+    expect(pickedFile(1440, 2)).toBe(960);
+  });
+
+  it('describes the photo as a portrait, so the alt does not repeat the caption right below it', () => {
+    render(<FounderPhoto />);
+
+    const image = screen.getByRole('img', { name: ALT });
+
+    expect(FOUNDER_PHOTO.alt).toBe(ALT);
+    expect(image.getAttribute('alt')).not.toBe(aboutCopy.photoCaption);
+    expect(aboutCopy.photoCaption).not.toContain(ALT);
   });
 
   it('has no color filter and no hover effect: a grayscale that clears on hover does not exist on touch', () => {

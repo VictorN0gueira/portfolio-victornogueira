@@ -43,7 +43,11 @@ export async function preloadHomeSections(skip: readonly number[] = []): Promise
  * preloadHomeSections, so only rendering is left to warm.
  * The tree is unmounted whether the page got ready or the wait ran out, so a failed warm up leaves nothing in the document.
  */
-export async function warmUpRender(ui: ReactElement, isReady: () => void, timeoutMs = PRELOAD_TIMEOUT_MS): Promise<void> {
+export async function warmUpRender(
+  ui: ReactElement,
+  isReady: () => void,
+  timeoutMs = PRELOAD_TIMEOUT_MS,
+): Promise<void> {
   const view = renderWithProviders(ui);
   try {
     await waitFor(isReady, { timeout: timeoutMs });

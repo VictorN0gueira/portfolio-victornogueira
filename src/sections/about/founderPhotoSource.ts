@@ -13,5 +13,5 @@ export const FOUNDER_PHOTO = {
   avifSrcSet: srcSetOf('avif'),
   webpSrcSet: srcSetOf('webp'),
   fallbackSrc: assetUrl('/founder/victor-960.webp'),
-  alt: 'Victor Nogueira',
+  alt: 'Retrato de Victor Nogueira',
 } as const;

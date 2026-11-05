@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { statSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
@@ -37,6 +37,12 @@ describe('founder photo files', () => {
       expect(statSync(path).size).toBeLessThanOrEqual(MAX_BYTES[width]);
     },
   );
+
+  it('applies the EXIF orientation of the source before it resizes, so a photo shot sideways is not written sideways', () => {
+    const script = readFileSync(resolve(ROOT, 'scripts/process-founder-photo.mjs'), 'utf8');
+
+    expect(script).toMatch(/sharp\(.*\)\.rotate\(\)\.resize/);
+  });
 
   it('never enlarges the source: both sizes are narrower than the 982px original', () => {
     expect(Math.max(...plan.map((item) => item.width))).toBeLessThan(SOURCE_WIDTH);

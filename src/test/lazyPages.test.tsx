@@ -7,7 +7,8 @@ const SRC = resolve(__dirname, '..');
 const LAZY_IMPORT = /import\(\s*['"]([^'"]+)['"]\s*\)/g;
 
 const read = (path: string) => readFileSync(resolve(SRC, path), 'utf8');
-const importedModules = (source: string) => [...source.matchAll(LAZY_IMPORT)].map((match) => match[1].split('/').slice(-1)[0]);
+const importedModules = (source: string) =>
+  [...source.matchAll(LAZY_IMPORT)].map((match) => match[1].split('/').slice(-1)[0]);
 
 // The preload list repeats the lazy imports of the pages. A section added to HomePage and left out of the list would not be
 // preloaded, and the first test of every home suite would wait for its module again and time out under load.
