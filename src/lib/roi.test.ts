@@ -17,7 +17,7 @@ const EN_DASH = String.fromCharCode(0x2013);
 const DASH_OR_SLASH = new RegExp(`[${EM_DASH}${EN_DASH}/]`);
 
 describe('annual figures', () => {
-  it('mantém o resultado do ROICalculator atual', () => {
+  it('mantém o resultado da fórmula original', () => {
     expect(annualManualCost(BASE_INPUT)).toBe(78000);
     expect(annualSavings(BASE_INPUT)).toBe(62400);
   });
