@@ -1,5 +1,5 @@
 import { describePageContract } from './pageContract';
-import { ANCHOR_MAX_TOP_PX, ANCHOR_MIN_TOP_PX } from './headerBounds';
+import { ANCHOR_BOUNDS } from './headerBounds';
 import { expect, test } from './n8nGuard';
 
 const SLUG = 'sistema-web-sob-medida';
@@ -23,10 +23,10 @@ test.describe('/servicos cases of its own', () => {
     await expect(card).toBeVisible();
     await expect
       .poll(() => card.evaluate((element) => element.getBoundingClientRect().top))
-      .toBeGreaterThan(ANCHOR_MIN_TOP_PX);
+      .toBeGreaterThan(ANCHOR_BOUNDS.minTopPx);
     await expect
       .poll(() => card.evaluate((element) => element.getBoundingClientRect().top))
-      .toBeLessThan(ANCHOR_MAX_TOP_PX);
+      .toBeLessThan(ANCHOR_BOUNDS.maxTopPx);
     await expect(card.getByRole('heading', { level: 2 })).toBeFocused();
   });
 
