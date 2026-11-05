@@ -254,3 +254,116 @@ test.describe('/blog does not move when the list arrives', () => {
     expect(await placeOf()).toBe(before);
   });
 });
+
+test.describe('/blog cards and accent', () => {
+  test('opens every article in a new tab with noopener and noreferrer, and loads covers with no referrer', async ({
+    page,
+  }) => {
+    await openPage(page, CONTRACT);
+
+    const links = page.locator('main a[target="_blank"]');
+    expect(await links.count()).toBe(stressArticles().length);
+    for (const link of await links.all()) {
+      expect((await link.getAttribute('rel'))?.split(' ').sort()).toEqual(['noopener', 'noreferrer']);
+    }
+    for (const cover of await page.locator('main a img').all()) {
+      await expect(cover).toHaveAttribute('referrerpolicy', 'no-referrer');
+    }
+  });
+
+  test('draws the accent once in the list: the NOVO pill of the featured article', async ({ page }) => {
+    await openPage(page, CONTRACT);
+
+    const accents = await page.evaluate((accent) => {
+      const painted = (element: Element) => {
+        const style = getComputedStyle(element);
+        return style.backgroundColor === accent || style.color === accent || style.borderTopColor === accent;
+      };
+      return Array.from(document.querySelectorAll('main *'))
+        .filter(painted)
+        .map((element) => `${element.tagName.toLowerCase()} ${(element.textContent ?? '').trim().slice(0, 20)}`);
+    }, ACCENT_RGB);
+
+    expect(accents).toEqual(['span NOVO']);
+  });
+
+  test('shows the whole of a long title inside its card', async ({
+    page,
+  }) => {
+    await openPage(page, CONTRACT);
+
+    const cut = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('main h3')).flatMap((title) => {
+        const card = title.closest('a')?.getBoundingClientRect();
+        const box = title.getBoundingClientRect();
+        // A clamp hides whole lines; the few pixels the descenders of a tight line reach are not that.
+        const isCutByClamp = title.scrollHeight > title.clientHeight + 8;
+        const leaves = card && (box.right > card.right + 0.5 || box.left < card.left - 0.5);
+        const label = (title.textContent ?? '').slice(0, 30);
+        return isCutByClamp || leaves ? [`${label} (${title.scrollHeight} of ${title.clientHeight}, ${Math.round(box.right)} of ${Math.round(card?.right ?? 0)})`] : [];
+      }),
+    );
+
+    expect(cut).toEqual([]);
+  });
+});
+
+test.describe('/blog with an address as the title', () => {
+  for (const width of [280, 390, 1440]) {
+    test(`wraps it inside the card at ${width}px: no horizontal scroll, nothing past the edge`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await routeNews(page, addressTitleArticles());
+      await page.goto('/blog');
+      await expect(page.locator('main a[target="_blank"]').first()).toBeVisible();
+
+      const overflow = await measureOverflow(page, width);
+      expect(overflow.documentExcess, 'no horizontal scroll').toBeLessThanOrEqual(0);
+      expect(overflow.elements, 'nothing past the right edge').toEqual([]);
+      const leaves = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('main a[target="_blank"]')).flatMap((card) => {
+          const box = card.getBoundingClientRect();
+          return Array.from(card.querySelectorAll('h3, p, span')).filter((part) => part.getBoundingClientRect().right > box.right + 0.5).map((part) => part.tagName);
+        }),
+      );
+      expect(leaves, 'every part stays inside its card').toEqual([]);
+    });
+  }
+});
+
+test.describe('/blog at the narrowest phone', () => {
+  test.use({ viewport: NARROWEST, hasTouch: true, isMobile: true });
+
+  for (const hasLargeFont of [false, true]) {
+    test(`has no overflow, no broken word and 44px targets${hasLargeFont ? ' with the font at 120 percent' : ''}`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        testInfo.project.name !== 'desktop',
+        'the test sets its own viewport: it runs once, in the desktop project',
+      );
+      test.slow();
+      if (hasLargeFont) await enableLargeFont(page);
+      await openPage(page, CONTRACT);
+      const small = new Map<string, string>();
+      await walkPage(page, async () => {
+        for (const target of await measureSmallTargets(page, MIN_TOUCH_PX - TOUCH_ROUNDING_PX)) {
+          small.set(
+            `${target.element}|${Math.round(target.width)}x${Math.round(target.height)}`,
+            `${target.element} ${target.width.toFixed(1)}x${target.height.toFixed(1)}`,
+          );
+        }
+      });
+
+      const overflow = await measureOverflow(page, NARROWEST.width);
+      expect(overflow.documentExcess, 'no horizontal scroll').toBeLessThanOrEqual(0);
+      expect(overflow.elements, 'nothing past the right edge').toEqual([]);
+      expect(await brokenWordsIn(page, HEADINGS), 'no title word is broken in the middle').toEqual([]);
+      expect([...small.values()], `no touch target under ${MIN_TOUCH_PX}px`).toEqual([]);
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+      await page.screenshot({
+        path: `e2e/__shots__/blog-${NARROWEST.width}x${NARROWEST.height}${hasLargeFont ? '-font' : ''}.png`,
+        fullPage: true,
+      });
+    });
+  }
+});
