@@ -151,7 +151,7 @@ const FIRST_PERSON_HANDOFF = new Set<string>([]);
 // "Sobre mim" and "Minhas Especialidades" (About.tsx) are the founder's voice. The owner kept them for now, because
 // /sobre is rewritten in plan 3 (Victor as the founder). The first person singular is allowed on that file until then.
 // (The meta description of AboutPage.tsx says "a gente" now, so that page is held to the voice rule like the others.)
-const VOICE_OWNER_DECISION = new Set(['src/components/About.tsx']);
+const VOICE_OWNER_DECISION = new Set(['src/components/About.tsx', 'src/sections/about/founderVoice.ts']);
 const SCANNED_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.html', '.json']);
 const TEST_FILE_PATTERN = /\.test\.[^.]+$/;
 
