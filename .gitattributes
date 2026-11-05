@@ -7,3 +7,5 @@
 *.woff2 binary
 *.mp4 binary
 *.webm binary
+*.ico binary
+*.webmanifest text

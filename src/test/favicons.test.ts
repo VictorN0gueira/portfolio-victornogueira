@@ -187,3 +187,15 @@ describe('robots.txt', () => {
     }
   });
 });
+
+// git must never rewrite the bytes of the ICO (a line ending change breaks the embedded PNGs), and the manifest is text.
+describe('.gitattributes', () => {
+  const rules = readFileSync(resolve(ROOT, '.gitattributes'), 'utf8')
+    .split(/\r?\n/)
+    .map((line) => line.trim());
+
+  it('keeps the ICO binary and the web manifest text', () => {
+    expect(rules).toContain('*.ico binary');
+    expect(rules).toContain('*.webmanifest text');
+  });
+});
