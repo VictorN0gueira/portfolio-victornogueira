@@ -29,6 +29,7 @@ interface Faults {
   robotsBlocksBlog?: boolean;
   openGitConfig?: boolean;
   error404Page?: boolean;
+  binaryManifest?: boolean;
 }
 
 const SCRIPT = '<script type="module" src="/assets/index-AAA.js"></script>';
@@ -70,7 +71,8 @@ function answer(request: IncomingMessage, response: ServerResponse, faults: Faul
   }
   if (path === '/favicon.ico' || path === '/site.webmanifest') {
     if (faults.noFavicon) return send(404, {});
-    return send(200, { 'Content-Type': 'image/x-icon', 'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400, no-transform' }, '1');
+    const type = path === '/site.webmanifest' && !faults.binaryManifest ? 'application/manifest+json' : 'image/x-icon';
+    return send(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400, no-transform' }, '1');
   }
   if (path === '/robots.txt') {
     const block = faults.robotsBlocksBlog ? 'Disallow: /blog\n' : '';
@@ -137,6 +139,7 @@ describe('the smoke check of the container', () => {
     ['a www host redirected to http', { wwwToHttp: true }, /www host/],
     ['a missing favicon and manifest', { noFavicon: true }, /favicon\.ico is served/],
     ['a robots.txt that blocks the blog', { robotsBlocksBlog: true }, /robots\.txt/],
+    ['a manifest sent as a binary file', { binaryManifest: true }, /sent as a manifest/],
     ['a 404.html that can be read on its own', { error404Page: true }, /404\.html is not served/],
   ])('fails on %s', async (_label, faults, expected) => {
     const failures = await runSmoke(await start(faults));

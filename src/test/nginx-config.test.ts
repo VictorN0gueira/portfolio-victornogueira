@@ -135,6 +135,14 @@ describe('the cache', () => {
     }
   });
 
+  it('sends the web manifest as a manifest, not as a binary file, with a week of cache', () => {
+    const location = pickLocation(server, '/site.webmanifest')!;
+
+    expect(location.kind).toBe('exact');
+    expect(directivesOf(location.block, 'default_type')[0].args).toEqual(['application/manifest+json']);
+    expect(maxAge(cacheControlOf(location.block))).toBe(WEEK);
+  });
+
   it('covers the formats of the new images, video, manifest and pdf', () => {
     for (const path of ['/a.webp', '/a.avif', '/a.webmanifest', '/a.mp4', '/a.pdf']) {
       expect(maxAge(cacheFor(path)), path).toBeGreaterThan(0);

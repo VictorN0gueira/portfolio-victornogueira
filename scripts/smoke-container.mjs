@@ -190,6 +190,13 @@ function checks(base) {
         ];
       },
     },
+    {
+      name: '/site.webmanifest is sent as a manifest',
+      run: async () => {
+        const type = (await get(base, '/site.webmanifest')).headers.get('content-type') ?? '';
+        return type.includes('manifest') ? [] : [`content-type ${type}`];
+      },
+    },
     ...CRAWLER_FILES.map((path) => ({
       name: `${path} is served with a week of cache`,
       run: async () => {
