@@ -39,7 +39,9 @@ describe('ArticleCard', () => {
   });
 
   it('puts the title in an h3 and marks an English title and summary with lang="en"', () => {
-    renderCard({ article: testArticle({ language: 'en', title: 'An English title', description: 'An English summary' }) });
+    renderCard({
+      article: testArticle({ language: 'en', title: 'An English title', description: 'An English summary' }),
+    });
 
     expect(screen.getByRole('heading', { level: 3, name: 'An English title' })).toHaveAttribute('lang', 'en');
     expect(screen.getByText('An English summary')).toHaveAttribute('lang', 'en');
@@ -107,7 +109,10 @@ describe('ArticleCard', () => {
 
   it('wraps a long title and a long source name instead of cutting them', () => {
     renderCard({
-      article: testArticle({ title: 'Titulo'.repeat(30), source: { name: 'Fonte'.repeat(20), url: 'https://example.com' } }),
+      article: testArticle({
+        title: 'Titulo'.repeat(30),
+        source: { name: 'Fonte'.repeat(20), url: 'https://example.com' },
+      }),
     });
 
     const title = screen.getByRole('heading', { level: 3 });

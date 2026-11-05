@@ -10,7 +10,7 @@ interface ArticleTagsProps {
   children?: ReactNode;
 }
 
-// The pills sit on a cover that is somebody else's picture, light or dark: each one carries its own opaque black surface
+// The pills sit on a cover that is somebody else's picture, light or dark, so each one carries its own opaque black surface
 // with white text, so the contrast holds over any cover.
 const PILL_CLASSES =
   'inline-flex max-w-full items-center gap-1 rounded-full border border-vn-gray-dark bg-vn-black px-3 py-1 font-mono text-xs font-medium uppercase tracking-[.12em] text-vn-white';

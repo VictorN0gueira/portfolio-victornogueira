@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { NewsArticle } from '../../utils/newsService';
-import { NEW_TAB_HINT_ID, cardDescribedBy, describeDataSource, estimateReadTime, getCategoryTag, isNew } from './blogMeta';
+import {
+  NEW_TAB_HINT_ID,
+  cardDescribedBy,
+  describeDataSource,
+  estimateReadTime,
+  getCategoryTag,
+  isNew,
+} from './blogMeta';
 
 function article(overrides: Partial<NewsArticle> = {}): NewsArticle {
   return {

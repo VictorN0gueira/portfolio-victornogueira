@@ -1,45 +1,22 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { m, AnimatePresence } from 'motion/react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigationType } from 'react-router-dom';
-import {
-  ArrowLeft,
-  RefreshCw,
-  Sparkles,
-  Globe,
-  Newspaper,
-  AlertTriangle,
-  Search,
-} from 'lucide-react';
-import {
-  clearNewsCache,
-  getNewsArticles,
-  detectCategory,
-  type NewsArticle,
-  type NewsOrigin,
-} from '../utils/newsService';
-import { MAIN_CONTENT_ID, SkipLink } from './layout/SkipLink';
-import {
-  NEW_TAB_HINT_ID,
-  describeDataSource,
-  type CatFilter,
-  type LangFilter,
-} from '../sections/blog/blogMeta';
-import { blogCopy } from '../sections/blog/blogCopy';
+import { ArrowLeft } from 'lucide-react';
+import { detectCategory } from '../utils/newsService';
 import { BlogFilters } from '../sections/blog/BlogFilters';
-import { ArticleCard } from '../sections/blog/ArticleCard';
-import { BlogSkeletons } from '../sections/blog/BlogSkeletons';
-import { FeaturedArticle } from '../sections/blog/FeaturedArticle';
-import { NewTabHint } from './ui/NewTabHint';
+import { BlogHero } from '../sections/blog/BlogHero';
+import { BlogResults } from '../sections/blog/BlogResults';
+import { blogCopy } from '../sections/blog/blogCopy';
+import { describeDataSource, type CatFilter, type LangFilter } from '../sections/blog/blogMeta';
+import { useBlogNews } from '../sections/blog/useBlogNews';
+import { MAIN_CONTENT_ID, SkipLink } from './layout/SkipLink';
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+const BACK_LINK_CLASSES =
+  'fixed left-4 top-4 z-(--vn-z-header) inline-flex min-h-11 items-center gap-2 rounded-full bg-vn-ink px-5 text-sm font-medium text-vn-white vn-focus-ring-ink';
+
 export default function BlogPage() {
-  const [articles, setArticles]     = useState<NewsArticle[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState<string | null>(null);
-  const [origin, setOrigin] = useState<NewsOrigin | null>(null);
-
-  const [langFilter, setLangFilter]   = useState<LangFilter>('all');
-  const [catFilter, setCatFilter]     = useState<CatFilter>('all');
+  const { articles, isLoading, error, origin, refresh } = useBlogNews();
+  const [langFilter, setLangFilter] = useState<LangFilter>('all');
+  const [catFilter, setCatFilter] = useState<CatFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   // The first page the visitor opened (a load or a reload) and a step back or forward are read by the browser itself, so
@@ -51,66 +28,22 @@ export default function BlogPage() {
   useEffect(() => {
     if (arrivedByLink.current) mainRef.current?.focus({ preventScroll: true });
   }, []);
-
-  // The answer of the sources goes into the state only after the await, so the first load (the state starts as loading)
-  // never sets state inside the effect that starts it.
-  const loadNews = useCallback(async (signal?: AbortSignal) => {
-    try {
-      const result = await getNewsArticles();
-      if (signal?.aborted) return;
-      setArticles(result.articles);
-      setOrigin(result.origin);
-    } catch (err) {
-      if (signal?.aborted) return;
-      setError(err instanceof Error ? err.message : blogCopy.states.errorFallback);
-    } finally {
-      if (!signal?.aborted) setLoading(false);
-    }
+  useEffect(() => {
+    window.scrollTo(0, 0);
   }, []);
 
-  // One load is current at a time: starting another (the first one, a refresh) aborts the one before, so a slower answer of an
-  // older load never lands on top of a newer one, and nothing is set after the page is gone.
-  const currentLoad = useRef<AbortController | null>(null);
-  const startLoad = useCallback(() => {
-    currentLoad.current?.abort();
-    const controller = new AbortController();
-    currentLoad.current = controller;
-    void loadNews(controller.signal);
-  }, [loadNews]);
-
-  // The refresh button: drops the cache and asks the sources again.
-  // While a load runs the press does nothing (one load at a time), and the button stays in the tab order: a disabled
-  // button that held the focus would drop it to the body (WCAG 2.4.3), so it is aria-disabled instead.
-  const refreshNews = useCallback(() => {
-    if (loading) return;
-    setLoading(true);
-    setError(null);
-    clearNewsCache();
-    startLoad();
-  }, [loading, startLoad]);
-
-  useEffect(() => {
-    // The state is set after the await (the first render is already loading), never in the body of this effect.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    startLoad();
-    return () => currentLoad.current?.abort();
-  }, [startLoad]);
-  useEffect(() => { window.scrollTo(0, 0); }, []);
-
-  const filteredArticles = useMemo(() => {
-    return articles.filter(article => {
-      const matchesLang   = langFilter === 'all' || article.language === langFilter;
-      const matchesCat    = catFilter  === 'all' || detectCategory(article) === catFilter;
-      const q             = searchQuery.toLowerCase();
-      const matchesSearch = !q
-        || article.title.toLowerCase().includes(q)
-        || (article.description || '').toLowerCase().includes(q);
+  const visibleArticles = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return articles.filter((article) => {
+      const matchesLang = langFilter === 'all' || article.language === langFilter;
+      const matchesCat = catFilter === 'all' || detectCategory(article) === catFilter;
+      const matchesSearch =
+        !query || article.title.toLowerCase().includes(query) || (article.description || '').toLowerCase().includes(query);
       return matchesLang && matchesCat && matchesSearch;
     });
   }, [articles, langFilter, catFilter, searchQuery]);
 
   const hasActiveFilters = langFilter !== 'all' || catFilter !== 'all' || searchQuery !== '';
-
   const clearFilters = () => {
     setLangFilter('all');
     setCatFilter('all');
@@ -118,192 +51,55 @@ export default function BlogPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white relative overflow-hidden">
+    <div className="bg-vn-cream text-vn-ink">
       <SkipLink />
-      {/* Background ambient */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[10%] -left-[20%] w-[600px] h-[600px] bg-purple-500/[0.04] rounded-full blur-[150px]" />
-        <div className="absolute bottom-[10%] -right-[15%] w-[500px] h-[500px] bg-cyan-500/[0.04] rounded-full blur-[150px]" />
-        <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.01] rounded-full blur-[200px]" />
-      </div>
-
-      {/* Back button */}
       <header>
         <nav aria-label="Voltar">
-          <Link
-            to="/"
-            className="fixed top-6 left-6 z-(--vn-z-header) flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900 md:bg-white/[0.06] backdrop-blur-none md:backdrop-blur-xl border border-white/[0.1] text-sm text-zinc-300 hover:text-white hover:bg-white/[0.1] hover:border-white/[0.2] transition-all duration-300 group shadow-lg shadow-black/20"
-          >
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-            <span className="font-medium">Voltar para a VN One</span>
+          <Link to="/" className={BACK_LINK_CLASSES}>
+            <ArrowLeft className="size-4" />
+            Voltar para a VN One
           </Link>
         </nav>
       </header>
 
-      <main ref={mainRef} id={MAIN_CONTENT_ID} tabIndex={-1} aria-labelledby="blog-title" className="outline-hidden">
-
-      {/* Hero */}
-      <section className="relative pt-32 pb-10 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto">
-          <m.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="max-w-3xl"
-          >
-            <div className="flex items-center gap-3 mb-8 flex-wrap">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08]">
-                <Sparkles className="w-4 h-4 text-vn-accent" />
-                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">{blogCopy.kicker}</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08]">
-                <Globe className="w-4 h-4 text-vn-accent" />
-                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Português e inglês</span>
-              </div>
-            </div>
-
-            <h1 id="blog-title" className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter font-display italic mb-6 leading-[0.95]">
-              Leituras sobre{' '}
-              <span className="not-italic bg-clip-text text-transparent bg-gradient-to-r from-white via-zinc-300 to-zinc-400">
-                IA e automação
-              </span>
-            </h1>
-
-            <p className="text-lg md:text-xl text-zinc-400 font-light leading-relaxed max-w-2xl mb-10">
-              {blogCopy.lead}
-            </p>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              <button
-                type="button"
-                onClick={refreshNews}
-                aria-disabled={loading}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.1] hover:border-white/[0.15] transition-all text-sm text-zinc-300 hover:text-white aria-disabled:opacity-50 aria-disabled:cursor-not-allowed vn-focus-ring"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                {blogCopy.refresh}
-              </button>
-              <p role="status" className="text-xs text-vn-gray-light max-w-md">
-                {origin && !loading ? describeDataSource(origin) : ''}
-              </p>
-            </div>
-          </m.div>
-        </div>
-      </section>
-
-      {/* Divider */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12">
-        <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
-      </div>
-
-      {!loading && !error && articles.length > 0 && (
-        <BlogFilters
-          searchQuery={searchQuery}
-          langFilter={langFilter}
-          catFilter={catFilter}
-          resultCount={filteredArticles.length}
-          hasActiveFilters={hasActiveFilters}
-          onSearchChange={setSearchQuery}
-          onLangChange={setLangFilter}
-          onCatChange={setCatFilter}
-          onClear={clearFilters}
+      <main ref={mainRef} id={MAIN_CONTENT_ID} tabIndex={-1} className="outline-hidden">
+        <BlogHero
+          isLoading={isLoading}
+          status={origin && !isLoading ? describeDataSource(origin) : ''}
+          onRefresh={refresh}
         />
-      )}
-
-      {/* Artigos */}
-      <section className="relative pb-16 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto">
-          <AnimatePresence mode="wait">
-            {/* Error */}
-            {error && !loading && (
-              <m.div key="error" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-32 text-center"
-              >
-                <div className="w-20 h-20 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
-                  <AlertTriangle className="w-8 h-8 text-red-400" />
-                </div>
-                <h2 className="text-xl font-bold text-white mb-2 font-display">{blogCopy.states.errorTitle}</h2>
-                <p className="text-zinc-400 mb-8 max-w-md text-sm leading-relaxed">{error}</p>
-              </m.div>
-            )}
-
-            {/* Loading */}
-            {loading && (
-              <m.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <BlogSkeletons />
-              </m.div>
-            )}
-
-            {/* Empty state: sem artigos */}
-            {!loading && !error && articles.length === 0 && (
-              <m.div key="empty" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-32 text-center"
-              >
-                <div className="w-20 h-20 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-6">
-                  <Newspaper className="w-8 h-8 text-vn-gray-light" />
-                </div>
-                <h2 className="text-xl font-bold text-white mb-2 font-display">{blogCopy.states.emptyTitle}</h2>
-                <p className="text-zinc-400 text-sm">{blogCopy.states.emptyHint}</p>
-              </m.div>
-            )}
-
-            {/* Empty state: filtros sem resultado */}
-            {!loading && !error && articles.length > 0 && filteredArticles.length === 0 && (
-              <m.div key="no-filter-results" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                className="flex flex-col items-center py-24 text-center gap-4"
-              >
-                <Search className="w-10 h-10 text-vn-gray-mid" />
-                <p className="text-white font-bold text-xl font-display">{blogCopy.states.noMatchTitle}</p>
-                <p className="text-vn-gray-light text-sm">{blogCopy.states.noMatchHint}</p>
-                <button
-                  onClick={clearFilters}
-                  className="px-6 py-2.5 rounded-full border border-white/10 text-xs text-zinc-400 hover:text-white hover:border-white/20 transition-all"
-                >
-                  {blogCopy.filters.clear}
-                </button>
-              </m.div>
-            )}
-
-            {/* Artigos com featured */}
-            {!loading && !error && filteredArticles.length > 0 && (
-              <m.div key="articles" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <h2 className="sr-only">{blogCopy.listHeading}</h2>
-                <NewTabHint id={NEW_TAB_HINT_ID} />
-                <div className="mb-6">
-                  <FeaturedArticle article={filteredArticles[0]} isFixedList={origin === 'fallback'} />
-                </div>
-                {filteredArticles.length > 1 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredArticles.slice(1).map((article) => (
-                      <ArticleCard key={article.url} article={article} isFixedList={origin === 'fallback'} />
-                    ))}
-                  </div>
-                )}
-              </m.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </section>
-
+        {!isLoading && !error && articles.length > 0 && (
+          <BlogFilters
+            searchQuery={searchQuery}
+            langFilter={langFilter}
+            catFilter={catFilter}
+            resultCount={visibleArticles.length}
+            hasActiveFilters={hasActiveFilters}
+            onSearchChange={setSearchQuery}
+            onLangChange={setLangFilter}
+            onCatChange={setCatFilter}
+            onClear={clearFilters}
+          />
+        )}
+        <BlogResults
+          isLoading={isLoading}
+          error={error}
+          origin={origin}
+          articles={articles}
+          visibleArticles={visibleArticles}
+          onClearFilters={clearFilters}
+        />
       </main>
 
-      {/* Footer */}
-      <footer className="relative py-16 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto">
-          <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mb-12" />
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <p className="text-xs text-vn-gray-light uppercase tracking-widest">
-              {blogCopy.thirdPartyNote}
-            </p>
-            <Link
-              to="/"
-              className="text-xs text-vn-gray-light hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
-            >
-              <ArrowLeft className="w-3 h-3" />
-              Voltar para a VN One
-            </Link>
-          </div>
-        </div>
+      <footer className="border-t border-vn-gray-light px-4 py-10 md:px-12">
+        <p className="font-mono text-xs uppercase tracking-[.12em] text-vn-gray-dark">{blogCopy.thirdPartyNote}</p>
+        <Link
+          to="/"
+          className="mt-4 inline-flex min-h-11 items-center gap-2 font-mono text-xs uppercase tracking-[.12em] text-vn-ink vn-focus-ring-ink"
+        >
+          <ArrowLeft className="size-3" />
+          Voltar para a VN One
+        </Link>
       </footer>
     </div>
   );

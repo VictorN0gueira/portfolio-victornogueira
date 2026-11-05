@@ -31,7 +31,9 @@ describe('FeaturedArticle', () => {
   });
 
   it('puts the title in an h3 and marks an English article with lang="en"', () => {
-    renderFeatured({ article: testArticle({ language: 'en', title: 'An English title', description: 'An English summary' }) });
+    renderFeatured({
+      article: testArticle({ language: 'en', title: 'An English title', description: 'An English summary' }),
+    });
 
     expect(screen.getByRole('heading', { level: 3 })).toHaveAttribute('lang', 'en');
     expect(screen.getByText('An English summary')).toHaveAttribute('lang', 'en');

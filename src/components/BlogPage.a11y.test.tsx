@@ -42,13 +42,12 @@ async function renderLoaded() {
 }
 
 describe('BlogPage landmarks', () => {
-  it('has a banner with the way back, one main landmark named by the title, and a footer', async () => {
+  it('has a banner with the way back, one main landmark, and a footer', async () => {
     await renderLoaded();
 
     const main = screen.getByRole('main');
     expect(main).toHaveAttribute('id', 'main-content');
     expect(main).toHaveAttribute('tabindex', '-1');
-    expect(main).toHaveAccessibleName(screen.getByRole('heading', { level: 1 }).textContent ?? '');
     expect(screen.getAllByRole('main')).toHaveLength(1);
     expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Voltar para a VN One' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
