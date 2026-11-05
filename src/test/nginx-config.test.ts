@@ -16,7 +16,10 @@ const WEEK = 604800;
 const YEAR = 31536000;
 
 const source = readFileSync(resolve(ROOT, 'nginx.conf'), 'utf8');
-const server = serverOf(parseNginx(source));
+const tree = parseNginx(source);
+const server = serverOf(tree);
+const servers = tree.blocks.filter((block) => block.name === 'server');
+const wwwServer = servers.find((block) => directivesOf(block, 'server_name').some((directive) => directive.args.includes('www.vnone.com.br')));
 const maxAge = (value: string | undefined): number => Number(/max-age=(\d+)/.exec(value ?? '')?.[1] ?? Number.NaN);
 const includes = (block: Block) => directivesOf(block, 'include').some((directive) => directive.args[0] === SNIPPET_PATH);
 const cacheFor = (path: string) => cacheControlOf(pickLocation(server, path)!.block);
@@ -76,8 +79,8 @@ describe('the cache', () => {
     }
   });
 
-  it('serves the SPA fallback for a route and a 404 for a missing hashed file', () => {
-    expect(directivesOf(pickLocation(server, '/servicos')!.block, 'try_files')[0].args.at(-1)).toBe('/index.html');
+  it('serves the prerendered file of a route and a 404 for anything else, and for a missing hashed file', () => {
+    expect(directivesOf(pickLocation(server, '/servicos')!.block, 'try_files')[0].args).toEqual(['$uri', '$uri/index.html', '=404']);
     expect(directivesOf(pickLocation(server, '/assets/gone.js')!.block, 'try_files')[0].args.at(-1)).toBe('=404');
   });
 
@@ -114,7 +117,9 @@ describe('the cache', () => {
   it('never stamps a long Cache-Control on an error: `always` is only for no-cache and the security headers', () => {
     // With `always`, a 404 for a missing hashed chunk (a rolling deploy) would carry `immutable` for a year, and a proxy
     // or the browser would keep that 404 at the URL. Without it nginx adds the header to 2xx and 3xx answers only.
-    const longLived = locationsOf(server).filter((location) => directivesOf(location.block, 'try_files').some((directive) => directive.args.at(-1) === '=404'));
+    const longLived = locationsOf(server).filter(
+      (location) => cacheControlOf(location.block) !== 'no-cache' && directivesOf(location.block, 'try_files').some((directive) => directive.args.at(-1) === '=404'),
+    );
     expect(longLived.length).toBeGreaterThanOrEqual(5);
     for (const location of longLived) {
       const header = directivesOf(location.block, 'add_header').find((directive) => directive.args[0].toLowerCase() === 'cache-control');
@@ -124,7 +129,7 @@ describe('the cache', () => {
   });
 
   it('keeps `always` on the no-cache pages, so an error page is never cached either', () => {
-    for (const path of ['/index.html', '/sobre']) {
+    for (const path of ['/index.html', '/sobre', '/404.html']) {
       const header = directivesOf(pickLocation(server, path)!.block, 'add_header').find((directive) => directive.args[0].toLowerCase() === 'cache-control');
       expect(header!.args, path).toContain('always');
     }
@@ -145,10 +150,10 @@ describe('the removed project pages', () => {
     }
   });
 
-  it('leaves the other project pages to the SPA', () => {
+  it('leaves the other project pages to their prerendered file', () => {
     const location = pickLocation(server, '/projetos/hub081')!;
     expect(directivesOf(location.block, 'return')).toEqual([]);
-    expect(directivesOf(location.block, 'try_files')[0].args.at(-1)).toBe('/index.html');
+    expect(directivesOf(location.block, 'try_files')[0].args).toEqual(['$uri', '$uri/index.html', '=404']);
   });
 });
 
@@ -157,6 +162,75 @@ describe('hidden files', () => {
     expect(directivesOf(pickLocation(server, '/.env')!.block, 'deny')[0].args).toEqual(['all']);
     expect(directivesOf(pickLocation(server, '/.git/config')!.block, 'deny')[0].args).toEqual(['all']);
     expect(directivesOf(pickLocation(server, '/.well-known/security.txt')!.block, 'deny')).toEqual([]);
+  });
+});
+
+describe('an unknown route', () => {
+  const fallback = pickLocation(server, '/rota-que-nao-existe')!;
+
+  it('is a real 404 that shows the page of the app, out of the index, and never a 200', () => {
+    expect(fallback.pattern).toBe('/');
+    expect(directivesOf(fallback.block, 'try_files')[0].args.at(-1)).toBe('=404');
+    expect(directivesOf(fallback.block, 'error_page')[0].args).toEqual(['404', '/404.html']);
+  });
+
+  it('is answered by an internal /404.html that is never cached and has the security headers', () => {
+    const location = pickLocation(server, '/404.html')!;
+
+    expect(location.kind).toBe('exact');
+    expect(directivesOf(location.block, 'internal')).toHaveLength(1);
+    expect(cacheControlOf(location.block)).toBe('no-cache');
+    expect(includes(location.block)).toBe(true);
+  });
+
+  it('keeps a missing file of a static folder a plain 404, with no HTML body and no long Cache-Control on it', () => {
+    for (const path of ['/assets/gone.js', '/brand/gone.png', '/fonts/gone.woff2', '/gone.webp']) {
+      expect(directivesOf(pickLocation(server, path)!.block, 'error_page'), path).toEqual([]);
+    }
+  });
+});
+
+describe('a trailing slash', () => {
+  it('is a 301 to the same path without it, with the query string, so there is one url per page', () => {
+    for (const path of ['/servicos/', '/projetos/hub081/', '/blog/']) {
+      const location = pickLocation(server, path)!;
+      expect(directivesOf(location.block, 'return')[0].args, path).toEqual(['301', '$1$is_args$args']);
+      expect(includes(location.block), path).toBe(true);
+      expect(new RegExp(location.pattern).exec(path)?.[1], path).toBe(path.slice(0, -1));
+    }
+  });
+
+  it('leaves the home, the static folders and the removed projects to their own rules', () => {
+    expect(pickLocation(server, '/')!.pattern).toBe('/');
+    expect(pickLocation(server, '/assets/')!.pattern).toBe('/assets/');
+    expect(directivesOf(pickLocation(server, '/projetos/troco/')!.block, 'return')[0].args).toEqual(['301', '/projetos']);
+    expect(directivesOf(pickLocation(server, '/brand/')!.block, 'return')).toEqual([]);
+  });
+
+  it('does not touch a path without the slash', () => {
+    expect(directivesOf(pickLocation(server, '/servicos')!.block, 'return')).toEqual([]);
+  });
+});
+
+describe('the www host', () => {
+  it('has its own server block, after the default one, so the default is still the first', () => {
+    expect(servers.length).toBeGreaterThanOrEqual(2);
+    expect(servers[0]).toBe(server);
+    expect(directivesOf(server, 'server_name')[0].args).toEqual(['_']);
+    expect(wwwServer).toBeDefined();
+    expect(servers.indexOf(wwwServer!)).toBeGreaterThan(0);
+  });
+
+  it('answers 301 to the same path on the apex over https, by the Host header and not by the scheme the container sees', () => {
+    expect(directivesOf(wwwServer!, 'server_name')[0].args).toEqual(['www.vnone.com.br']);
+    expect(directivesOf(wwwServer!, 'return')[0].args).toEqual(['301', 'https://vnone.com.br$request_uri']);
+    expect(source).not.toContain('$scheme');
+  });
+
+  it('listens on 80, hides the version and has the security headers', () => {
+    expect(directivesOf(wwwServer!, 'listen')[0].args).toEqual(['80']);
+    expect(directivesOf(wwwServer!, 'server_tokens')[0].args).toEqual(['off']);
+    expect(includes(wwwServer!)).toBe(true);
   });
 });
 
