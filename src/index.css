@@ -35,6 +35,25 @@
     }
   }
 
+  /* A tab the visitor moved: the widget sets the edge its band is nearest to and how far the band reaches from it
+     (src/components/useTabPlacement.ts), so the browser scrolls a focused control clear of the tab wherever it sits.
+     With the tab at its default place the attribute is absent and the rules above are all that apply. */
+  html[data-vn-tab-band='bottom'] {
+    scroll-padding-bottom: max(var(--vn-tab-pad), 5rem);
+  }
+
+  /* At the very end of the page nothing can scroll further, so a tab low on the window would stay over the last links of the
+     footer. The footer grows by what 4rem does not clear, the least bottom padding of the two footers (the blog one has py-16, the site one 6rem plus the inset). */
+  html[data-vn-tab-band='bottom'] footer::after {
+    content: '';
+    display: block;
+    height: max(0px, calc(var(--vn-tab-pad) - 4rem));
+  }
+
+  html[data-vn-tab-band='top'] {
+    scroll-padding-top: max(var(--vn-tab-pad), 96px, calc(env(safe-area-inset-top) + 84px));
+  }
+
   /* The floating header sits 8px higher and is thinner on a phone held sideways. */
   @variant vn-landscape {
     html {

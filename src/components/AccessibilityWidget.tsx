@@ -1,12 +1,15 @@
 import { AnimatePresence } from 'motion/react';
 import { Accessibility } from 'lucide-react';
-import { useCallback, useEffect, useId, useRef, useState, type FocusEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type FocusEvent, type RefObject } from 'react';
 import { useAccessibility } from '../contexts/useAccessibility';
 import { cn } from '../lib/utils';
 import { KEEPS_PLACE_UNDER_SCROLL_LOCK } from '../lib/scrollLock';
 import { a11yWidgetCopy, activeSummaryText } from './a11yWidgetCopy';
 import { AccessibilityPanel } from './AccessibilityPanel';
 import { useBackdropIsDark } from './useBackdropIsDark';
+import { useMotionAllowed } from '../hooks/useMotionAllowed';
+import type { TabSide } from '../lib/floatingLayout';
+import { useTabPlacement, type TabPlacement } from './useTabPlacement';
 
 // Mobile: the trigger sits on the right edge, 96px over the safe area (the owner wanted it well clear of the corner), and
 // the panel grows upward from it. The WhatsApp button has the opposite side, the bottom left corner. From sm up the
@@ -16,6 +19,20 @@ import { useBackdropIsDark } from './useBackdropIsDark';
 // transparent strip of this box. Only the panel and the trigger take the pointer.
 const WRAPPER_CLASSES =
   `${KEEPS_PLACE_UNDER_SCROLL_LOCK} pointer-events-none fixed right-0 bottom-[calc(max(16px,env(safe-area-inset-bottom))+96px)] z-(--vn-z-widget) flex flex-row-reverse items-end sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:items-center [@media(max-height:30rem)]:bottom-auto [@media(max-height:30rem)]:top-1/2 [@media(max-height:30rem)]:-translate-y-1/2 [@media(max-height:30rem)]:items-center`;
+
+// Once the visitor has put the tab somewhere (drag, or the buttons of the panel) the wrapper is only the tab: a 44px box on
+// the chosen side with its `top` in px, and the panel is absolutely placed beside it (see PanelPlacer). The offsets are
+// computed in src/lib/floatingLayout.ts, where the WhatsApp stack is.
+const CHOSEN_CLASSES = `pointer-events-none fixed z-(--vn-z-widget) size-[44px]`;
+const CHOSEN_SIDE_CLASSES: Record<TabSide, string> = {
+  right: `${KEEPS_PLACE_UNDER_SCROLL_LOCK} right-[env(safe-area-inset-right)]`,
+  left: 'left-[env(safe-area-inset-left)]',
+};
+// Spelled out because Tailwind reads class names as plain text: the 8px is PANEL_GAP_PX (pinned by a test).
+const PLACER_SIDE_CLASSES: Record<TabSide, string> = {
+  right: 'right-[calc(100%+8px)]',
+  left: 'left-[calc(100%+8px)]',
+};
 
 interface Dismissal {
   onPointerDown: () => void;
@@ -87,11 +104,16 @@ export default function AccessibilityWidget() {
   const wrapperRef = useRef<HTMLElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dismissal = useDismissal(isOpen, close, wrapperRef, triggerRef);
-  const isDark = useBackdropIsDark(triggerRef);
   const activeCount = Object.values(state).filter(Boolean).length;
+  const placerRef = useRef<HTMLDivElement>(null);
+  const isMotionAllowed = useMotionAllowed();
+  const placement = useTabPlacement({ wrapperRef, triggerRef, placerRef, isOpen, activeCount, isMotionAllowed });
+  const isDark = useBackdropIsDark(triggerRef, placement.position);
+  const wrapperStyle: CSSProperties | undefined = placement.topPx === null ? undefined : { top: placement.topPx };
 
   // Safari does not focus a button it is clicking, so the trigger takes the focus itself when it closes the panel.
   const handleTriggerClick = () => {
+    if (placement.drag.takeSuppressedClick()) return;
     if (isOpen) triggerRef.current?.focus();
     setIsOpen(!isOpen);
   };
@@ -100,7 +122,8 @@ export default function AccessibilityWidget() {
     <aside
       ref={wrapperRef}
       aria-label={a11yWidgetCopy.panelLabel}
-      className={WRAPPER_CLASSES}
+      className={placement.position ? cn(CHOSEN_CLASSES, CHOSEN_SIDE_CLASSES[placement.position.side]) : WRAPPER_CLASSES}
+      style={wrapperStyle}
       onPointerDown={dismissal.onPointerDown}
       onBlur={dismissal.onBlur}
     >
@@ -111,6 +134,9 @@ export default function AccessibilityWidget() {
         panelId={panelId}
         summaryId={summaryId}
         activeCount={activeCount}
+        side={placement.shownSide}
+        isChosen={placement.position !== null}
+        pointer={placement.drag}
         onClick={handleTriggerClick}
       />
       {activeCount > 0 ? (
@@ -120,7 +146,22 @@ export default function AccessibilityWidget() {
       ) : null}
       <AnimatePresence>
         {isOpen ? (
-          <AccessibilityPanel id={panelId} state={state} activeCount={activeCount} onToggle={toggle} onReset={reset} />
+          <div
+            key="panel"
+            ref={placerRef}
+            className={placement.position ? cn('absolute top-0', PLACER_SIDE_CLASSES[placement.shownSide]) : 'contents'}
+          >
+            <AccessibilityPanel
+              id={panelId}
+              state={state}
+              activeCount={activeCount}
+              onToggle={toggle}
+              onReset={reset}
+              side={placement.shownSide}
+              maxHeightPx={placement.panelMaxHeightPx}
+              position={placement.actions}
+            />
+          </div>
         ) : null}
       </AnimatePresence>
     </aside>
@@ -134,6 +175,9 @@ interface AccessibilityTriggerProps {
   panelId: string;
   summaryId: string;
   activeCount: number;
+  side: TabSide;
+  isChosen: boolean;
+  pointer: TabPlacement['drag'];
   onClick: () => void;
 }
 
@@ -142,19 +186,22 @@ interface AccessibilityTriggerProps {
  * aria-controls points at the panel only while it exists, and the description says how many options are on, since the
  * count badge is decoration. The colors are the opposite of the page under it, and the focus ring follows them.
  */
-function AccessibilityTrigger({ buttonRef, isOpen, isDark, panelId, summaryId, activeCount, onClick }: AccessibilityTriggerProps) {
+function AccessibilityTrigger({ buttonRef, isOpen, isDark, panelId, summaryId, activeCount, side, isChosen, pointer, onClick }: AccessibilityTriggerProps) {
   return (
     <button
       ref={buttonRef}
       type="button"
       onClick={onClick}
+      {...pointer.handlers}
       aria-expanded={isOpen}
       aria-haspopup="dialog"
       aria-controls={isOpen ? panelId : undefined}
       aria-describedby={activeCount > 0 ? summaryId : undefined}
       aria-label={a11yWidgetCopy.triggerLabel}
       className={cn(
-        'pointer-events-auto relative flex size-11 items-center justify-center rounded-l-xl shadow-lg transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2',
+        // touch-none only on the button: a finger that starts on it drags it, a finger anywhere else scrolls the page.
+        'pointer-events-auto relative flex size-[44px] touch-none select-none items-center justify-center shadow-lg transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 [@media(hover:hover)_and_(pointer:fine)]:cursor-grab data-[dragging=true]:cursor-grabbing',
+        isChosen && side === 'left' ? 'rounded-r-xl' : 'rounded-l-xl',
         isDark
           ? 'bg-white text-zinc-950 focus-visible:outline-white'
           : 'border border-zinc-200 bg-zinc-950 text-white focus-visible:outline-zinc-950',

@@ -3,7 +3,7 @@ import { services } from '../../data/services';
 import { FOOTER_SERVICE_LINKS, slugOf } from './footerServices';
 
 const SLUG_SHAPE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const FIRST_OF_EACH_CATEGORY = ['automacao-essencial', 'agente-de-ia-sob-medida', 'landing-page-ou-site'];
+const FIRST_OF_EACH_CATEGORY = ['automacao-essencial', 'super-agente', 'landing-page-ou-site'];
 
 describe('slugOf', () => {
   it('has a slug of the right shape for every service of the data', () => {
