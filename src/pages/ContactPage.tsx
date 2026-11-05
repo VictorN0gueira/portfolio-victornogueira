@@ -65,7 +65,11 @@ export default function ContactPage() {
         aside={<ContactChannels />}
       />
       <RoiSimulator onQuoteRequest={handleQuoteRequest} />
-      <ContactFormSection prefillMessage={prefill?.message} prefillNonce={prefill?.nonce} onMessageEdit={handleMessageEdit} />
+      <ContactFormSection
+        prefillMessage={prefill?.message}
+        prefillNonce={prefill?.nonce}
+        onMessageEdit={handleMessageEdit}
+      />
       <FaqSection />
 
       {/* Always in the page, empty until the quote is in the form: a live region speaks what is put into it. */}

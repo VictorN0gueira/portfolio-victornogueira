@@ -39,7 +39,9 @@ test.describe('page /contato', () => {
         .map((node) => (node.mainEntity as Array<{ name: string }>).map((question) => question.name)),
     );
     // The questions that the page shows: the summaries of the FAQ section, the one named by the heading above.
-    const faqSection = page.locator('section').filter({ has: page.getByRole('heading', { level: 2, name: homeCopy.faq.heading }) });
+    const faqSection = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { level: 2, name: homeCopy.faq.heading }) });
     const visible = (await faqSection.locator('details summary').allTextContents()).map((text) => text.trim());
 
     expect(faqPages).toHaveLength(1);
@@ -73,7 +75,10 @@ const EMAIL_WIDTHS = [NARROWEST_WIDTH, 320];
 const EMAIL_HEIGHT = 700;
 
 for (const width of EMAIL_WIDTHS) {
-  test(`breaks the e-mail only at the @ and keeps it inside the card at ${width}px with the larger font`, async ({ page, network }, testInfo) => {
+  test(`breaks the e-mail only at the @ and keeps it inside the card at ${width}px with the larger font`, async ({
+    page,
+    network,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
     await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
     await enableLargeFont(page);
@@ -114,6 +119,8 @@ for (const width of EMAIL_WIDTHS) {
     if (width === NARROWEST_WIDTH) expect(report.isBrokenAtTheAt, 'the domain goes under the name').toBe(true);
     expect(report.pastCard).toBeLessThanOrEqual(0.5);
     expect(report.scrollExcess).toBeLessThanOrEqual(0);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(
+      0,
+    );
   });
 }

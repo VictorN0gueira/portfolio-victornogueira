@@ -4,7 +4,8 @@ import { NewTabHint } from '../../components/ui/NewTabHint';
 import { contactCopy } from '../../data/contactCopy';
 import { CONTACT_EMAIL, WHATSAPP_DISPLAY, WHATSAPP_GREETING, whatsappUrl } from '../../lib/constants';
 
-const ROW_CLASSES = 'grid grid-cols-[minmax(0,1fr)] gap-1 border-t border-vn-gray-light py-4 first:border-t-0 first:pt-0 last:pb-0';
+const ROW_CLASSES =
+  'grid grid-cols-[minmax(0,1fr)] gap-1 border-t border-vn-gray-light py-4 first:border-t-0 first:pt-0 last:pb-0';
 const LABEL_CLASSES = 'font-mono text-xs uppercase tracking-[.18em] text-vn-gray-dark';
 // min-h-11 is the 44px touch target. overflow-wrap anywhere keeps the address inside the card at 280px and at the larger font.
 const VALUE_CLASSES = '[overflow-wrap:anywhere] text-lg font-medium text-vn-ink sm:text-xl md:text-2xl';
@@ -42,7 +43,8 @@ export function ContactChannels() {
           <dt className={LABEL_CLASSES}>{email}</dt>
           <dd className="m-0">
             <a href={`mailto:${CONTACT_EMAIL}`} aria-label={`${CONTACT_EMAIL}, ${email}`} className={LINK_CLASSES}>
-              {`${emailName}@`}<wbr />
+              {`${emailName}@`}
+              <wbr />
               {emailDomain}
             </a>
           </dd>

@@ -16,7 +16,9 @@ interface ScrollOptions {
   onFocused?: () => void;
 }
 
-const scrollToIdWhenMounted = vi.hoisted(() => vi.fn<(id: string, options: unknown) => () => void>(() => () => undefined));
+const scrollToIdWhenMounted = vi.hoisted(() =>
+  vi.fn<(id: string, options: unknown) => () => void>(() => () => undefined),
+);
 vi.mock('../lib/scrollToIdWhenMounted', () => ({ scrollToIdWhenMounted }));
 
 const QUOTE_BUTTON = homeCopy.roi.cta;
@@ -69,7 +71,10 @@ describe('ContactPage', () => {
     renderPage();
     const hero = screen.getByRole('heading', { level: 1 }).closest('section') as HTMLElement;
 
-    expect(within(hero).getByRole('link', { name: `${CONTACT_EMAIL}, ${contactCopy.channels.email}` })).toHaveAttribute('href', `mailto:${CONTACT_EMAIL}`);
+    expect(within(hero).getByRole('link', { name: `${CONTACT_EMAIL}, ${contactCopy.channels.email}` })).toHaveAttribute(
+      'href',
+      `mailto:${CONTACT_EMAIL}`,
+    );
     expect(hero).toHaveTextContent(contactCopy.lead);
   });
 
@@ -85,7 +90,9 @@ describe('ContactPage', () => {
     const { container } = renderPage();
 
     // What the old Contact block carried (italic title, zinc grays, a green icon, a blurred circle) and what the system bans.
-    expect(container.innerHTML).not.toMatch(/dark:|italic|zinc-|green-|emerald|purple|cyan|blur-\[|gradient|text-\[10px\]/);
+    expect(container.innerHTML).not.toMatch(
+      /dark:|italic|zinc-|green-|emerald|purple|cyan|blur-\[|gradient|text-\[10px\]/,
+    );
     expect(container.innerHTML).not.toMatch(/[\s"'](from|to|via)-/);
   });
 
