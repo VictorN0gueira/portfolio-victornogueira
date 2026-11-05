@@ -269,7 +269,7 @@ describe('ServicesCards hover settle', () => {
     featuredServices.forEach((service, position) => {
       const term = within(getCards()[position]).getByText(service.prazo);
 
-      expect(term).toHaveClass('pt-6', 'mt-auto');
+      expect(term).toHaveClass('pt-6', 'self-start');
     });
   });
 });

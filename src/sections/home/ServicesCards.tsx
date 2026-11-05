@@ -61,7 +61,7 @@ function ServiceCard({ service }: ServiceCardProps) {
             ))}
           </ul>
         </div>
-        <p className="mt-auto flex items-center gap-2 pt-6 font-mono text-sm">
+        <p className="flex items-center gap-2 self-start pt-6 font-mono text-sm">
           <Clock aria-hidden="true" className="size-4 shrink-0" />
           <span className="sr-only">{homeCopy.services.term}: </span>
           {service.prazo}
