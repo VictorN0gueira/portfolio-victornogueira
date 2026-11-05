@@ -20,6 +20,7 @@ const ROUTES = [
   { path: '/', hasOgUrl: true, title: /Automação de processos e agentes de IA/ },
   { path: '/servicos', hasOgUrl: true, title: /^Serviços/ },
   { path: '/projetos/dizpara', hasOgUrl: true, title: /^DizPara/ },
+  { path: '/blog', hasOgUrl: false, title: /^Blog/ },
   { path: '/rota-que-nao-existe', hasOgUrl: false, title: /^Página não encontrada/ },
 ] as const;
 
@@ -40,6 +41,17 @@ for (const { path, hasOgUrl, title } of ROUTES) {
     }
   });
 }
+
+// The blog only lists articles of other sites: it is out of the index (and stays crawlable, so that the noindex is seen).
+test('/blog is out of the index: noindex, no canonical, no structured data', async ({ page }) => {
+  await page.goto('/blog');
+  await expect(page).toHaveTitle(/^Blog/);
+  await expect.poll(() => page.locator('head [data-static-seo]').count()).toBe(0);
+
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
+  await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+  await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(0);
+});
 
 test('the raw HTML still carries the home share tags for crawlers that run no script', async ({ page }) => {
   const html = await (await page.request.get('/')).text();
