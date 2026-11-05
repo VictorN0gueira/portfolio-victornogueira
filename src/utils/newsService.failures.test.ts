@@ -31,7 +31,15 @@ function devToItem(title: string): Record<string, unknown> {
 }
 
 function tabNewsItem(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return { slug: 's1', title: 'IA no trabalho', source_url: null, published_at: '2026-10-02T10:00:00Z', owner_username: 'ana', tabcoins: 3, ...overrides };
+  return {
+    slug: 's1',
+    title: 'IA no trabalho',
+    source_url: null,
+    published_at: '2026-10-02T10:00:00Z',
+    owner_username: 'ana',
+    tabcoins: 3,
+    ...overrides,
+  };
 }
 
 type Handler = (address: string) => Response | Promise<Response>;
@@ -50,7 +58,10 @@ function stubSources(handlers: { edge: Handler; devTo: Handler; tabNews: Handler
   );
 }
 
-const down = (status = 503): Handler => () => jsonResponse({}, status);
+const down =
+  (status = 503): Handler =>
+  () =>
+    jsonResponse({}, status);
 const offline = (): Handler => () => {
   throw new TypeError('Failed to fetch');
 };
@@ -66,7 +77,11 @@ afterEach(() => {
 
 describe('getNewsArticles says why a source failed', () => {
   it('lists nothing when every source that was asked answered', async () => {
-    stubSources({ edge: () => jsonResponse({ articles: [edgeArticle('Do edge')], source: 'edge-function' }), devTo: down(), tabNews: down() });
+    stubSources({
+      edge: () => jsonResponse({ articles: [edgeArticle('Do edge')], source: 'edge-function' }),
+      devTo: down(),
+      tabNews: down(),
+    });
 
     const result = await getNewsArticles();
 
@@ -75,7 +90,10 @@ describe('getNewsArticles says why a source failed', () => {
   });
 
   it('lists nothing when the answer comes from a valid cache', async () => {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ articles: [edgeArticle('Do cache')], timestamp: Date.now(), source: 'cache' }));
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ articles: [edgeArticle('Do cache')], timestamp: Date.now(), source: 'cache' }),
+    );
     stubSources({ edge: offline(), devTo: offline(), tabNews: offline() });
 
     const result = await getNewsArticles();
@@ -103,11 +121,18 @@ describe('getNewsArticles says why a source failed', () => {
   });
 
   it('records that the edge function answered with no article', async () => {
-    stubSources({ edge: () => jsonResponse({ articles: [] }), devTo: () => jsonResponse([devToItem('Dev A')]), tabNews: down() });
+    stubSources({
+      edge: () => jsonResponse({ articles: [] }),
+      devTo: () => jsonResponse([devToItem('Dev A')]),
+      tabNews: down(),
+    });
 
     const result = await getNewsArticles();
 
-    expect(result.failures).toContainEqual({ source: 'edge-function', reason: 'No articles returned from edge function' });
+    expect(result.failures).toContainEqual({
+      source: 'edge-function',
+      reason: 'No articles returned from edge function',
+    });
   });
 
   it('records the feed that failed when the other one answers, so TabNews can fail without hiding it', async () => {
@@ -136,7 +161,12 @@ describe('getNewsArticles says why a source failed', () => {
 
     expect(result.origin).toBe('fallback');
     expect(result.articles.length).toBeGreaterThan(0);
-    expect(result.failures?.map((failure) => failure.source)).toEqual(['edge-function', 'devto', 'tabnews', 'public-apis']);
+    expect(result.failures?.map((failure) => failure.source)).toEqual([
+      'edge-function',
+      'devto',
+      'tabnews',
+      'public-apis',
+    ]);
     expect(result.failures?.find((failure) => failure.source === 'tabnews')?.reason).toBe('Failed to fetch');
     expect(result.failures?.find((failure) => failure.source === 'public-apis')?.reason).toBe('All public APIs failed');
   });
@@ -166,7 +196,11 @@ describe('getNewsArticles says why a source failed', () => {
   });
 
   it('records a TabNews address that is not an address, and still shows the article', async () => {
-    stubSources({ edge: down(), devTo: down(), tabNews: () => jsonResponse([tabNewsItem({ source_url: 'not an address' })]) });
+    stubSources({
+      edge: down(),
+      devTo: down(),
+      tabNews: () => jsonResponse([tabNewsItem({ source_url: 'not an address' })]),
+    });
 
     const result = await getNewsArticles();
 

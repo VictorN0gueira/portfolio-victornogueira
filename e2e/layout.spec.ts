@@ -326,7 +326,8 @@ test.describe('footer', () => {
 });
 
 test.describe('blog route', () => {
-  test('renders the site header and marks Blog as the current page', async ({ page }) => {
+  test('renders the site header and marks Blog as the current page', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'the desktop nav is hidden on phones');
     await routeNews(page);
     await page.goto('/blog');
 
