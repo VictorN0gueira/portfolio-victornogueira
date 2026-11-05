@@ -110,7 +110,7 @@ describe('BlogPage landmarks', () => {
 });
 
 describe('BlogPage search and filters', () => {
-  it('names the clear button, makes it a plain button, and gives it a target of at least 24px', async () => {
+  it('names the clear button, makes it a plain button, and gives it a target of at least 44px', async () => {
     const { user } = await renderLoaded();
     expect(screen.queryByRole('button', { name: 'Limpar busca' })).toBeNull();
 
@@ -118,7 +118,7 @@ describe('BlogPage search and filters', () => {
     const clear = screen.getByRole('button', { name: 'Limpar busca' });
 
     expect(clear).toHaveAttribute('type', 'button');
-    expect(clear).toHaveClass('size-8');
+    expect(clear).toHaveClass('size-11');
     await user.click(clear);
     expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toHaveValue('');
   });
@@ -127,7 +127,7 @@ describe('BlogPage search and filters', () => {
     await renderLoaded();
 
     const search = screen.getByRole('textbox', { name: 'Buscar artigos' });
-    expect(search).toHaveClass('vn-focus-ring');
+    expect(search).toHaveClass('vn-focus-ring-ink');
     expect(search).not.toHaveClass('focus:outline-none');
   });
 

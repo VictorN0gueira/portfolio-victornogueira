@@ -64,7 +64,8 @@ describe('BlogPage colors', () => {
   });
 
   it('uses a vn token for the placeholder of the search field', () => {
-    expect(SOURCE).toMatch(/placeholder:text-vn-gray-(?:light|mid)/);
+    const filters = readFileSync(resolve(__dirname, '../sections/blog/BlogFilters.tsx'), 'utf8');
+    expect(filters).toMatch(/placeholder:text-vn-gray-(?:light|mid|dark)/);
   });
 });
 

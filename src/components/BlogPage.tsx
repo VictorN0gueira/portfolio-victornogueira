@@ -9,7 +9,6 @@ import {
   Newspaper,
   AlertTriangle,
   Search,
-  X,
 } from 'lucide-react';
 import {
   clearNewsCache,
@@ -25,15 +24,12 @@ import {
   type CatFilter,
   type LangFilter,
 } from '../sections/blog/blogMeta';
-import { CAT_LABELS, LANG_LABELS, blogCopy, countLabel } from '../sections/blog/blogCopy';
+import { blogCopy } from '../sections/blog/blogCopy';
+import { BlogFilters } from '../sections/blog/BlogFilters';
 import { ArticleCard } from '../sections/blog/ArticleCard';
 import { BlogSkeletons } from '../sections/blog/BlogSkeletons';
 import { FeaturedArticle } from '../sections/blog/FeaturedArticle';
 import { NewTabHint } from './ui/NewTabHint';
-
-const FILTER_CHIP_BASE = 'px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all vn-focus-ring';
-const FILTER_CHIP_ON = 'bg-white text-black';
-const FILTER_CHIP_OFF = 'bg-white/[0.05] text-vn-gray-light border border-white/[0.08] hover:border-white/20 hover:text-white';
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function BlogPage() {
@@ -200,87 +196,18 @@ export default function BlogPage() {
         <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
       </div>
 
-      {/* Filtros + Busca */}
       {!loading && !error && articles.length > 0 && (
-        <m.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="py-8 px-6 md:px-12"
-        >
-          <div className="max-w-7xl mx-auto space-y-4">
-            {/* Search */}
-            <div role="search" className="relative max-w-md">
-              <label htmlFor="search" className="sr-only">{blogCopy.filters.searchLabel}</label>
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-vn-gray-light pointer-events-none" />
-              <input
-                id="search"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder={blogCopy.filters.searchPlaceholder}
-                className="w-full pl-11 pr-11 py-3 rounded-2xl bg-white/[0.05] border border-white/[0.08] focus:border-white/20 vn-focus-ring text-sm text-white placeholder:text-vn-gray-mid transition-all"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  aria-label={blogCopy.filters.clearSearch}
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-full text-vn-gray-light hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-white"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Filtro idioma */}
-            <div role="group" aria-label={blogCopy.filters.languageGroup} className="flex gap-2 overflow-x-auto pt-1 pb-1 md:overflow-visible scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0 md:flex-wrap">
-              {(Object.keys(LANG_LABELS) as LangFilter[]).map(f => (
-                <button
-                  key={f}
-                  type="button"
-                  aria-pressed={langFilter === f}
-                  onClick={() => setLangFilter(f)}
-                  className={`${FILTER_CHIP_BASE} ${langFilter === f ? FILTER_CHIP_ON : FILTER_CHIP_OFF}`}
-                >
-                  {LANG_LABELS[f].flag && <span aria-hidden="true">{LANG_LABELS[f].flag} </span>}
-                  <span lang={LANG_LABELS[f].lang}>{LANG_LABELS[f].text}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Filtro tópico */}
-            <div role="group" aria-label={blogCopy.filters.topicGroup} className="flex gap-2 overflow-x-auto pt-1 pb-1 md:overflow-visible scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0 md:flex-wrap">
-              {(Object.keys(CAT_LABELS) as CatFilter[]).map(f => (
-                <button
-                  key={f}
-                  type="button"
-                  aria-pressed={catFilter === f}
-                  onClick={() => setCatFilter(f)}
-                  className={`${FILTER_CHIP_BASE} ${catFilter === f ? FILTER_CHIP_ON : FILTER_CHIP_OFF}`}
-                >
-                  {CAT_LABELS[f]}
-                </button>
-              ))}
-            </div>
-
-            {/* Contador: a live region that is in the page before any filter is used, so the count is announced when it
-                appears and when it changes. It is the only announcement of the results (the empty block below is plain text). */}
-            <div className="flex items-center gap-3 has-[p:empty]:-mt-4">
-              <p role="status" className="text-xs text-vn-gray-light uppercase tracking-widest">
-                {hasActiveFilters &&
-                  countLabel(filteredArticles.length)}
-              </p>
-              {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="text-[10px] text-vn-gray-light hover:text-zinc-300 uppercase tracking-widest underline underline-offset-2 transition-colors"
-                >
-                  {blogCopy.filters.clear}
-                </button>
-              )}
-            </div>
-          </div>
-        </m.section>
+        <BlogFilters
+          searchQuery={searchQuery}
+          langFilter={langFilter}
+          catFilter={catFilter}
+          resultCount={filteredArticles.length}
+          hasActiveFilters={hasActiveFilters}
+          onSearchChange={setSearchQuery}
+          onLangChange={setLangFilter}
+          onCatChange={setCatFilter}
+          onClear={clearFilters}
+        />
       )}
 
       {/* Artigos */}
