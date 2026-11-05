@@ -1,56 +1,7 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { m } from 'motion/react';
-import { useMotionAllowed } from '../hooks/useMotionAllowed';
-
-const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&!?';
-const ACCENTS = new Set(['ã', 'â', 'á', 'à', 'ê', 'é', 'í', 'ó', 'ô', 'ú', 'ç', 'ñ']);
-
-function useScramble(text: string) {
-  const [display, setDisplay] = useState('');
-  const [active, setActive] = useState(false);
-  const isMotionAllowed = useMotionAllowed();
-
-  useEffect(() => {
-    // Reduced motion (the system, or the widget's "Pausar animações"): the title stays as it is (the hook returns the
-    // text while display is empty), with no scramble.
-    if (!isMotionAllowed) return;
-    const timer = setTimeout(() => setActive(true), 400);
-    return () => clearTimeout(timer);
-  }, [text, isMotionAllowed]);
-
-  useEffect(() => {
-    // Animations paused while it runs: the interval ends here and the title is the real text (see the return below).
-    if (!active || !isMotionAllowed) return;
-    let iteration = 0;
-
-    const interval = setInterval(() => {
-      setDisplay(
-        text
-          .split('')
-          .map((char, i) => {
-            if (char === ' ') return ' ';
-            if (ACCENTS.has(char.toLowerCase())) return char;
-            if (i < Math.floor(iteration)) return text[i];
-            return CHARS[Math.floor(Math.random() * CHARS.length)];
-          })
-          .join('')
-      );
-
-      iteration += 0.4;
-      if (iteration >= text.length) {
-        // The last tick above still had a scrambled letter: end on the real text.
-        setDisplay(text);
-        clearInterval(interval);
-      }
-    }, 28);
-
-    return () => clearInterval(interval);
-  }, [text, active, isMotionAllowed]);
-
-  return isMotionAllowed ? display || text : text;
-}
+import { useScramble } from '../hooks/useScramble';
 
 export default function NotFound() {
   const titleDisplay = useScramble('Página não encontrada');
@@ -82,9 +33,7 @@ export default function NotFound() {
       >
         {/* Glitch 404 */}
         <div className="relative mb-4 leading-none" aria-hidden="true">
-          <span
-            className="text-[22vw] md:text-[14rem] font-bold font-display leading-none text-white/[0.04] pointer-events-none"
-          >
+          <span className="text-[22vw] md:text-[14rem] font-bold font-display leading-none text-white/[0.04] pointer-events-none">
             404
           </span>
           <span
@@ -102,7 +51,10 @@ export default function NotFound() {
         </div>
 
         {/* Scramble title */}
-        <h1 className="text-xl md:text-3xl font-bold text-white mb-4 tracking-tight font-mono" aria-label="Página não encontrada">
+        <h1
+          className="text-xl md:text-3xl font-bold text-white mb-4 tracking-tight font-mono"
+          aria-label="Página não encontrada"
+        >
           {titleDisplay}
         </h1>
 
