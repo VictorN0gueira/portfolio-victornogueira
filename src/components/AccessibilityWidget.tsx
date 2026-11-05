@@ -23,7 +23,7 @@ const WRAPPER_CLASSES =
 // Once the visitor has put the tab somewhere (drag, or the buttons of the panel) the wrapper is only the tab: a 44px box on
 // the chosen side with its `top` in px, and the panel is absolutely placed beside it (see PanelPlacer). The offsets are
 // computed in src/lib/floatingLayout.ts, where the WhatsApp stack is.
-const CHOSEN_CLASSES = `pointer-events-none fixed z-(--vn-z-widget) size-11`;
+const CHOSEN_CLASSES = `pointer-events-none fixed z-(--vn-z-widget) size-[44px]`;
 const CHOSEN_SIDE_CLASSES: Record<TabSide, string> = {
   right: `${KEEPS_PLACE_UNDER_SCROLL_LOCK} right-0`,
   left: 'left-0',
@@ -104,11 +104,11 @@ export default function AccessibilityWidget() {
   const wrapperRef = useRef<HTMLElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dismissal = useDismissal(isOpen, close, wrapperRef, triggerRef);
-  const isDark = useBackdropIsDark(triggerRef);
   const activeCount = Object.values(state).filter(Boolean).length;
   const placerRef = useRef<HTMLDivElement>(null);
   const isMotionAllowed = useMotionAllowed();
   const placement = useTabPlacement({ wrapperRef, triggerRef, placerRef, isOpen, activeCount, isMotionAllowed });
+  const isDark = useBackdropIsDark(triggerRef, placement.position);
   const wrapperStyle: CSSProperties | undefined = placement.topPx === null ? undefined : { top: placement.topPx };
 
   // Safari does not focus a button it is clicking, so the trigger takes the focus itself when it closes the panel.
@@ -200,7 +200,7 @@ function AccessibilityTrigger({ buttonRef, isOpen, isDark, panelId, summaryId, a
       aria-label={a11yWidgetCopy.triggerLabel}
       className={cn(
         // touch-none only on the button: a finger that starts on it drags it, a finger anywhere else scrolls the page.
-        'pointer-events-auto relative flex size-11 touch-none select-none items-center justify-center shadow-lg transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 [@media(hover:hover)_and_(pointer:fine)]:cursor-grab data-[dragging=true]:cursor-grabbing',
+        'pointer-events-auto relative flex size-[44px] touch-none select-none items-center justify-center shadow-lg transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 [@media(hover:hover)_and_(pointer:fine)]:cursor-grab data-[dragging=true]:cursor-grabbing',
         isChosen && side === 'left' ? 'rounded-r-xl' : 'rounded-l-xl',
         isDark
           ? 'bg-white text-zinc-950 focus-visible:outline-white'

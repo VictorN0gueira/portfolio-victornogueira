@@ -203,11 +203,11 @@ describe('scrollBand', () => {
 });
 
 describe('shared geometry', () => {
-  it('keeps the numbers the markup spells in classes: size-11 tab and the 52px WhatsApp circle', () => {
+  it('keeps the numbers the markup spells in classes: size-[44px] tab (px, so the larger font does not grow it) and the 52px WhatsApp circle', () => {
     const widget = readFileSync(resolve(__dirname, '../components/AccessibilityWidget.tsx'), 'utf8');
     const whatsApp = readFileSync(resolve(__dirname, '../components/layout/WhatsAppButton.tsx'), 'utf8');
     expect(TAB_SIZE_PX).toBe(44);
-    expect(widget).toContain('size-11');
+    expect(widget).toContain('size-[44px]');
     expect(WHATSAPP_SIZE_PX).toBe(52);
     expect(whatsApp).toContain('size-[52px]');
     expect(whatsApp).toContain('FLOAT_MARGIN_PX');

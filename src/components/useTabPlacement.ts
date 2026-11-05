@@ -8,6 +8,7 @@ import {
   stepPosition,
   topFromRatio,
   TAB_SIZE_PX,
+  TAB_SLIDE_MS,
   type Box,
   type Size,
   type StepDirection,
@@ -17,7 +18,6 @@ import {
 import { readFloatingView, type FloatingView } from '../lib/floatingView';
 import { clearTabPosition, readTabPosition, writeTabPosition } from '../lib/tabPositionStorage';
 
-const SLIDE_MS = 220;
 const SLIDE_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
 const BAND_ATTRIBUTE = 'data-vn-tab-band';
 const BAND_PAD_PROPERTY = '--vn-tab-pad';
@@ -176,7 +176,7 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
     wrapper.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
     void wrapper.offsetWidth;
-    wrapper.style.transition = `transform ${SLIDE_MS}ms ${SLIDE_EASE}`;
+    wrapper.style.transition = `transform ${TAB_SLIDE_MS}ms ${SLIDE_EASE}`;
     wrapper.style.transform = '';
   }, [position, wrapperRef, triggerRef]);
 

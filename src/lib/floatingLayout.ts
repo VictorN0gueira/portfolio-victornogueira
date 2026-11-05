@@ -6,7 +6,7 @@
 export const FLOAT_MARGIN_PX = 16;
 /** The gap between the tab and the WhatsApp button when the tab stacks above it on the left. */
 export const FLOAT_GAP_PX = 16;
-/** The tab is size-11 (44px), the WCAG minimum target. */
+/** The tab is size-[44px], the WCAG minimum target; in px so that the larger font (rem) does not grow it. */
 export const TAB_SIZE_PX = 44;
 /** The WhatsApp button is size-[52px]. */
 export const WHATSAPP_SIZE_PX = 52;
@@ -16,6 +16,8 @@ export const TAP_SLOP_PX = 8;
 const STEP_RATIO = 0.1;
 /** The panel is w-[min(13rem,...)]: 208px at the default font size. */
 const PANEL_WIDTH_PX = 208;
+/** How long the tab takes to slide into its place after a drag or a move of the panel buttons. */
+export const TAB_SLIDE_MS = 220;
 /** The gap between the tab and the panel that opens beside it. */
 export const PANEL_GAP_PX = 8;
 /** Air kept between the tab and a focused control the browser scrolls into view. */

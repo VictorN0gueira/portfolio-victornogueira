@@ -21,13 +21,13 @@ describe('scroll padding at the bottom of the window', () => {
   it('clears the accessibility tab on a phone held upright (under sm, taller than 30rem)', () => {
     const phone = blockBody(indexCss, '@media (width < 40rem) and (min-height: 30rem)');
 
-    // The tab sits 96px over max(16px, the bottom inset) and is 2.75rem (size-11) tall; a few px of air on top of it.
+    // The tab sits 96px over max(16px, the bottom inset) and is 2.75rem tall (the default offset; the tab itself is size-[44px] since the larger font must not grow it); a few px of air on top of it.
     expect(phone).toContain('scroll-padding-bottom: calc(max(16px, env(safe-area-inset-bottom)) + 96px + 2.75rem + 8px)');
   });
 
-  it('matches how the widget is placed: 96px over the safe area, size-11, centred from sm up and under 30rem', () => {
+  it('matches how the widget is placed: 96px over the safe area, size-[44px], centred from sm up and under 30rem', () => {
     expect(widgetSource).toContain('bottom-[calc(max(16px,env(safe-area-inset-bottom))+96px)]');
-    expect(widgetSource).toContain('size-11');
+    expect(widgetSource).toContain('size-[44px]');
     expect(widgetSource).toContain('sm:top-1/2');
     expect(widgetSource).toContain('[@media(max-height:30rem)]:top-1/2');
   });

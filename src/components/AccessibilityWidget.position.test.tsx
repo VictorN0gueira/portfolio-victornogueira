@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TAB_POSITION_STORAGE_KEY } from '../lib/tabPositionStorage';
@@ -135,5 +135,20 @@ describe('AccessibilityWidget position', () => {
     renderWithProviders(<AccessibilityWidget />);
 
     expect(document.documentElement.getAttribute('data-vn-tab-band')).toBe('bottom');
+  });
+
+  // F3: the colours of the tab follow the page under it, which changes when the tab moves (not only on scroll and resize).
+  it('reads the page under the tab again once it settles in a new place', async () => {
+    const backdrop = document.createElement('div');
+    Object.defineProperty(document, 'elementsFromPoint', { value: () => [backdrop], configurable: true, writable: true });
+    backdrop.style.backgroundColor = 'rgb(255, 255, 255)';
+    const { user, group } = await openPanel();
+    const trigger = screen.getByRole('button', { name: TRIGGER_NAME });
+    expect(trigger).toHaveClass('bg-zinc-950');
+
+    backdrop.style.backgroundColor = 'rgb(0, 0, 0)';
+    await user.click(within(group).getByRole('button', { name: 'Mover o botão para a esquerda' }));
+
+    await waitFor(() => expect(trigger).toHaveClass('bg-white'));
   });
 });
