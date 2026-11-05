@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import { m } from 'motion/react';
 import { Fragment, useId, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
+import { notFoundCopy } from '../data/notFoundCopy';
 import { useMotionAllowed } from '../hooks/useMotionAllowed';
 import { useScramble } from '../hooks/useScramble';
 import { EASE_OUT } from '../lib/motion';
@@ -18,13 +19,6 @@ import { Cursor } from './ui/Cursor';
 import { Heading } from './ui/Heading';
 import { ScanGrid } from './ui/ScanGrid';
 import { Section } from './ui/Section';
-
-// DRAFT copy, for the owner to review.
-const NOT_FOUND_COPY = {
-  title: 'Página não encontrada',
-  body: 'A página que você procura não existe ou foi movida para outro endereço.',
-  back: 'Voltar ao início',
-} as const;
 
 // The content starts below the floating header (the same top as the PageHero) and the block is centred in what is left.
 const BREATHING_ROOM = '1.5rem';
@@ -101,15 +95,15 @@ export default function NotFound() {
           >
             <NotFoundGlitch />
             <Heading as="h1" size="l" id={headingId} className="mt-6 vn-landscape:mt-3">
-              <ScrambledTitle text={NOT_FOUND_COPY.title} />
+              <ScrambledTitle text={notFoundCopy.title} />
             </Heading>
             <p className="mt-6 max-w-md text-pretty text-base text-vn-gray-light md:text-lg vn-landscape:mt-3 vn-landscape:max-w-xl">
-              {NOT_FOUND_COPY.body}
+              {notFoundCopy.description}
             </p>
             <Button asChild tone="dark" size="lg" className="mt-10 vn-landscape:mt-5 vn-landscape:min-h-11">
               <Link to="/">
                 <ArrowLeft aria-hidden="true" className="size-4 shrink-0" />
-                {NOT_FOUND_COPY.back}
+                {notFoundCopy.back}
               </Link>
             </Button>
             <p className="mt-12 font-mono text-xs uppercase tracking-[.18em] text-vn-gray-light vn-landscape:mt-6">

@@ -198,11 +198,27 @@ test.describe('after M2', () => {
 test('an unknown path answers 404 with noindex in the raw HTML and after the app mounts', async ({ page }) => {
   const response = await page.request.get('/rota-que-nao-existe');
   expect(response.status()).toBe(404);
-  expect(await response.text()).toContain('name="robots" content="noindex, nofollow"');
+  const rawHtml = await response.text();
+  expect(rawHtml).toContain('name="robots" content="noindex, nofollow"');
 
   await page.goto('/rota-que-nao-existe');
   await expect.poll(() => page.locator('head [data-static-seo]').count()).toBe(0);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
   await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
   await expect(page).toHaveTitle(/^Página não encontrada/);
+
+  // The static head and the head the app writes say the same: one description, and the same one in og:description.
+  const staticHead = await page.evaluate((html) => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return {
+      description: doc.querySelector('meta[name="description"]')?.getAttribute('content'),
+      ogDescription: doc.querySelector('meta[property="og:description"]')?.getAttribute('content'),
+      title: doc.title,
+    };
+  }, rawHtml);
+  expect(staticHead.description).toBeTruthy();
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', staticHead.description ?? '');
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', staticHead.ogDescription ?? '');
+  expect(staticHead.ogDescription).toBe(staticHead.description);
+  await expect(page).toHaveTitle(staticHead.title);
 });

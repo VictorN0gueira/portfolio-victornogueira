@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { notFoundCopy } from '../data/notFoundCopy';
 import { SITE } from '../lib/site';
 import {
   NOT_FOUND_META,
@@ -248,6 +249,13 @@ describe('the 404 page', () => {
     expect(metaContent(doc, 'meta[name="robots"]')).toBe('noindex, nofollow');
     expect(doc.querySelector('link[rel="canonical"]')).toBeNull();
     expect(doc.querySelector('meta[property="og:url"]')).toBeNull();
+  });
+
+  it('says what the page says: the title and the sentence of the 404 of the app, from the one copy module', () => {
+    expect(NOT_FOUND_META.title).toBe(`${notFoundCopy.title} | VN One`);
+    expect(NOT_FOUND_META.description).toBe(notFoundCopy.description);
+    expect(metaContent(doc, 'meta[name="description"]')).toBe(notFoundCopy.description);
+    expect(metaContent(doc, 'meta[property="og:description"]')).toBe(notFoundCopy.description);
   });
 });
 

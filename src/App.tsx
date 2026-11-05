@@ -10,6 +10,7 @@ import { shellCopy } from './data/shellCopy';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 import { whenIdle } from './lib/whenIdle';
 import { HomePage } from './pages/HomePage';
+import { notFoundCopy } from './data/notFoundCopy';
 
 // Every page, the not found page, the blog and the accessibility widget are chunks of their own. A chunk that fails to
 // load is retried once and then reaches an error boundary (see lazyWithRetry).
@@ -50,7 +51,7 @@ function ScrollResetOnLayoutSwitch() {
 function NotFoundRoute() {
   return (
     <>
-      <SEO title="Página não encontrada" noindex />
+      <SEO title={notFoundCopy.title} description={notFoundCopy.description} noindex />
       <NotFound />
     </>
   );
