@@ -194,8 +194,9 @@ test.describe('after M2', () => {
   }
 });
 
-// An unknown path is a real 404 with the app page: the head says noindex before and after the app mounts, with no canonical.
-// An unknown project address shows the same page, so its head is the same: one wording, one sentence, from src/data/notFoundCopy.ts.
+// An unknown path is a real 404 with the app page: the head says noindex before and after the app mounts, with no
+// canonical. An unknown project address shows the same page, so its head is the same: one wording and one sentence,
+// both from src/data/notFoundCopy.ts.
 const NOT_FOUND_PATHS = ['/rota-que-nao-existe', '/projetos/nao-existe'];
 
 for (const path of NOT_FOUND_PATHS) {
@@ -211,7 +212,7 @@ for (const path of NOT_FOUND_PATHS) {
     await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
     await expect(page).toHaveTitle(/^Página não encontrada/);
 
-    // The static head and the head the app writes say the same: one description, in og:description and twitter:description too.
+    // The static head and the head the app writes say the same: one description, also in og: and twitter:.
     const staticHead = await page.evaluate((html) => {
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const content = (selector: string) => doc.querySelector(selector)?.getAttribute('content') ?? '';
