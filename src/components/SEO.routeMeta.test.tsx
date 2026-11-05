@@ -79,7 +79,7 @@ describe('SEO fed by the route metadata', () => {
     const project = projects[0];
     const meta = metaOf(`/projetos/${project.slug}`);
 
-    render(<SEO path={`/projetos/${project.slug}`} />);
+    render(<SEO path={`/projetos/${project.slug}`} meta={meta} />);
 
     expect(readMeta('property', 'og:image')).toBe(meta.image?.url);
     expect(readMeta('name', 'twitter:image')).toBe(meta.image?.url);

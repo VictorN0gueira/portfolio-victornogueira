@@ -231,3 +231,33 @@ describe('copy that matches the pages and the data', () => {
     expect(description).not.toContain('e-mail do Spotify');
   });
 });
+
+describe('the project metadata and the critical path', () => {
+  const read = (file: string) => readFileSync(resolve(ROOT, file), 'utf8');
+
+  it('starts the title of each project route with the title of the project in src/data/projects.ts', () => {
+    for (const project of projects) {
+      expect(metaOf(`/projetos/${project.slug}`).title.startsWith(project.title), project.slug).toBe(true);
+    }
+  });
+
+  it('keeps the texts of the projects out of the modules that the main chunk loads', () => {
+    // SEO.tsx is imported by the app shell: whatever it imports is on the critical path of every page (npm run budget).
+    for (const file of ['src/components/SEO.tsx', 'src/seo/pageMeta.ts', 'src/seo/structuredData.ts']) {
+      const imports = [...read(file).matchAll(/^import\s(?!type\b)[^;]*?from\s'([^']+)'/gms)].map((match) => match[1]);
+
+      for (const specifier of imports) {
+        expect(specifier, `${file} imports ${specifier}`).not.toMatch(/projectMeta|routeMeta$|data\/projects/);
+      }
+    }
+  });
+
+  it('is imported, among the pages, only by the page of a project', () => {
+    const importers = ['AboutPage', 'ContactPage', 'ProjectsPage', 'ServicesPage', 'HomePage'].filter((page) =>
+      /projectMeta|seo\/routeMeta/.test(read(`src/pages/${page}.tsx`)),
+    );
+
+    expect(importers).toEqual([]);
+    expect(read('src/pages/ProjectDetailPage.tsx')).toContain("from '../seo/projectMeta'");
+  });
+});

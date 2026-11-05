@@ -1,13 +1,18 @@
 import { useEffect } from 'react';
 import { serializeJsonLd } from '../lib/jsonLd';
 import { SITE, pageTitle } from '../lib/site';
-import { routeMetaFor, type RouteMeta } from '../seo/routeMeta';
+import { pageMetaFor, type RouteMeta } from '../seo/pageMeta';
 import { homeEntityNodes, structuredDataFor } from '../seo/structuredData';
 
 interface SEOProps {
   title?: string;
   description?: string;
   path?: string;
+  /**
+   * The metadata of the route, when it is not one of the home and the inner pages (those are found by `path`). The page of a
+   * project passes its own, from seo/projectMeta, so that the texts of the projects stay out of the main chunk.
+   */
+  meta?: RouteMeta;
   image?: string;
   /** Texto alternativo da imagem de compartilhamento. Padrão: o do banner do site */
   imageAlt?: string;
@@ -119,7 +124,7 @@ function schemasFor(path: string, meta: RouteMeta | undefined, isNoindex: boolea
 export function SEO(props: SEOProps) {
   const { path = '/', jsonLd } = props;
   useDropStaticTags();
-  const meta = routeMetaFor(path);
+  const meta = props.meta ?? pageMetaFor(path);
   // An explicit noindex wins; without one, the route metadata decides (the blog is out of the index).
   const isNoindex = props.noindex ?? meta?.isIndexable === false;
   const tags = resolveShareTags(props, meta);
