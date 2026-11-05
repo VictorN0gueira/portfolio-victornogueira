@@ -1,6 +1,7 @@
 import { act, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { stubMatchMedia } from '../test/matchMedia';
+import { NOT_FOUND_HEADING } from '../test/notFoundHeading';
 import { renderWithProviders } from '../test/render';
 import NotFound from './NotFound';
 
@@ -37,6 +38,6 @@ describe('NotFound title under StrictMode (effects run twice)', () => {
 
     expect(hasFrame()).toBe(false);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(TITLE);
-    expect(screen.getByRole('heading', { level: 1, name: TITLE })).toBeInTheDocument();
+    expect(screen.getByRole('heading', NOT_FOUND_HEADING)).toBeInTheDocument();
   });
 });

@@ -58,6 +58,31 @@
 }
 
 /*
+ * One word of the scrambled 404 title (NotFound.tsx). The real word is in the flow and gives the box; while the scramble
+ * runs its letters are hidden and the frame, from data-scramble, is drawn over the box, from its start (the line is centred, so the word starts where the frame does). Generated content is not in
+ * textContent, the selection, find in page (the word is an inline box, so the phrase stays one run) or the translation.
+ * The `/ ""` alternative makes it decoration for assistive technology too (Chromium reads generated text otherwise). It is
+ * a second declaration, after a plain one: a browser that does not know the syntax drops only that line and keeps the
+ * frame, instead of dropping the rule and leaving the hidden word blank. The frame is clipped to the box of the word, so a
+ * frame wider than the real letters (stand ins differ in width) never passes the edge of the screen.
+ */
+.vn-scramble-word {
+  position: relative;
+}
+
+.vn-scramble-word::after {
+  content: attr(data-scramble);
+  content: attr(data-scramble) / "";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/*
  * Scan line that sweeps down a ScanGrid. The element is a full size layer of the grid and only its
  * bottom 2px are drawn, so translating it from -100% to 0 moves the line from the top edge to the
  * bottom edge of the grid, whatever the viewport. It sits inside the grid, so the grid mask fades it too.

@@ -1,6 +1,6 @@
 import { ArrowLeft } from 'lucide-react';
 import { m } from 'motion/react';
-import { Fragment, useId, type CSSProperties } from 'react';
+import { useId, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { notFoundCopy } from '../data/notFoundCopy';
 import { useMotionAllowed } from '../hooks/useMotionAllowed';
@@ -34,16 +34,13 @@ const ENTRANCE = {
   transition: { duration: 0.6, ease: EASE_OUT },
 } as const;
 
-// The frame of the scramble is drawn by ::after from the data-scramble attribute, centred on the box of the real word.
-// Generated content is not in textContent, innerText, the selection, the find in page or the translation, and it is gone
-// with the CSS off, so the page keeps one copy of the title: the real one.
-const WORD_CLASSES =
-  'relative inline-block after:pointer-events-none after:absolute after:inset-0 after:flex after:items-center after:justify-center after:whitespace-nowrap after:content-[attr(data-scramble)]';
-
-/** A word of the title, the one that sizes the line. While `frame` is set its letters are hidden and the frame is drawn over them. */
+/**
+ * A word of the title, the one that sizes the line. While `frame` is set its letters are hidden and the frame is drawn over
+ * them by `.vn-scramble-word::after` (components.css), which is not part of the text of the page.
+ */
 function TitleWord({ word, frame }: { word: string; frame: string | undefined }) {
   return (
-    <span data-scramble={frame} className={WORD_CLASSES}>
+    <span data-scramble={frame} className="vn-scramble-word">
       <span className={frame === undefined ? undefined : 'opacity-0'}>{word}</span>
     </span>
   );
@@ -63,13 +60,13 @@ function ScrambledTitle({ text }: { text: string }) {
   return (
     <>
       {words.map((word, index) => {
-        const piece = <TitleWord word={word} frame={isScrambling ? frames[index] : undefined} />;
-        if (index < lastIndex) {
-          return <Fragment key={`${index}-${word}`}>{piece} </Fragment>;
-        }
+        const frame = isScrambling ? frames[index] : undefined;
+        // The space after a word is part of the word: Chromium drops the space between two inline boxes that carry a
+        // generated frame from the name of the heading, and joins the words.
+        if (index < lastIndex) return <TitleWord key={`${index}-${word}`} word={`${word} `} frame={frame} />;
         return (
           <span key={`${index}-${word}`} className="whitespace-nowrap">
-            {piece}
+            <TitleWord word={word} frame={frame} />
             <Cursor tone="accent" className="ml-[0.2em]" />
           </span>
         );

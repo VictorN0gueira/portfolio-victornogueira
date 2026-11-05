@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { A11Y_STORAGE_KEY } from '../contexts/AccessibilityContext';
 import { useAccessibility } from '../contexts/useAccessibility';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../test/matchMedia';
+import { NOT_FOUND_HEADING } from '../test/notFoundHeading';
 import { renderWithProviders } from '../test/render';
 import NotFound from './NotFound';
 
@@ -57,7 +58,7 @@ describe('NotFound', () => {
     for (let step = 0; step < 20; step += 1) {
       advance(60);
       expect(heading().textContent).toBe(TITLE);
-      expect(screen.getByRole('heading', { level: 1, name: TITLE })).toBeInTheDocument();
+      expect(screen.getByRole('heading', NOT_FOUND_HEADING)).toBeInTheDocument();
     }
     expect(drawnFrame()).not.toBeNull();
   });
@@ -97,6 +98,19 @@ describe('NotFound', () => {
 
     expect(drawnFrame()).toBeNull();
     expect(heading().textContent).toBe(TITLE);
+  });
+
+  it('draws each word through the vn-scramble-word rule, as an inline box so find in page reads the whole phrase', () => {
+    stubMatchMedia();
+    renderWithProviders(<NotFound />);
+
+    const words = Array.from(heading().querySelectorAll('.vn-scramble-word'));
+
+    expect(words).toHaveLength(3);
+    for (const word of words) {
+      expect(word.className.split(' ')).not.toContain('inline-block');
+      expect(word.className).not.toMatch(/after:/);
+    }
   });
 
   it('has one heading, the h1', () => {

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { A11Y_STORAGE_KEY, PAGE_LOAD_TIMEOUT_MS } from './homeSupport';
+import { A11Y_STORAGE_KEY, PAGE_LOAD_TIMEOUT_MS, enableLargeFont } from './homeSupport';
 import { expect, test } from './n8nGuard';
 import { describePageContract, openPage, type PageContract } from './pageContract';
 
@@ -26,6 +26,11 @@ const SELF_STOPPING = ['vn-blink', 'vn-glitch-a', 'vn-glitch-b'];
 const SELF_STOP_LIMIT_MS = 6000;
 const MOVEMENT_LIMIT_MS = 5000;
 const RUNNING_TIMEOUT_MS = 5000;
+const NARROWEST = { width: 280, height: 560 };
+const PHRASE = 'página não encontrada';
+// WCAG 1.4.12: the text spacing a visitor may set, applied to everything.
+const TEXT_SPACING_CSS =
+  '* { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; }';
 
 /** The animation a layer or the cursor runs, as the browser computed it. */
 function animationOf(page: Page, selector: string): Promise<string> {
@@ -209,6 +214,121 @@ test.describe('the 404 page', () => {
     await expect.poll(() => selfStoppingAnimations(page)).toEqual([]);
     expect(await animationOf(page, '.vn-cursor')).toBe('none');
     for (const layer of GLITCH_LAYERS) expect(await animationOf(page, layer)).toBe('none');
+  });
+
+  test.describe('while the title scrambles, for assistive technology and for the reader', () => {
+    test('names the h1 by the title alone in the accessibility tree, with no extra text, in a frame', async ({
+      page,
+    }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', ONLY_IN_DESKTOP);
+      test.slow();
+      await page.goto(UNKNOWN_PATH);
+      await expect(page.locator('h1 [data-scramble]').first()).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
+      const client = await page.context().newCDPSession(page);
+      await client.send('Accessibility.enable');
+
+      const { nodes } = await client.send('Accessibility.getFullAXTree');
+      const framesAfter = await page.locator('h1 [data-scramble]').count();
+
+      const byId = new Map(nodes.map((node) => [node.nodeId, node]));
+      const heading = nodes.find(
+        (node) =>
+          node.role?.value === 'heading' &&
+          node.properties?.some((item) => item.name === 'level' && item.value.value === 1),
+      );
+      expect(heading, 'the h1 is in the tree').toBeDefined();
+      // The name follows the CSS, which lowercases the title.
+      expect(heading?.name?.value, 'the name of the h1').toBe(PHRASE);
+      const words = new Set(PHRASE.split(' '));
+      const texts: string[] = [];
+      const visit = (id: string): void => {
+        const node = byId.get(id);
+        if (!node) return;
+        if (node.role?.value === 'StaticText' && !node.ignored)
+          texts.push(
+            String(node.name?.value ?? '')
+              .trim()
+              .toLowerCase(),
+          );
+        node.childIds?.forEach(visit);
+      };
+      heading?.childIds?.forEach(visit);
+      expect(
+        texts.filter((text) => text !== '' && !words.has(text)),
+        'no text of a frame under the h1',
+      ).toEqual([]);
+      expect(framesAfter, 'the scramble was still running when the tree was read').toBeGreaterThan(0);
+    });
+
+    test('lets find in page find the whole title, in the middle of the scramble and after it', async ({
+      page,
+    }, testInfo) => {
+      test.skip(testInfo.project.name !== 'desktop', ONLY_IN_DESKTOP);
+      test.slow();
+      await page.goto(UNKNOWN_PATH);
+      await expect(page.locator('h1 [data-scramble]').first()).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
+      // Not in the DOM types: the find of the browser (case insensitive, wraps around).
+      const find = () =>
+        page.evaluate(
+          (phrase) =>
+            (
+              window as unknown as {
+                find: (text: string, isCaseSensitive: boolean, isBackwards: boolean, isWrapping: boolean) => boolean;
+              }
+            ).find(phrase, false, false, true),
+          PHRASE,
+        );
+
+      expect(await find(), 'found while the frames are drawn').toBe(true);
+      await expect(page.locator('h1 [data-scramble]')).toHaveCount(0, { timeout: PAGE_LOAD_TIMEOUT_MS });
+      expect(await find(), 'found after the scramble').toBe(true);
+    });
+
+    test.describe('at 280px with the large font and the text spacing of the visitor', () => {
+      test.use({ viewport: NARROWEST, hasTouch: true, isMobile: true });
+
+      test('no frame goes past the edge of the screen, and the frames are clipped to their word', async ({
+        page,
+      }, testInfo) => {
+        test.skip(testInfo.project.name !== 'desktop', ONLY_IN_DESKTOP);
+        test.slow();
+        await enableLargeFont(page);
+        await page.goto(UNKNOWN_PATH);
+        await expect(page.getByRole('heading', { level: 1 })).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
+        await page.addStyleTag({ content: TEXT_SPACING_CSS });
+
+        const report = await page.evaluate(
+          (windowMs) =>
+            new Promise<{ frames: number; maxRight: number; minLeft: number; scrollWidth: number; clipped: boolean }>(
+              (resolve) => {
+                const started = performance.now();
+                const result = { frames: 0, maxRight: 0, minLeft: Infinity, scrollWidth: 0, clipped: true };
+                const read = (): void => {
+                  const words = Array.from(document.querySelectorAll<HTMLElement>('h1 .vn-scramble-word'));
+                  if (words.some((word) => word.hasAttribute('data-scramble'))) result.frames += 1;
+                  for (const word of words) {
+                    const box = word.getBoundingClientRect();
+                    result.maxRight = Math.max(result.maxRight, box.right);
+                    result.minLeft = Math.min(result.minLeft, box.left);
+                    if (getComputedStyle(word, '::after').overflowX !== 'hidden') result.clipped = false;
+                  }
+                  result.scrollWidth = Math.max(result.scrollWidth, document.documentElement.scrollWidth);
+                  if (performance.now() - started < windowMs) requestAnimationFrame(read);
+                  else resolve(result);
+                };
+                read();
+              },
+            ),
+          SAMPLE_WINDOW_MS,
+        );
+
+        expect(report.frames, 'the scramble was seen running').toBeGreaterThan(0);
+        expect(report.clipped, 'the frame is clipped to the box of its word').toBe(true);
+        expect(report.minLeft, 'no word starts before the left edge').toBeGreaterThanOrEqual(0);
+        expect(report.maxRight, 'no word ends past the right edge').toBeLessThanOrEqual(NARROWEST.width);
+        expect(report.scrollWidth, 'no horizontal scroll').toBeLessThanOrEqual(NARROWEST.width);
+      });
+    });
   });
 
   test.describe('on a phone held sideways', () => {

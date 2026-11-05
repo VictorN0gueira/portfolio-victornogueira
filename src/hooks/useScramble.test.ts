@@ -187,3 +187,49 @@ describe('useScramble', () => {
     expect(result.current.scramble).toEqual({ shown: TEXT, isScrambling: false });
   });
 });
+
+// A translator rewrites the words of the page while the frames are drawn over them: the scramble would be jumbled in the
+// language of the visitor. A translated page gets the real title, and a translation that arrives in the middle stops it.
+describe('useScramble on a translated page', () => {
+  const root = document.documentElement;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    localStorage.clear();
+    stubMatchMedia();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    root.className = '';
+    root.lang = 'pt-BR';
+  });
+
+  it('does not scramble, and sets no timer, when the page is translated from the start', () => {
+    root.classList.add('translated-ltr');
+    const { result } = renderScramble();
+
+    const hasScrambled = sawScramble(() => result.current.scramble, START_MS + TOTAL_MS);
+
+    expect(hasScrambled).toBe(false);
+    expect(result.current.scramble).toEqual({ shown: TEXT, isScrambling: false });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('stops in the middle, and shows the real text, when a translator arrives while it runs', async () => {
+    const { result } = renderScramble();
+    advance(START_MS);
+    advance(1000);
+    expect(result.current.scramble.isScrambling).toBe(true);
+
+    root.classList.add('translated-ltr');
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.scramble).toEqual({ shown: TEXT, isScrambling: false });
+    advance(500);
+    expect(result.current.scramble.isScrambling).toBe(false);
+  });
+});

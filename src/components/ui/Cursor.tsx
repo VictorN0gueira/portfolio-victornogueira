@@ -14,7 +14,7 @@ const TONE_CLASSES: Record<CursorTone, string> = {
 };
 
 /**
- * Terminal style block cursor that blinks after a word. The blink is `.vn-cursor` in tokens.css,
+ * Terminal style block cursor that blinks after a word. The blink is `.vn-cursor` in components.css,
  * which stops it (the block stays visible) under reduced motion and `.a11y-no-animations`.
  * The accent tone counts as the section's single accent element and belongs on black only.
  */

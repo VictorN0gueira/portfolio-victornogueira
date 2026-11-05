@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useIsTranslated } from './useIsTranslated';
 import { useMotionAllowed } from './useMotionAllowed';
 
 // The title is lowercase by CSS, so the letters that stand in for it are lowercase too.
@@ -40,13 +41,17 @@ function scrambled(text: string, revealed: number): string {
  * from the left, ending on the exact text. The hook only says what to draw: the real text stays the one the page is made of
  * (see NotFound), and a frame is a picture of it.
  *
- * With reduced motion (the system, or the widget's "Pausar animações") the real text is shown and no timer runs. A pause in
+ * With reduced motion (the system, or the widget's "Pausar animações") or a translated page the real text is shown and no
+ * timer runs. A pause in
  * the middle drops the run: resuming waits again and starts over. A title that already settled stays as it is. A new text
  * starts a new run.
  */
 export function useScramble(text: string): Scramble {
   const [run, setRun] = useState<Run>({ text, phase: 'waiting', frame: '' });
-  const isMotionAllowed = useMotionAllowed();
+  // A translated page gets the real text, like reduced motion: a translator rewrites the words under the frames.
+  const isMotionWelcome = useMotionAllowed();
+  const isTranslated = useIsTranslated();
+  const isMotionAllowed = isMotionWelcome && !isTranslated;
   const phase = run.text === text ? run.phase : 'waiting';
 
   useEffect(() => {
