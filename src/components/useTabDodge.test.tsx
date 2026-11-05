@@ -19,6 +19,7 @@ interface Scene {
   window: { width: number; height: number };
   tab: Box;
   link: Box;
+  clip?: Box;
 }
 
 let scene: Scene;
@@ -66,7 +67,18 @@ function Harness({ isOpen = false, position = null }: HarnessProps) {
           c
         </a>
       </div>
-      <aside ref={wrapperRef} data-testid="wrapper">
+      <input data-testid="field" />
+      <div data-testid="clip" style={{ overflowX: 'hidden', overflowY: 'hidden' }}>
+        <a href="#d" data-testid="link-d">
+          d
+        </a>
+      </div>
+      <dialog open data-testid="dialog">
+        <a href="#e" data-testid="link-e">
+          e
+        </a>
+      </dialog>
+      <aside ref={wrapperRef} data-testid="wrapper" style={{ zIndex: 150 }}>
         <button ref={triggerRef} type="button" data-testid="tab">
           tab
         </button>
@@ -82,7 +94,7 @@ function setup(props: HarnessProps = {}, isStrict = false) {
   const element = <Harness {...props} />;
   const view = render(isStrict ? <StrictMode>{element}</StrictMode> : element);
   const wrapper = view.getByTestId('wrapper');
-  for (const id of ['link-a', 'link-b', 'link-c']) {
+  for (const id of ['link-a', 'link-b', 'link-c', 'link-d', 'link-e', 'field']) {
     vi.spyOn(view.getByTestId(id), 'getClientRects').mockImplementation(
       () =>
         [
@@ -133,9 +145,9 @@ beforeEach(() => {
   isFocusVisible = true;
   // The wrapper is mounted before a test could spy on it, and the hook reads its box when it mounts.
   vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-    return rectOf(
-      this.getAttribute('data-testid') === 'wrapper' ? scene.tab : { left: 0, top: 0, width: 0, height: 0 },
-    );
+    const id = this.getAttribute('data-testid');
+    const none = { left: 0, top: 0, width: 0, height: 0 };
+    return rectOf(id === 'wrapper' ? scene.tab : id === 'clip' ? (scene.clip ?? none) : none);
   });
   const matches = Element.prototype.matches;
   vi.spyOn(Element.prototype, 'matches').mockImplementation(function (this: Element, selector: string) {
@@ -191,7 +203,7 @@ describe('the tab steps aside for a control the keyboard focused under it', () =
     expect(dy(tab)).toBe('0px');
   });
 
-  it('judges the last focus of a quick run once per frame, so a held Tab never waits for a quiet moment', () => {
+  it('judges the last focus of a quick run once per frame, the first frame after it, with no quiet moment to wait for', () => {
     const { tab, a, b } = setup();
     const reads = a.getClientRects as ReturnType<typeof vi.fn>;
     act(() => {
@@ -246,17 +258,51 @@ describe('the pointer', () => {
     expect(dy(tab)).toBe('0px');
   });
 
-  it('leaves a focus after a press alone until a key is pressed again', () => {
-    const { tab, a, b } = setup();
+  it('leaves a focus the pointer brought to a text field alone, but not the same field after a key', () => {
+    const { tab, view } = setup();
+    const field = view.getByTestId('field');
+    fireEvent.pointerDown(document.body);
+    act(() => field.focus());
+    frame();
+    act(() => vi.advanceTimersByTime(SETTLE_MS));
+    expect(dy(tab)).toBe('');
+
+    act(() => field.blur());
+    fireEvent.keyDown(document, { key: 'Tab' });
+    act(() => field.focus());
+    frame();
+    expect(dy(tab)).toBe('-38px');
+  });
+
+  it('does not move for a link the pointer focused when the browser does not call it focus-visible', () => {
+    const { tab, a } = setup();
+    isFocusVisible = false;
     fireEvent.pointerDown(document.body);
     act(() => a.focus());
     frame();
+    act(() => vi.advanceTimersByTime(SETTLE_MS));
     expect(dy(tab)).toBe('');
+  });
 
+  it('judges a focus from assistive technology after an earlier touch: the latch covers the event, not the lifetime', () => {
+    const { tab, a, b } = setup();
+    fireEvent.pointerDown(document.body);
     act(() => b.focus());
-    fireEvent.keyDown(document, { key: 'Tab' });
+    frame();
     act(() => a.focus());
     frame();
+    expect(dy(tab)).toBe('-38px');
+  });
+
+  it('puts the dodge back after a wheel turn that does not scroll, when the control is still under the tab', () => {
+    const { tab, a } = setup();
+    act(() => a.focus());
+    frame();
+    expect(dy(tab)).toBe('-38px');
+
+    fireEvent.wheel(document.body);
+    expect(dy(tab)).toBe('0px');
+    act(() => vi.advanceTimersByTime(SETTLE_MS));
     expect(dy(tab)).toBe('-38px');
   });
 });
@@ -284,6 +330,85 @@ describe('a press on the tab', () => {
     frame();
     fireEvent.wheel(tab);
     expect(dy(tab)).toBe('0px');
+  });
+});
+
+describe('a hold that can not stick', () => {
+  function pressAndFocusTheTab() {
+    const harness = setup();
+    act(() => harness.a.focus());
+    frame();
+    fireEvent.pointerDown(harness.tab, { button: 0 });
+    act(() => harness.tab.focus());
+    frame();
+    expect(dy(harness.tab)).toBe('-38px');
+    return harness;
+  }
+
+  it('is not taken by a press of another button, whose release the OS context menu swallows', () => {
+    const { tab, a } = setup();
+    act(() => a.focus());
+    frame();
+    fireEvent.pointerDown(tab, { button: 2 });
+    act(() => tab.focus());
+    frame();
+    expect(dy(tab)).toBe('0px');
+  });
+
+  for (const [name, release] of [
+    ['a key', () => fireEvent.keyDown(document, { key: 'Escape' })],
+    ['the window losing the focus', () => fireEvent.blur(window)],
+    ['a context menu', () => fireEvent.contextMenu(document.body)],
+    ['a pointercancel', () => fireEvent.pointerCancel(document.body)],
+  ] as const) {
+    it(`is let go by ${name}`, () => {
+      const { tab } = pressAndFocusTheTab();
+      act(() => {
+        release();
+      });
+      frame();
+      expect(dy(tab)).toBe('0px');
+    });
+  }
+});
+
+describe('what the tab can not cover', () => {
+  const CLEAR_OF_TAB = { left: 0, top: 0, width: 300, height: 844 };
+
+  it('ignores a control whose clipped part is clear of the tab', () => {
+    scene = { ...scene, clip: CLEAR_OF_TAB };
+    const { tab, view } = setup();
+    act(() => view.getByTestId('link-d').focus());
+    frame();
+    expect(dy(tab)).toBe('');
+  });
+
+  it('judges a clipped control by the part that shows', () => {
+    scene = { ...scene, clip: { left: 0, top: 0, width: 390, height: 844 } };
+    const { tab, view } = setup();
+    act(() => view.getByTestId('link-d').focus());
+    frame();
+    expect(dy(tab)).toBe('-38px');
+  });
+
+  it('skips a control inside an open dialog: it is in the top layer, above the widget', () => {
+    const { tab, view } = setup();
+    act(() => view.getByTestId('link-e').focus());
+    frame();
+    expect(dy(tab)).toBe('');
+  });
+
+  it('skips a control inside an open popover', () => {
+    const closest = Element.prototype.closest;
+    vi.spyOn(Element.prototype, 'closest').mockImplementation(function (this: Element, selector: string) {
+      return selector.includes(':popover-open') && this.getAttribute('data-testid') === 'link-a'
+        ? this
+        : closest.call(this, selector);
+    });
+    const { tab, a } = setup();
+    act(() => a.focus());
+    frame();
+    expect(dy(tab)).toBe('');
   });
 });
 
@@ -322,6 +447,17 @@ describe('a page that has room to scroll the control clear', () => {
     act(() => vi.advanceTimersByTime(SETTLE_MS));
     expect(Number.parseFloat(dy(tab))).not.toBe(0);
     expect(dy(tab)).not.toBe('');
+  });
+
+  it('comes home at once when the focus lands on a control that is not under the tab, while a scroll may be on its way', () => {
+    const { tab, a, b } = setup();
+    act(() => a.focus());
+    act(() => vi.advanceTimersByTime(SETTLE_MS));
+    expect(dy(tab)).not.toBe('');
+
+    act(() => b.focus());
+    frame();
+    expect(dy(tab)).toBe('0px');
   });
 
   it('judges at once when the page is at its end, where nothing can scroll', () => {
@@ -457,6 +593,8 @@ describe('mounting', () => {
           'wheel',
           'pointerup',
           'pointercancel',
+          'blur',
+          'contextmenu',
         ].includes(name),
       );
     act(() => a.focus());
