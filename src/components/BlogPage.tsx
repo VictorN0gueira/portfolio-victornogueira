@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { detectCategory } from '../utils/newsService';
+import { listableArticles } from '../sections/blog/articleLinks';
 import { BlogFilters } from '../sections/blog/BlogFilters';
 import { BlogHero } from '../sections/blog/BlogHero';
 import { BlogResults } from '../sections/blog/BlogResults';
@@ -12,7 +13,8 @@ import { SEO } from './SEO';
  * the focus after a change of page, so this is only the sections. The articles come from other sites.
  */
 export default function BlogPage() {
-  const { articles, isLoading, error, origin, refresh } = useBlogNews();
+  const { articles: fetched, isLoading, error, origin, refresh } = useBlogNews();
+  const articles = useMemo(() => listableArticles(fetched), [fetched]);
   const [langFilter, setLangFilter] = useState<LangFilter>('all');
   const [catFilter, setCatFilter] = useState<CatFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');

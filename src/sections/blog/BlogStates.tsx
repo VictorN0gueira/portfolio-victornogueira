@@ -9,9 +9,11 @@ const ICON_CIRCLE_CLASSES =
 const OUTLINE_BUTTON_CLASSES =
   'inline-flex min-h-11 items-center rounded-full border border-vn-ink px-6 text-sm font-medium text-vn-ink hover:bg-vn-ink hover:text-vn-white vn-focus-ring-ink';
 
-function StateFrame({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+const FRAME_CLASSES = `${CENTERED_CLASSES} py-[clamp(3rem,2rem+5vw,7rem)]`;
+
+function StateFrame({ icon, role, children }: { icon: ReactNode; role?: 'alert'; children: ReactNode }) {
   return (
-    <div className={`${CENTERED_CLASSES} py-[clamp(3rem,2rem+5vw,7rem)]`}>
+    <div role={role} className={FRAME_CLASSES}>
       <div className={ICON_CIRCLE_CLASSES}>{icon}</div>
       {children}
     </div>
@@ -21,7 +23,7 @@ function StateFrame({ icon, children }: { icon: ReactNode; children: ReactNode }
 /** The sources failed. The reason is the message of the error (or the generic one), in words the visitor can read. */
 export function ErrorState({ message }: { message: string }) {
   return (
-    <StateFrame icon={<AlertTriangle className="size-8" />}>
+    <StateFrame icon={<AlertTriangle className="size-8" />} role="alert">
       <Heading as="h2" size="m">
         {blogCopy.states.errorTitle}
       </Heading>
@@ -49,7 +51,7 @@ export function EmptyState() {
 export function NoMatchState({ onClear }: { onClear: () => void }) {
   return (
     <StateFrame icon={<Search className="size-8" />}>
-      <p className="font-display text-[length:clamp(1.5rem,1.2rem+1vw,1.75rem)] font-bold leading-[.98] tracking-[-0.03em]">
+      <p className="font-display text-[length:clamp(1.5rem,1.2rem+1vw,1.75rem)] font-bold lowercase leading-[.98] tracking-[-0.03em]">
         {blogCopy.states.noMatchTitle}
       </p>
       <p className="mt-3 text-base text-vn-gray-dark">{blogCopy.states.noMatchHint}</p>

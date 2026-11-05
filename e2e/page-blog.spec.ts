@@ -287,20 +287,23 @@ test.describe('/blog cards and accent', () => {
     expect(accents).toEqual(['span NOVO']);
   });
 
-  test('shows the whole of a long title inside its card', async ({
-    page,
-  }) => {
+  test('shows the whole title of the featured card and keeps every title inside its card', async ({ page }) => {
     await openPage(page, CONTRACT);
 
     const cut = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('main h3')).flatMap((title) => {
+      Array.from(document.querySelectorAll('main h3')).flatMap((title, index) => {
         const card = title.closest('a')?.getBoundingClientRect();
         const box = title.getBoundingClientRect();
-        // A clamp hides whole lines; the few pixels the descenders of a tight line reach are not that.
-        const isCutByClamp = title.scrollHeight > title.clientHeight + 8;
+        // The featured card never clamps; a clamp hides whole lines, the few pixels the descenders of a tight line reach are not
+        // that. The cards of the list clamp the title to three lines on purpose (the whole text stays in the link).
+        const isCutByClamp = index === 0 && title.scrollHeight > title.clientHeight + 8;
         const leaves = card && (box.right > card.right + 0.5 || box.left < card.left - 0.5);
         const label = (title.textContent ?? '').slice(0, 30);
-        return isCutByClamp || leaves ? [`${label} (${title.scrollHeight} of ${title.clientHeight}, ${Math.round(box.right)} of ${Math.round(card?.right ?? 0)})`] : [];
+        return isCutByClamp || leaves
+          ? [
+              `${label} (${title.scrollHeight} of ${title.clientHeight}, ${Math.round(box.right)} of ${Math.round(card?.right ?? 0)})`,
+            ]
+          : [];
       }),
     );
 
@@ -322,7 +325,9 @@ test.describe('/blog with an address as the title', () => {
       const leaves = await page.evaluate(() =>
         Array.from(document.querySelectorAll('main a[target="_blank"]')).flatMap((card) => {
           const box = card.getBoundingClientRect();
-          return Array.from(card.querySelectorAll('h3, p, span')).filter((part) => part.getBoundingClientRect().right > box.right + 0.5).map((part) => part.tagName);
+          return Array.from(card.querySelectorAll('h3, p, span'))
+            .filter((part) => part.getBoundingClientRect().right > box.right + 0.5)
+            .map((part) => part.tagName);
         }),
       );
       expect(leaves, 'every part stays inside its card').toEqual([]);

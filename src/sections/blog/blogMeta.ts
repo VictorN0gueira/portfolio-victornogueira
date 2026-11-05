@@ -5,6 +5,8 @@ import { CAT_LABELS, blogCopy } from './blogCopy';
 export const NEW_TAB_HINT_ID = 'blog-new-tab-hint';
 
 const NEW_WINDOW_MS = 6 * 60 * 60 * 1000;
+// A source whose clock is a few minutes ahead still has fresh news; a date further ahead than this is not a publication date.
+const CLOCK_SKEW_MS = 5 * 60 * 1000;
 const WORDS_PER_MINUTE = 200;
 
 export type LangFilter = 'all' | 'pt' | 'en';
@@ -30,7 +32,8 @@ export function describeDataSource(origin: NewsOrigin): string {
 }
 
 export function isNew(publishedAt: string): boolean {
-  return Date.now() - new Date(publishedAt).getTime() < NEW_WINDOW_MS;
+  const ageMs = Date.now() - new Date(publishedAt).getTime();
+  return ageMs >= -CLOCK_SKEW_MS && ageMs < NEW_WINDOW_MS;
 }
 
 export function estimateReadTime(article: NewsArticle): string {

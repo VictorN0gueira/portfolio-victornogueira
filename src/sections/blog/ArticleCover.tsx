@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import { cn } from '../../lib/utils';
 import type { NewsArticle } from '../../utils/newsService';
+import { coverSource } from './articleLinks';
 import { FALLBACK_IMAGE } from './coverFallback';
 
 interface ArticleCoverProps {
@@ -16,25 +17,39 @@ interface ArticleCoverProps {
 const COVER_HOVER_CLASSES =
   'transition-transform duration-500 ease-out group-hover:scale-105 group-focus-visible:scale-105';
 
+interface CoverImageProps {
+  cover: string | undefined;
+  isMotionAllowed: boolean;
+}
+
+/** The picture itself. It is keyed by its address in the cover, so a failed state never outlives the picture that failed. */
+function CoverImage({ cover, isMotionAllowed }: CoverImageProps) {
+  const [hasFailed, setHasFailed] = useState(false);
+
+  return (
+    <img
+      src={hasFailed || !cover ? FALLBACK_IMAGE : cover}
+      onError={() => setHasFailed(true)}
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
+      alt=""
+      className={cn('absolute inset-0 h-full w-full object-cover', isMotionAllowed && COVER_HOVER_CLASSES)}
+    />
+  );
+}
+
 /**
  * The cover of an article. It is somebody else's picture: it is asked for with no Referer, decoded off the main thread and
- * loaded lazily, and when it is missing or fails the card shows the picture of the brand instead.
+ * loaded lazily, and when it is missing, is not an http or https address or fails, the card shows the picture of the brand.
  */
 export function ArticleCover({ article, className, children }: ArticleCoverProps) {
-  const [hasFailed, setHasFailed] = useState(false);
   const isMotionAllowed = useMotionAllowed();
+  const cover = coverSource(article);
 
   return (
     <div className={cn('relative overflow-hidden bg-vn-ink', className)}>
-      <img
-        src={hasFailed || !article.image ? FALLBACK_IMAGE : article.image}
-        onError={() => setHasFailed(true)}
-        loading="lazy"
-        decoding="async"
-        referrerPolicy="no-referrer"
-        alt=""
-        className={cn('absolute inset-0 h-full w-full object-cover', isMotionAllowed && COVER_HOVER_CLASSES)}
-      />
+      <CoverImage key={cover ?? 'none'} cover={cover} isMotionAllowed={isMotionAllowed} />
       {children}
     </div>
   );

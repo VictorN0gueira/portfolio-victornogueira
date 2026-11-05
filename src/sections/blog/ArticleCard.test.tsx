@@ -115,10 +115,7 @@ describe('ArticleCard', () => {
       }),
     });
 
-    const title = screen.getByRole('heading', { level: 3 });
-    expect(title).toHaveClass('break-words');
-    expect(title.className).not.toMatch(/line-clamp|truncate/);
-    expect(screen.getByText('Resumo do artigo').className).not.toMatch(/line-clamp|truncate/);
+    expect(screen.getByRole('heading', { level: 3 })).toHaveClass('break-words');
     expect(within(screen.getByRole('link')).getByText('Fonte'.repeat(20))).toHaveClass('break-words');
     expect(screen.getByRole('link').innerHTML).not.toMatch(/truncate/);
   });
@@ -128,4 +125,72 @@ describe('ArticleCard', () => {
 
     expect(container.innerHTML).not.toMatch(/zinc|purple|cyan|gradient|blur|italic|dark:|from-|to-black/);
   });
+});
+
+describe('ArticleCard on a narrow screen', () => {
+  const LONG_TITLE = 'Um titulo '.repeat(30).trim();
+  const LONG_SUMMARY = 'Um resumo '.repeat(60).trim();
+
+  it('clamps the title to three lines and the summary to four, with the whole text still in the link', () => {
+    renderCard({ article: testArticle({ title: LONG_TITLE, description: LONG_SUMMARY }) });
+
+    const title = screen.getByRole('heading', { level: 3 });
+    expect(title).toHaveClass('line-clamp-3', 'break-words');
+    expect(title).toHaveTextContent(LONG_TITLE);
+    const summary = screen.getByText(LONG_SUMMARY);
+    expect(summary).toHaveClass('line-clamp-4', 'break-words');
+    expect(screen.getByRole('link', { name: LONG_TITLE })).toHaveAccessibleDescription(
+      new RegExp(LONG_SUMMARY.slice(0, 40)),
+    );
+  });
+
+  it('shows at rest, not only on hover, that the card leaves the site: an icon hidden from screen readers', () => {
+    const { container } = renderCard();
+
+    const cue = container.querySelector('[data-external-cue]');
+    expect(cue).not.toBeNull();
+    expect(cue).toHaveAttribute('aria-hidden', 'true');
+    expect(cue?.getAttribute('class')).not.toMatch(/opacity-0|hidden|group-hover:/);
+  });
+});
+
+describe('ArticleCard at the edge of the render', () => {
+  it('shows the cover of the new article when the same card gets another one (no failed state left over)', () => {
+    const first = testArticle({ image: 'https://images.unsplash.com/photo-1?w=800' });
+    const second = testArticle({ image: 'https://images.unsplash.com/photo-2?w=800' });
+    const { container, rerender } = renderCard({ article: first });
+    fireEvent.error(container.querySelector('img') as HTMLImageElement);
+    expect((container.querySelector('img') as HTMLImageElement).src.startsWith('data:')).toBe(true);
+
+    rerender(
+      <>
+        <NewTabHint id={NEW_TAB_HINT_ID} />
+        <ArticleCard article={second} isFixedList={false} />
+      </>,
+    );
+
+    expect((container.querySelector('img') as HTMLImageElement).src).toBe(second.image);
+  });
+
+  it.each([
+    'javascript:alert(1)',
+    'data:text/html;base64,PHNjcmlwdD4=',
+    'file:///etc/passwd',
+    '//example.com/x',
+    'not a link',
+    '',
+  ])('renders no link at all for an address that is not http or https: %s', (url) => {
+    const { container } = renderCard({ article: testArticle({ url }) });
+
+    expect(container.querySelector('a')).toBeNull();
+  });
+
+  it.each(['javascript:alert(1)', 'data:image/svg+xml,x', 'ftp://example.com/c.png', 'not a link'])(
+    'uses the cover of the brand, not the address, when the cover is not http or https: %s',
+    (image) => {
+      const { container } = renderCard({ article: testArticle({ image }) });
+
+      expect((container.querySelector('img') as HTMLImageElement).src.startsWith('data:image/svg+xml')).toBe(true);
+    },
+  );
 });

@@ -6,6 +6,7 @@ import { Section } from '../../components/ui/Section';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import type { NewsArticle, NewsOrigin } from '../../utils/newsService';
 import { ArticleCard } from './ArticleCard';
+import { listableArticles } from './articleLinks';
 import { BlogSkeletons } from './BlogSkeletons';
 import { EmptyState, ErrorState, NoMatchState } from './BlogStates';
 import { blogCopy } from './blogCopy';
@@ -37,7 +38,7 @@ function ArticleList({ articles, isFixedList }: { articles: NewsArticle[]; isFix
       {/* The group renders a div, and a li may only have a ul for parent: the ul sits inside the group. */}
       <RevealGroup stagger={CARD_STAGGER_S}>
         <RevealItem>
-          <FeaturedArticle article={featured} isFixedList={isFixedList} />
+          <FeaturedArticle key={featured.url} article={featured} isFixedList={isFixedList} />
         </RevealItem>
         {rest.length > 0 && (
           <ul role="list" className={GRID_CLASSES}>
@@ -60,7 +61,17 @@ function ArticleList({ articles, isFixedList }: { articles: NewsArticle[]; isFix
  * featured card), or the error, or the empty states. The states swap one at a time, with a short fade only where motion is
  * welcome.
  */
-export function BlogResults({ isLoading, error, origin, articles, visibleArticles, onClearFilters }: BlogResultsProps) {
+export function BlogResults({
+  isLoading,
+  error,
+  origin,
+  articles: allArticles,
+  visibleArticles: allVisible,
+  onClearFilters,
+}: BlogResultsProps) {
+  // Only what a card can be made of, each address once: the list below and the keys of its cards depend on it.
+  const articles = listableArticles(allArticles);
+  const visibleArticles = listableArticles(allVisible);
   const isMotionAllowed = useMotionAllowed();
   const fade = isMotionAllowed
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: STATE_FADE_S } }

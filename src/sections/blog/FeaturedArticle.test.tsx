@@ -86,3 +86,31 @@ describe('FeaturedArticle', () => {
     expect(container.innerHTML).not.toMatch(/zinc|purple|cyan|gradient|blur|italic|dark:|from-|to-black/);
   });
 });
+
+describe('FeaturedArticle at the edge of the render', () => {
+  it.each(['javascript:alert(1)', 'data:text/html;base64,PHNjcmlwdD4=', 'not a link', ''])(
+    'renders no link for an address that is not http or https: %s',
+    (url) => {
+      const { container } = renderFeatured({ article: testArticle({ url }) });
+
+      expect(container.querySelector('a')).toBeNull();
+    },
+  );
+
+  it.each(['javascript:alert(1)', 'data:image/svg+xml,x', 'not a link'])(
+    'uses the cover of the brand when the cover is not http or https: %s',
+    (image) => {
+      const { container } = renderFeatured({ article: testArticle({ image }) });
+
+      expect((container.querySelector('img') as HTMLImageElement).src.startsWith('data:image/svg+xml')).toBe(true);
+    },
+  );
+
+  it('keeps the whole title and the whole summary: the featured card does not clamp', () => {
+    const summary = 'Um resumo '.repeat(60).trim();
+    renderFeatured({ article: testArticle({ title: 'Um titulo '.repeat(30).trim(), description: summary }) });
+
+    expect(screen.getByRole('heading', { level: 3 }).className).not.toMatch(/line-clamp/);
+    expect(screen.getByText(summary).className).not.toMatch(/line-clamp/);
+  });
+});

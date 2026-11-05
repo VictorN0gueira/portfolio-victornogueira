@@ -85,6 +85,17 @@ describe('getCategoryTag', () => {
   });
 });
 
+describe('isNew and the clock', () => {
+  it('says new for a few minutes ahead of the clock (a source whose clock is off), and not for a date far in the future', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-01T12:00:00Z'));
+
+    expect(isNew('2026-11-01T12:02:00Z')).toBe(true);
+    expect(isNew('2026-11-01T12:30:00Z')).toBe(false);
+    expect(isNew('2026-11-02T12:00:00Z')).toBe(false);
+  });
+});
+
 describe('cardDescribedBy', () => {
   it('lists the ids that exist and always ends with the new tab hint', () => {
     expect(cardDescribedBy('a', 'b')).toBe(`a b ${NEW_TAB_HINT_ID}`);
