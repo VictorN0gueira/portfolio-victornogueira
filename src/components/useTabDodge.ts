@@ -253,8 +253,6 @@ function judgeFocus({ wrapperRef, triggerRef }: Refs, timing: Timing): void {
 function createHandlers(refs: Refs, latch: Latch, timing: Timing) {
   const home = () => sendHome(refs);
   const release = () => {
-    // The pointer lets go of a drag: the tab is laid out clean at its new place (see useTabPlacement) and judged again.
-    if (refs.triggerRef.current?.dataset.dragging === 'true') clearDodge(refs.triggerRef.current);
     if (!latch.isHolding) return;
     latch.isHolding = false;
     timing.soon();
@@ -262,6 +260,9 @@ function createHandlers(refs: Refs, latch: Latch, timing: Timing) {
   // A touch brings its focus with the mouse events after the release, so the release counts as a press too.
   const lift = () => {
     latch.pressedAt = Date.now();
+    // Only the pointer ends a drag (a key, the window blur or a context menu do not): the tab is laid out clean at its
+    // new place by useTabPlacement, with no step aside left in its style, and judged again.
+    if (refs.triggerRef.current?.dataset.dragging === 'true') clearDodge(refs.triggerRef.current);
     release();
   };
   return {

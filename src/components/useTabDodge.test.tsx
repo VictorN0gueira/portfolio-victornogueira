@@ -687,6 +687,33 @@ describe('the end of a drag', () => {
     expect(tab.style.transition).toBe('');
   });
 
+  for (const [name, event] of [
+    ['a key', () => fireEvent.keyDown(document, { key: 'Shift' })],
+    ['the window losing the focus', () => fireEvent.blur(window)],
+    ['a context menu', () => fireEvent.contextMenu(document.body)],
+  ] as const) {
+    it(`keeps the tab under the pointer when ${name} comes in the middle of a drag`, () => {
+      const { tab, a } = setup();
+      act(() => a.focus());
+      frame();
+      tab.dataset.dragging = 'true';
+      act(() => {
+        event();
+      });
+      frame();
+      expect(dy(tab)).toBe('-38px');
+    });
+  }
+
+  it('puts the tab home when the pointer is cancelled in the middle of a drag', () => {
+    const { tab, a } = setup();
+    act(() => a.focus());
+    frame();
+    tab.dataset.dragging = 'true';
+    fireEvent.pointerCancel(document.body);
+    expect(dy(tab)).toBe('0px');
+  });
+
   it('leaves a dodge alone when the pointer lets go of something that was not a drag of the tab', () => {
     const { tab, a } = setup();
     act(() => a.focus());

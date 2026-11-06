@@ -491,6 +491,32 @@ test.describe('the tab is still the visitor’s: a press on a dodged tab, and th
     expect(boundsProblems(tab, PHONE)).toEqual([]);
   });
 
+  test('a key pressed in the middle of a drag of a dodged tab does not make the tab jump off the pointer', async ({
+    page,
+  }) => {
+    await openProbe(page, { place: PHONE_PLACE });
+    const { dodged } = await dodgeTheTab(page);
+    const x = (dodged.left + dodged.right) / 2;
+    const y = (dodged.top + dodged.bottom) / 2;
+    const centreY = async () => {
+      const box = await rectOf(trigger(page));
+      return (box.top + box.bottom) / 2;
+    };
+
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y + 40, { steps: 4 });
+    expect(Math.abs((await centreY()) - (y + 40)), 'the tab follows the pointer before the key').toBeLessThan(1);
+
+    await page.keyboard.down('Shift');
+    await waitForCalm(page);
+    expect(Math.abs((await centreY()) - (y + 40)), 'the tab stays under the pointer after Shift').toBeLessThan(1);
+    await page.keyboard.up('Shift');
+    await page.mouse.move(x, y + 80, { steps: 4 });
+    expect(Math.abs((await centreY()) - (y + 80)), 'and keeps following it').toBeLessThan(1);
+    await page.mouse.up();
+  });
+
   test('the tab can still be reached with the keyboard and opens its panel', async ({ page }) => {
     await openProbe(page, { place: PHONE_PLACE });
     await trigger(page).focus();
