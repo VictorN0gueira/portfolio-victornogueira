@@ -453,6 +453,26 @@
 }
 
 /*
+ * The accessibility tab. Its colours ease as transition-colors did (300ms, the Tailwind curve), and the step aside of
+ * useTabDodge draws it with a translate from the two lengths the hook writes in its style. The slide of that translate
+ * has the length and the curve of every slide of the tab: TAB_SLIDE_MS and TAB_SLIDE_EASE of floatingLayout.ts, which the
+ * widget sets inline as --vn-tab-slide-ms and --vn-tab-slide-ease, so they cannot drift. The stop for motion off is the
+ * safety net of motion.css (no transition lasts).
+ */
+.vn-tab-trigger {
+  translate: var(--vn-dodge-x, 0px) var(--vn-dodge-y, 0px);
+  transition:
+    color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    outline-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    text-decoration-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    fill 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    stroke 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    translate var(--vn-tab-slide-ms) var(--vn-tab-slide-ease);
+}
+
+/*
  * More contrast (the system setting, or "Contraste alto" in the widget; the widget also keeps its contrast filter).
  * A filter does not raise the ratio of a mid gray against its background, so the rules below change the colors: the pale
  * borders of cards, pills and buttons on a light surface become gray dark, the dimmed client logos and the faded answers

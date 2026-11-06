@@ -8,7 +8,8 @@ import { a11yWidgetCopy, activeSummaryText } from './a11yWidgetCopy';
 import { AccessibilityPanel } from './AccessibilityPanel';
 import { useBackdropIsDark } from './useBackdropIsDark';
 import { useMotionAllowed } from '../hooks/useMotionAllowed';
-import type { TabSide } from '../lib/floatingLayout';
+import { TAB_SLIDE_EASE, TAB_SLIDE_MS, type TabSide } from '../lib/floatingLayout';
+import { useTabDodge } from './useTabDodge';
 import { useTabPlacement, type TabPlacement } from './useTabPlacement';
 
 // Mobile: the trigger sits on the right edge, 96px over the safe area (the owner wanted it well clear of the corner), and
@@ -33,6 +34,12 @@ const PLACER_SIDE_CLASSES: Record<TabSide, string> = {
   right: 'right-[calc(100%+8px)]',
   left: 'left-[calc(100%+8px)]',
 };
+
+// The length and the curve of every slide of the tab, read by .vn-tab-trigger (components.css) from the constants of the layout.
+const SLIDE_VARS = {
+  '--vn-tab-slide-ms': `${TAB_SLIDE_MS}ms`,
+  '--vn-tab-slide-ease': TAB_SLIDE_EASE,
+} as CSSProperties;
 
 interface Dismissal {
   onPointerDown: () => void;
@@ -108,6 +115,7 @@ export default function AccessibilityWidget() {
   const placerRef = useRef<HTMLDivElement>(null);
   const isMotionAllowed = useMotionAllowed();
   const placement = useTabPlacement({ wrapperRef, triggerRef, placerRef, isOpen, activeCount, isMotionAllowed });
+  useTabDodge({ wrapperRef, triggerRef, isOpen, position: placement.position });
   const isDark = useBackdropIsDark(triggerRef, placement.position);
   const wrapperStyle: CSSProperties | undefined = placement.topPx === null ? undefined : { top: placement.topPx };
 
@@ -198,9 +206,10 @@ function AccessibilityTrigger({ buttonRef, isOpen, isDark, panelId, summaryId, a
       aria-controls={isOpen ? panelId : undefined}
       aria-describedby={activeCount > 0 ? summaryId : undefined}
       aria-label={a11yWidgetCopy.triggerLabel}
+      style={SLIDE_VARS}
       className={cn(
         // touch-none only on the button: a finger that starts on it drags it, a finger anywhere else scrolls the page.
-        'pointer-events-auto relative flex size-[44px] touch-none select-none items-center justify-center shadow-lg transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 [@media(hover:hover)_and_(pointer:fine)]:cursor-grab data-[dragging=true]:cursor-grabbing',
+        'pointer-events-auto relative flex size-[44px] touch-none select-none items-center justify-center vn-tab-trigger shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 [@media(hover:hover)_and_(pointer:fine)]:cursor-grab data-[dragging=true]:cursor-grabbing',
         isChosen && side === 'left' ? 'rounded-r-xl' : 'rounded-l-xl',
         isDark
           ? 'bg-white text-zinc-950 focus-visible:outline-white'
@@ -218,17 +227,20 @@ interface CountBadgeProps {
   isDark: boolean;
 }
 
-/** The number of options that are on, on the corner of the trigger. Decoration: the description says it. */
+/**
+ * The number of options that are on, on the corner of the trigger. Decoration: the description says it. The digit is
+ * drawn by CSS from data-count and is not text of the button, so the visible label is not left out of the name of the
+ * button (WCAG 2.5.3 Label in Name: aria-hidden text still counts as visible text for that rule).
+ */
 function CountBadge({ count, isDark }: CountBadgeProps) {
   return (
     <span
       aria-hidden="true"
+      data-count={count}
       className={cn(
-        'absolute -top-1 right-0 flex size-5 items-center justify-center rounded-full text-xs font-bold',
+        'absolute -top-1 right-0 flex size-5 items-center justify-center rounded-full text-xs font-bold after:content-[attr(data-count)]',
         isDark ? 'bg-zinc-950 text-white' : 'border border-zinc-200 bg-white text-zinc-950',
       )}
-    >
-      {count}
-    </span>
+    />
   );
 }
