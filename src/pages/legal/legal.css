@@ -212,7 +212,8 @@
   color: var(--color-vn-white);
 }
 
-.vn-legal [class*='bg-zinc-950'] a:focus-visible {
+.vn-legal [class*='bg-zinc-950'] a:focus-visible,
+.vn-legal [class*='bg-zinc-950'] h2:focus-visible {
   outline-color: var(--color-vn-white);
 }
 

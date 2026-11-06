@@ -17,7 +17,11 @@ interface TocNavProps {
 const LINK_CLASSES =
   'vn-focus-ring-ink -ml-px flex min-h-11 items-center border-l-2 border-transparent py-2 pr-2 pl-4 text-sm leading-snug ' +
   'text-vn-gray-dark [overflow-wrap:anywhere] hover:text-vn-ink aria-[current=location]:border-vn-ink ' +
-  'aria-[current=location]:font-medium aria-[current=location]:text-vn-ink';
+  'aria-[current=location]:font-medium aria-[current=location]:text-vn-ink ' +
+  // The labels read like the titles they point at, which the site writes in lowercase.
+  'lowercase ' +
+  // Forced colors turn every bar into the same color: the title being read is underlined as well.
+  'forced-colors:aria-[current=location]:underline forced-colors:aria-[current=location]:decoration-2';
 
 /** A plain click is handled here. A click with a modifier key or another button is left to the browser (a new tab, say). */
 function isPlainClick(event: MouseEvent<HTMLAnchorElement>): boolean {

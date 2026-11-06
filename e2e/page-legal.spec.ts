@@ -53,6 +53,8 @@ const MIN_SMALL_PRINT_PX = 12;
 const SETTLED_FRAMES = 12;
 const SETTLE_TIMEOUT_MS = 8000;
 const MAX_BODY_SHIFT = 0.01;
+const MIN_RING_CONTRAST = 3;
+const CONTROLLER_KICKER = 'Controlador dos dados';
 
 // An id may start with a digit ("7-seus-direitos"), which a #selector cannot.
 const byId = (page: Page, id: string) => page.locator(`[id="${id}"]`);
@@ -273,17 +275,89 @@ test.describe('the frame of the legal pages', () => {
     await expect(byId(page, id)).toBeFocused();
   });
 
-  test('the table of contents is read from the titles: the same words, in the same order', async ({ page }) => {
+  test('the table of contents reads the same as the titles: the same words, the same case, in the same order', async ({
+    page,
+  }) => {
     for (const contract of PAGES) {
       await page.setViewportSize(DESKTOP);
       await openPage(page, contract);
       const labels = await tocLinks(page).allInnerTexts();
       const titles = await page.locator('[data-legal-body] h2').allInnerTexts();
+      // On /lgpd the black card of the controller is named by its kicker, not by the name of the person.
+      const expected = contract === LGPD ? [CONTROLLER_KICKER.toLowerCase(), ...titles.slice(1)] : titles;
 
-      // innerText follows the CSS, which lowercases the titles: the list keeps the case of the source.
-      expect(labels.map((label) => label.toLowerCase())).toEqual(titles.map((title) => title.toLowerCase()));
+      // The titles are lowercase by CSS (the site rule), and so are the labels: both read the same on the screen.
+      expect(labels).toEqual(expected);
       expect(labels.length).toBeGreaterThan(2);
+      const transforms = await tocLinks(page).evaluateAll((links) =>
+        links.map((link) => getComputedStyle(link).textTransform),
+      );
+      expect(new Set(transforms)).toEqual(new Set(['lowercase']));
     }
+  });
+
+  for (const contract of PAGES) {
+    test(`${contract.path}: the ring on the title a link leads to is 3:1 against its own background, in every card`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(DESKTOP);
+      await openPage(page, contract);
+      const count = await tocLinks(page).count();
+
+      for (let index = 0; index < count; index += 1) {
+        await tocLinks(page).nth(index).focus();
+        await page.keyboard.press('Enter');
+        const ring = await page.evaluate(() => {
+          const channels = (color: string): number[] => (color.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+          const luminance = ([red, green, blue]: number[]): number => {
+            const linear = [red, green, blue].map((value) => {
+              const unit = value / 255;
+              return unit <= 0.03928 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
+            });
+            return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+          };
+          const heading = document.activeElement as HTMLElement;
+          let surface: Element | null = heading;
+          while (surface && getComputedStyle(surface).backgroundColor === 'rgba(0, 0, 0, 0)')
+            surface = surface.parentElement;
+          const style = getComputedStyle(heading);
+          const outline = luminance(channels(style.outlineColor));
+          const ground = luminance(
+            channels(surface ? getComputedStyle(surface).backgroundColor : 'rgb(255, 255, 255)'),
+          );
+          const [light, dark] = outline > ground ? [outline, ground] : [ground, outline];
+          return {
+            tag: heading.tagName,
+            style: style.outlineStyle,
+            width: parseFloat(style.outlineWidth),
+            contrast: (light + 0.05) / (dark + 0.05),
+            name: (heading.textContent ?? '').trim().slice(0, 30),
+          };
+        });
+
+        expect(ring.tag).toBe('H2');
+        expect(ring.style, ring.name).not.toBe('none');
+        expect(ring.width, ring.name).toBeGreaterThanOrEqual(2);
+        expect(ring.contrast, `${ring.name}: contrast of the ring`).toBeGreaterThanOrEqual(MIN_RING_CONTRAST);
+      }
+    });
+  }
+
+  test('with forced colors the title being read is told apart by more than the color of its bar', async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+    await openPage(page, PRIVACY);
+    await tocLinks(page).nth(2).click();
+    await expect(page.locator(`${TOC_NAV} a[aria-current="location"]`)).toHaveCount(1);
+
+    const lines = await tocLinks(page).evaluateAll((links) =>
+      links.map((link) => ({
+        isCurrent: link.getAttribute('aria-current') === 'location',
+        decoration: getComputedStyle(link).textDecorationLine,
+      })),
+    );
+
+    expect(lines.filter((line) => line.isCurrent).every((line) => line.decoration.includes('underline'))).toBe(true);
+    expect(lines.filter((line) => !line.isCurrent).every((line) => !line.decoration.includes('underline'))).toBe(true);
   });
 
   for (const contract of PAGES) {

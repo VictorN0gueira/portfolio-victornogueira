@@ -20,11 +20,27 @@ export function slugify(label: string): string {
   return slug === '' ? FALLBACK_SLUG : slug;
 }
 
-const labelOf = (heading: Element): string => (heading.textContent ?? '').replace(WHITE_SPACE, ' ').trim();
+const textOf = (element: Element): string => (element.textContent ?? '').replace(WHITE_SPACE, ' ').trim();
+
+// The one shape of the frozen markup where the title is a name and the words that say what the section is are the small
+// line above it: the black card of the controller on /lgpd ("Controlador dos dados", then "Victor Nogueira"). It is read
+// from the rendered classes, and it is not applied to any other title ("Seus direitos" has a kicker too, and the title says it better).
+const KICKER_CLASS = 'text-[10px]';
+const BLACK_CARD = '[class*="bg-zinc-950"]';
+
+/** The small line right above the title, when the title is in a black card and that line is a kicker. Otherwise null. */
+function kickerOf(heading: Element): string | null {
+  const previous = heading.previousElementSibling;
+  if (previous === null || previous.tagName !== 'P' || !previous.classList.contains(KICKER_CLASS)) return null;
+  if (heading.closest(BLACK_CARD) === null) return null;
+  return textOf(previous) || null;
+}
+
+const labelOf = (heading: Element): string => kickerOf(heading) ?? textOf(heading);
 
 /** The h2 of the root that have text, in document order: the ones the table of contents points at. */
 export function tocHeadings(root: ParentNode): HTMLHeadingElement[] {
-  return Array.from(root.querySelectorAll<HTMLHeadingElement>('h2')).filter((heading) => labelOf(heading) !== '');
+  return Array.from(root.querySelectorAll<HTMLHeadingElement>('h2')).filter((heading) => textOf(heading) !== '');
 }
 
 /** The first of slug, slug-2, slug-3 and so on that no earlier heading took and no other element of the page owns. */

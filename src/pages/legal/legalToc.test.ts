@@ -97,3 +97,48 @@ describe('tocHeadings', () => {
     expect(collectToc(root)).toHaveLength(2);
   });
 });
+
+describe('the label of a title that sits in a black card under a small kicker', () => {
+  const card = (inner: string, className = 'bg-zinc-950 rounded-3xl') => `<div class="${className}">${inner}</div>`;
+  const kicker = (text: string, className = 'text-[10px] font-bold') => `<p class="${className}">${text}</p>`;
+
+  it('is the kicker, because the name of the person says nothing in a list of sections', () => {
+    const root = rootWith(card(`${kicker('Controlador dos dados')}<h2>Victor Nogueira</h2>`));
+
+    expect(collectToc(root)).toEqual([{ id: 'controlador-dos-dados', label: 'Controlador dos dados' }]);
+  });
+
+  it('is the title when the kicker is above a title that is not in a black card ("Seus direitos" keeps its own words)', () => {
+    const root = rootWith(`<div>${kicker('Art. 18 da LGPD')}<h2>Seus direitos</h2></div>`);
+
+    expect(collectToc(root)).toEqual([{ id: 'seus-direitos', label: 'Seus direitos' }]);
+  });
+
+  it('is the title when the black card has no kicker right above it', () => {
+    const root = rootWith(
+      card('<h2>Quer exercer um direito?</h2>') +
+        card(`${kicker('Sem a classe', 'text-xs')}<h2>Outro</h2>`) +
+        card(`${kicker('Longe')}<div></div><h2>Mais um</h2>`) +
+        card(`<div>${kicker('Em outro tipo')}</div><h2>Fim</h2>`),
+    );
+
+    expect(collectToc(root).map((entry) => entry.label)).toEqual([
+      'Quer exercer um direito?',
+      'Outro',
+      'Mais um',
+      'Fim',
+    ]);
+  });
+
+  it('is the title when the kicker has no text', () => {
+    const root = rootWith(card(`${kicker('   ')}<h2>Victor Nogueira</h2>`));
+
+    expect(collectToc(root)).toEqual([{ id: 'victor-nogueira', label: 'Victor Nogueira' }]);
+  });
+
+  it('still leaves out a title that has no text of its own, whatever kicker is above it', () => {
+    const root = rootWith(card(`${kicker('Controlador dos dados')}<h2>  </h2>`));
+
+    expect(collectToc(root)).toEqual([]);
+  });
+});

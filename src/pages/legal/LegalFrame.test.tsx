@@ -14,9 +14,22 @@ import { LegalFrame } from './LegalFrame';
 const WIDE_QUERY = '(min-width: 64rem)';
 const ACTIVE_LINE_PX = 120;
 
-const PAGES: ReadonlyArray<readonly [name: string, Page: ComponentType, hash: string]> = [
-  ['PrivacyPage', PrivacyPage, PRIVACY_TEXT_HASH],
-  ['LgpdPage', LgpdPage, LGPD_TEXT_HASH],
+// The words of the contents, from the titles of the frozen pages (the first of the LGPD page is the kicker of its black card).
+const PRIVACY_LABELS = [
+  '1. Quem é o controlador',
+  '2. Quais dados são coletados',
+  '3. Finalidades e bases legais',
+  '4. Armazenamento e retenção',
+  '5. Compartilhamento',
+  '6. Cookies e armazenamento local',
+  '7. Seus direitos (art. 18 da LGPD)',
+  '8. Atualizações desta política',
+];
+const LGPD_LABELS = ['Controlador dos dados', 'Bases legais', 'Seus direitos', 'Quer exercer um direito?'];
+
+const PAGES: ReadonlyArray<readonly [name: string, Page: ComponentType, hash: string, labels: readonly string[]]> = [
+  ['PrivacyPage', PrivacyPage, PRIVACY_TEXT_HASH, PRIVACY_LABELS],
+  ['LgpdPage', LgpdPage, LGPD_TEXT_HASH, LGPD_LABELS],
 ];
 
 const renderFrame = (Page: ComponentType, strict = false) =>
@@ -63,7 +76,7 @@ describe('LegalFrame', () => {
     delete (Element.prototype as Partial<Element>).scrollIntoView;
   });
 
-  describe.each(PAGES)('around %s', (_name, Page, hash) => {
+  describe.each(PAGES)('around %s', (_name, Page, hash, labels) => {
     it('leaves the text exactly as the page alone says it', () => {
       const { container } = renderFrame(Page);
 
@@ -72,10 +85,9 @@ describe('LegalFrame', () => {
 
     it('lists one link per h2 of the page, in the same order, from what is on the screen', () => {
       const { container } = renderFrame(Page);
-      const titles = headingsOf(container).map((heading) => heading.textContent);
 
-      expect(tocLinks().map((link) => link.textContent)).toEqual(titles);
-      expect(titles.length).toBeGreaterThan(2);
+      expect(tocLinks()).toHaveLength(headingsOf(container).length);
+      expect(tocLinks().map((link) => link.textContent)).toEqual(labels);
     });
 
     it('points every link at an id that exists in the body, with a title a script can focus', () => {
