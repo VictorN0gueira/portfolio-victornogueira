@@ -104,4 +104,50 @@ describe('another pointer or a wheel in the middle of a drag', () => {
     fireEvent.wheel(document.body);
     expect(dy(tab)).toBe('0px');
   });
+
+  it('keeps the first pointer as the owner of the drag when a second one presses the tab too', () => {
+    const { tab } = dragDodgedTab();
+    fireEvent.pointerDown(tab, { button: 0, pointerId: OTHER });
+
+    fireEvent.pointerUp(document.body, { pointerId: OTHER });
+    expect(dy(tab)).toBe('-38px');
+    fireEvent.pointerUp(document.body, { pointerId: OWN });
+    expect(dy(tab)).toBe('0px');
+  });
+
+  it('clears the dodge for the release of the owner even while the second pointer is still down', () => {
+    const { tab } = dragDodgedTab();
+    fireEvent.pointerDown(tab, { button: 0, pointerId: OTHER });
+
+    fireEvent.pointerUp(document.body, { pointerId: OWN });
+    expect(dy(tab)).toBe('0px');
+  });
+
+  it('does not take a hold for a press on the tab while it is already being dragged', () => {
+    const { tab } = dragDodgedTab();
+    fireEvent.keyDown(document, { key: 'Shift' });
+    fireEvent.pointerDown(tab, { button: 0, pointerId: OTHER });
+    // The drag is over and nothing holds the tab: the focus on it sends it home, which a hold would have prevented.
+    delete tab.dataset.dragging;
+    act(() => tab.focus());
+    frame();
+    expect(dy(tab)).toBe('0px');
+  });
+
+  for (const [name, event] of [
+    ['a key', () => fireEvent.keyDown(document, { key: 'Shift' })],
+    ['the window blur', () => fireEvent.blur(window)],
+    ['a context menu', () => fireEvent.contextMenu(document.body)],
+  ] as const) {
+    it(`lets go of the hold and of its pointer together for ${name}`, () => {
+      const { tab } = dragDodgedTab();
+      act(() => {
+        event();
+      });
+      // The hold is gone, so a pointer that is not the one that pressed does not need to match anything: the release of the
+      // dragging pointer, whatever its id, ends the drag.
+      fireEvent.pointerUp(document.body, { pointerId: OTHER });
+      expect(dy(tab)).toBe('0px');
+    });
+  }
 });

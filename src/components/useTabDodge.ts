@@ -321,7 +321,9 @@ function createHandlers(refs: Refs, latch: Latch, timing: Timing) {
   const home = () => sendHome(refs);
   const release = () => {
     if (!latch.isHolding) return;
+    // The hold and the pointer that owns it go together, whichever way the hold ends.
     latch.isHolding = false;
+    latch.dragPointerId = null;
     timing.soon();
   };
   // A touch brings its focus with the mouse events after the release, so the release counts as a press too.
@@ -355,6 +357,9 @@ function createHandlers(refs: Refs, latch: Latch, timing: Timing) {
       if (!trigger) return;
       if (!(event.target instanceof Node && trigger.contains(event.target))) return home();
       if (event.type !== 'pointerdown' || ((event as PointerEvent).button ?? 0) !== 0) return;
+      // Only the press that starts the hold owns it (useTabDrag ignores a second pointer too): a second finger on the tab,
+      // or a press while the tab is being dragged, changes nothing.
+      if (latch.isHolding || trigger.dataset.dragging === 'true') return;
       latch.isHolding = true;
       latch.dragPointerId = (event as PointerEvent).pointerId;
     },

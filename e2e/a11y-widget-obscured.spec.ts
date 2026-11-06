@@ -606,6 +606,64 @@ test.describe('the tab is still the visitor’s: a press on a dodged tab, and th
     });
   }
 
+  // A real second finger on the tab itself, with the first one dragging it: the tab follows the first finger whichever
+  // finger lifts first (CDP touch events, two touch points).
+  for (const order of ['the second finger lifts first', 'the first finger lifts first']) {
+    test(`a second finger on a dragged dodged tab does not move it off the dragging finger when ${order}`, async ({
+      page,
+    }) => {
+      await openProbe(page, { place: PHONE_PLACE });
+      const { dodged } = await dodgeTheTab(page);
+      const x = (dodged.left + dodged.right) / 2;
+      const y = (dodged.top + dodged.bottom) / 2;
+      const endY = y + 40;
+      const centreY = async () => {
+        const box = await rectOf(trigger(page));
+        return (box.top + box.bottom) / 2;
+      };
+      const cdp = await page.context().newCDPSession(page);
+      const touch = (
+        type: 'touchStart' | 'touchMove' | 'touchEnd',
+        points: Array<{ x: number; y: number; id: number }>,
+      ) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+      const first = { x, y: endY, id: 1 };
+      const second = { x: x + 8, y: endY + 8, id: 2 };
+
+      await touch('touchStart', [{ x, y, id: 1 }]);
+      for (const step of [10, 20, 30, 40]) await touch('touchMove', [{ x, y: y + step, id: 1 }]);
+      await waitForCalm(page);
+      expect(Math.abs((await centreY()) - endY), 'the tab follows the first finger').toBeLessThan(1);
+
+      await touch('touchStart', [first, second]);
+      await waitForCalm(page);
+      expect(
+        Math.abs((await centreY()) - endY),
+        'and stays under it when a second finger lands on the tab',
+      ).toBeLessThan(1);
+
+      if (order === 'the second finger lifts first') {
+        await touch('touchEnd', [first]);
+        await waitForCalm(page);
+        expect(Math.abs((await centreY()) - endY), 'and when the second finger lifts').toBeLessThan(1);
+        await touch('touchEnd', []);
+      } else {
+        await touch('touchEnd', [second]);
+        await waitForCalm(page);
+        expect(Math.abs((await centreY()) - endY), 'and rests where the first finger let go').toBeLessThan(1);
+        await touch('touchEnd', []);
+      }
+      await waitForCalm(page);
+
+      expect(Math.abs((await centreY()) - endY), 'the tab rests where the dragging finger was').toBeLessThan(1);
+      const stored = await page.evaluate(
+        (key) => JSON.parse(window.localStorage.getItem(key) ?? 'null') as Place,
+        TAB_POSITION_STORAGE_KEY,
+      );
+      expect(Math.abs(stored.ratio - endY / PHONE.height)).toBeLessThan(0.03);
+      expect(boundsProblems(await rectOf(trigger(page)), PHONE)).toEqual([]);
+    });
+  }
+
   test('the tab can still be reached with the keyboard and opens its panel', async ({ page }) => {
     await openProbe(page, { place: PHONE_PLACE });
     await trigger(page).focus();
