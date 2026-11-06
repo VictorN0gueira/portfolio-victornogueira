@@ -198,10 +198,17 @@ test.describe('skeleton heights', () => {
   // Frames in a row with the same page height: the layout has stopped moving (images, fonts, late sections).
   const STEADY_FRAMES = 30;
 
-  /** The heights of the eight lazy sections, or of their skeletons: the last eight blocks of the page. */
+  /**
+   * The heights of the eight lazy sections, or of their skeletons: the last eight blocks of the page. The visually hidden
+   * live region after the last section (and any script tag) is not a section, so it is left out first, as
+   * scripts/measure-skeletons.mjs does: counted in, it would push `statement` out and name every height after the wrong
+   * section.
+   */
   const lazyBlockHeights = (page: Page) =>
     page.evaluate(() => {
-      const blocks = Array.from((document.querySelector('main > *') as Element).children).slice(-8);
+      const blocks = Array.from((document.querySelector('main > *') as Element).children)
+        .filter((block) => block.tagName !== 'SCRIPT' && !block.classList.contains('sr-only'))
+        .slice(-8);
       return blocks.map((block) => block.getBoundingClientRect().height);
     });
 

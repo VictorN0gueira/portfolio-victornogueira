@@ -1,69 +1,102 @@
 // @vitest-environment node
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { FALLBACK_IMAGE } from '../sections/blog/coverFallback';
 
-// jsdom paints nothing, so contrast cannot be measured there. What can be held is the choice of colors: the blog sits on
-// near black, where the muted zinc greys (500 to 700) fall under 4.5:1 and the old green and blue badges under white text
-// fall under it too. Text uses the vn tokens (gray-light on dark) and the accent only as a color on black.
-const SOURCE = readFileSync(resolve(__dirname, 'BlogPage.tsx'), 'utf8');
+// jsdom paints nothing, so contrast cannot be measured there. What can be held is the choice of colors. The blog is on the
+// system now: cream and white bands with ink text, one black featured card, and the pills over the covers on their own
+// opaque black. Every color is a vn token, and the only pair that sits on somebody else's picture carries its own surface.
+const BLOG_DIRECTORY = resolve(__dirname, '../sections/blog');
+const TEST_FILE = /\.test\.tsx?$/;
 
-// The greys that fall under 4.5:1 on the near black page: steps 500 and darker of every Tailwind grey, for the text, the icons
-// (a lucide icon takes the text color) and the placeholder.
-const DARK_GREY_TEXT = /(?:text|placeholder:text|fill|stroke)-(?:zinc|gray|neutral|slate|stone)-(?:500|600|700|800|900|950)(?![\d])/g;
-// White text with its opacity reduced: the page color shows through, so the text is only as strong as the mix.
-const WHITE_TEXT_WITH_OPACITY = /(?:text|placeholder:text)-white\/(?:\[([\d.]+)\]|(\d+))/g;
-const PAGE_BACKGROUND_LUMINANCE = 0.0027; // zinc-950, #09090b
-const MIN_TEXT_CONTRAST = 4.5;
+const SOURCES = [
+  { name: 'src/components/BlogPage.tsx', text: readFileSync(resolve(__dirname, 'BlogPage.tsx'), 'utf8') },
+  ...readdirSync(BLOG_DIRECTORY)
+    .filter((file) => /\.tsx?$/.test(file) && !TEST_FILE.test(file) && file !== 'articleFixtures.ts')
+    .map((file) => ({ name: `src/sections/blog/${file}`, text: readFileSync(resolve(BLOG_DIRECTORY, file), 'utf8') })),
+];
 
-function whiteOverPageContrast(opacity: number): number {
-  const channel = Math.round(opacity * 255 + (1 - opacity) * 9);
-  const value = channel / 255;
-  const luminance = value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-  return (luminance + 0.05) / (PAGE_BACKGROUND_LUMINANCE + 0.05);
+// Color families that are not the palette, in a class that paints (text, icon, fill, border, ring, placeholder, gradient stop).
+const OFF_PALETTE_FAMILY =
+  /(?:text|bg|border|ring|fill|stroke|from|via|to|outline|placeholder:text)-(?:zinc|gray|neutral|slate|stone|red|green|blue|purple|violet|cyan|emerald|teal|amber|orange|yellow|pink|rose|indigo|sky|lime|fuchsia)-\d/g;
+// White or black text with its opacity reduced: the surface shows through, so the text is only as strong as the mix.
+const TRANSLUCENT_TEXT = /(?:text|placeholder:text)-(?:white|black|vn-white|vn-black|vn-ink)\/(?:\[[\d.]+\]|\d+)/g;
+// A gray-mid text falls under 4.5:1 on cream and on white at a small size.
+const WEAK_GRAY_TEXT = /(?:text|placeholder:text)-vn-gray-mid/g;
+const BANNED_VISUALS =
+  /\bdark:|\bitalic\b|text-\[10px\]|bg-gradient|bg-linear|bg-\[radial|\bblur-|backdrop-blur|\bfrom-|\bvia-/g;
+// The accent in any paint (text, fill of a shape, border, ring, outline, icon fill or stroke, gradient stop, shadow), or its hex.
+const ACCENT =
+  /(?<![\w-])(?:bg|text|border|ring|outline|fill|stroke|from|via|to|decoration|divide|shadow|caret|accent)-vn-accent(?![\w-])|#00e5a0/gi;
+
+function findIn(pattern: RegExp): string[] {
+  return SOURCES.flatMap(({ name, text }) => Array.from(text.matchAll(pattern), (match) => `${name}: ${match[0]}`));
 }
 
-function weakWhiteTexts(source: string): string[] {
-  return Array.from(source.matchAll(WHITE_TEXT_WITH_OPACITY)).flatMap((match) => {
-    const opacity = match[1] !== undefined ? Number(match[1]) : Number(match[2]) / 100;
-    return whiteOverPageContrast(opacity) < MIN_TEXT_CONTRAST ? [match[0]] : [];
-  });
-}
+describe('the blog colors', () => {
+  it('reads the files of the blog: the page and every part', () => {
+    const names = SOURCES.map((source) => source.name);
 
-describe('BlogPage colors', () => {
-  it('has no zinc 500, 600 or 700 on the dark page, for text, icons or the placeholder', () => {
-    const found = SOURCE.match(/(?:text|placeholder:text)-zinc-(?:500|600|700)/g);
-
-    expect(found).toBeNull();
+    expect(names).toContain('src/components/BlogPage.tsx');
+    expect(names).toContain('src/sections/blog/ArticleCard.tsx');
+    expect(names).toContain('src/sections/blog/FeaturedArticle.tsx');
+    expect(names).toContain('src/sections/blog/BlogFilters.tsx');
+    expect(names).toContain('src/sections/blog/BlogHero.tsx');
   });
 
-  it('has no dark grey of any family (zinc, gray, neutral, slate, stone) from step 500 down, for text, icons or fills', () => {
-    expect(SOURCE.match(DARK_GREY_TEXT)).toBeNull();
+  it('has no color of another family: no zinc, gray, neutral, slate, stone and no hue off the palette', () => {
+    expect(findIn(OFF_PALETTE_FAMILY)).toEqual([]);
   });
 
-  it('has no white text so transparent that it falls under 4.5:1 on the page', () => {
-    expect(weakWhiteTexts(SOURCE)).toEqual([]);
+  it('has no text with its opacity reduced, which falls under 4.5:1 on a light band', () => {
+    expect(findIn(TRANSLUCENT_TEXT)).toEqual([]);
   });
 
-  it('catches what it is meant to catch: the other greys, and white text at 40 percent', () => {
-    for (const bad of ['text-gray-500', 'text-neutral-600', 'text-slate-700', 'text-stone-500', 'placeholder:text-zinc-800', 'fill-gray-600']) {
-      expect(bad.match(DARK_GREY_TEXT), bad).not.toBeNull();
-    }
-    for (const fine of ['text-zinc-400', 'text-gray-300', 'text-stone-200', 'text-zinc-50']) {
-      expect(fine.match(DARK_GREY_TEXT), fine).toBeNull();
-    }
-    expect(weakWhiteTexts('text-white/40 text-white/[0.4] placeholder:text-white/30')).toHaveLength(3);
-    expect(weakWhiteTexts('text-white/60 text-white/[0.7] text-white')).toEqual([]);
+  it('has no gray-mid text: the small text is gray-dark on the light bands and gray-light on the black card', () => {
+    expect(findIn(WEAK_GRAY_TEXT)).toEqual([]);
   });
 
-  it('has no white text on a green or blue badge, and no amber or cyan accent outside the vn accent', () => {
-    const found = SOURCE.match(/(?:from|to|text)-(?:amber|cyan|emerald|teal|blue)-\d+|bg-emerald-\d+/g);
+  it('has no dark: variant, no italic, no text of 10px, no gradient and no blur', () => {
+    expect(findIn(BANNED_VISUALS)).toEqual([]);
+  });
 
-    expect(found).toBeNull();
+  it('draws the accent in one place only, the NOVO pill of the featured article', () => {
+    expect(findIn(ACCENT)).toEqual(['src/sections/blog/FeaturedArticle.tsx: bg-vn-accent']);
   });
 
   it('uses a vn token for the placeholder of the search field', () => {
-    expect(SOURCE).toMatch(/placeholder:text-vn-gray-(?:light|mid)/);
+    const filters = SOURCES.find((source) => source.name.endsWith('BlogFilters.tsx'))?.text ?? '';
+
+    expect(filters).toMatch(/placeholder:text-vn-gray-(?:light|dark)/);
+  });
+
+  it('catches what it is meant to catch', () => {
+    for (const bad of [
+      'text-zinc-400',
+      'bg-purple-500',
+      'border-emerald-500',
+      'text-gray-500',
+      'placeholder:text-slate-700',
+    ]) {
+      expect(bad.match(OFF_PALETTE_FAMILY), bad).not.toBeNull();
+    }
+    for (const fine of ['text-vn-gray-dark', 'bg-vn-black', 'border-vn-gray-light', 'text-vn-white']) {
+      expect(fine.match(OFF_PALETTE_FAMILY), fine).toBeNull();
+    }
+    expect('text-white/40 text-vn-white/[0.4] placeholder:text-white/30'.match(TRANSLUCENT_TEXT)).toHaveLength(3);
+    expect('text-vn-white text-vn-gray-light'.match(TRANSLUCENT_TEXT)).toBeNull();
+    expect('text-vn-gray-mid'.match(WEAK_GRAY_TEXT)).not.toBeNull();
+    for (const accent of [
+      'bg-vn-accent',
+      'border-vn-accent',
+      'ring-vn-accent',
+      'fill-vn-accent',
+      'stroke-vn-accent',
+      'text-[#00E5A0]',
+    ]) {
+      expect(accent.match(ACCENT), accent).not.toBeNull();
+    }
   });
 });
 
@@ -83,10 +116,10 @@ function hexContrast(foreground: string, background: string): number {
   return (light + 0.05) / (dark + 0.05);
 }
 
-describe('BlogPage inline SVG colors', () => {
-  const svg = decodeURIComponent(SOURCE.match(/FALLBACK_IMAGE =\s*'data:image\/svg\+xml,([^']+)'/)?.[1] ?? '');
+describe('the inline SVG colors of the blog', () => {
+  const svg = decodeURIComponent(FALLBACK_IMAGE.slice(FALLBACK_IMAGE.indexOf(',') + 1));
 
-  it('reads the placeholder cover from the source', () => {
+  it('reads the placeholder cover from the module', () => {
     expect(svg).toContain('<svg');
     expect(svg).toContain('Imagem indisponível');
   });

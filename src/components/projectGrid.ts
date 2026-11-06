@@ -11,11 +11,35 @@ interface ProjectCardLayout {
   readonly imageSizes: string;
 }
 
-// Widths on the 1280px page with 40px gaps: a card of two columns is 368px, one of three is 572px.
-const NARROW_SIZES = '(min-width: 1280px) 368px, (min-width: 1024px) 30vw, (min-width: 768px) 46vw, 92vw';
-const WIDE_ON_LARGE_SIZES = '(min-width: 1280px) 572px, (min-width: 1024px) 44vw, (min-width: 768px) 46vw, 92vw';
-const WIDE_ON_BOTH_SIZES = '(min-width: 1280px) 572px, (min-width: 1024px) 44vw, (min-width: 768px) 90vw, 92vw';
-const WIDE_ON_MEDIUM_SIZES = '(min-width: 1280px) 368px, (min-width: 1024px) 30vw, (min-width: 768px) 90vw, 92vw';
+// Widths of the card image, measured on the rendered page. The page is 1216px wide with 48px gutters from md (1120px of
+// content from a 1216px window, the window minus 96px below that). The card has a 1px border and 16px of padding from md
+// (12px under it), and the image sits in a frame with its own 1px border, so the image is the cell minus 36px from md and
+// minus 28px under it. From lg the grid has six columns with a 40px gap, from md two with a 32px gap.
+//   cell of 2 columns, lg: (content - 200) / 3 + 40   -> 310.7px at 1216px and up, (window - 284px) / 3 image
+//   cell of 3 columns, lg: (content - 200) / 2 + 80   -> 504px at 1216px and up, (window - 208px) / 2 image
+//   cell of 6 columns, lg: the content                -> 1084px at 1216px and up, window - 132px image
+//   under md: the window minus 60px, and minus 68px from 360px (the gutters grow from 16px to 20px)
+//   cell at md: (content - 32) / 2, so (window - 200px) / 2 image, or the content, so window - 132px, for the odd card
+// projectGrid.test.ts holds the measured values and e2e/page-projetos.spec.ts compares them with the real layout.
+const LARGE_BREAKPOINT_PX = 1216;
+// Under md the page has 16px gutters (20px from the xs breakpoint, 360px) and the card 12px of padding and a border, so
+// the image is the window minus 60px, and minus 68px from 360px.
+const SMALL_PHONE_SIZE = 'calc(100vw - 60px)';
+const PHONE_SIZE = 'calc(100vw - 68px)';
+const MEDIUM_PAIR_SIZE = 'calc((100vw - 200px) / 2)';
+const MEDIUM_FULL_SIZE = 'calc(100vw - 132px)';
+const LARGE_SIZES = {
+  2: { fluid: 'calc((100vw - 284px) / 3)', fixed: '311px' },
+  3: { fluid: 'calc((100vw - 208px) / 2)', fixed: '504px' },
+  6: { fluid: 'calc(100vw - 132px)', fixed: '1084px' },
+} as const;
+
+/** The `sizes` attribute of the image of a card that takes `large` of the 6 columns of lg and, at md, a pair cell or the full row. */
+function sizesOf(large: 2 | 3 | 6, isOddOnMedium: boolean): string {
+  const { fluid, fixed } = LARGE_SIZES[large];
+  const medium = isOddOnMedium ? MEDIUM_FULL_SIZE : MEDIUM_PAIR_SIZE;
+  return `(min-width: ${LARGE_BREAKPOINT_PX}px) ${fixed}, (min-width: 1024px) ${fluid}, (min-width: 768px) ${medium}, (min-width: 360px) ${PHONE_SIZE}, ${SMALL_PHONE_SIZE}`;
+}
 
 /** How many of the 6 columns of the lg grid a card takes, and whether it is the odd card of the md grid. */
 function spanOf(index: number, total: number): { large: 2 | 3 | 6; isOddOnMedium: boolean } {
@@ -31,6 +55,5 @@ const LARGE_CLASSES = { 2: 'lg:col-span-2', 3: 'lg:col-span-3', 6: 'lg:col-span-
 export function cardLayout(index: number, total: number): ProjectCardLayout {
   const { large, isOddOnMedium } = spanOf(index, total);
   const cellClassName = `${isOddOnMedium ? 'md:col-span-2 ' : ''}${LARGE_CLASSES[large]}`;
-  if (large !== 2) return { cellClassName, imageSizes: isOddOnMedium ? WIDE_ON_BOTH_SIZES : WIDE_ON_LARGE_SIZES };
-  return { cellClassName, imageSizes: isOddOnMedium ? WIDE_ON_MEDIUM_SIZES : NARROW_SIZES };
+  return { cellClassName, imageSizes: sizesOf(large, isOddOnMedium) };
 }

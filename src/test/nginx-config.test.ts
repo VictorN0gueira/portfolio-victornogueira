@@ -85,7 +85,7 @@ describe('the cache', () => {
   });
 
   it('gives the unversioned brand, fonts, OG banner and photo a week, never a year', () => {
-    for (const path of ['/brand/vn-one-logo-dark.webp', '/fonts/SpaceGrotesk-Bold.woff2', '/og-banner.png', '/victor-photo.webp']) {
+    for (const path of ['/brand/vn-one-logo-dark.webp', '/fonts/SpaceGrotesk-Bold.woff2', '/og-banner.png', '/founder/victor-480.webp']) {
       expect(maxAge(cacheFor(path)), path).toBe(WEEK);
       expect(cacheFor(path), path).not.toContain('immutable');
     }

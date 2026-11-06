@@ -26,6 +26,32 @@ describe('WindowFrame', () => {
     expect(screen.getByText('fluxo.n8n')).toHaveClass('font-mono');
   });
 
+  it('reads the title to assistive technology by default, and hides it when the title is only decoration', () => {
+    const { rerender } = renderFrame({ title: 'fluxo.n8n' });
+    expect(screen.getByText('fluxo.n8n')).not.toHaveAttribute('aria-hidden');
+
+    rerender(
+      <WindowFrame title="fluxo.n8n" isTitleDecorative>
+        <p>conteudo</p>
+      </WindowFrame>,
+    );
+    expect(screen.getByText('fluxo.n8n')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('lets a decorative title shrink and end in an ellipsis instead of wrapping a long name at its hyphens', () => {
+    const { rerender } = renderFrame({ title: 'diagnostico-empresarial' });
+    expect(screen.getByText('diagnostico-empresarial')).toHaveClass('break-words');
+    expect(screen.getByText('diagnostico-empresarial')).not.toHaveClass('truncate');
+
+    rerender(
+      <WindowFrame title="diagnostico-empresarial" isTitleDecorative>
+        <p>conteudo</p>
+      </WindowFrame>,
+    );
+    expect(screen.getByText('diagnostico-empresarial')).toHaveClass('truncate');
+    expect(screen.getByText('diagnostico-empresarial')).not.toHaveClass('break-words');
+  });
+
   it('shows the status at the right when given, and no pill without it', () => {
     const { rerender, container } = renderFrame({ status: 'ativo' });
 

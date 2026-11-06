@@ -4,18 +4,12 @@
 @import "./styles/motion.css";
 @import "./styles/skeleton.css";
 
-/* Legacy dark: utilities are intentionally inert until the old pages are rebuilt. */
+/* dark: utilities stay inert. Only the two frozen legal pages (PrivacyPage, LgpdPage) still carry them, and their text may not be edited. */
 @custom-variant dark (&:where([data-vn-never-dark], [data-vn-never-dark] *));
 
-/* Legacy alias so old pages keep rendering until they are rebuilt. A VN One value, not a new color. */
+/* Alias for bg-brand-white, which only the two frozen legal pages still use. A VN One value, not a new color. */
 @theme {
   --color-brand-white: #F2F2F2;
-}
-
-/* Legacy values still read by the old ROICalculator of /contato. */
-:root {
-  --roi-slider-fill: #1A1A1A;
-  --roi-slider-track: #C7C7C7;
 }
 
 @layer base {
@@ -43,7 +37,8 @@
   }
 
   /* At the very end of the page nothing can scroll further, so a tab low on the window would stay over the last links of the
-     footer. The footer grows by what 4rem does not clear, the least bottom padding of the two footers (the blog one has py-16, the site one 6rem plus the inset). */
+     footer. The site footer already pads its bottom by 6rem (plus the inset), and it grows by what 4rem does not clear: the
+     last control ends 2rem (32px, measured at 390x844 with the tab at 136px) above the tab, not flush with it. */
   html[data-vn-tab-band='bottom'] footer::after {
     content: '';
     display: block;
@@ -144,63 +139,4 @@
 .a11y-readable-font * {
   font-family: Arial, Helvetica, sans-serif !important;
   letter-spacing: 0.01em !important;
-}
-
-/* ROI Calculator range slider (light rules only, used by ROICalculator until it is rebuilt) */
-.roi-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 9999px;
-  outline: none;
-  cursor: pointer;
-  width: 100%;
-}
-
-.roi-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #1A1A1A;
-  cursor: pointer;
-  border: 3px solid #FFFFFF;
-  box-shadow: 0 0 0 1.5px #C7C7C7;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.roi-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
-  box-shadow: 0 0 0 3px #C7C7C7;
-}
-
-.roi-slider::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #1A1A1A;
-  cursor: pointer;
-  border: 3px solid #FFFFFF;
-  box-shadow: 0 0 0 1.5px #C7C7C7;
-  transition: transform 0.15s ease;
-}
-
-.roi-slider::-moz-range-thumb:hover {
-  transform: scale(1.15);
-}
-
-/* 404 glitch effect */
-@keyframes glitch-1 {
-  0%, 100% { transform: translate(0); clip-path: none; }
-  15% { transform: translate(-3px, 1px); clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%); color: #00E5A0; }
-  30% { transform: translate(3px, -1px); clip-path: polygon(0 65%, 100% 65%, 100% 80%, 0 80%); color: #ffffff; }
-  45% { transform: translate(-1px, 2px); clip-path: none; }
-  60% { transform: translate(2px, -2px); clip-path: polygon(0 45%, 100% 45%, 100% 60%, 0 60%); color: #8A8A8A; }
-}
-
-@keyframes glitch-2 {
-  0%, 100% { transform: translate(0); opacity: 0.3; }
-  25% { transform: translate(4px, 0); opacity: 0.5; color: #00E5A0; }
-  50% { transform: translate(-4px, 1px); opacity: 0.2; }
-  75% { transform: translate(2px, -1px); opacity: 0.4; }
 }

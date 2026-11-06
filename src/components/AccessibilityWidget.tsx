@@ -212,8 +212,8 @@ function AccessibilityTrigger({ buttonRef, isOpen, isDark, panelId, summaryId, a
         'pointer-events-auto relative flex size-[44px] touch-none select-none items-center justify-center vn-tab-trigger shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 [@media(hover:hover)_and_(pointer:fine)]:cursor-grab data-[dragging=true]:cursor-grabbing',
         isChosen && side === 'left' ? 'rounded-r-xl' : 'rounded-l-xl',
         isDark
-          ? 'bg-white text-zinc-950 focus-visible:outline-white'
-          : 'border border-zinc-200 bg-zinc-950 text-white focus-visible:outline-zinc-950',
+          ? 'bg-white text-vn-black focus-visible:outline-white'
+          : 'border border-vn-gray-light bg-vn-black text-white focus-visible:outline-vn-black',
       )}
     >
       <Accessibility className="size-5" aria-hidden="true" />
@@ -239,7 +239,7 @@ function CountBadge({ count, isDark }: CountBadgeProps) {
       data-count={count}
       className={cn(
         'absolute -top-1 right-0 flex size-5 items-center justify-center rounded-full text-xs font-bold after:content-[attr(data-count)]',
-        isDark ? 'bg-zinc-950 text-white' : 'border border-zinc-200 bg-white text-zinc-950',
+        isDark ? 'bg-vn-black text-white' : 'border border-vn-gray-light bg-white text-vn-black',
       )}
     />
   );

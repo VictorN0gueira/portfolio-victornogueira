@@ -15,7 +15,7 @@ import { EASE_OUT } from '../lib/motion';
 // options. A window shorter than 30rem (a phone on its side) centres the panel, and its 60px bottom margin keeps it
 // off the bottom edge. The WhatsApp button has the bottom left corner, the opposite side.
 const PANEL_BASE_CLASSES =
-  'pointer-events-auto flex w-[min(13rem,calc(100vw-3.5rem))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/98 shadow-2xl backdrop-blur-none md:bg-zinc-950/95 md:backdrop-blur-xl';
+  'pointer-events-auto flex w-[min(13rem,calc(100vw-3.5rem))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-vn-black/98 shadow-2xl backdrop-blur-none md:bg-vn-black/95 md:backdrop-blur-xl';
 // The default place: the size is capped by CSS from the default place of the tab. Once the visitor has moved the tab, the
 // widget caps the height in px for the side it is on, and the box that holds the panel keeps the gap to the tab.
 const PANEL_DEFAULT_CLASSES =
@@ -77,7 +77,7 @@ export function AccessibilityPanel({ id, state, activeCount, onToggle, onReset, 
       className={cn(PANEL_BASE_CLASSES, maxHeightPx === null && PANEL_DEFAULT_CLASSES)}
     >
       <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
-        <span className="text-xs font-semibold uppercase tracking-widest text-white/80">{a11yWidgetCopy.panelTitle}</span>
+        <span className="text-xs font-semibold uppercase tracking-widest text-vn-gray-light">{a11yWidgetCopy.panelTitle}</span>
         {activeCount > 0 ? (
           <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium text-white">{activeBadgeText(activeCount)}</span>
         ) : null}
@@ -92,7 +92,7 @@ export function AccessibilityPanel({ id, state, activeCount, onToggle, onReset, 
           <button
             type="button"
             onClick={handleReset}
-            className={`flex min-h-11 w-full items-center justify-center gap-2 text-xs text-white/50 transition-colors hover:text-white/80 ${PANEL_FOCUS_RING}`}
+            className={`flex min-h-11 w-full items-center justify-center gap-2 text-xs text-vn-gray-mid transition-colors hover:text-vn-gray-light ${PANEL_FOCUS_RING}`}
           >
             <RotateCcw aria-hidden="true" className="size-3.5 shrink-0" />
             {a11yWidgetCopy.resetLabel}

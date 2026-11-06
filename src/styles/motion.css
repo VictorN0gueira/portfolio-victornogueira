@@ -77,6 +77,28 @@
 }
 
 /*
+ * 404 glitch: two shifted copies of the number, each shown through a few horizontal bands. Only transform and clip-path
+ * move. A layer rests fully clipped (hidden behind the chrome base), so the number is clean before the bursts, after
+ * them and whenever motion is off.
+ * It does not flash (WCAG 2.3.1): each layer changes three times (shows a band, shows another, hides), the two layers
+ * together six times, all inside the first half of a 1.6 s cycle, so no window of one second holds more than 6 changes,
+ * which is 3 flashes at most. A band is under 30% of the height of the number, and the number is a small part of the
+ * screen, so the area that changes is far under the 25% of a 10 degree field that counts. The bursts are 3 cycles,
+ * 4.8 s, so the glitch stops by itself before the 5 s of WCAG 2.2.2 (NotFoundGlitch.test.tsx reads all of this).
+ */
+@keyframes vn-glitch-a {
+  8% { transform: translate(-.045em, 0); clip-path: inset(12% 0 62% 0); }
+  24% { transform: translate(.05em, 0); clip-path: inset(58% 0 18% 0); }
+  40%, 100% { transform: translate(0, 0); clip-path: inset(0 0 100% 0); }
+}
+
+@keyframes vn-glitch-b {
+  16% { transform: translate(.05em, 0); clip-path: inset(70% 0 8% 0); }
+  32% { transform: translate(-.04em, 0); clip-path: inset(22% 0 56% 0); }
+  48%, 100% { transform: translate(0, 0); clip-path: inset(0 0 100% 0); }
+}
+
+/*
  * MOTION OFF. The one list. `vn-still` is the system preference for reduced motion or "Pausar animações" in the widget
  * (tokens.css), so every line below holds for both, with one near zero duration. A new animated component adds its stop
  * here, once. The first rule is the safety net for everything that is not listed (a library, a utility class): no
@@ -99,6 +121,26 @@ html.a11y-no-animations {
 }
 
 .vn-cursor {
+  @variant vn-still {
+    animation: none;
+  }
+}
+
+.vn-glitch-a,
+.vn-glitch-b {
+  clip-path: inset(0 0 100% 0);
+}
+
+.vn-glitch-a {
+  animation: vn-glitch-a 1.6s steps(1, end) 3;
+}
+
+.vn-glitch-b {
+  animation: vn-glitch-b 1.6s steps(1, end) 3;
+}
+
+.vn-glitch-a,
+.vn-glitch-b {
   @variant vn-still {
     animation: none;
   }

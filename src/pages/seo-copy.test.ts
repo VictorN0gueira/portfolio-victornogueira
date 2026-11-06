@@ -51,11 +51,42 @@ describe('SEO elements take their head from the route metadata', () => {
 
   it('checks the elements of the pages and of the router', () => {
     expect(checked.length).toBeGreaterThanOrEqual(8);
-    expect(checked.map(({ file }) => file)).toEqual(expect.arrayContaining(['ServicesPage.tsx', 'AboutPage.tsx', 'ContactPage.tsx', 'ProjectsPage.tsx', 'ProjectDetailPage.tsx', 'App.tsx']));
+    expect(checked.map(({ file }) => file)).toEqual(
+      expect.arrayContaining([
+        'ServicesPage.tsx',
+        'AboutPage.tsx',
+        'ContactPage.tsx',
+        'ProjectsPage.tsx',
+        'ProjectDetailPage.tsx',
+        'App.tsx',
+      ]),
+    );
   });
 
-  it('passes no description prop', () => {
-    expect(checked.filter(({ block }) => /\sdescription=/.test(block)).map(({ file }) => file)).toEqual([]);
+  // The exception: the two places that show the 404 are out of the index and have no metadata of their own, so
+  // they read their title and sentence from src/data/notFoundCopy.ts, the module the static 404.html is built from
+  // (src/seo/headHtml.ts).
+  // They are the router (an unknown path) and the project page (an unknown project address).
+  const NOT_FOUND_FILES = new Set(['App.tsx', 'ProjectDetailPage.tsx']);
+  const NOT_FOUND_DESCRIPTION = 'description={notFoundCopy.description}';
+  const NOT_FOUND_TITLE = 'title={notFoundCopy.title}';
+
+  it('passes no description prop, except the noindex 404s (router and project page), from notFoundCopy', () => {
+    const own = checked.filter(({ block }) => /\sdescription=/.test(block));
+    const isNotFound = ({ file, block }: (typeof own)[number]) =>
+      NOT_FOUND_FILES.has(file) && /\snoindex\b/.test(block) && block.includes(NOT_FOUND_DESCRIPTION);
+
+    expect(own.filter((item) => !isNotFound(item))).toEqual([]);
+  });
+
+  it('gives every noindex 404 the one title and the one sentence of notFoundCopy, so the head agrees', () => {
+    const notFounds = checked.filter(({ block }) => /\snoindex\b/.test(block));
+
+    expect(notFounds.map(({ file }) => file).sort()).toEqual([...NOT_FOUND_FILES].sort());
+    for (const { file, block } of notFounds) {
+      expect(block, file).toContain(NOT_FOUND_TITLE);
+      expect(block, file).toContain(NOT_FOUND_DESCRIPTION);
+    }
   });
 
   it('passes a title prop only on a page that is out of the index (the 404s)', () => {
@@ -66,7 +97,11 @@ describe('SEO elements take their head from the route metadata', () => {
 
   it('passes no image prop and no JSON-LD of its own, except the home that keeps its list', () => {
     expect(checked.filter(({ block }) => /\simage\w*=/.test(block)).map(({ file }) => file)).toEqual([]);
-    expect(checked.filter(({ file, block }) => /\sjsonLd=/.test(block) && !OWN_JSON_LD_FILES.has(file)).map(({ file }) => file)).toEqual([]);
+    expect(
+      checked
+        .filter(({ file, block }) => /\sjsonLd=/.test(block) && !OWN_JSON_LD_FILES.has(file))
+        .map(({ file }) => file),
+    ).toEqual([]);
   });
 
   it('keeps the frozen legal pages with their own props, as the metadata equals them (routeMeta.test.ts)', () => {
@@ -76,4 +111,3 @@ describe('SEO elements take their head from the route metadata', () => {
     for (const { block } of legal) expect(block).toMatch(/\sdescription=/);
   });
 });
-

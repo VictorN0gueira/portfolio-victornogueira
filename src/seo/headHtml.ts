@@ -1,3 +1,4 @@
+import { notFoundCopy } from '../data/notFoundCopy';
 import { serializeJsonLd } from '../lib/jsonLd';
 import { SITE } from '../lib/site';
 import type { RouteCrumb, RouteMeta } from './routeMeta';
@@ -20,8 +21,8 @@ const BRAND_PREFIX = `${SITE.name} | `;
 export const NOT_FOUND_META: RouteMeta = {
   path: '/404',
   kind: 'page',
-  title: `Página não encontrada${BRAND_SUFFIX}`,
-  description: 'A página que você procura não existe ou mudou de endereço. Volte para o início e siga por lá.',
+  title: `${notFoundCopy.title}${BRAND_SUFFIX}`,
+  description: notFoundCopy.description,
   isIndexable: false,
   lastmod: '2026-11-01',
   crumbs: [],

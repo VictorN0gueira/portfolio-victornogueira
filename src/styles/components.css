@@ -50,10 +50,37 @@
 
 /*
  * Blinking block cursor. The size and color come from utilities on the element (see Cursor.tsx).
- * It blinks five times and rests visible (a blink that never stops is motion the visitor cannot pause from the content).
+ * It blinks four times (4.4 s, under the 5 s after which WCAG 2.2.2 asks for a way to stop it) and rests visible.
+ * Anything that goes on longer is stopped by "Pausar animações" in the accessibility widget.
  */
 .vn-cursor {
-  animation: vn-blink 1.1s steps(1) 5;
+  animation: vn-blink 1.1s steps(1) 4;
+}
+
+/*
+ * One word of the scrambled 404 title (NotFound.tsx). The real word is in the flow and gives the box. While the
+ * scramble runs its letters are hidden and the frame, from data-scramble, is drawn over the box from its start (the
+ * line is centred, so the word starts where the frame does). Generated content is not in textContent, the selection,
+ * find in page (the word is an inline box, so the phrase stays one run) or the translation.
+ * The `/ ""` alternative makes it decoration for assistive technology too (Chromium reads generated text otherwise).
+ * It is a second declaration, after a plain one: a browser that does not know the syntax drops only that line and
+ * keeps the frame, instead of dropping the rule and leaving the hidden word blank. The frame is clipped to the box of
+ * the word, so a frame wider than the real letters (stand ins differ in width) never passes the edge of the screen.
+ */
+.vn-scramble-word {
+  position: relative;
+}
+
+.vn-scramble-word::after {
+  content: attr(data-scramble);
+  content: attr(data-scramble) / "";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /*

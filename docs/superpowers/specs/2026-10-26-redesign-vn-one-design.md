@@ -329,12 +329,14 @@ Cada pendência tem um plano B, então nada trava o build. O PR abre como **draf
 
 ## Checklist técnico do Plano 3
 
-O que as páginas antigas ainda carregam, para sair junto com elas quando forem reconstruídas:
+Fechado no lote Z do plano das páginas internas. O que saiu e o que ficou:
 
-- **CSS legado** (Q-25): `.roi-slider*` e as variáveis `--roi-slider-*` (só o `ROICalculator.tsx`), os keyframes `glitch-1` e `glitch-2` (só o `NotFound.tsx`, com cores fora da paleta) e `.custom-scrollbar` (só o `ServiceSelect`).
-- **Funções com mais de 50 linhas** (Q-33): `BlogPage` 310, `ROICalculator` 204, `LgpdPage` 198, `ServicesPage` 140, `PrivacyPage` 108, `Skills` 101, `ProjectDetail` 100, `About` 88 e `newsService.fetchFromDevTo` 68.
-- **`text-[10px]`** (Q-26): 30 usos, todos nas páginas antigas (`BlogPage`, `ProjectDetail`, `ServicesPage`, `LgpdPage`). Usar a escala de texto dos tokens.
-- **`newsService`** (Q-35d): seis blocos `catch` vazios, de propósito, para a cadeia de fontes do blog. Listar a causa em vez de engolir, ou manter com o comentário.
+- **CSS legado** (Q-25): saíram `.roi-slider*`, as variáveis `--roi-slider-*` e os keyframes `glitch-1` e `glitch-2` do `index.css` (o 404 novo tem o glitch próprio em `motion.css`). `.custom-scrollbar` não existe mais no código: o `ServiceSelect` não o usa, então não havia o que manter. Ficam o alias `--color-brand-white` e o `@custom-variant dark`, porque `PrivacyPage` e `LgpdPage`, congeladas, ainda usam `bg-brand-white` e `dark:`.
+- **Funções com mais de 50 linhas** (Q-33): `ROICalculator`, `Skills`, `About` e o `ServicesPage` antigo saíram com as páginas antigas, e `BlogPage` (51 linhas), `ProjectDetail` (45) e `ServicesPage` (38) viraram composições curtas. `LgpdPage` (241 linhas) e `PrivacyPage` (124) seguem como estavam, porque o texto jurídico não muda sem o ok do Victor (Q1 do plano).
+- **`text-[10px]`** (Q-26): zero usos fora das duas páginas jurídicas, e o `pageHygiene.test.ts` falha se voltar. O `legal.css` cobre as duas por fora.
+- **`newsService`** (Q-35d): os blocos `catch` agora registram a causa (`log.record`) ou, quando não há o que fazer (armazenamento bloqueado), dizem o motivo no comentário.
+- **Divergências do spec que o código decidiu:** `/projetos` não tem abas (dois destaques e uma grade) e `projects.ts` não tem campo de impacto, então a frase de destaque é só o `highlight` dos dois destaques, sem número inventado. Os combos de `/servicos` não têm desconto (decisão do dono, Q3). O blog entrou no `SiteLayout`.
+- **Guarda visual:** `src/test/pageHygiene.test.ts`, com lista fechada de exceções (as duas páginas legais e os dois arquivos que as reestilizam, mais `TOOL_BRAND_COLORS` em `toolMarks.ts`).
 
 ## Fora do escopo
 

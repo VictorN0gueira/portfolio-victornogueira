@@ -206,9 +206,7 @@ describe('contact constants', () => {
   });
 
   it('builds the form fallback link from the approved message', () => {
-    expect(WHATSAPP_FALLBACK_URL).toBe(
-      whatsappUrl('Olá! Tentei usar o formulário do site da VN One.'),
-    );
+    expect(WHATSAPP_FALLBACK_URL).toBe(whatsappUrl('Olá! Tentei usar o formulário do site da VN One.'));
     expect(WHATSAPP_FALLBACK_URL.startsWith('https://wa.me/5581984451243?text=')).toBe(true);
   });
 
@@ -221,7 +219,8 @@ describe('contact constants', () => {
   });
 });
 
-// These labels are the `servico` values the n8n webhooks receive (owner ruling R25): a change here changes the lead channel.
+// These labels are the `servico` values the n8n webhooks receive (owner ruling R25): a change here changes the lead
+// channel.
 describe('serviceOptions', () => {
   it('keeps the dropdown labels the lead channel expects', () => {
     expect(serviceOptions).toEqual([
@@ -260,11 +259,12 @@ describe('services', () => {
     expect(descriptions).not.toMatch(/converter|A solução completa/);
   });
 
-  it('writes every combo discount in Portuguese, with the same percentages as before', () => {
-    const discounts = combos.map((combo) => combo.desconto);
-
-    expect(discounts).toEqual(['10% de desconto', '12% de desconto', '15% de desconto']);
-    expect(discounts.join(' ')).not.toMatch(/\boff\b/i);
+  it('carries no discount in the combos: a checked one needs this guard edited', () => {
+    for (const combo of combos) {
+      expect(combo).not.toHaveProperty('desconto');
+      expect(Object.values(combo).join(' ')).not.toMatch(/\d+\s*%|desconto/i);
+    }
+    expect(combos).toHaveLength(3);
   });
 
   it('gives every service a unique kebab case slug for the /servicos#slug anchors', () => {
@@ -281,7 +281,11 @@ describe('services', () => {
   });
 
   it('says nothing twice on a card: no pair of content words of the description comes back in a bullet', () => {
-    const STOPWORDS = new Set('de do da dos das o a os as e ou um uma seu sua seus suas para com em no na nos nas que quando onde por ao à'.split(' '));
+    const STOPWORDS = new Set(
+      ['de do da dos das o a os as e ou um uma seu sua seus suas', 'para com em no na nos nas que quando onde por ao à']
+        .join(' ')
+        .split(' '),
+    );
     const bigrams = (text: string) => {
       const words = text
         .toLowerCase()
@@ -298,7 +302,7 @@ describe('services', () => {
     }
   });
 
-  it('words the first bullet of the agent card as a noun phrase, like the other bullets, with no chatbot and no repeated verb', () => {
+  it('words the first bullet of the agent card as a noun phrase, with no chatbot and no repeated verb', () => {
     const agent = services.find((service) => service.slug === 'agente-de-ia-sob-medida');
 
     expect(agent?.inclui[0]).toBe('Escopo do agente definido com você');
@@ -306,7 +310,10 @@ describe('services', () => {
 
   it('lists every bullet of a card once: no two bullets are the same, and none repeats a phrase of another', () => {
     const phrases = (text: string) => {
-      const words = text.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((word) => word.length > 3);
+      const words = text
+        .toLowerCase()
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter((word) => word.length > 3);
       return words.slice(1).map((word, index) => `${words[index]} ${word}`);
     };
 
@@ -352,16 +359,18 @@ describe('faqs', () => {
   it('keeps filler, English and jargon out of the answers', () => {
     const answers = faqs.map((faq) => faq.answer).join(' ');
 
-    expect(answers).not.toMatch(/video call|sprint|soluções|implementação|valor|rapidamente|a longo prazo|De jeito nenhum/i);
+    expect(answers).not.toMatch(
+      /video call|sprint|soluções|implementação|valor|rapidamente|a longo prazo|De jeito nenhum/i,
+    );
   });
 
-  it('keeps the figures it can stand behind: 1 a 2 semanas and 30 minutos, with no hour threshold that has no assumption', () => {
+  it('keeps the figures it can stand behind: 1 a 2 semanas and 30 minutos, with no hour threshold', () => {
     expect(faqs[0].answer).not.toMatch(/\d+ horas/);
     expect(faqs[1].answer).toContain('1 a 2 semanas');
     expect(faqs[4].answer).toContain('30 minutos');
   });
 
-  it('promises after the delivery only what the services list: monitoring and docs for automation, adjustments for the agent', () => {
+  it('promises after the delivery only what the services list: monitoring, docs and adjustments', () => {
     const answer = faqs.find((faq) => faq.id === 'depois-da-entrega')?.answer ?? '';
     const listed = services.flatMap((service) => service.inclui).join(' ');
 
@@ -393,10 +402,12 @@ describe('projects', () => {
 
   it('pins the fact-only descriptions and categories of the projects', () => {
     expect(getProjectBySlug('diagnostico-empresarial')?.description).toBe(
-      'Página com um diagnóstico de 5 minutos para o dono da empresa e painel de leads com login, indicadores e funil.',
+      'Página com um diagnóstico de 5 minutos para o dono da empresa ' +
+        'e painel de leads com login, indicadores e funil.',
     );
     expect(getProjectBySlug('dizpara')?.description).toBe(
-      'Painel para captar leads no Google Maps, importar de CSV e do Google Sheets e disparar campanhas por e-mail e por WhatsApp.',
+      'Painel para captar leads no Google Maps, importar de CSV e do Google Sheets ' +
+        'e disparar campanhas por e-mail e por WhatsApp.',
     );
     expect(getProjectBySlug('hub081')?.description).toBe(
       'Painel com as conversas do WhatsApp, contatos, agentes de IA, pipelines, propostas, produtos e financeiro.',
@@ -410,8 +421,36 @@ describe('projects', () => {
 // The formal forms ("Veja", "Comece") next to them read as two voices on one page.
 describe('home copy voice', () => {
   // Any case: "e veja quanto" in the middle of a sentence is the same mistake as "Veja" at the start of one.
-  const FORMAL_IMPERATIVE = /(?<!\p{L})(veja|comece|escolha|selecione|conte|clique|confira|mexa|fale|chame|descubra|calcule|solicite|conheça|preencha|peça|agende|informe|acesse|saiba|digite)(?!\p{L})/iu;
-  const FIRST_PERSON_PLURAL = /(?<!\p{L})(\p{L}{2,}amos|fazemos|fizemos|temos|somos|podemos|queremos|sentimos|nós)(?!\p{L})/iu;
+  const FORMAL_IMPERATIVE = new RegExp(
+    String.raw`(?<!\p{L})(` +
+      [
+        'veja',
+        'comece',
+        'escolha',
+        'selecione',
+        'conte',
+        'clique',
+        'confira',
+        'mexa',
+        'fale',
+        'chame',
+        'descubra',
+        'calcule',
+        'solicite',
+        'conheça',
+        'preencha',
+        'peça',
+        'agende',
+        'informe',
+        'acesse',
+        'saiba',
+        'digite',
+      ].join('|') +
+      String.raw`)(?!\p{L})`,
+    'iu',
+  );
+  const FIRST_PERSON_PLURAL =
+    /(?<!\p{L})(\p{L}{2,}amos|fazemos|fizemos|temos|somos|podemos|queremos|sentimos|nós)(?!\p{L})/iu;
 
   function collectStrings(value: unknown): string[] {
     if (typeof value === 'string') return [value];
@@ -429,7 +468,19 @@ describe('home copy voice', () => {
 
   // VN One sells AI agents, not chatbots: the word is in no copy the visitor reads, the `servico` options included.
   it('never says "chatbot" in the copy the visitor reads on the home and on the services page', () => {
-    const modules = [homeCopy, faqs, processSteps, services, combos, useCases, stats, flowPanel, heroFlows, heroTasks, integrations];
+    const modules = [
+      homeCopy,
+      faqs,
+      processSteps,
+      services,
+      combos,
+      useCases,
+      stats,
+      flowPanel,
+      heroFlows,
+      heroTasks,
+      integrations,
+    ];
     const offenders = collectStrings(modules).filter((text) => /chat[\s-]?bot/i.test(text));
 
     expect(offenders).toEqual([]);

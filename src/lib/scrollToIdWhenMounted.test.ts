@@ -188,6 +188,57 @@ describe('scrollToIdWhenMounted', () => {
     expect(scrollBy).toHaveBeenCalledWith({ top: 7.2, behavior: 'instant' });
   });
 
+  describe('the scroll-margin-top of the element', () => {
+    /** getComputedStyle answers with this value for the element, and as it always did for everything else. */
+    let spy: { mockRestore: () => void } | undefined;
+    function stubMargin(element: Element, scrollMarginTop: string): void {
+      const real = window.getComputedStyle.bind(window);
+      spy = vi.spyOn(window, 'getComputedStyle').mockImplementation((target, pseudo) =>
+        target === element ? ({ scrollMarginTop } as CSSStyleDeclaration) : real(target, pseudo),
+      );
+    }
+
+    afterEach(() => {
+      spy?.mockRestore();
+    });
+
+    it('is part of where the element belongs: an anchor puts it that far below the top, so the realignment does too', () => {
+      const { state } = mountTarget('x', 0);
+      stubMargin(document.getElementById('x') as Element, '48px');
+      scrollToIdWhenMounted('x');
+
+      state.top = 180;
+      resizeBody();
+      vi.advanceTimersByTime(SCROLL_IDLE_MS + FRAME_MS);
+
+      expect(scrollBy).toHaveBeenCalledWith({ top: 132, behavior: 'instant' });
+    });
+
+    it('leaves an element that is already 48px down alone when it has that margin', () => {
+      const { state } = mountTarget('x', 0);
+      stubMargin(document.getElementById('x') as Element, '48px');
+      scrollToIdWhenMounted('x');
+
+      state.top = 48;
+      resizeBody();
+      vi.advanceTimersByTime(SCROLL_IDLE_MS + FRAME_MS);
+
+      expect(scrollBy).not.toHaveBeenCalled();
+    });
+
+    it.each(['0px', '', 'auto'])('changes nothing for an element without one (the value is "%s")', (value) => {
+      const { state } = mountTarget('x', 0);
+      stubMargin(document.getElementById('x') as Element, value);
+      scrollToIdWhenMounted('x');
+
+      state.top = 180;
+      resizeBody();
+      vi.advanceTimersByTime(SCROLL_IDLE_MS + FRAME_MS);
+
+      expect(scrollBy).toHaveBeenCalledWith({ top: 180, behavior: 'instant' });
+    });
+  });
+
   it('leaves the page alone when the element is within one pixel of its place, so rounding never makes it jitter', () => {
     const { state } = mountTarget('x', 0);
     scrollToIdWhenMounted('x');

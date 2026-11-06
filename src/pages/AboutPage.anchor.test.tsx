@@ -1,28 +1,43 @@
 import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { FOUNDER_PHOTO } from '../sections/about/founderPhotoSource';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
 import AboutPage from './AboutPage';
 
-// One test in this file, on purpose. React.lazy keeps what it loaded inside the module instance, and Vitest gives every
-// file its own modules, so here the first render of the page is always a cold one in any order of the tests. In
-// AboutPage.test.tsx a lazy About would already be resolved by the time this ran, and the test could not tell.
+// What keeps /sobre#metodo where the hash scroll put it: nothing above the method may change its height after the first
+// render. The sections are plain imports, so none of them waits for a chunk (src/test/lazyPages.test.tsx checks that the
+// page has no import()); what is left that could grow is an image that loads late.
 describe('AboutPage anchor', () => {
   beforeEach(() => {
     stubMatchMedia();
   });
 
-  it('has everything above #metodo in its first render, with no lazy skeleton, so the anchor never moves when a chunk arrives', () => {
-    const { container } = renderWithProviders(<AboutPage />, { route: '/sobre' });
+  it('has the founder, the company and the specialties in the first render, in the document before #metodo', () => {
+    renderWithProviders(<AboutPage />, { route: '/sobre' });
     const method = document.getElementById('metodo') as HTMLElement;
-    const about = container.querySelector('#sobre') as HTMLElement;
 
-    // Found at once, with no findBy: a lazy About would still be a skeleton here.
-    expect(screen.getByRole('heading', { level: 1, name: 'Sobre mim' })).toBeInTheDocument();
-    expect(method.compareDocumentPosition(about) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
-    // Whatever is still loading (the skills) sits below the method section.
-    for (const skeleton of screen.queryAllByText('Carregando...')) {
-      expect(method.compareDocumentPosition(skeleton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Found at once, with no findBy.
+    for (const heading of [
+      screen.getByRole('heading', { level: 1, name: 'Sobre mim' }),
+      screen.getByRole('heading', { level: 2, name: 'A VN One' }),
+      screen.getByRole('heading', { level: 2, name: 'Minhas Especialidades' }),
+    ]) {
+      expect(method.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    }
+  });
+
+  it('reserves the box of every image above #metodo (width and height), so a photo that arrives late cannot push the anchor', () => {
+    renderWithProviders(<AboutPage />, { route: '/sobre' });
+    const method = document.getElementById('metodo') as HTMLElement;
+    const images = Array.from(document.querySelectorAll('img')).filter(
+      (image) => method.compareDocumentPosition(image) & Node.DOCUMENT_POSITION_PRECEDING,
+    );
+
+    expect(images.length).toBeGreaterThan(0);
+    for (const image of images) {
+      expect(image).toHaveAttribute('width', String(FOUNDER_PHOTO.width));
+      expect(image).toHaveAttribute('height', String(FOUNDER_PHOTO.height));
     }
   });
 });

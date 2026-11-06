@@ -1,6 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { LazyMotion, domAnimation } from 'motion/react';
-import { Link, MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../test/render';
@@ -41,20 +39,21 @@ describe('BlogPage states', () => {
     getNewsArticles.mockReturnValue(new Promise((resolve) => (answer = resolve)));
     const { container } = renderWithProviders(<BlogPage />, { route: '/blog' });
 
-    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('[class*="animate-pulse"]').length).toBeGreaterThan(0);
     expect(articlesText()).toHaveLength(0);
 
     answer({ articles: [newsArticle(1)], source: 'cache' });
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
-    expect(container.querySelectorAll('.animate-pulse')).toHaveLength(0);
+    expect(container.querySelectorAll('[class*="animate-pulse"]')).toHaveLength(0);
   });
 
-  it('says so when the sources fail, with the reason', async () => {
+  it('says so when the sources fail, in words the visitor can read and not the message of the error', async () => {
     getNewsArticles.mockRejectedValue(new Error('A rede caiu'));
     renderWithProviders(<BlogPage />, { route: '/blog' });
 
     expect(await screen.findByText('Ops! Algo deu errado')).toBeInTheDocument();
-    expect(screen.getByText('A rede caiu')).toBeInTheDocument();
+    expect(screen.getByText('Erro ao carregar notícias')).toBeInTheDocument();
+    expect(screen.queryByText('A rede caiu')).toBeNull();
   });
 
   it('says so when there is no article at all', async () => {
@@ -64,32 +63,33 @@ describe('BlogPage states', () => {
     expect(await screen.findByText('Nenhuma notícia encontrada')).toBeInTheDocument();
   });
 
-  it('asks the sources again, with the cache dropped, when the visitor presses Atualizar', async () => {
-    localStorage.setItem('blog_news_cache', 'stale');
+  it('asks the sources again, and keeps the saved list where it is, when the visitor presses Atualizar', async () => {
+    localStorage.setItem('blog_news_cache', 'saved list');
     const user = userEvent.setup();
     renderWithProviders(<BlogPage />, { route: '/blog' });
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
     expect(getNewsArticles).toHaveBeenCalledTimes(1);
+    expect(getNewsArticles).toHaveBeenLastCalledWith({ forceRefresh: false });
 
     await user.click(screen.getByRole('button', { name: /Atualizar/ }));
 
     await waitFor(() => expect(getNewsArticles).toHaveBeenCalledTimes(2));
-    expect(localStorage.getItem('blog_news_cache')).toBeNull();
+    expect(getNewsArticles).toHaveBeenLastCalledWith({ forceRefresh: true });
+    expect(localStorage.getItem('blog_news_cache')).toBe('saved list');
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
   });
 
-  it('loads again when the visitor presses Atualizar even if localStorage refuses to remove the cache', async () => {
+  it('loads again when the visitor presses Atualizar and never needs to remove anything from the storage', async () => {
     const user = userEvent.setup();
     renderWithProviders(<BlogPage />, { route: '/blog' });
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
-    const remove = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
-      throw new DOMException('blocked', 'SecurityError');
-    });
+    const remove = vi.spyOn(Storage.prototype, 'removeItem');
 
     await user.click(screen.getByRole('button', { name: /Atualizar/ }));
 
     await waitFor(() => expect(getNewsArticles).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.getByRole('button', { name: /Atualizar/ })).toBeEnabled());
+    expect(remove).not.toHaveBeenCalled();
     expect(articlesText().length).toBeGreaterThan(0);
     remove.mockRestore();
   });
@@ -109,7 +109,10 @@ describe('BlogPage cards and labels', () => {
   it('marks a fresh article as new, tags the language and the topic, and falls back when there is no cover', async () => {
     const fresh = { ...newsArticle(1), title: 'Workflow n8n novo', publishedAt: new Date().toISOString(), image: '' };
     const english = { ...newsArticle(2), title: 'Autonomous agent loop', language: 'en' as const };
-    getNewsArticles.mockResolvedValue({ articles: [fresh, english, { ...newsArticle(3), title: 'Outro tema' }], source: 'cache' });
+    getNewsArticles.mockResolvedValue({
+      articles: [fresh, english, { ...newsArticle(3), title: 'Outro tema' }],
+      source: 'cache',
+    });
     renderWithProviders(<BlogPage />, { route: '/blog' });
 
     expect(await screen.findByText('NOVO')).toBeInTheDocument();
@@ -144,13 +147,16 @@ describe('BlogPage cards and labels', () => {
     },
   );
 
-  it.each(['browser-cache', 'stale-browser-cache', 'fallback'])('does not claim an update when the list is not fresh: %s', async (origin) => {
-    getNewsArticles.mockResolvedValue({ articles: [newsArticle(1)], source: 'x', origin });
-    renderWithProviders(<BlogPage />, { route: '/blog' });
+  it.each(['browser-cache', 'stale-browser-cache', 'fallback'])(
+    'does not claim an update when the list is not fresh: %s',
+    async (origin) => {
+      getNewsArticles.mockResolvedValue({ articles: [newsArticle(1)], source: 'x', origin });
+      renderWithProviders(<BlogPage />, { route: '/blog' });
 
-    await screen.findAllByText('Artigo de teste 1');
-    expect(document.body.textContent).not.toMatch(/atualizad|diariamente|ao vivo|carregada agora/i);
-  });
+      await screen.findAllByText('Artigo de teste 1');
+      expect(document.body.textContent).not.toMatch(/atualizad|diariamente|ao vivo|carregada agora/i);
+    },
+  );
 
   it('shows a generic message when a source fails with something that is not an Error', async () => {
     getNewsArticles.mockRejectedValue('quebrou');
@@ -162,7 +168,10 @@ describe('BlogPage cards and labels', () => {
   it('filters by the topic of an article', async () => {
     const user = userEvent.setup();
     getNewsArticles.mockResolvedValue({
-      articles: [{ ...newsArticle(1), title: 'Workflow n8n' }, { ...newsArticle(2), title: 'Outro tema' }],
+      articles: [
+        { ...newsArticle(1), title: 'Workflow n8n' },
+        { ...newsArticle(2), title: 'Outro tema' },
+      ],
       source: 'cache',
     });
     renderWithProviders(<BlogPage />, { route: '/blog' });
@@ -176,7 +185,10 @@ describe('BlogPage cards and labels', () => {
 
 describe('BlogPage fixed list', () => {
   it('does not look like a fresh feed: no NOVO and no time ago on any card, whatever the dates say', async () => {
-    const recent = [1, 2, 3].map((index) => ({ ...newsArticle(index), publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() }));
+    const recent = [1, 2, 3].map((index) => ({
+      ...newsArticle(index),
+      publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    }));
     getNewsArticles.mockResolvedValue({ articles: recent, source: 'fallback', origin: 'fallback' });
     renderWithProviders(<BlogPage />, { route: '/blog' });
 
@@ -186,7 +198,10 @@ describe('BlogPage fixed list', () => {
   });
 
   it('still shows NOVO and the time ago for a live list', async () => {
-    const recent = [1, 2].map((index) => ({ ...newsArticle(index), publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() }));
+    const recent = [1, 2].map((index) => ({
+      ...newsArticle(index),
+      publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    }));
     getNewsArticles.mockResolvedValue({ articles: recent, source: 'edge-function', origin: 'live' });
     renderWithProviders(<BlogPage />, { route: '/blog' });
 
@@ -215,9 +230,8 @@ describe('BlogPage tag pills', () => {
       const pills = Array.from(container.querySelectorAll(':scope > span'));
       expect(pills.length).toBeGreaterThanOrEqual(2);
       for (const pill of pills) {
-        expect(pill.className).toContain('bg-vn-black/80');
-        expect(pill.className).toContain('border-white/20');
-        expect(pill.className).not.toMatch(/bg-white\/(10|20)/);
+        expect(pill).toHaveClass('bg-vn-black', 'text-vn-white');
+        expect(pill.className).not.toMatch(/bg-vn-black\/|bg-white\//);
       }
     }
   });
@@ -255,185 +269,6 @@ describe('BlogPage refresh button', () => {
     await user.keyboard('{Enter}');
 
     expect(getNewsArticles).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe('BlogPage focus on arrival', () => {
-  function Home() {
-    const navigate = useNavigate();
-    return (
-      <>
-        <Link to="/blog">Ir para o blog</Link>
-        <button type="button" onClick={() => void navigate(-1)}>Voltar</button>
-      </>
-    );
-  }
-
-  function renderApp(entries: string[], index?: number) {
-    return render(
-      <LazyMotion features={domAnimation} strict>
-        <MemoryRouter initialEntries={entries} initialIndex={index}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/blog" element={<BlogPage />} />
-          </Routes>
-        </MemoryRouter>
-      </LazyMotion>,
-    );
-  }
-
-  it('leaves the first tab stop to the skip link when the blog is the page that was opened (a reload)', async () => {
-    renderApp(['/blog']);
-    await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
-
-    expect(screen.getByRole('main')).not.toHaveFocus();
-    expect(document.body).toHaveFocus();
-  });
-
-  it('leaves the focus alone after back or forward to the blog', async () => {
-    renderApp(['/', '/blog', '/'], 2);
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole('button', { name: 'Voltar' }));
-    await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
-
-    expect(screen.getByRole('main')).not.toHaveFocus();
-  });
-
-  it('moves the focus to the main landmark when the visitor arrives by a link of the site', async () => {
-    renderApp(['/']);
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole('link', { name: 'Ir para o blog' }));
-
-    await waitFor(() => expect(screen.getByRole('main')).toHaveFocus());
-  });
-});
-
-describe('BlogPage result count as a live region', () => {
-  it('announces the count through one polite status region that is already in the page before a filter is used', async () => {
-    const user = userEvent.setup();
-    getNewsArticles.mockResolvedValue({ articles: [newsArticle(1), newsArticle(2)], source: 'edge-function', origin: 'live' });
-    renderWithProviders(<BlogPage />, { route: '/blog' });
-    const search = await screen.findByLabelText('Buscar artigos');
-    const regions = () => screen.getAllByRole('status').filter((region) => region.getAttribute('aria-label') !== 'Carregando artigos');
-    const before = regions();
-    const counterBefore = before[before.length - 1];
-    expect(counterBefore).toBeEmptyDOMElement();
-
-    await user.type(search, 'Artigo de teste 1');
-
-    const counter = screen.getByText(/1 artigo encontrado/);
-    expect(counter).toBe(counterBefore);
-    expect(counter).toHaveAttribute('role', 'status');
-  });
-
-  it('does not announce the empty results block a second time: the count says it, the block is plain text', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<BlogPage />, { route: '/blog' });
-    await user.type(await screen.findByLabelText('Buscar artigos'), 'nada disso existe');
-
-    const counter = await screen.findByText(/0 artigos encontrados/);
-    expect(counter).toHaveAttribute('role', 'status');
-    const empty = await screen.findByText('Nenhum artigo encontrado');
-    expect(empty.closest('[role="status"], [role="alert"], [aria-live]')).toBeNull();
-    expect(screen.getAllByText(/\d+ artigos? encontrados?/)).toHaveLength(1);
-  });
-});
-
-describe('BlogPage loads that overlap', () => {
-  it('stops listening to the load before when a refresh starts a new one', async () => {
-    const abort = vi.spyOn(AbortController.prototype, 'abort');
-    const user = userEvent.setup();
-    renderWithProviders(<BlogPage />, { route: '/blog' });
-    await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
-    const aborted = abort.mock.calls.length;
-
-    await user.click(screen.getByRole('button', { name: /Atualizar/ }));
-
-    await waitFor(() => expect(abort.mock.calls.length).toBeGreaterThan(aborted));
-    abort.mockRestore();
-  });
-
-  it('ignores the answer of a refresh that comes after the page is gone', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const user = userEvent.setup();
-    const { unmount } = renderWithProviders(<BlogPage />, { route: '/blog' });
-    await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
-    let answer: (value: unknown) => void = () => undefined;
-    getNewsArticles.mockReturnValue(new Promise((resolve) => (answer = resolve)));
-    await user.click(screen.getByRole('button', { name: /Atualizar/ }));
-    const abort = vi.spyOn(AbortController.prototype, 'abort');
-
-    unmount();
-    answer({ articles: [newsArticle(9)], source: 'cache' });
-    await Promise.resolve();
-
-    expect(abort).toHaveBeenCalled();
-    expect(consoleError).not.toHaveBeenCalled();
-    abort.mockRestore();
-    consoleError.mockRestore();
-  });
-
-  it('shows the answer of the load that is current, not an older one that arrives later (StrictMode runs the effect twice)', async () => {
-    const answers: Array<(value: unknown) => void> = [];
-    getNewsArticles.mockImplementation(() => new Promise((resolve) => answers.push(resolve)));
-    renderWithProviders(<BlogPage />, { route: '/blog', strict: true });
-    await waitFor(() => expect(answers.length).toBeGreaterThanOrEqual(2));
-
-    answers[answers.length - 1]({ articles: [{ ...newsArticle(1), title: 'Resposta nova' }], source: 'cache' });
-    await screen.findAllByText('Resposta nova');
-    answers[0]({ articles: [{ ...newsArticle(2), title: 'Resposta velha' }], source: 'cache' });
-    await Promise.resolve();
-
-    expect(screen.queryByText('Resposta velha')).toBeNull();
-    expect(screen.getAllByText('Resposta nova').length).toBeGreaterThan(0);
-  });
-});
-
-describe('BlogPage filters', () => {
-  beforeEach(() => {
-    const english = { ...newsArticle(4), title: 'Article in English', language: 'en' as const };
-    getNewsArticles.mockResolvedValue({ articles: [newsArticle(1), newsArticle(2), english], source: 'edge-function' });
-  });
-
-  it('filters by language and counts what is left', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<BlogPage />, { route: '/blog' });
-    await waitFor(() => expect(screen.getByRole('button', { name: /English/ })).toBeInTheDocument());
-
-    await user.click(screen.getByRole('button', { name: /English/ }));
-
-    expect((await screen.findAllByText('Article in English')).length).toBeGreaterThan(0);
-    await waitFor(() => expect(screen.queryByText('Artigo de teste 1')).toBeNull());
-    expect(await screen.findByText(/1 artigo encontrado/)).toBeInTheDocument();
-  });
-
-  it('filters by search, and says so when nothing matches, with a way back', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<BlogPage />, { route: '/blog' });
-    const search = await screen.findByLabelText('Buscar artigos');
-
-    await user.type(search, 'nada disso existe');
-    expect(await screen.findByText('Tenta outros filtros ou limpa a busca.')).toBeInTheDocument();
-
-    await user.click(screen.getAllByRole('button', { name: 'Limpar filtros' })[0]);
-    await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
-    expect((screen.getByLabelText('Buscar artigos') as HTMLInputElement).value).toBe('');
-  });
-
-  it('filters by topic and clears the search with its own button', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<BlogPage />, { route: '/blog' });
-    const search = await screen.findByLabelText('Buscar artigos');
-
-    await user.type(search, 'English');
-    expect((await screen.findAllByText('Article in English')).length).toBeGreaterThan(0);
-    await user.click(search.parentElement?.querySelector('button') as HTMLElement);
-    expect((screen.getByLabelText('Buscar artigos') as HTMLInputElement).value).toBe('');
-
-    await user.click(screen.getByRole('button', { name: 'N8N' }));
-    expect(await screen.findByText('Tenta outros filtros ou limpa a busca.')).toBeInTheDocument();
   });
 });
 

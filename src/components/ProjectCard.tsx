@@ -1,8 +1,14 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
 import type { Project } from '../data/projects';
+import { useMotionAllowed } from '../hooks/useMotionAllowed';
+import { cn } from '../lib/utils';
+import { BrowserShot } from '../sections/projects/BrowserShot';
+import { MotionArrow } from '../sections/projects/MotionArrow';
+import { TagList } from '../sections/projects/TagList';
+import { NoBreakHyphens } from '../sections/shared/NoBreakHyphens';
+import { Heading } from './ui/Heading';
+import { SpotlightCard } from './ui/SpotlightCard';
 import { CARD_CTA_TEXT } from './projectLabels';
-import { ProjectShotImage } from './ProjectShotImage';
 import { ProjectTitle } from './ProjectTitle';
 
 interface ProjectCardProps {
@@ -11,43 +17,48 @@ interface ProjectCardProps {
   imageSizes: string;
 }
 
-/* Card of a regular project on the /projetos grid. The whole card is one link to the case page. */
+const LINK_CLASSES = 'group block h-full min-w-0 rounded-card vn-focus-ring-ink';
+const SURFACE_CLASSES =
+  'flex h-full min-w-0 flex-col rounded-card border border-vn-gray-light bg-vn-cream p-3 text-vn-ink md:p-4';
+const COVER_CLASSES = 'aspect-[2.1/1] w-full object-cover object-left-top';
+// The cover grows 2% under the pointer and on keyboard focus: a transform, and only where motion is welcome.
+const COVER_HOVER_CLASSES =
+  'transition-transform duration-500 ease-out group-hover:scale-[1.02] group-focus-visible:scale-[1.02]';
+
+/*
+ * Card of a regular project on the /projetos grid. The whole card is one link to the case page. The cover sits in the
+ * browser frame of the brand, and the card has the spotlight (a glow that follows a fine pointer, a ring on hover and on
+ * keyboard focus): on touch and with motion off it is static, and the "Ver detalhes" line with its arrow is the cue.
+ */
 export function ProjectCard({ project, imageSizes }: ProjectCardProps) {
   const titleId = `project-card-${project.slug}`;
   const ctaId = `${titleId}-cta`;
+  const isMotionAllowed = useMotionAllowed();
 
   return (
-    <Link
-      to={`/projetos/${project.slug}`}
-      aria-labelledby={`${titleId} ${ctaId}`}
-      className="group flex h-full flex-col rounded-3xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vn-ink"
-    >
-      <div className="mb-6 aspect-[2.1/1] overflow-hidden rounded-3xl bg-zinc-900 shadow-sm transition-shadow duration-500 group-hover:shadow-2xl group-hover:shadow-black/10 motion-safe:transition-transform motion-safe:group-hover:-translate-y-2">
-        <ProjectShotImage
+    <Link to={`/projetos/${project.slug}`} aria-labelledby={`${titleId} ${ctaId}`} className={LINK_CLASSES}>
+      <SpotlightCard as="div" className={SURFACE_CLASSES}>
+        <BrowserShot
           shot={project.shots[0]}
+          slug={project.slug}
           sizes={imageSizes}
-          className="h-full w-full object-cover object-left-top motion-safe:transition-transform motion-safe:duration-1000 motion-safe:group-hover:scale-105"
+          imageClassName={cn(COVER_CLASSES, isMotionAllowed && COVER_HOVER_CLASSES)}
         />
-      </div>
-
-      <div className="flex min-w-0 flex-1 flex-col px-1 max-md:pr-14 md:px-2">
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-vn-gray-dark">{project.category}</p>
-        <h2 id={titleId} className="mb-3 font-display text-xl font-bold italic text-vn-ink md:text-2xl">
-          <ProjectTitle title={project.title} />
-        </h2>
-        <p className="mb-4 max-w-md leading-relaxed text-vn-gray-dark">{project.description}</p>
-        <ul role="list" className="mb-5 flex list-none flex-wrap gap-2 p-0">
-          {project.tags.map((tag) => (
-            <li key={tag} className="rounded-full border border-vn-gray-light px-3 py-1 text-xs font-medium text-vn-gray-dark">
-              {tag}
-            </li>
-          ))}
-        </ul>
-        <span className="mt-auto inline-flex min-h-11 items-center gap-2 self-start text-sm font-bold uppercase tracking-widest text-vn-ink">
-          <span id={ctaId}>{CARD_CTA_TEXT}</span>
-          <ArrowRight className="size-4 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:translate-x-1" aria-hidden="true" />
-        </span>
-      </div>
+        <div className="flex min-w-0 flex-1 flex-col px-1 pb-1 pt-5 md:px-2">
+          <p className="font-mono text-xs uppercase tracking-[.18em] text-vn-gray-dark">{project.category}</p>
+          <Heading as="h2" size="m" id={titleId} className="mt-3">
+            <ProjectTitle title={project.title} />
+          </Heading>
+          <p className="mt-3 max-w-md text-pretty text-base text-vn-gray-dark">
+            <NoBreakHyphens text={project.description} />
+          </p>
+          <TagList tags={project.tags} className="mt-4" />
+          <span className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-4 text-sm font-medium">
+            <span id={ctaId}>{CARD_CTA_TEXT}</span>
+            <MotionArrow />
+          </span>
+        </div>
+      </SpotlightCard>
     </Link>
   );
 }

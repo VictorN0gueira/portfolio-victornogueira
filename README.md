@@ -19,6 +19,7 @@ Requer Node 22 ou mais novo.
 | `npm run budget` | Peso gzip do caminho crítico (entrada mais modulepreloads). `-- --enforce` falha acima de 160 kB (a meta é 150, o motivo da diferença está em `scripts/check-bundle-budget.mjs`) |
 | `npm run headers` | Regenera `nginx/security-headers.conf` a partir de `config/securityHeaders.mjs` |
 | `npm run og` | Regenera `public/og-banner.png` |
+| `npm run founder-photo` | Gera `public/founder/victor-{480,960}.{avif,webp}` (a foto da `/sobre`) de `scripts/assets/victor-photo.jpg`, que fica fora do build |
 | `npm run lcp` e `npm run measure:skeletons` | Medem LCP e as alturas dos esqueletos, só em páginas locais |
 
 ## Variáveis de ambiente
@@ -27,8 +28,10 @@ Nenhuma. O site compila e roda sem `.env`. Tudo que começa com `VITE_` vai para
 
 ## Estrutura
 
-- `src/pages` e `src/sections/home`: as rotas e as seções da home.
-- `src/components`: UI compartilhada (`ui`, `layout`, `contact`) e as páginas antigas que ainda esperam o Plano 3.
+- Rotas (`src/App.tsx`): só `/` (`HomePage`) entra no caminho crítico. `/servicos`, `/sobre`, `/projetos`, `/projetos/:slug`, `/contato`, `/blog`, `/privacidade`, `/lgpd` e o 404 são `lazyWithRetry`, dentro do `SiteLayout`. `/projetos` não tem abas, e `/privacidade` e `/lgpd` têm o texto congelado.
+- `src/pages` e `src/sections/<página>`: as rotas e o que cada uma monta (`home`, `shared` com `PageHero` e `CtaBand`, `services`, `about`, `projects`, `contact`, `blog`). `src/pages/legal` é a moldura das páginas jurídicas.
+- `src/components`: UI compartilhada (`ui`, `layout`, `contact`), o formulário e o widget de acessibilidade.
+- Guardas de visual e texto em `src/test`: `pageHygiene` (sem `dark:`, `italic`, `text-[10px]`, cor fora da paleta, gradiente decorativo; exceções em lista fechada), `frozenFiles` e `copy-rules`.
 - `src/data`: o conteúdo (serviços, projetos, depoimentos, perguntas). `projectImages.ts` é gerado por `scripts/process-project-images.mjs`.
 - `src/lib` e `src/hooks`: regras puras, como o ROI (`roi.ts`) e o contrato dos webhooks (`contact.ts`).
 - `src/styles`: tokens, estilos de componentes, movimento e os esqueletos medidos.
@@ -53,4 +56,4 @@ O formulário de contato envia direto para dois webhooks do n8n, e é por eles q
 ## Plano e especificação
 
 - Especificação: `docs/superpowers/specs/2026-10-26-redesign-vn-one-design.md`
-- Plano da fundação e da home: `docs/superpowers/plans/2026-10-26-vn-one-v2-fundacao-home.md`
+- Planos: `docs/superpowers/plans/2026-10-26-vn-one-v2-fundacao-home.md` (fundação e home) e `docs/superpowers/plans/2026-11-01-vn-one-v2-paginas-internas.md` (páginas internas)

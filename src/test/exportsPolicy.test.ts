@@ -24,6 +24,14 @@ const DEFAULT_KEPT_ON_PURPOSE = new Set([
   'src/components/SEO.tsx',
 ]);
 
+/**
+ * The legal pages are frozen and have a default export only. They are no longer loaded with import(): the routes of
+ * src/pages/legal are, and each one imports its page statically, inside the frame.
+ */
+const FROZEN_PAGES_WITH_DEFAULT_ONLY = new Set(['src/pages/PrivacyPage.tsx', 'src/pages/LgpdPage.tsx']);
+const isDefaultAllowed = (file: string, isLazy: boolean): boolean =>
+  isLazy || DEFAULT_KEPT_ON_PURPOSE.has(file) || FROZEN_PAGES_WITH_DEFAULT_ONLY.has(file);
+
 /** Exports nobody imports, in lead channel files that stay byte identical (the type is the public shape of the payload). */
 const UNUSED_EXPORT_KEPT_ON_PURPOSE = new Set(['src/lib/contact.ts:ContactPayload', 'src/components/contact/pastedNumber.ts:PastedNumber']);
 
@@ -143,7 +151,7 @@ describe('export policy', () => {
   it('exports a name that nobody imports from no module (tests count as importers)', () => {
     const unused = modules
       .flatMap((facts) =>
-        facts.exports.filter((name) => !(name === 'default' && (facts.isLazy || DEFAULT_KEPT_ON_PURPOSE.has(facts.file)))).map((name) => `${facts.file}:${name}`),
+        facts.exports.filter((name) => !(name === 'default' && isDefaultAllowed(facts.file, facts.isLazy))).map((name) => `${facts.file}:${name}`),
       )
       .filter((entry) => !UNUSED_EXPORT_KEPT_ON_PURPOSE.has(entry));
 
@@ -152,7 +160,7 @@ describe('export policy', () => {
 
   it('uses a default export only in modules loaded with React.lazy or import(), plus the files kept byte identical', () => {
     const offenders = modules
-      .filter((facts) => !facts.isLazy && !DEFAULT_KEPT_ON_PURPOSE.has(facts.file))
+      .filter((facts) => !isDefaultAllowed(facts.file, facts.isLazy))
       .filter((facts) => /^export default\b/m.test(readFileSync(path.join(ROOT, facts.file), 'utf8')))
       .map((facts) => facts.file);
 
@@ -164,6 +172,9 @@ describe('export policy', () => {
       const source = readFileSync(path.join(ROOT, file), 'utf8');
       expect(source, file).toMatch(/^export default\b/m);
       expect(source, file).toMatch(/^export (function|const|class) \w+/m);
+    }
+    for (const file of FROZEN_PAGES_WITH_DEFAULT_ONLY) {
+      expect(readFileSync(path.join(ROOT, file), 'utf8'), file).toMatch(/^export default\b/m);
     }
   });
 });

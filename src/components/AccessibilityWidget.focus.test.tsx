@@ -269,7 +269,7 @@ describe('AccessibilityWidget trigger ring (X:M-1)', () => {
     const light = stubBackdrop('rgb(255, 255, 255)');
     renderWithProviders(<AccessibilityWidget />);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: TRIGGER_NAME })).toHaveClass('focus-visible:outline-zinc-950'));
+    await waitFor(() => expect(screen.getByRole('button', { name: TRIGGER_NAME })).toHaveClass('focus-visible:outline-vn-black'));
     light.remove();
   });
 

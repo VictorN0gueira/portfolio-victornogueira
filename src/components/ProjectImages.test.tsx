@@ -139,14 +139,15 @@ describe('ProjectDetail images', () => {
     },
   );
 
-  it('paints the blurred backdrop from the narrow file, and hides it from assistive technology', () => {
+  it('frames every shot of the gallery in a browser frame titled with the slug, hidden from assistive technology, and paints no blurred backdrop', () => {
     const project = projectOf('portal-link-in-bio');
     const { container } = renderWithProviders(<ProjectDetail project={project} />);
 
-    const backdrop = container.querySelector<HTMLElement>('div[style*="background-image"]');
-
-    expect(backdrop?.style.backgroundImage).toContain(coverOf(project).thumbSrc);
-    expect(backdrop).toHaveAttribute('aria-hidden', 'true');
+    // The slug is a decoration over a screenshot that has its own alt text: it is in the markup three times and read never.
+    const titles = screen.getAllByText(project.slug);
+    expect(titles).toHaveLength(project.shots.length);
+    for (const title of titles) expect(title).toHaveAttribute('aria-hidden', 'true');
+    expect(container.querySelector('[style*="background-image"]')).toBeNull();
   });
 
   it('groups the images of both gallery layouts under the same label, and has no scroll container to tab into', () => {

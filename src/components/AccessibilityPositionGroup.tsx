@@ -4,7 +4,7 @@ import type { StepDirection, TabSide } from '../lib/floatingLayout';
 import { a11yWidgetCopy } from './a11yWidgetCopy';
 import { PANEL_FOCUS_RING } from './AccessibilityOptions';
 
-const ARROW_BUTTON_CLASSES = `flex min-h-11 min-w-11 flex-1 items-center justify-center text-white/70 transition-colors hover:bg-white/8 hover:text-white ${PANEL_FOCUS_RING}`;
+const ARROW_BUTTON_CLASSES = `flex min-h-11 min-w-11 flex-1 items-center justify-center text-vn-gray-light transition-colors hover:bg-white/8 hover:text-white ${PANEL_FOCUS_RING}`;
 
 interface AccessibilityPositionGroupProps {
   toSide: (side: TabSide) => void;
@@ -27,7 +27,7 @@ export function AccessibilityPositionGroup({ toSide, step, reset }: Accessibilit
 
   return (
     <div role="group" aria-labelledby={labelId} className="shrink-0 border-t border-white/10">
-      <span id={labelId} className="block px-4 pb-1 pt-2.5 text-xs font-semibold uppercase tracking-widest text-white/80">
+      <span id={labelId} className="block px-4 pb-1 pt-2.5 text-xs font-semibold uppercase tracking-widest text-vn-gray-light">
         {a11yWidgetCopy.positionGroupLabel}
       </span>
       <div className="flex">
@@ -40,7 +40,7 @@ export function AccessibilityPositionGroup({ toSide, step, reset }: Accessibilit
       <button
         type="button"
         onClick={reset}
-        className={`flex min-h-11 w-full items-center justify-center gap-2 text-xs text-white/50 transition-colors hover:text-white/80 ${PANEL_FOCUS_RING}`}
+        className={`flex min-h-11 w-full items-center justify-center gap-2 text-xs text-vn-gray-mid transition-colors hover:text-vn-gray-light ${PANEL_FOCUS_RING}`}
       >
         <Undo2 aria-hidden="true" className="size-3.5 shrink-0" />
         {a11yWidgetCopy.resetPositionLabel}
