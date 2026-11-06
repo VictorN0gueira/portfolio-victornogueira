@@ -1,10 +1,5 @@
-import { Fragment, useId, type CSSProperties, type ReactNode } from 'react';
-import {
-  HEADER_HEIGHT,
-  HEADER_HEIGHT_LANDSCAPE,
-  HEADER_LANDSCAPE_LIFT,
-  HEADER_TOP_OFFSET,
-} from '../../components/layout/headerMetrics';
+import { Fragment, useId, type ReactNode } from 'react';
+import { CONTENT_TOP_CLASSES, CONTENT_TOP_VARS } from '../../components/layout/contentTop';
 import { Container } from '../../components/ui/Container';
 import { Cursor } from '../../components/ui/Cursor';
 import { Heading } from '../../components/ui/Heading';
@@ -14,15 +9,6 @@ import { Section } from '../../components/ui/Section';
 import { cn } from '../../lib/utils';
 import { NoBreakHyphens } from './NoBreakHyphens';
 import { splitLastWord } from './splitLastWord';
-
-// The same top as the HeroSection of the home, copied and not shared: the home hero stays closed (and so do the
-// skeletons measured from it). The content starts below the fixed header with room to breathe.
-const BREATHING_ROOM = 'clamp(2rem, 1rem + 4vw, 5rem)';
-const CONTENT_TOP_VARS = {
-  '--hero-top': `calc(${HEADER_TOP_OFFSET} + ${HEADER_HEIGHT} + ${BREATHING_ROOM})`,
-  '--hero-top-landscape': `calc(${HEADER_TOP_OFFSET} - ${HEADER_LANDSCAPE_LIFT} + ${HEADER_HEIGHT_LANDSCAPE} + ${BREATHING_ROOM})`,
-} as CSSProperties;
-const CONTENT_TOP_CLASSES = 'pt-[var(--hero-top)] vn-landscape:pt-[var(--hero-top-landscape)]';
 
 const TWO_COLUMNS_CLASSES = 'lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center lg:gap-16';
 
