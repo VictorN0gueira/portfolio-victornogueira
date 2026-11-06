@@ -143,13 +143,13 @@ function getCachedArticles(log: FailureLog): CachedData | null {
 }
 
 // localStorage pode estar bloqueado (cookies desligados, navegadores embutidos): lançar aqui derrubaria o blog inteiro.
-// Quem chama pode passar o registro de falhas para saber o motivo; a tela do blog não depende disso.
-export function clearNewsCache(log?: FailureLog): void {
+// O cache que não pôde ser lido já foi anotado em getCachedArticles: apagar é só a consequência, e sem acesso ao
+// armazenamento não há o que apagar.
+function clearNewsCache(): void {
   try {
     localStorage.removeItem(CACHE_KEY);
-  } catch (error) {
+  } catch {
     // Sem acesso ao armazenamento: não há cache para limpar.
-    log?.record('cache', error);
   }
 }
 
@@ -272,12 +272,17 @@ function formatDate(date: Date): string {
   });
 }
 
-// Quanto tempo faz que saiu a matéria. Um valor que não é uma data ISO dá um texto vazio, nunca "Invalid Date".
+/** A source whose clock is a few minutes ahead still has fresh news; a date further ahead than this is not a publication date. */
+export const CLOCK_SKEW_MS = 5 * 60 * 1000;
+
+// Quanto tempo faz que saiu a matéria. Um valor que não é uma data ISO, ou que está no futuro além da tolerância do relógio,
+// dá um texto vazio: nunca "Invalid Date" nem um "Agora mesmo" que não é verdade.
 export function getTimeAgo(dateString: string): string {
   const date = parseNewsDate(dateString);
   if (date === null) return '';
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
+  if (diffMs < -CLOCK_SKEW_MS) return '';
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
 

@@ -1,12 +1,10 @@
-import { detectCategory, type NewsArticle, type NewsOrigin } from '../../utils/newsService';
+import { CLOCK_SKEW_MS, detectCategory, type NewsArticle, type NewsOrigin } from '../../utils/newsService';
 import { CAT_LABELS, blogCopy } from './blogCopy';
 
 /** The one hint that tells a screen reader every article link opens a new tab (see NewTabHint). */
 export const NEW_TAB_HINT_ID = 'blog-new-tab-hint';
 
 const NEW_WINDOW_MS = 6 * 60 * 60 * 1000;
-// A source whose clock is a few minutes ahead still has fresh news; a date further ahead than this is not a publication date.
-const CLOCK_SKEW_MS = 5 * 60 * 1000;
 const WORDS_PER_MINUTE = 200;
 
 export type LangFilter = 'all' | 'pt' | 'en';

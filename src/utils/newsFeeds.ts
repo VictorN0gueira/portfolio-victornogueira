@@ -150,33 +150,39 @@ async function fetchFromDevTo(): Promise<NewsArticle[]> {
 // Filtra por keywords relevantes a IA/automação pois a API não oferece busca por tópico
 async function fetchFromTabnews(log: FailureLog): Promise<NewsArticle[]> {
   const res = await fetch('https://www.tabnews.com.br/api/v1/contents?strategy=relevant&per_page=30&page=1', {
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(FEED_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`TabNews error: ${res.status}`);
 
   const data: unknown = await res.json();
   if (!Array.isArray(data)) throw new Error('TabNews answered with another shape');
 
-  return (data as TabnewsArticle[])
-    .filter(
-      (a) =>
-        typeof a?.title === 'string' && TABNEWS_RELEVANCE_KEYWORDS.some((kw) => a.title.toLowerCase().includes(kw)),
-    )
-    .slice(0, 8)
-    .flatMap((a) => {
-      // O link do autor (source_url) pode ser qualquer coisa: só http e https passam, senão fica a página do TabNews.
-      const url = safeHttpUrl(a.source_url) ?? `https://www.tabnews.com.br/${a.owner_username}/${a.slug}`;
-      const article = sanitizeArticle({
-        title: a.title,
-        description: tabNewsDescription(a, log),
-        url,
-        image: pickPlaceholder(a.slug),
-        publishedAt: a.published_at,
-        source: { name: 'TabNews', url: 'https://www.tabnews.com.br' },
-        language: 'pt',
-      });
-      return article ?? [];
-    });
+  return (
+    (data as TabnewsArticle[])
+      // An item with no title or no slug (the placeholder and the address of the article are made from it) is left out alone:
+      // one bad item never fails the whole feed.
+      .filter(
+        (a) =>
+          typeof a?.title === 'string' &&
+          typeof a.slug === 'string' &&
+          TABNEWS_RELEVANCE_KEYWORDS.some((kw) => a.title.toLowerCase().includes(kw)),
+      )
+      .slice(0, 8)
+      .flatMap((a) => {
+        // O link do autor (source_url) pode ser qualquer coisa: só http e https passam, senão fica a página do TabNews.
+        const url = safeHttpUrl(a.source_url) ?? `https://www.tabnews.com.br/${a.owner_username}/${a.slug}`;
+        const article = sanitizeArticle({
+          title: a.title,
+          description: tabNewsDescription(a, log),
+          url,
+          image: pickPlaceholder(a.slug),
+          publishedAt: a.published_at,
+          source: { name: 'TabNews', url: 'https://www.tabnews.com.br' },
+          language: 'pt',
+        });
+        return article ?? [];
+      })
+  );
 }
 
 // Combina Dev.to + TabNews em paralelo e retorna artigos intercalados por idioma
