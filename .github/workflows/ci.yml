@@ -116,7 +116,9 @@ jobs:
     timeout-minutes: 10
     services:
       postgres:
-        image: postgres:15
+        # Pinned by digest (the multi-arch index of postgres:15 read on 2026-11-06, Postgres 15.19): a moved tag cannot change
+        # what the proof runs on. Move it by hand when the major version moves, and keep the tag in this comment.
+        image: postgres:15@sha256:1149d80408a63791782d07a0e2bd3b06a7adbcdc86e8dcc18d6ee01bacfe04ab
         env:
           POSTGRES_PASSWORD: test
         ports:
@@ -138,10 +140,22 @@ jobs:
       - name: Make sure psql is there
         run: command -v psql || (sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client)
 
-      - name: Row level security tests
+      # The character checks of the tables must not depend on the locale: the same suite runs in the locale of the image
+      # (en_US.utf8) and in a database made in the C locale. The runner prints the collation it ran in.
+      - name: Row level security tests (en_US.utf8)
         run: npm run db:test
         env:
           DATABASE_URL: postgres://postgres:test@localhost:5432/postgres
+
+      - name: Create a database in the C locale
+        run: psql -h localhost -U postgres -c "create database rls_c template template0 locale 'C' encoding 'UTF8'"
+        env:
+          PGPASSWORD: test
+
+      - name: Row level security tests (C locale)
+        run: npm run db:test
+        env:
+          DATABASE_URL: postgres://postgres:test@localhost:5432/rls_c
 
   # Merges a Dependabot pull request by itself, so a patch or minor update never waits for a person. It runs only for
   # pull requests Dependabot opened, and only after verify, image and db-rls passed (a failed job above skips this one, and a
