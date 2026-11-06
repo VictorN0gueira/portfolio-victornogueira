@@ -25,6 +25,8 @@ export const DESKTOP = { width: 1440, height: 900 };
 export const PHONE = { width: 390, height: 844 };
 export const NARROWEST = { width: 280, height: 560 };
 export const TOC_NAV = `nav[aria-label="${legalCopy.tocLabel}"]`;
+/** The legal text, and the navigation that is its table of contents. */
+export const PAGE_BODY_SELECTOR = `[data-legal-body], ${TOC_NAV}`;
 export const STICKY_TOP_PX = 112;
 export const POSITION_TOLERANCE_PX = 1.5;
 export const SCROLL_STEP_PX = 1600;
@@ -100,7 +102,9 @@ export interface ShiftRecord {
 
 /** Records the layout shifts from the first paint in window.__legalShifts, telling the ones that touch the page body. */
 export async function watchShifts(page: Page): Promise<void> {
-  await page.addInitScript(() => {
+  // Only the legal text and its own contents count. The footer and the header are left out: a lazy page moves the footer
+  // when its fallback is replaced, on every page of the site, and that is not the matter of this frame.
+  await page.addInitScript((bodySelector) => {
     const shifts: Array<{ value: number; isPageBody: boolean }> = [];
     (window as unknown as { __legalShifts: typeof shifts }).__legalShifts = shifts;
     new PerformanceObserver((list) => {
@@ -112,12 +116,13 @@ export async function watchShifts(page: Page): Promise<void> {
         if (entry.hadRecentInput) continue;
         const isPageBody = entry.sources.some(({ node }) => {
           const element = node instanceof Element ? node : (node?.parentElement ?? null);
-          return element?.closest('[data-legal-body], nav[aria-label]') != null;
+          if (element === null || element.closest('footer, header') !== null) return false;
+          return element.closest(bodySelector) !== null;
         });
         shifts.push({ value: entry.value, isPageBody });
       }
     }).observe({ type: 'layout-shift', buffered: true });
-  });
+  }, PAGE_BODY_SELECTOR);
 }
 
 export const readShifts = (page: Page): Promise<ShiftRecord[]> =>

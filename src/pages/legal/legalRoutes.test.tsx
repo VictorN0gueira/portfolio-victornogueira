@@ -2,10 +2,13 @@ import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { legalCopy } from '../../data/legalCopy';
 import {
+  LGPD_ATTRIBUTES_HASH,
   LGPD_STRUCTURE_HASH,
   LGPD_TEXT_HASH,
+  PRIVACY_ATTRIBUTES_HASH,
   PRIVACY_STRUCTURE_HASH,
   PRIVACY_TEXT_HASH,
+  attributesOf,
   hashOfText,
   structureOf,
   visibleText,
@@ -21,11 +24,12 @@ const ROUTES = [
     'Política de Privacidade',
     PRIVACY_TEXT_HASH,
     PRIVACY_STRUCTURE_HASH,
+    PRIVACY_ATTRIBUTES_HASH,
   ],
-  ['LgpdRoute', () => import('./LgpdRoute'), 'LGPD', LGPD_TEXT_HASH, LGPD_STRUCTURE_HASH],
+  ['LgpdRoute', () => import('./LgpdRoute'), 'LGPD', LGPD_TEXT_HASH, LGPD_STRUCTURE_HASH, LGPD_ATTRIBUTES_HASH],
 ] as const;
 
-describe.each(ROUTES)('%s', (_name, load, title, textHash, structureHash) => {
+describe.each(ROUTES)('%s', (_name, load, title, textHash, structureHash, attributesHash) => {
   it('renders the page with its only h1, a table of contents and the text it had', async () => {
     const { default: Route } = await load();
     const { container } = renderWithProviders(<Route />);
@@ -36,5 +40,6 @@ describe.each(ROUTES)('%s', (_name, load, title, textHash, structureHash) => {
     const body = container.querySelector('[data-legal-body]');
     expect(hashOfText(visibleText(body as Element))).toBe(textHash);
     expect(hashOfText(structureOf(body as Element))).toBe(structureHash);
+    expect(hashOfText(attributesOf(body as Element))).toBe(attributesHash);
   });
 });

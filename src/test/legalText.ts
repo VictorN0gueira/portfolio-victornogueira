@@ -17,6 +17,10 @@ export const LGPD_TEXT_HASH = '15761667d1a69131da3331817fbbb6320d0b95f2726e98da8
 export const PRIVACY_STRUCTURE_HASH = '134d1d968756b6615e50f3e7daa93e68e3098aaba9155d58982a406eed0bb28f';
 /** SHA-256 (hexadecimal) of structureOf(LgpdPage): link targets, labels, alternative texts, titles and the outline. */
 export const LGPD_STRUCTURE_HASH = 'e7f4585264251526106d807cff877c16caed1b9517adcadd3f4a119cd42011b9';
+/** SHA-256 (hexadecimal) of attributesOf(PrivacyPage). That page has none of them, so this is the hash of the empty text: it pins that it stays so. */
+export const PRIVACY_ATTRIBUTES_HASH = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+/** SHA-256 (hexadecimal) of attributesOf(LgpdPage): the attributes that change how a link or a landmark behaves or is read. */
+export const LGPD_ATTRIBUTES_HASH = 'd43026845caa238ce6f5d1ef5bc61c0dcea6d3071e1f3d3a917b9e3dab6eeadb';
 
 const WHITE_SPACE = /\s+/g;
 const HEADING = /^H[1-6]$/;
@@ -44,6 +48,24 @@ export function structureOf(element: Element): string {
     if (node.tagName === 'A' && node.hasAttribute('href')) lines.push(`href: ${node.getAttribute('href')}`);
     for (const name of READ_ATTRIBUTES) {
       if (node.hasAttribute(name)) lines.push(`${name}: ${node.getAttribute(name)}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+// The attributes that decide where a link opens and what it is allowed to do, what a screen reader announces or skips, and
+// the language of a passage. structureOf does not cover them, and the frame adds none of them.
+const BEHAVIOR_ATTRIBUTES = ['target', 'rel', 'role', 'aria-hidden', 'aria-labelledby', 'hidden', 'lang'] as const;
+
+/**
+ * Where a link opens and with which rel, the role, aria-hidden, aria-labelledby, hidden and lang of every element, in
+ * document order, one line each: the part of the markup a change of layout must not touch and the words do not show.
+ */
+export function attributesOf(element: Element): string {
+  const lines: string[] = [];
+  for (const node of element.querySelectorAll('*')) {
+    for (const name of BEHAVIOR_ATTRIBUTES) {
+      if (node.hasAttribute(name)) lines.push(`${node.tagName.toLowerCase()}[${name}]: ${node.getAttribute(name)}`);
     }
   }
   return lines.join('\n');

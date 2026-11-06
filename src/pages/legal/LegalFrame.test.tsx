@@ -4,10 +4,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { legalCopy } from '../../data/legalCopy';
 import { IntersectionObserverMock, triggerIntersection } from '../../test/intersection';
 import {
+  LGPD_ATTRIBUTES_HASH,
   LGPD_STRUCTURE_HASH,
   LGPD_TEXT_HASH,
+  PRIVACY_ATTRIBUTES_HASH,
   PRIVACY_STRUCTURE_HASH,
   PRIVACY_TEXT_HASH,
+  attributesOf,
   hashOfText,
   structureOf,
   visibleText,
@@ -39,18 +42,18 @@ const PAGES: ReadonlyArray<
   readonly [
     name: string,
     Page: ComponentType,
-    hashes: readonly [text: string, structure: string],
+    hashes: readonly [text: string, structure: string, attributes: string],
     labels: readonly string[],
   ]
 > = [
-  ['PrivacyPage', PrivacyPage, [PRIVACY_TEXT_HASH, PRIVACY_STRUCTURE_HASH], PRIVACY_LABELS],
-  ['LgpdPage', LgpdPage, [LGPD_TEXT_HASH, LGPD_STRUCTURE_HASH], LGPD_LABELS],
+  ['PrivacyPage', PrivacyPage, [PRIVACY_TEXT_HASH, PRIVACY_STRUCTURE_HASH, PRIVACY_ATTRIBUTES_HASH], PRIVACY_LABELS],
+  ['LgpdPage', LgpdPage, [LGPD_TEXT_HASH, LGPD_STRUCTURE_HASH, LGPD_ATTRIBUTES_HASH], LGPD_LABELS],
 ];
 
 describe('LegalFrame', () => {
   const scrollIntoView = useFrameEnvironment();
 
-  describe.each(PAGES)('around %s', (_name, Page, [textHash, structureHash], labels) => {
+  describe.each(PAGES)('around %s', (_name, Page, [textHash, structureHash, attributesHash], labels) => {
     it('leaves the text exactly as the page alone says it', () => {
       const { container } = renderFrame(Page);
 
@@ -61,6 +64,12 @@ describe('LegalFrame', () => {
       const { container } = renderFrame(Page);
 
       expect(hashOfText(structureOf(bodyOf(container)))).toBe(structureHash);
+    });
+
+    it('leaves the behavior attributes of its elements (target, rel, role, aria, hidden, lang) as the page alone has them', () => {
+      const { container } = renderFrame(Page);
+
+      expect(hashOfText(attributesOf(bodyOf(container)))).toBe(attributesHash);
     });
 
     it('lists one link per h2 of the page, in the same order, from what is on the screen', () => {

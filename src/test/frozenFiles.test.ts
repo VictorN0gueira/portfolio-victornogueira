@@ -6,8 +6,9 @@ import { describe, expect, it } from 'vitest';
 
 // The lead channel and the two legal pages are frozen: not one character changes without the owner's ok (items Q1 and Q2
 // of plan 3). The hashes were measured on commit b439532 (the live site) from `git show b439532:<path>`, with the line
-// ends normalized to \n, and they are the first 16 hexadecimal characters of the SHA-256. If a hash is changed on
-// purpose (Victor approved the layout only edit of the legal pages, Task L5 of the plan), this table changes in that
+// ends normalized to \n, and they are the first 16 hexadecimal characters of the SHA-256. The owner declined the layout
+// only edit of the two legal pages (Via 2 of plan 3, which has no task of its own): they are wrapped from the outside
+// (src/pages/legal) and their hashes stay as they are. A hash of this table changes only with the owner's ok, in that
 // same commit, and nowhere else.
 
 const ROOT = resolve(__dirname, '../..');

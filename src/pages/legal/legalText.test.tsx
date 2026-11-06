@@ -3,10 +3,13 @@ import LgpdPage from '../LgpdPage';
 import PrivacyPage from '../PrivacyPage';
 import { renderWithProviders } from '../../test/render';
 import {
+  LGPD_ATTRIBUTES_HASH,
   LGPD_STRUCTURE_HASH,
   LGPD_TEXT_HASH,
+  PRIVACY_ATTRIBUTES_HASH,
   PRIVACY_STRUCTURE_HASH,
   PRIVACY_TEXT_HASH,
+  attributesOf,
   hashOfText,
   structureOf,
   visibleText,
@@ -39,6 +42,24 @@ describe('the legal text, without the frame', () => {
     const { container } = renderWithProviders(<LgpdPage />);
 
     expect(hashOfText(structureOf(container))).toBe(LGPD_STRUCTURE_HASH);
+  });
+
+  it('PrivacyPage keeps the behavior attributes of its elements', () => {
+    const { container } = renderWithProviders(<PrivacyPage />);
+
+    expect(hashOfText(attributesOf(container))).toBe(PRIVACY_ATTRIBUTES_HASH);
+  });
+
+  it('LgpdPage keeps the behavior attributes of its elements', () => {
+    const { container } = renderWithProviders(<LgpdPage />);
+
+    expect(hashOfText(attributesOf(container))).toBe(LGPD_ATTRIBUTES_HASH);
+  });
+
+  it('reads real attributes, not an empty list: a link to the other page and the hidden icons are in it', () => {
+    const { container } = renderWithProviders(<LgpdPage />);
+
+    expect(attributesOf(container)).toMatch(/aria-hidden|target|rel|role|hidden|lang/);
   });
 
   it('reads the real structure, not an empty one: the links and the titles are in it', () => {

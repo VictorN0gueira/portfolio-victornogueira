@@ -1,10 +1,5 @@
 import type { CSSProperties } from 'react';
-import {
-  HEADER_HEIGHT,
-  HEADER_HEIGHT_LANDSCAPE,
-  HEADER_LANDSCAPE_LIFT,
-  HEADER_TOP_OFFSET,
-} from './headerMetrics';
+import { HEADER_HEIGHT, HEADER_HEIGHT_LANDSCAPE, HEADER_LANDSCAPE_LIFT, HEADER_TOP_OFFSET } from './headerMetrics';
 
 // Where the content of a page starts: below the fixed header, with room to breathe (a little more on wide screens). The
 // home hero, the hero of the inner pages and the frame of the legal pages all start there, from this one definition.
