@@ -5,7 +5,8 @@ import { legalCopy } from '../../data/legalCopy';
 import type { TocEntry } from './legalToc';
 
 interface TocNavProps {
-  entries: readonly TocEntry[];
+  /** Null while the titles are still being read. */
+  entries: readonly TocEntry[] | null;
   activeId: string | null;
   onGo: (id: string) => void;
   /** From the desktop width the list is a sticky column. Below it, a folded list at the top of the text. */
@@ -28,7 +29,7 @@ function isPlainClick(event: MouseEvent<HTMLAnchorElement>): boolean {
 function TocList({ entries, activeId, onGo, onChosen }: Omit<TocNavProps, 'isWide'> & { onChosen?: () => void }) {
   return (
     <ol className="m-0 list-none border-l border-vn-gray-light p-0">
-      {entries.map((entry) => (
+      {(entries ?? []).map((entry) => (
         <li key={entry.id}>
           <a
             href={`#${entry.id}`}
@@ -88,6 +89,9 @@ function StickyToc(props: Omit<TocNavProps, 'isWide'>) {
 
 /** The navigation of the table of contents of a legal page. It renders nothing when the page has no titles. */
 export function TocNav({ isWide, ...props }: TocNavProps) {
-  if (props.entries.length === 0) return null;
-  return isWide ? <StickyToc {...props} /> : <FoldedToc {...props} />;
+  if (props.entries?.length === 0) return null;
+  // Until the titles are read the sticky column is not drawn (it sits beside the text, which it cannot push), and the folded
+  // list is drawn as a closed row: it is above the text, so it has to be there from the first frame.
+  if (isWide) return props.entries === null ? null : <StickyToc {...props} />;
+  return <FoldedToc {...props} />;
 }

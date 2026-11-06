@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import { collectToc, tocHeadings, type TocEntry } from './legalToc';
 
@@ -9,7 +9,8 @@ import { collectToc, tocHeadings, type TocEntry } from './legalToc';
 const ACTIVE_LINE_PX = 120;
 
 interface LegalToc {
-  entries: TocEntry[];
+  /** Null until the titles were read: the folded list keeps its place (an empty shell) meanwhile, so nothing moves. */
+  entries: TocEntry[] | null;
   /** The id of the title being read, or null while the visitor is still above the first one. */
   activeId: string | null;
   /** Scrolls to the title, moves focus to it and puts its id in the address. */
@@ -43,12 +44,14 @@ function activeIdOf(headings: readonly HTMLElement[]): string | null {
  * one IntersectionObserver that marks the title being read. Nothing here touches the network or builds markup.
  */
 export function useLegalToc(bodyRef: RefObject<HTMLElement | null>): LegalToc {
-  const [entries, setEntries] = useState<TocEntry[]>([]);
+  const [entries, setEntries] = useState<TocEntry[] | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const isMotionAllowed = useMotionAllowed();
   const headingsRef = useRef<HTMLElement[]>([]);
 
-  useEffect(() => {
+  // A layout effect: the contents are put in the page before it is painted. In an effect that runs after the paint the text
+  // is drawn first and the folded list is then inserted above it, which pushes all of it down.
+  useLayoutEffect(() => {
     const body = bodyRef.current;
     if (!body) return;
     const headings = tocHeadings(body);

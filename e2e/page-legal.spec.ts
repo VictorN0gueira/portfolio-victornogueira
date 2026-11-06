@@ -52,6 +52,7 @@ const MIN_SMALL_PRINT_PX = 12;
 // A scroll has settled when the top of the title did not move for this many frames in a row (about 200ms).
 const SETTLED_FRAMES = 12;
 const SETTLE_TIMEOUT_MS = 8000;
+const MAX_BODY_SHIFT = 0.01;
 
 // An id may start with a digit ("7-seus-direitos"), which a #selector cannot.
 const byId = (page: Page, id: string) => page.locator(`[id="${id}"]`);
@@ -93,6 +94,37 @@ function expectJustBelowHeader(top: number, label: string): void {
   expect(top, `${label}: below the header`).toBeGreaterThan(ANCHOR_BOUNDS.minTopPx);
   expect(top, `${label}: not far down the screen`).toBeLessThan(ANCHOR_BOUNDS.maxTopPx);
 }
+
+interface ShiftRecord {
+  value: number;
+  /** The shift moved a part of the legal text or of its contents (not the footer, which a lazy page moves site wide). */
+  isPageBody: boolean;
+}
+
+/** Records the layout shifts from the first paint in window.__legalShifts, telling the ones that touch the page body. */
+async function watchShifts(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const shifts: Array<{ value: number; isPageBody: boolean }> = [];
+    (window as unknown as { __legalShifts: typeof shifts }).__legalShifts = shifts;
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries() as unknown as Array<{
+        value: number;
+        hadRecentInput: boolean;
+        sources: Array<{ node: Node | null }>;
+      }>) {
+        if (entry.hadRecentInput) continue;
+        const isPageBody = entry.sources.some(({ node }) => {
+          const element = node instanceof Element ? node : (node?.parentElement ?? null);
+          return element?.closest('[data-legal-body], nav[aria-label]') != null;
+        });
+        shifts.push({ value: entry.value, isPageBody });
+      }
+    }).observe({ type: 'layout-shift', buffered: true });
+  });
+}
+
+const readShifts = (page: Page): Promise<ShiftRecord[]> =>
+  page.evaluate(() => (window as unknown as { __legalShifts: ShiftRecord[] }).__legalShifts.slice());
 
 test.describe('/privacidade and /lgpd', () => {
   for (const contract of PAGES) {
@@ -146,6 +178,23 @@ test.describe('the frame of the legal pages', () => {
         expect(new URL(page.url()).hash).toBe(href);
         expect(new URL(page.url()).pathname).toBe(contract.path);
       }
+    });
+
+    test(`${contract.path}: the contents do not push the text when they appear, at 390`, async ({ page }) => {
+      await page.setViewportSize(PHONE);
+      await watchShifts(page);
+      await page.goto(contract.path);
+      await expect(page.locator(`${TOC_NAV} summary`)).toBeVisible({ timeout: PAGE_LOAD_TIMEOUT_MS });
+      await page.evaluate(() => document.fonts.ready);
+      await nextFrames(page);
+      await nextFrames(page);
+
+      const shifts = (await readShifts(page)).filter((shift) => shift.isPageBody);
+
+      expect(
+        shifts.reduce((sum, shift) => sum + shift.value, 0),
+        `layout shifts of the page body: ${shifts.map((shift) => shift.value).join(', ')}`,
+      ).toBeLessThan(MAX_BODY_SHIFT);
     });
 
     test(`${contract.path}: marks the section being read while scrolling, one at a time, at 1440`, async ({ page }) => {
