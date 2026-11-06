@@ -1,5 +1,5 @@
 export const SUPABASE_URL = 'https://db.vnone.com.br';
-// Public anon key — safe to ship in the browser bundle (no service-role access).
+// Public anon key: safe to ship in the browser bundle (no service-role access).
 export const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkzNjMzNDE2LCJleHAiOjIxMDg5OTM0MTZ9.gsDeAGuR16Gkl9Be8YJAq8cAJe99UyfCMGUEt0EWxnQ';
 

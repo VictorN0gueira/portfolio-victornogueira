@@ -236,7 +236,7 @@ async function readSupabaseArticles(log: FailureLog, signal?: AbortSignal): Prom
 
     const newest = parseNewsDate(articles[0]?.publishedAt ?? '');
     if (newest === null || Date.now() - newest.getTime() > SUPABASE_STALE_DAYS_MS) {
-      throw new Error('Supabase articles are stale — newest is older than 7 days');
+      throw new Error('Supabase articles are stale: newest is older than 7 days');
     }
 
     return { articles, source: 'supabase' };

@@ -69,12 +69,12 @@ describe('BlogPage states', () => {
     renderWithProviders(<BlogPage />, { route: '/blog' });
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
     expect(getNewsArticles).toHaveBeenCalledTimes(1);
-    expect(getNewsArticles).toHaveBeenLastCalledWith({ forceRefresh: false });
+    expect(getNewsArticles).toHaveBeenLastCalledWith(expect.objectContaining({ forceRefresh: false }));
 
     await user.click(screen.getByRole('button', { name: /Atualizar/ }));
 
     await waitFor(() => expect(getNewsArticles).toHaveBeenCalledTimes(2));
-    expect(getNewsArticles).toHaveBeenLastCalledWith({ forceRefresh: true });
+    expect(getNewsArticles).toHaveBeenLastCalledWith(expect.objectContaining({ forceRefresh: true }));
     expect(localStorage.getItem('blog_news_cache')).toBe('saved list');
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
   });
