@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { jsonResponse, stubPublicFeeds } from '../test/news';
-import { CACHE_KEY, article, devToItem, stubFeeds, tabNewsItem } from '../test/newsFixtures';
+import { CACHE_KEY, article, dbRow, devToItem, stubFeeds, stubSupabase, tabNewsItem } from '../test/newsFixtures';
 import { getNewsArticles } from './newsService';
 
 beforeEach(() => {
@@ -128,7 +128,7 @@ describe('getNewsArticles with odd answers', () => {
     expect(named('Sem autor')?.source).toEqual({ name: 'Dev.to', url: 'https://dev.to/' });
   });
 
-  it('goes on past an edge function that answers null, with no source name or a broken cache', async () => {
+  it('goes on past Supabase that fails, with no source name or a broken cache', async () => {
     localStorage.setItem(CACHE_KEY, 'null');
     stubFeeds(null);
 
@@ -139,14 +139,14 @@ describe('getNewsArticles with odd answers', () => {
     expect((await getNewsArticles()).source).toBe('fallback');
   });
 
-  it('names the source of the edge function answer, or says edge-function when it gives none', async () => {
-    stubFeeds({ articles: [article()] });
+  it('names the source of the Supabase answer', async () => {
+    stubSupabase([dbRow()]);
 
-    expect((await getNewsArticles()).source).toBe('edge-function');
+    expect((await getNewsArticles()).source).toBe('supabase');
   });
 
   it('survives a localStorage that refuses to write', async () => {
-    stubFeeds({ articles: [article()] });
+    stubSupabase([dbRow()]);
     const original = Storage.prototype.setItem;
     Storage.prototype.setItem = () => {
       throw new Error('quota');
@@ -160,7 +160,7 @@ describe('getNewsArticles with odd answers', () => {
   });
 
   it('still loads the articles when localStorage is blocked and refuses to read (cookies off, in-app browsers)', async () => {
-    stubFeeds({ articles: [article()] });
+    stubSupabase([dbRow()]);
     const blocked = () => {
       throw new DOMException('blocked', 'SecurityError');
     };

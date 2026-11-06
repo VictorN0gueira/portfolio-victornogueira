@@ -1,3 +1,4 @@
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../lib/constants';
 import { fetchFromPublicAPIs } from './newsFeeds';
 import { createFailureLog, type FailureLog, type SourceFailure } from './newsFailures';
 import { parseNewsDate, sanitizeArticles } from './newsSanitize';
@@ -17,9 +18,7 @@ export interface NewsArticle {
 
 const CACHE_KEY = 'blog_news_cache';
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
-
-// Edge Function no Supabase, proxy seguro (API key nunca exposta no frontend)
-const EDGE_FUNCTION_URL = 'https://qpcwoioflaxiasmcdfbd.supabase.co/functions/v1/gnews-proxy';
+const SUPABASE_STALE_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface CachedData {
   articles: NewsArticle[];
@@ -206,26 +205,43 @@ interface LiveList {
   source: string;
 }
 
-// Edge Function Supabase (proxy seguro). Indisponível: o motivo fica no registro e a próxima fonte responde.
-async function readEdgeFunction(log: FailureLog, signal?: AbortSignal): Promise<LiveList | null> {
+// Supabase `articles` table (self-hosted). Stale, empty, errored or slow (> 8 s): falls through to public feeds.
+async function readSupabaseArticles(log: FailureLog, signal?: AbortSignal): Promise<LiveList | null> {
   try {
-    const response = await fetch(EDGE_FUNCTION_URL, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(8000)]) : AbortSignal.timeout(8000),
-    });
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/articles?select=url,title,summary,image,published_at,source,language&order=published_at.desc&limit=60`,
+      {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+        signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(8_000)]) : AbortSignal.timeout(8_000),
+      },
+    );
+    if (!response.ok) throw new Error(`Supabase error: ${response.status}`);
 
-    if (!response.ok) throw new Error(`Edge function error: ${response.status}`);
-
-    // O formato da resposta é checado antes de ir para o cache: o que não passa é descartado.
     const data: unknown = await response.json();
-    const body = typeof data === 'object' && data !== null ? (data as { articles?: unknown; source?: unknown }) : {};
-    const articles = sanitizeArticles(body.articles);
-    if (articles.length === 0) throw new Error('No articles returned from edge function');
+    if (!Array.isArray(data) || data.length === 0) throw new Error('Supabase returned no articles');
 
-    return { articles, source: typeof body.source === 'string' && body.source !== '' ? body.source : 'edge-function' };
+    // Map DB columns (snake_case, source as string) to the shape sanitizeArticles expects.
+    const mapped = (data as Array<Record<string, unknown>>).map((row) => ({
+      url: row.url,
+      title: row.title,
+      description: row.summary ?? '',
+      image: row.image ?? '',
+      publishedAt: row.published_at ?? '',
+      source: { name: row.source, url: '' },
+      language: row.language,
+    }));
+
+    const articles = sanitizeArticles(mapped);
+    if (articles.length === 0) throw new Error('No valid articles after sanitizing Supabase response');
+
+    const newest = parseNewsDate(articles[0]?.publishedAt ?? '');
+    if (newest === null || Date.now() - newest.getTime() > SUPABASE_STALE_DAYS_MS) {
+      throw new Error('Supabase articles are stale — newest is older than 7 days');
+    }
+
+    return { articles, source: 'supabase' };
   } catch (error) {
-    log.record('edge-function', error);
+    log.record('supabase', error);
     return null;
   }
 }
@@ -250,8 +266,8 @@ export async function getNewsArticles({ forceRefresh = false, signal }: NewsOpti
     return withFailures({ articles: cached.articles, source: 'cache', origin: 'browser-cache' }, log);
   }
 
-  // 2 e 3. Edge Function, depois as fontes públicas
-  const live = (await readEdgeFunction(log, signal)) ?? (await readPublicFeeds(log));
+  // 2 e 3. Supabase, depois as fontes públicas
+  const live = (await readSupabaseArticles(log, signal)) ?? (await readPublicFeeds(log));
   if (live) {
     setCachedArticles(live.articles, live.source, log);
     return withFailures({ ...live, origin: 'live' }, log);

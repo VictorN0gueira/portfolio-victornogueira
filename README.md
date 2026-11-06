@@ -46,6 +46,23 @@ Nenhuma. O site compila e roda sem `.env`. Tudo que começa com `VITE_` vai para
 - O processo mestre do nginx roda como root, como na imagem oficial. Trocar para `nginx-unprivileged` (porta 8080) muda a porta e o proxy, por isso fica como decisão do dono.
 - GitHub Pages (opcional, só manual): `.github/workflows/deploy.yml` roda o CI e publica o build com `GITHUB_PAGES=true`, e exige o Pages ativado no repositório. As Pages não enviam cabeçalhos, então a política de segurança vai como `<meta>`. O CI da `main` roda em todo push pelo `ci.yml`.
 
+## Supabase
+
+O site usa um Supabase próprio em `https://db.vnone.com.br` para duas coisas:
+
+- **Notícias do blog**: a tabela `articles` é renovada a cada três horas por um job no GitHub Actions (`news-sync.yml`). O blog tenta ler o Supabase primeiro e cai nas fontes públicas (Dev.to, TabNews) se ele não responder ou estiver desatualizado. A chave pública (`SUPABASE_ANON_KEY` em `src/lib/constants.ts`) só lê artigos; nenhuma chave de serviço entra no código ou no repositório.
+- **Leads**: o n8n grava uma cópia de cada lead na tabela `leads` logo depois de receber o webhook do site. O formulário não muda e continua enviando direto para o n8n.
+
+O runbook de operações (aplicar migrações, trocar o token do `news_writer`, trocar a senha do `n8n_leads`) está em [docs/supabase.md](docs/supabase.md). O passo a passo para configurar o nó Postgres no n8n está em [docs/n8n/lead-supabase-insert.md](docs/n8n/lead-supabase-insert.md).
+
+Comandos do Supabase:
+
+| Comando | O que faz |
+|---|---|
+| `npm run db:plan -- --host db.vnone.com.br` | Mostra as migrações pendentes (só leitura) |
+| `npm run db:migrate -- --host db.vnone.com.br --yes` | Aplica as migrações pendentes |
+| `npm run db:test` | Prova o RLS num Postgres descartável (precisa do Docker e da variável `DATABASE_URL`) |
+
 ## Os webhooks nunca são chamados em teste
 
 O formulário de contato envia direto para dois webhooks do n8n, e é por eles que um lead chega ao dono do negócio. Por isso:

@@ -11,9 +11,9 @@ import { BLOG_IMG_SRC } from './blogImageHosts.mjs';
 
 /** The two lead webhooks (src/lib/contact.ts). The only POST the site makes. */
 export const N8N_ORIGIN = 'https://n8n.vnone.com.br';
-/** The blog reads the Supabase edge function first (src/utils/newsService.ts), then these two public feeds. */
+/** The blog reads the self-hosted Supabase first (src/utils/newsService.ts), then these two public feeds. */
 export const BLOG_FEED_ORIGINS = Object.freeze([
-  'https://qpcwoioflaxiasmcdfbd.supabase.co',
+  'https://db.vnone.com.br',
   'https://dev.to',
   'https://www.tabnews.com.br',
 ]);

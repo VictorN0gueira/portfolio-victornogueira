@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as newsService from './newsService';
 import { safeHttpUrl, safeImageUrl } from './newsSanitize';
 import { detectCategory, getNewsArticles, getTimeAgo, type NewsArticle } from './newsService';
-import { CACHE_KEY, GOOD_IMAGE, article, devToItem, stubFeeds } from '../test/newsFixtures';
+import { CACHE_KEY, GOOD_IMAGE, article, dbRow, devToItem, stubFeeds, stubSupabase } from '../test/newsFixtures';
 import { jsonResponse, stubPublicFeeds } from '../test/news';
 
 beforeEach(() => {
@@ -66,13 +66,13 @@ describe('safeImageUrl', () => {
   });
 });
 
-describe('getNewsArticles from the edge function', () => {
+describe('getNewsArticles from Supabase', () => {
   it('keeps a well formed article as it is', async () => {
-    stubFeeds({ articles: [article()], source: 'gnews' });
+    stubSupabase([dbRow()]);
 
     const { articles, source } = await getNewsArticles();
 
-    expect(source).toBe('gnews');
+    expect(source).toBe('supabase');
     expect(articles).toHaveLength(1);
     expect(articles[0]).toMatchObject({
       title: 'Um artigo',
@@ -83,13 +83,7 @@ describe('getNewsArticles from the edge function', () => {
   });
 
   it('drops an article whose link is not http or https', async () => {
-    stubFeeds({
-      articles: [
-        article({ url: 'javascript:alert(1)' }),
-        article({ url: 'data:text/html,x' }),
-        article({ title: 'Bom' }),
-      ],
-    });
+    stubSupabase([dbRow({ url: 'javascript:alert(1)' }), dbRow({ url: 'data:text/html,x' }), dbRow({ title: 'Bom' })]);
 
     const { articles } = await getNewsArticles();
 
@@ -98,32 +92,23 @@ describe('getNewsArticles from the edge function', () => {
   });
 
   it('empties the image of an unknown host, so the page shows its own fallback', async () => {
-    stubFeeds({ articles: [article({ image: 'https://tracker.example.net/pixel.png' })] });
+    stubSupabase([dbRow({ image: 'https://tracker.example.net/pixel.png' })]);
 
     const { articles } = await getNewsArticles();
 
     expect(articles[0].image).toBe('');
   });
 
-  it('empties an unsafe source link and keeps the source name', async () => {
-    stubFeeds({ articles: [article({ source: { name: 'Fonte', url: 'javascript:alert(1)' } })] });
+  it('maps the source string to a source object with an empty URL', async () => {
+    stubSupabase([dbRow({ source: 'Fonte Teste' })]);
 
     const { articles } = await getNewsArticles();
 
-    expect(articles[0].source).toEqual({ name: 'Fonte', url: '' });
+    expect(articles[0].source).toEqual({ name: 'Fonte Teste', url: '' });
   });
 
   it('drops an item that has no title, a non text title or no date, and keeps the rest', async () => {
-    stubFeeds({
-      articles: [
-        article({ title: '' }),
-        article({ title: 42 }),
-        article({ publishedAt: 'ontem' }),
-        null,
-        'texto',
-        article({ title: 'Fica' }),
-      ],
-    });
+    stubSupabase([dbRow({ title: '' }), dbRow({ title: 42 }), dbRow({ published_at: 'ontem' }), dbRow({ title: 'Fica' })]);
 
     const { articles } = await getNewsArticles();
 
@@ -131,7 +116,16 @@ describe('getNewsArticles from the edge function', () => {
   });
 
   it('does not cache nor return a response of another shape, and goes on to the public feeds', async () => {
-    const asked = stubFeeds({ articles: 'nao e uma lista' });
+    const asked: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const address = String(input);
+        asked.push(address);
+        if (address.includes('db.vnone.com.br')) return jsonResponse({ not: 'an array' });
+        return jsonResponse({}, 503);
+      }),
+    );
 
     const { source } = await getNewsArticles();
 
@@ -141,7 +135,7 @@ describe('getNewsArticles from the edge function', () => {
   });
 
   it('caches only the articles that passed the check', async () => {
-    stubFeeds({ articles: [article({ url: 'javascript:x' }), article({ title: 'Bom' })] });
+    stubSupabase([dbRow({ url: 'javascript:x' }), dbRow({ title: 'Bom' })]);
 
     await getNewsArticles();
 
@@ -188,11 +182,10 @@ describe('the blog and the GNews key', () => {
     expect(asked.some((address) => address.includes('gnews.io') || address.includes('apikey'))).toBe(false);
   });
 
-  it('has no key, no GNews address and no env read of a key in its source', () => {
+  it('has no GNews address and no VITE env read in its source', () => {
     const source = readFileSync(resolve(__dirname, 'newsService.ts'), 'utf8');
 
     expect(source).not.toMatch(/gnews\.io/i);
-    expect(source).not.toMatch(/apikey/i);
     expect(source).not.toMatch(/VITE_GNEWS/);
     expect(source).not.toMatch(/import\.meta\.env/);
   });
@@ -230,13 +223,30 @@ describe('what the module exports', () => {
 });
 
 describe('getNewsArticles origin', () => {
-  it('says live for an answer of the edge function, whatever source name the server reports', async () => {
-    stubFeeds({ articles: [article()], source: 'cache' });
+  it('says live for a Supabase articles response', async () => {
+    const recentDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const dbRow = {
+      url: 'https://example.com/a',
+      title: 'Um artigo',
+      summary: 'Resumo',
+      image: GOOD_IMAGE,
+      published_at: recentDate,
+      source: 'Fonte',
+      language: 'pt',
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const address = String(input);
+        if (address.includes('db.vnone.com.br')) return jsonResponse([dbRow]);
+        return jsonResponse({}, 503);
+      }),
+    );
 
     const result = await getNewsArticles();
 
     expect(result.origin).toBe('live');
-    expect(result.source).toBe('cache');
+    expect(result.source).toBe('supabase');
   });
 
   it('says live for the public feeds, browser-cache for a valid cache, and stale-browser-cache for an expired one', async () => {
