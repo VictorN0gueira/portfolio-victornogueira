@@ -3,7 +3,15 @@ import type { ComponentType } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { legalCopy } from '../../data/legalCopy';
 import { IntersectionObserverMock, triggerIntersection } from '../../test/intersection';
-import { LGPD_TEXT_HASH, PRIVACY_TEXT_HASH, hashOfText, visibleText } from '../../test/legalText';
+import {
+  LGPD_STRUCTURE_HASH,
+  LGPD_TEXT_HASH,
+  PRIVACY_STRUCTURE_HASH,
+  PRIVACY_TEXT_HASH,
+  hashOfText,
+  structureOf,
+  visibleText,
+} from '../../test/legalText';
 import { REDUCED_MOTION_QUERY, stubMatchMedia } from '../../test/matchMedia';
 import { renderWithProviders } from '../../test/render';
 import { A11Y_STORAGE_KEY } from '../../contexts/AccessibilityContext';
@@ -27,9 +35,16 @@ const PRIVACY_LABELS = [
 ];
 const LGPD_LABELS = ['Controlador dos dados', 'Bases legais', 'Seus direitos', 'Quer exercer um direito?'];
 
-const PAGES: ReadonlyArray<readonly [name: string, Page: ComponentType, hash: string, labels: readonly string[]]> = [
-  ['PrivacyPage', PrivacyPage, PRIVACY_TEXT_HASH, PRIVACY_LABELS],
-  ['LgpdPage', LgpdPage, LGPD_TEXT_HASH, LGPD_LABELS],
+const PAGES: ReadonlyArray<
+  readonly [
+    name: string,
+    Page: ComponentType,
+    hashes: readonly [text: string, structure: string],
+    labels: readonly string[],
+  ]
+> = [
+  ['PrivacyPage', PrivacyPage, [PRIVACY_TEXT_HASH, PRIVACY_STRUCTURE_HASH], PRIVACY_LABELS],
+  ['LgpdPage', LgpdPage, [LGPD_TEXT_HASH, LGPD_STRUCTURE_HASH], LGPD_LABELS],
 ];
 
 const renderFrame = (Page: ComponentType, strict = false) =>
@@ -76,11 +91,17 @@ describe('LegalFrame', () => {
     delete (Element.prototype as Partial<Element>).scrollIntoView;
   });
 
-  describe.each(PAGES)('around %s', (_name, Page, hash, labels) => {
+  describe.each(PAGES)('around %s', (_name, Page, [textHash, structureHash], labels) => {
     it('leaves the text exactly as the page alone says it', () => {
       const { container } = renderFrame(Page);
 
-      expect(hashOfText(visibleText(bodyOf(container)))).toBe(hash);
+      expect(hashOfText(visibleText(bodyOf(container)))).toBe(textHash);
+    });
+
+    it('leaves its links, labels and outline exactly as the page alone has them', () => {
+      const { container } = renderFrame(Page);
+
+      expect(hashOfText(structureOf(bodyOf(container)))).toBe(structureHash);
     });
 
     it('lists one link per h2 of the page, in the same order, from what is on the screen', () => {

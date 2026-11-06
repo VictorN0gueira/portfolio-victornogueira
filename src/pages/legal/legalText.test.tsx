@@ -2,10 +2,19 @@ import { describe, expect, it } from 'vitest';
 import LgpdPage from '../LgpdPage';
 import PrivacyPage from '../PrivacyPage';
 import { renderWithProviders } from '../../test/render';
-import { LGPD_TEXT_HASH, PRIVACY_TEXT_HASH, hashOfText, visibleText } from '../../test/legalText';
+import {
+  LGPD_STRUCTURE_HASH,
+  LGPD_TEXT_HASH,
+  PRIVACY_STRUCTURE_HASH,
+  PRIVACY_TEXT_HASH,
+  hashOfText,
+  structureOf,
+  visibleText,
+} from '../../test/legalText';
 
-// Characterization of the legal text: the two pages are rendered alone, with no frame, and the hash of what they say is
-// pinned. It was measured before the frame existed, so this test is born green on purpose (see src/test/legalText.ts).
+// Characterization of the legal pages: they are rendered alone, with no frame, and the hashes of what they say (the text,
+// and the links, labels and titles) are pinned. They were measured on the pages as they are in the repository, which are
+// byte identical to the frozen ones, so these tests are green by design (see src/test/legalText.ts).
 
 describe('the legal text, without the frame', () => {
   it('PrivacyPage says what it said when the hash was measured', () => {
@@ -18,6 +27,26 @@ describe('the legal text, without the frame', () => {
     const { container } = renderWithProviders(<LgpdPage />);
 
     expect(hashOfText(visibleText(container))).toBe(LGPD_TEXT_HASH);
+  });
+
+  it('PrivacyPage keeps its links, labels and outline', () => {
+    const { container } = renderWithProviders(<PrivacyPage />);
+
+    expect(hashOfText(structureOf(container))).toBe(PRIVACY_STRUCTURE_HASH);
+  });
+
+  it('LgpdPage keeps its links, labels and outline', () => {
+    const { container } = renderWithProviders(<LgpdPage />);
+
+    expect(hashOfText(structureOf(container))).toBe(LGPD_STRUCTURE_HASH);
+  });
+
+  it('reads the real structure, not an empty one: the links and the titles are in it', () => {
+    const { container } = renderWithProviders(<LgpdPage />);
+
+    expect(structureOf(container)).toContain('href: mailto:contato@vnone.com.br');
+    expect(structureOf(container)).toContain('href: /privacidade');
+    expect(structureOf(container)).toContain('h1: LGPD');
   });
 
   it('reads the real text, not an empty page', () => {
