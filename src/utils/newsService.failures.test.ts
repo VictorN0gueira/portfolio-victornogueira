@@ -3,15 +3,29 @@ import { jsonResponse } from '../test/news';
 import { getNewsArticles } from './newsService';
 
 const CACHE_KEY = 'blog_news_cache';
-const EDGE_HOST = 'qpcwoioflaxiasmcdfbd.supabase.co';
+const SUPABASE_HOST = 'db.vnone.com.br';
 
-function edgeArticle(title: string): Record<string, unknown> {
+// DB row format: what readSupabaseArticles receives from the Supabase PostgREST endpoint.
+function supabaseRow(title: string): Record<string, unknown> {
+  return {
+    title,
+    summary: 'Resumo',
+    url: `https://example.com/${encodeURIComponent(title)}`,
+    image: '',
+    published_at: new Date().toISOString(),
+    source: 'Fonte',
+    language: 'pt',
+  };
+}
+
+// NewsArticle shape stored in and read from the browser cache.
+function cachedArticle(title: string): Record<string, unknown> {
   return {
     title,
     description: 'Resumo',
     url: `https://example.com/${encodeURIComponent(title)}`,
     image: '',
-    publishedAt: '2026-10-01T10:00:00.000Z',
+    publishedAt: new Date().toISOString(),
     source: { name: 'Fonte', url: 'https://example.com' },
     language: 'pt',
   };
@@ -44,13 +58,13 @@ function tabNewsItem(overrides: Record<string, unknown> = {}): Record<string, un
 
 type Handler = (address: string) => Response | Promise<Response>;
 
-/** Every request goes to the handler of its host: the edge function, dev.to and TabNews. Nothing reaches the network. */
-function stubSources(handlers: { edge: Handler; devTo: Handler; tabNews: Handler }): void {
+/** Every request goes to the handler of its host: Supabase, dev.to and TabNews. Nothing reaches the network. */
+function stubSources(handlers: { supabase: Handler; devTo: Handler; tabNews: Handler }): void {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       const address = String(input);
-      if (address.includes(EDGE_HOST)) return handlers.edge(address);
+      if (address.includes(SUPABASE_HOST)) return handlers.supabase(address);
       if (address.includes('dev.to')) return handlers.devTo(address);
       if (address.includes('tabnews')) return handlers.tabNews(address);
       throw new Error(`request to an unexpected host: ${address}`);
@@ -78,7 +92,7 @@ afterEach(() => {
 describe('getNewsArticles says why a source failed', () => {
   it('lists nothing when every source that was asked answered', async () => {
     stubSources({
-      edge: () => jsonResponse({ articles: [edgeArticle('Do edge')], source: 'edge-function' }),
+      supabase: () => jsonResponse([supabaseRow('Do supabase')]),
       devTo: down(),
       tabNews: down(),
     });
@@ -92,9 +106,9 @@ describe('getNewsArticles says why a source failed', () => {
   it('lists nothing when the answer comes from a valid cache', async () => {
     localStorage.setItem(
       CACHE_KEY,
-      JSON.stringify({ articles: [edgeArticle('Do cache')], timestamp: Date.now(), source: 'cache' }),
+      JSON.stringify({ articles: [cachedArticle('Do cache')], timestamp: Date.now(), source: 'cache' }),
     );
-    stubSources({ edge: offline(), devTo: offline(), tabNews: offline() });
+    stubSources({ supabase: offline(), devTo: offline(), tabNews: offline() });
 
     const result = await getNewsArticles();
 
@@ -102,27 +116,27 @@ describe('getNewsArticles says why a source failed', () => {
     expect('failures' in result).toBe(false);
   });
 
-  it('records the status of the edge function when it answers with an error, and still answers from the next source', async () => {
-    stubSources({ edge: down(502), devTo: () => jsonResponse([devToItem('Dev A')]), tabNews: down() });
+  it('records the status of Supabase when it answers with an error, and still answers from the next source', async () => {
+    stubSources({ supabase: down(502), devTo: () => jsonResponse([devToItem('Dev A')]), tabNews: down() });
 
     const result = await getNewsArticles();
 
     expect(result.articles.map((item) => item.title)).toEqual(['Dev A']);
     expect(result.origin).toBe('live');
-    expect(result.failures).toContainEqual({ source: 'edge-function', reason: 'Edge function error: 502' });
+    expect(result.failures).toContainEqual({ source: 'supabase', reason: 'Supabase error: 502' });
   });
 
-  it('records the cause when the edge function cannot be reached at all', async () => {
-    stubSources({ edge: offline(), devTo: () => jsonResponse([devToItem('Dev A')]), tabNews: down() });
+  it('records the cause when Supabase cannot be reached at all', async () => {
+    stubSources({ supabase: offline(), devTo: () => jsonResponse([devToItem('Dev A')]), tabNews: down() });
 
     const result = await getNewsArticles();
 
-    expect(result.failures).toContainEqual({ source: 'edge-function', reason: 'Failed to fetch' });
+    expect(result.failures).toContainEqual({ source: 'supabase', reason: 'Failed to fetch' });
   });
 
-  it('records that the edge function answered with no article', async () => {
+  it('records that Supabase answered with no article', async () => {
     stubSources({
-      edge: () => jsonResponse({ articles: [] }),
+      supabase: () => jsonResponse([]),
       devTo: () => jsonResponse([devToItem('Dev A')]),
       tabNews: down(),
     });
@@ -130,13 +144,13 @@ describe('getNewsArticles says why a source failed', () => {
     const result = await getNewsArticles();
 
     expect(result.failures).toContainEqual({
-      source: 'edge-function',
-      reason: 'No articles returned from edge function',
+      source: 'supabase',
+      reason: 'Supabase returned no articles',
     });
   });
 
   it('records the feed that failed when the other one answers, so TabNews can fail without hiding it', async () => {
-    stubSources({ edge: down(), devTo: () => jsonResponse([devToItem('Dev A')]), tabNews: down(500) });
+    stubSources({ supabase: down(), devTo: () => jsonResponse([devToItem('Dev A')]), tabNews: down(500) });
 
     const result = await getNewsArticles();
 
@@ -146,7 +160,7 @@ describe('getNewsArticles says why a source failed', () => {
   });
 
   it('records dev.to when it is the one that fails', async () => {
-    stubSources({ edge: down(), devTo: offline(), tabNews: () => jsonResponse([tabNewsItem()]) });
+    stubSources({ supabase: down(), devTo: offline(), tabNews: () => jsonResponse([tabNewsItem()]) });
 
     const result = await getNewsArticles();
 
@@ -155,14 +169,14 @@ describe('getNewsArticles says why a source failed', () => {
   });
 
   it('records every source, and the fixed list is still what answers, when all of them fail', async () => {
-    stubSources({ edge: down(), devTo: offline(), tabNews: offline() });
+    stubSources({ supabase: down(), devTo: offline(), tabNews: offline() });
 
     const result = await getNewsArticles();
 
     expect(result.origin).toBe('fallback');
     expect(result.articles.length).toBeGreaterThan(0);
     expect(result.failures?.map((failure) => failure.source)).toEqual([
-      'edge-function',
+      'supabase',
       'devto',
       'tabnews',
       'public-apis',
@@ -173,7 +187,7 @@ describe('getNewsArticles says why a source failed', () => {
 
   it('records a cache that cannot be read, drops it, and goes on to the sources', async () => {
     localStorage.setItem(CACHE_KEY, 'this is not json');
-    stubSources({ edge: () => jsonResponse({ articles: [edgeArticle('Do edge')] }), devTo: down(), tabNews: down() });
+    stubSources({ supabase: () => jsonResponse([supabaseRow('Do supabase')]), devTo: down(), tabNews: down() });
 
     const result = await getNewsArticles();
 
@@ -187,17 +201,17 @@ describe('getNewsArticles says why a source failed', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('quota', 'QuotaExceededError');
     });
-    stubSources({ edge: () => jsonResponse({ articles: [edgeArticle('Do edge')] }), devTo: down(), tabNews: down() });
+    stubSources({ supabase: () => jsonResponse([supabaseRow('Do supabase')]), devTo: down(), tabNews: down() });
 
     const result = await getNewsArticles();
 
-    expect(result.articles.map((item) => item.title)).toEqual(['Do edge']);
+    expect(result.articles.map((item) => item.title)).toEqual(['Do supabase']);
     expect(result.failures).toContainEqual({ source: 'cache-write', reason: 'quota' });
   });
 
   it('records a TabNews address that is not an address, and still shows the article', async () => {
     stubSources({
-      edge: down(),
+      supabase: down(),
       devTo: down(),
       tabNews: () => jsonResponse([tabNewsItem({ source_url: 'not an address' })]),
     });
@@ -213,7 +227,7 @@ describe('getNewsArticles says why a source failed', () => {
     const items = Array.from({ length: 6 }, (_, index) =>
       tabNewsItem({ slug: `s${index}`, title: `IA numero ${index}`, source_url: 'not an address' }),
     );
-    stubSources({ edge: down(), devTo: down(), tabNews: () => jsonResponse(items) });
+    stubSources({ supabase: down(), devTo: down(), tabNews: () => jsonResponse(items) });
 
     const result = await getNewsArticles();
 
@@ -228,7 +242,7 @@ describe('getNewsArticles says why a source failed', () => {
     vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
       throw new DOMException('blocked', 'SecurityError');
     });
-    stubSources({ edge: () => jsonResponse({ articles: [edgeArticle('Do edge')] }), devTo: down(), tabNews: down() });
+    stubSources({ supabase: () => jsonResponse([supabaseRow('Do supabase')]), devTo: down(), tabNews: down() });
 
     const result = await getNewsArticles();
 
@@ -236,7 +250,7 @@ describe('getNewsArticles says why a source failed', () => {
   });
 
   it('keeps the data: the fixed list and the answers are what they were, with the field added beside them', async () => {
-    stubSources({ edge: down(), devTo: down(), tabNews: down() });
+    stubSources({ supabase: down(), devTo: down(), tabNews: down() });
 
     const result = await getNewsArticles();
 
@@ -246,15 +260,15 @@ describe('getNewsArticles says why a source failed', () => {
 });
 
 describe('getNewsArticles when the visitor asks for a refresh', () => {
-  const SAVED = [edgeArticle('Da lista salva')];
+  const SAVED = [cachedArticle('Da lista salva')];
 
   function saveList(timestamp: number): void {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ articles: SAVED, timestamp, source: 'edge-function' }));
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ articles: SAVED, timestamp, source: 'supabase' }));
   }
 
   it('asks the sources even though the saved list is still valid', async () => {
     saveList(Date.now());
-    stubSources({ edge: () => jsonResponse({ articles: [edgeArticle('Da fonte')] }), devTo: down(), tabNews: down() });
+    stubSources({ supabase: () => jsonResponse([supabaseRow('Da fonte')]), devTo: down(), tabNews: down() });
 
     const result = await getNewsArticles({ forceRefresh: true });
 
@@ -264,7 +278,7 @@ describe('getNewsArticles when the visitor asks for a refresh', () => {
 
   it('keeps the saved list, and says so, when every source fails: the fixed list does not replace it', async () => {
     saveList(Date.now());
-    stubSources({ edge: down(), devTo: offline(), tabNews: offline() });
+    stubSources({ supabase: down(), devTo: offline(), tabNews: offline() });
 
     const result = await getNewsArticles({ forceRefresh: true });
 
@@ -274,7 +288,7 @@ describe('getNewsArticles when the visitor asks for a refresh', () => {
   });
 
   it('is the fixed list only when there is no saved list at all', async () => {
-    stubSources({ edge: down(), devTo: offline(), tabNews: offline() });
+    stubSources({ supabase: down(), devTo: offline(), tabNews: offline() });
 
     const result = await getNewsArticles({ forceRefresh: true });
 
@@ -283,7 +297,7 @@ describe('getNewsArticles when the visitor asks for a refresh', () => {
 
   it('still answers from a valid saved list when the visitor did not ask for a refresh', async () => {
     saveList(Date.now());
-    stubSources({ edge: offline(), devTo: offline(), tabNews: offline() });
+    stubSources({ supabase: offline(), devTo: offline(), tabNews: offline() });
 
     expect((await getNewsArticles()).origin).toBe('browser-cache');
   });

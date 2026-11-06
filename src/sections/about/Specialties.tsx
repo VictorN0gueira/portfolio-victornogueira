@@ -51,7 +51,7 @@ export function Specialties() {
         <RevealGroup stagger={CARD_STAGGER_S}>
           {/* role="list" on <ol>: Tailwind preflight removes list-style, and Safari then drops ordered-list semantics.
               role="list" restores the list role but overrides the implicit ordered-list role: intentional here since
-              ordinal position is conveyed by the visible badge below, which is not aria-hidden. */}
+              ordinal position is conveyed by the visible badge below, which is aria-hidden (decorative). */}
           <ol role="list" className={LIST_CLASSES}>
             {founderVoice.specialties.map(({ id, title, desc }) => {
               const SpecialtyIcon = ICONS[id];
@@ -61,9 +61,7 @@ export function Specialties() {
                     <SpotlightCard as="div" className={CARD_CLASSES}>
                       <div className="flex items-center justify-between gap-4">
                         <SpecialtyIcon aria-hidden="true" className="size-7 shrink-0" />
-                        <span className="font-mono text-sm text-vn-gray-dark">
-                          {id}
-                        </span>
+                        <span aria-hidden="true" className="font-mono text-sm text-vn-gray-dark">{id}</span>
                       </div>
                       <div className="@container mt-8">
                         <Heading as="h3" size="m" className={TITLE_CLASSES}>
