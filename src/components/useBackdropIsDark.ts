@@ -25,6 +25,53 @@ function getBrightness(element: Element): number | null {
   return null;
 }
 
+/** Reads again, at most every THROTTLE_MS, while the page scrolls or the window resizes. */
+function useThrottledViewCheck(check: () => void): void {
+  useEffect(() => {
+    check();
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    const handleMove = () => {
+      if (timeout) return;
+      timeout = setTimeout(() => {
+        check();
+        timeout = null;
+      }, THROTTLE_MS);
+    };
+    window.addEventListener('scroll', handleMove, { passive: true });
+    window.addEventListener('resize', handleMove, { passive: true });
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      window.removeEventListener('scroll', handleMove);
+      window.removeEventListener('resize', handleMove);
+    };
+  }, [check]);
+}
+
+/** The page under the trigger changes when the trigger is moved: read again at once and when its slide has ended. */
+function useMovedCheck(check: () => void, placeKey: unknown): void {
+  useEffect(() => {
+    check();
+    const timeout = setTimeout(check, TAB_SLIDE_MS + SETTLE_MARGIN_MS);
+    return () => clearTimeout(timeout);
+  }, [check, placeKey]);
+}
+
+/**
+ * A step aside (useTabDodge) draws the tab somewhere else with a translate, with no scroll, resize or move of its place:
+ * the page under it is read again when that slide ends.
+ */
+function useSlideEndCheck(triggerRef: RefObject<HTMLElement | null>, check: () => void): void {
+  useEffect(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const handleEnd = (event: Event) => {
+      if ((event as TransitionEvent).propertyName === 'translate') check();
+    };
+    trigger.addEventListener('transitionend', handleEnd);
+    return () => trigger.removeEventListener('transitionend', handleEnd);
+  }, [check, triggerRef]);
+}
+
 /**
  * True when the page under the centre of the trigger is dark, so the trigger can take the opposite colors.
  * Read on mount, when `placeKey` changes (the trigger was moved), when a translate of the trigger ends (a step aside) and,
@@ -48,43 +95,8 @@ export function useBackdropIsDark(triggerRef: RefObject<HTMLElement | null>, pla
     }
   }, [triggerRef]);
 
-  useEffect(() => {
-    check();
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-    const handleMove = () => {
-      if (timeout) return;
-      timeout = setTimeout(() => {
-        check();
-        timeout = null;
-      }, THROTTLE_MS);
-    };
-    window.addEventListener('scroll', handleMove, { passive: true });
-    window.addEventListener('resize', handleMove, { passive: true });
-    return () => {
-      if (timeout) clearTimeout(timeout);
-      window.removeEventListener('scroll', handleMove);
-      window.removeEventListener('resize', handleMove);
-    };
-  }, [check]);
-
-  // The page under the trigger changes when the trigger is moved: read again at once and when its slide has ended.
-  useEffect(() => {
-    check();
-    const timeout = setTimeout(check, TAB_SLIDE_MS + SETTLE_MARGIN_MS);
-    return () => clearTimeout(timeout);
-  }, [check, placeKey]);
-
-  // A step aside (useTabDodge) draws the tab somewhere else with a translate, with no scroll, resize or move of its place:
-  // the page under it is read again when that slide ends.
-  useEffect(() => {
-    const trigger = triggerRef.current;
-    if (!trigger) return;
-    const handleEnd = (event: Event) => {
-      if ((event as TransitionEvent).propertyName === 'translate') check();
-    };
-    trigger.addEventListener('transitionend', handleEnd);
-    return () => trigger.removeEventListener('transitionend', handleEnd);
-  }, [check, triggerRef]);
-
+  useThrottledViewCheck(check);
+  useMovedCheck(check, placeKey);
+  useSlideEndCheck(triggerRef, check);
   return isDark;
 }

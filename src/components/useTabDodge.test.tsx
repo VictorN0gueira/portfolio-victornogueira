@@ -12,6 +12,7 @@ import { clearDodge, readDodge, useTabDodge } from './useTabDodge';
 
 const FRAME_MS = 16;
 const SETTLE_MS = 100;
+const PRESS_WINDOW_MS = 500;
 const PHONE = { width: 390, height: 844 };
 const SIDEWAYS = { width: 844, height: 390 };
 
@@ -274,6 +275,17 @@ describe('the pointer', () => {
 
     act(() => field.blur());
     fireEvent.keyDown(document, { key: 'Tab' });
+    act(() => field.focus());
+    frame();
+    expect(dy(tab)).toBe('-38px');
+  });
+
+  it('does not carry a press on a non-focusable area into a focus that comes much later from assistive technology', () => {
+    const { tab, view } = setup();
+    const field = view.getByTestId('field');
+    fireEvent.pointerDown(document.body);
+    fireEvent.pointerUp(document.body);
+    act(() => vi.advanceTimersByTime(PRESS_WINDOW_MS + SETTLE_MS));
     act(() => field.focus());
     frame();
     expect(dy(tab)).toBe('-38px');

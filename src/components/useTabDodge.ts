@@ -10,6 +10,8 @@ const DODGE_Y = '--vn-dodge-y';
 const SETTLE_MS = 100;
 /** What the browser puts in the top layer (a modal dialog, an open popover): it paints over everything, whatever its z-index. */
 const TOP_LAYER = ':modal, :popover-open';
+/** A focus this soon after a press or a release of the pointer is the one the pointer brought; a later one is not. */
+const PRESS_FOCUS_MS = 500;
 const TEXT_ENTRY = 'input, textarea, [contenteditable]';
 
 interface TabDodgeOptions {
@@ -28,12 +30,12 @@ interface Refs {
 
 /**
  * What the pointer has told the judge, kept outside the effect so that a re-run of it loses nothing. `isHolding`: the
- * primary button is down on the tab. `isPending`: a press happened and the focus it may bring has not arrived yet.
+ * primary button is down on the tab. `pressedAt`: when the pointer last pressed or let go (0 for none): a focus that follows within PRESS_FOCUS_MS is the pointer's.
  * `pointerTarget`: the element that took such a focus, which counts as pointer driven for as long as no key is pressed.
  */
 interface Latch {
   isHolding: boolean;
-  isPending: boolean;
+  pressedAt: number;
   pointerTarget: Element | null;
 }
 
@@ -234,19 +236,22 @@ function createTiming(run: (canDodge: boolean) => void) {
 type Timing = ReturnType<typeof createTiming>;
 type Binding = [EventTarget, string, EventListener, AddEventListenerOptions];
 
+/** The tab goes back to where it rests, with the slide. */
+function sendHome({ triggerRef }: Refs): void {
+  if (triggerRef.current) setDodge(triggerRef.current, 0, 0, false);
+}
+
+/** A focus changed: judged the next frame (it only lets the tab come home while a scroll may be on its way), and again once quiet. */
+function judgeFocus({ wrapperRef, triggerRef }: Refs, timing: Timing): void {
+  const isRoomy =
+    wrapperRef.current && triggerRef.current && hasRoomToScroll(restBox(wrapperRef.current, triggerRef.current));
+  timing.soon(!isRoomy);
+  timing.settled(SETTLE_MS);
+}
+
 /** What each event does to the judge and to the pointer latch. */
 function createHandlers(refs: Refs, latch: Latch, timing: Timing) {
-  const home = () => {
-    const trigger = refs.triggerRef.current;
-    if (trigger) setDodge(trigger, 0, 0, false);
-  };
-  const judgeFocus = () => {
-    const { wrapperRef, triggerRef } = refs;
-    const isRoomy =
-      wrapperRef.current && triggerRef.current && hasRoomToScroll(restBox(wrapperRef.current, triggerRef.current));
-    timing.soon(!isRoomy);
-    timing.settled(SETTLE_MS);
-  };
+  const home = () => sendHome(refs);
   const release = () => {
     // The pointer lets go of a drag: the tab is laid out clean at its new place (see useTabPlacement) and judged again.
     if (refs.triggerRef.current?.dataset.dragging === 'true') clearDodge(refs.triggerRef.current);
@@ -254,18 +259,24 @@ function createHandlers(refs: Refs, latch: Latch, timing: Timing) {
     latch.isHolding = false;
     timing.soon();
   };
+  // A touch brings its focus with the mouse events after the release, so the release counts as a press too.
+  const lift = () => {
+    latch.pressedAt = Date.now();
+    release();
+  };
   return {
-    judgeFocus,
+    judgeFocus: () => judgeFocus(refs, timing),
     release,
+    lift,
     focus(event: Event) {
-      if (event.type === 'focusin' && latch.isPending && event.target instanceof Element) {
-        latch.pointerTarget = event.target;
-        latch.isPending = false;
+      if (event.type === 'focusin' && event.target instanceof Element) {
+        if (Date.now() - latch.pressedAt < PRESS_FOCUS_MS) latch.pointerTarget = event.target;
+        latch.pressedAt = 0;
       }
-      judgeFocus();
+      judgeFocus(refs, timing);
     },
     press(event: Event) {
-      latch.isPending = true;
+      latch.pressedAt = Date.now();
       const trigger = refs.triggerRef.current;
       if (!trigger) return;
       if (!(event.target instanceof Node && trigger.contains(event.target))) return home();
@@ -276,7 +287,7 @@ function createHandlers(refs: Refs, latch: Latch, timing: Timing) {
       timing.settled(SETTLE_MS);
     },
     key() {
-      latch.isPending = false;
+      latch.pressedAt = 0;
       latch.pointerTarget = null;
       release();
     },
@@ -285,7 +296,7 @@ function createHandlers(refs: Refs, latch: Latch, timing: Timing) {
 
 /** Listens for the events that make the judge run. Returns what takes the listeners off. */
 function bindEvents(handlers: ReturnType<typeof createHandlers>, timing: Timing): () => void {
-  const { focus, press, wheel, key, release } = handlers;
+  const { focus, press, wheel, key, release, lift } = handlers;
   const passive = { capture: true, passive: true };
   const bindings: Binding[] = [
     [document, 'keydown', key, { capture: true }],
@@ -295,8 +306,8 @@ function bindEvents(handlers: ReturnType<typeof createHandlers>, timing: Timing)
     [document, 'pointerdown', press, passive],
     [document, 'touchstart', press, passive],
     [document, 'wheel', wheel, passive],
-    [document, 'pointerup', release, { capture: true }],
-    [document, 'pointercancel', release, { capture: true }],
+    [document, 'pointerup', lift, { capture: true }],
+    [document, 'pointercancel', lift, { capture: true }],
     [document, 'contextmenu', release, { capture: true }],
     [window, 'blur', release, {}],
     [window, 'resize', () => timing.soon(), {}],
@@ -325,7 +336,7 @@ function bindEvents(handlers: ReturnType<typeof createHandlers>, timing: Timing)
  * pointer lets go, so the click and the drag start under the pointer.
  */
 export function useTabDodge({ wrapperRef, triggerRef, isOpen, position }: TabDodgeOptions): void {
-  const latch = useRef<Latch>({ isHolding: false, isPending: false, pointerTarget: null });
+  const latch = useRef<Latch>({ isHolding: false, pressedAt: 0, pointerTarget: null });
   const lastPosition = useRef(position);
 
   useEffect(() => {
