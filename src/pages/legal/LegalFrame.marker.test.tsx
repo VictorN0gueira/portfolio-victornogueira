@@ -39,6 +39,46 @@ describe('LegalFrame, the entry being read', () => {
     expect(tocLinks().some((link) => link.hasAttribute('aria-current'))).toBe(false);
   });
 
+  it('counts a title that landed under an anchor as read: the line is the scroll padding plus the margin of the title', () => {
+    const real = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((element, pseudo) => {
+      if (element === document.documentElement) return { scrollPaddingTop: '96px' } as CSSStyleDeclaration;
+      if (element.tagName === 'H2') return { scrollMarginTop: '48px' } as CSSStyleDeclaration;
+      return real(element, pseudo);
+    });
+    const { container } = renderFrame(PrivacyPage);
+    const headings = headingsOf(container);
+    // A jump to the third title puts it at 96 + 48: the first line of the second one is above, the fourth far below.
+    placeHeadings(
+      headings,
+      headings.map((_, index) => (index - 2) * 400 + 144),
+    );
+
+    triggerIntersection(headings[2], true);
+
+    expect(tocLinks()[2]).toHaveAttribute('aria-current', 'location');
+  });
+
+  it('marks the title above while the reader goes up, as soon as the one below it is back under the line', () => {
+    const real = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((element, pseudo) => {
+      if (element === document.documentElement) return { scrollPaddingTop: '96px' } as CSSStyleDeclaration;
+      if (element.tagName === 'H2') return { scrollMarginTop: '48px' } as CSSStyleDeclaration;
+      return real(element, pseudo);
+    });
+    const { container } = renderFrame(PrivacyPage);
+    const headings = headingsOf(container);
+    // The third title is just under the line (the line is 146): the one before it must be the marked one.
+    placeHeadings(
+      headings,
+      headings.map((_, index) => (index - 2) * 400 + 200),
+    );
+
+    triggerIntersection(headings[1], true);
+
+    expect(tocLinks()[1]).toHaveAttribute('aria-current', 'location');
+  });
+
   it('puts the line of the title being read just under the space the page keeps free at the top (scroll-padding-top)', () => {
     const real = window.getComputedStyle.bind(window);
     vi.spyOn(window, 'getComputedStyle').mockImplementation((element, pseudo) =>
@@ -93,6 +133,50 @@ describe('LegalFrame, the entry being read', () => {
 
       expect(tocLinks().filter((link) => link.hasAttribute('aria-current'))).toHaveLength(1);
       expect(tocLinks()[3]).toHaveAttribute('aria-current', 'location');
+    });
+
+    it('marks the section the reader is in once the scroll ends, with no new report of the observer (a jump past titles)', () => {
+      const { container } = renderFrame(PrivacyPage);
+      const headings = headingsOf(container);
+      placeHeadings(
+        headings,
+        headings.map((_, index) => index * 300 - 700),
+      );
+      fireEvent.click(tocLinks()[2]);
+
+      // The reader jumps far down: the observer reported the titles it passed while the pressed link held the mark.
+      placeHeadings(
+        headings,
+        headings.map((_, index) => index * 300 - 1800),
+      );
+      triggerIntersection(headings[5], true);
+      act(() => {
+        window.dispatchEvent(new Event('scroll'));
+        vi.advanceTimersByTime(300);
+      });
+
+      expect(tocLinks()[6]).toHaveAttribute('aria-current', 'location');
+      expect(tocLinks().filter((link) => link.hasAttribute('aria-current'))).toHaveLength(1);
+    });
+
+    it('lets go of the pressed link at the first wheel, touch or key of the reader, and marks where they are', () => {
+      const { container } = renderFrame(PrivacyPage);
+      const headings = headingsOf(container);
+      placeHeadings(
+        headings,
+        headings.map((_, index) => index * 300 - 700),
+      );
+      fireEvent.click(tocLinks()[2]);
+      placeHeadings(
+        headings,
+        headings.map((_, index) => index * 300 - 1500),
+      );
+
+      act(() => {
+        window.dispatchEvent(new Event('wheel'));
+      });
+
+      expect(tocLinks()[5]).toHaveAttribute('aria-current', 'location');
     });
 
     it('settles by itself when the page does not scroll at all (the title was already in place)', () => {

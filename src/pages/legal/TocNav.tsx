@@ -83,7 +83,7 @@ function StickyToc(props: Omit<TocNavProps, 'isWide'>) {
   return (
     <nav
       aria-label={legalCopy.tocLabel}
-      className="sticky top-28 max-h-[calc(100dvh-8rem)] self-start overflow-y-auto overscroll-contain p-1"
+      className="sticky top-28 max-h-[calc(100dvh-8rem)] self-start overflow-y-auto p-1"
     >
       <Kicker className="mb-5">{legalCopy.tocLabel}</Kicker>
       <TocList {...props} />
