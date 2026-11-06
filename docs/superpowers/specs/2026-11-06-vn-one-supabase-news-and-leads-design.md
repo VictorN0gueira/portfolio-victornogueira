@@ -60,6 +60,23 @@ Cada item abaixo é palpite meu, não decisão dele.
 11. **Os caminhos de código citados são os da branch da reforma do site** (`src/sections/blog`, `src/utils/newsFeeds.ts`), que ainda não entrou na `main`. A fundação (migrações, tabelas, papéis) não depende dela. A leitura no blog só entra depois que a reforma estiver na `main`.
 12. **Passo do n8n:** se eu não puder ver os fluxos `portfolio-vn-email` e `portfolio-vn-whatsapp`, entrego o nó genérico com "continuar em caso de erro" e a ligação marcada como não verificada. O WhatsApp é guardado como o formulário o manda (formato Evolution), `servico` é texto livre, sem restrição de valores, e o nó fica numa ramificação paralela, para nunca atrasar nem derrubar a entrega do lead.
 
+## Respostas do dono e o fluxo do n8n (2026-11-06)
+
+O dono respondeu "faça o que for melhor" sobre o texto jurídico e enviou o fluxo `Site VN One - Resposta Automática` (não vai para o repositório: tem IDs internos, a planilha e o grupo de alertas).
+
+**Decisão minha (13):** a gravação dos leads no Supabase começa já, junto com a tabela. Motivo: o n8n já guarda os mesmos dados (nome, e-mail, WhatsApp, mensagem) na planilha do Google e no grupo de alertas, então a cópia não cria um risco novo. O ajuste do texto jurídico e da retenção é uma tarefa separada, que fica anotada e depende do dono.
+
+**O que o fluxo faz hoje.** Dois webhooks públicos (`portfolio-vn-email` e `portfolio-vn-whatsapp`) respondem na hora, e depois, em segundo plano: um nó de variáveis monta os dados, espera 1 minuto (e-mail) ou 2 minutos (WhatsApp), envia a resposta automática, salva na planilha do Google e manda o alerta para o grupo. O número do WhatsApp chega como `55DDNNNNNNNN` (sem o nono dígito) e o fluxo calcula também a versão com o 9.
+
+**Onde entra o Supabase (14).** Um nó "Postgres: inserir lead" logo depois do webhook, em ramo próprio, **antes** das esperas, com "continuar em caso de erro". Assim o lead é salvo em milissegundos, mesmo que o e-mail ou a espera falhe, e o Supabase fora do ar nunca derruba a entrega. Ele lê direto de `$json.body.*` (não depende dos nós de variáveis). O nó usa o papel `n8n_leads`, só de inserção em `leads`, no host interno `utilitarios-supabase-pooler`. A senha desse papel eu gero e grava em `Acessos/` (não vai no chat nem no repositório), e o dono a cola na credencial do n8n. Campos: `protocolo` (gerado pelo n8n, ligando o lead à planilha e ao alerta), `canal`, `nome`, `email`, `whatsapp` (como o formulário mandou), `servico` (texto livre), `mensagem`, `enviado_em` (do formulário) e `criado_em`. Como a ordem dos ramos pode mudar no n8n, o passo a passo inclui um teste que confirma que a linha aparece antes do e-mail.
+
+**Riscos que o fluxo já tem (fora desta rodada, mas o dono precisa saber):**
+- O e-mail de resposta usa `{{ $json.Nome }}` e `{{ $json.Mensagem }}` sem escapar HTML, e o endereço de destino é o que a pessoa digitou. Qualquer um pode fazer o fluxo mandar um e-mail com o conteúdo que quiser, do domínio `contato@vnone.com.br`, para qualquer endereço (phishing e spam).
+- O mesmo vale para o WhatsApp: o fluxo manda mensagem para qualquer número informado, o que pode levar ao bloqueio do número da empresa.
+- Não há limite de envios nem validação de e-mail ou número no webhook.
+- O modelo de e-mail usa a palavra "Chatbots" no cartão de serviço, que o dono pediu para não usar (a VN One vende agentes de IA).
+Entrego, numa tarefa à parte e só com o ok do dono, uma versão com escape de HTML, validação de e-mail e número, e um limite de envios por número e por e-mail, usando a própria tabela `leads` para contar.
+
 ## Ordem
 
 1. Fundação: pasta de migrações, script que aplica, tabelas e papéis, com testes que provam o RLS (o público lê só `articles`, não lê `leads`, e não escreve em nada).
