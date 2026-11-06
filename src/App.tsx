@@ -6,6 +6,7 @@ import { ErrorBoundary, ErrorPanel } from './components/layout/ErrorBoundary';
 import { ScrollProgress } from './components/layout/ScrollProgress';
 import { SiteLayout } from './components/layout/SiteLayout';
 import { pageTransition } from './components/layout/pageTransition';
+import { notFoundCopy } from './data/notFoundCopy';
 import { shellCopy } from './data/shellCopy';
 import { lazyWithRetry } from './lib/lazyWithRetry';
 import { whenIdle } from './lib/whenIdle';
@@ -50,7 +51,7 @@ function ScrollResetOnLayoutSwitch() {
 function NotFoundRoute() {
   return (
     <>
-      <SEO title="Página não encontrada" noindex />
+      <SEO title={notFoundCopy.title} description={notFoundCopy.description} noindex />
       <NotFound />
     </>
   );

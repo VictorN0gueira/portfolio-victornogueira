@@ -30,8 +30,8 @@ export interface PageContract {
   /** The <title> of the page. */
   title: RegExp;
   h1: string | RegExp;
-  /** A heading of level 2 that only exists once the page is ready (lazy sections included). */
-  readyHeading: string | RegExp;
+  /** A heading of level 2 that only exists once the page is ready (lazy sections included). The 404 has none. */
+  readyHeading?: string | RegExp;
   /** The page mounts the contact form: the test waits for form[name="contact"] and measures the Enviar button. */
   hasContactForm?: boolean;
   /** Measures the floating buttons (WhatsApp and accessibility) against the footer and the form, at 320 and 390. */
@@ -81,9 +81,11 @@ export async function openPage(page: Page, contract: PageContract): Promise<void
     await expect(page.locator('form[name="contact"]')).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
   }
   await expect(page.getByRole('heading', { level: 1, name: contract.h1 })).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });
-  await expect(page.getByRole('heading', { level: 2, name: contract.readyHeading }).first()).toBeAttached({
-    timeout: PAGE_LOAD_TIMEOUT_MS,
-  });
+  if (contract.readyHeading !== undefined) {
+    await expect(page.getByRole('heading', { level: 2, name: contract.readyHeading }).first()).toBeAttached({
+      timeout: PAGE_LOAD_TIMEOUT_MS,
+    });
+  }
   await walkPage(page);
 }
 

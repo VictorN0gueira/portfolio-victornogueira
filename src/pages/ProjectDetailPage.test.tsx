@@ -3,9 +3,11 @@ import { resolve } from 'node:path';
 import { screen, waitFor, within } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
+import { notFoundCopy } from '../data/notFoundCopy';
 import { coverOf, getProjectBySlug, projects, REMOVED_PROJECT_SLUGS } from '../data/projects';
 import { projectsCopy } from '../data/projectsCopy';
 import { projectMetaFor } from '../seo/projectMeta';
+import { NOT_FOUND_HEADING } from '../test/notFoundHeading';
 import { renderWithProviders } from '../test/render';
 import { PROJECT_CTA_TEXT } from '../components/projectLabels';
 import ProjectDetailPage from './ProjectDetailPage';
@@ -178,7 +180,7 @@ describe('ProjectDetailPage', () => {
   it('shows the not found page for an address that never existed, with noindex, no canonical and no JSON-LD', async () => {
     renderAt('/projetos/nao-existe');
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Página não encontrada' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', NOT_FOUND_HEADING)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /vamos conversar/i })).toBeNull();
     await waitFor(() =>
       expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toContain('noindex'),
@@ -186,6 +188,16 @@ describe('ProjectDetailPage', () => {
     expect(document.querySelector('link[rel="canonical"]')).toBeNull();
     expect(meta('property', 'og:url')).toBeNull();
     expect(document.querySelectorAll('script[type="application/ld+json"]')).toHaveLength(0);
+  });
+
+  it('says what the 404 says, in the title and in every description, not the pitch of the home', async () => {
+    renderAt('/projetos/nao-existe');
+    await screen.findByRole('heading', NOT_FOUND_HEADING);
+
+    await waitFor(() => expect(document.title).toBe(`${notFoundCopy.title} | VN One`));
+    expect(meta('name', 'description')).toBe(notFoundCopy.description);
+    expect(meta('property', 'og:description')).toBe(notFoundCopy.description);
+    expect(meta('name', 'twitter:description')).toBe(notFoundCopy.description);
   });
 });
 

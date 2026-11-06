@@ -15,6 +15,8 @@ const indexCss = readFileSync(resolve(__dirname, '../index.css'), 'utf8');
 // which stands for the system preference and for "Pausar animações" in the widget.
 const STILL_LIST: ReadonlyArray<[selector: string, declarationsOff: string[]]> = [
   ['.vn-cursor', ['animation: none']],
+  ['.vn-glitch-a', ['animation: none']],
+  ['.vn-glitch-b', ['animation: none']],
   ['.vn-scan-line', ['display: none']],
   ['.vn-marquee', ['animation: none']],
   ['.vn-accordion-panel', ['transition: none']],

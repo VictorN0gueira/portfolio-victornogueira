@@ -2,9 +2,12 @@ import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { notFoundCopy } from './data/notFoundCopy';
 import { shellCopy } from './data/shellCopy';
+import { NOT_FOUND_META } from './seo/headHtml';
 import { rejectUnexpectedFetch } from './test/contactForm';
 import { stubMatchMedia } from './test/matchMedia';
+import { NOT_FOUND_HEADING } from './test/notFoundHeading';
 import { renderWithProviders } from './test/render';
 
 // The About chunk fails to load until the gate opens, and the blog chunk fails for good: both through the real
@@ -46,8 +49,19 @@ describe('App not found route', () => {
   it('loads the not found page on its own chunk and sets the noindex title', async () => {
     renderWithProviders(<App />, { route: '/nao-existe' });
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Página não encontrada' }, LAZY_WAIT)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', NOT_FOUND_HEADING, LAZY_WAIT)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /voltar ao início/i })).toHaveAttribute('href', '/');
+  });
+
+  it('writes the same description as the static 404.html (one copy module), not the pitch of the home', async () => {
+    renderWithProviders(<App />, { route: '/nao-existe' });
+    await screen.findByRole('heading', NOT_FOUND_HEADING, LAZY_WAIT);
+
+    const content = (selector: string) => document.head.querySelector(selector)?.getAttribute('content');
+    expect(content('meta[name="description"]')).toBe(notFoundCopy.description);
+    expect(content('meta[property="og:description"]')).toBe(notFoundCopy.description);
+    expect(content('meta[name="description"]')).toBe(NOT_FOUND_META.description);
+    expect(document.title).toBe(NOT_FOUND_META.title);
   });
 });
 

@@ -3,9 +3,10 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { NotFoundFallback } from '../components/layout/NotFoundFallback';
 import { ProjectDetail } from '../components/ProjectDetail';
-import { BACK_LABEL, CONTACT_LABEL, NOT_FOUND_TITLE } from '../components/projectLabels';
+import { BACK_LABEL, CONTACT_LABEL } from '../components/projectLabels';
 import { Container } from '../components/ui/Container';
 import { Section } from '../components/ui/Section';
+import { notFoundCopy } from '../data/notFoundCopy';
 import { getProjectBySlug, REMOVED_PROJECT_SLUGS } from '../data/projects';
 import { projectsCopy } from '../data/projectsCopy';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
@@ -34,7 +35,7 @@ export default function ProjectDetailPage() {
   if (!project) {
     return (
       <>
-        <SEO title={NOT_FOUND_TITLE} noindex />
+        <SEO title={notFoundCopy.title} description={notFoundCopy.description} noindex />
         <Suspense fallback={<NotFoundFallback />}>
           <NotFound />
         </Suspense>
