@@ -196,8 +196,8 @@ describe('the Dependabot automation', () => {
     expect(job.slice(1)).not.toMatch(/\n {2}(?!dependabot-merge)[\w-]+:\n/);
   });
 
-  it('waits for verify and image, so a failed check means no merge', () => {
-    expect(job).toMatch(/\n {4}needs: \[verify, image\]\n/);
+  it('waits for verify, image and db-rls, so a failed check means no merge', () => {
+    expect(job).toMatch(/\n {4}needs: \[verify, image, db-rls\]\n/);
   });
 
   it('holds the write permissions on that job alone: the workflow default stays read only', () => {

@@ -107,14 +107,50 @@ jobs:
         if: always()
         run: docker rm -f vnone
 
+  # Proves the row level security of supabase/migrations in a throwaway Postgres 15 that lives only for this job: the
+  # public key reads articles and nothing else, and the roles of the news job and of n8n can do one thing each. It uses
+  # no secret and never reaches the real Supabase (scripts/run-rls-tests.mjs refuses an address that is not localhost),
+  # so Dependabot and forks run it too. It runs in parallel with the others and only needs psql and Node, no npm ci.
+  db-rls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Make sure psql is there
+        run: command -v psql || (sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client)
+
+      - name: Row level security tests
+        run: npm run db:test
+        env:
+          DATABASE_URL: postgres://postgres:test@localhost:5432/postgres
+
   # Merges a Dependabot pull request by itself, so a patch or minor update never waits for a person. It runs only for
-  # pull requests Dependabot opened, and only after verify and image passed (a failed job above skips this one, and a
+  # pull requests Dependabot opened, and only after verify, image and db-rls passed (a failed job above skips this one, and a
   # skipped merge leaves the pull request open). A major update is left open for a person to read. Nothing here is
   # checked out or built: the job runs no code of the pull request, it only reads the metadata Dependabot wrote and
   # calls the GitHub API. The only token is the default GITHUB_TOKEN, raised to write for this job alone.
   dependabot-merge:
     if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
-    needs: [verify, image]
+    needs: [verify, image, db-rls]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
