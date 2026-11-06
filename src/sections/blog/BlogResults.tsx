@@ -12,6 +12,7 @@ import { BlogSkeletons } from './BlogSkeletons';
 import { EmptyState, ErrorState, NoMatchState } from './BlogStates';
 import { blogCopy } from './blogCopy';
 import { NEW_TAB_HINT_ID } from './blogMeta';
+import { pickState, type ResultsState } from './resultsState';
 import { FeaturedArticle } from './FeaturedArticle';
 
 interface BlogResultsProps {
@@ -25,24 +26,9 @@ interface BlogResultsProps {
   onClearFilters: () => void;
 }
 
-type ResultsState = 'error' | 'loading' | 'empty' | 'no-match' | 'articles';
-
 const GRID_CLASSES = 'mt-6 grid list-none grid-cols-1 gap-6 p-0 md:grid-cols-2 lg:grid-cols-3';
 const STATE_FADE_S = 0.3;
 const CARD_STAGGER_S = 0.04;
-
-/** What the list shows: one state at a time. */
-export function pickState(
-  isLoading: boolean,
-  error: string | null,
-  articleCount: number,
-  visibleCount: number,
-): ResultsState {
-  if (isLoading) return 'loading';
-  if (error) return 'error';
-  if (articleCount === 0) return 'empty';
-  return visibleCount === 0 ? 'no-match' : 'articles';
-}
 
 /** A short fade between the states, only where motion is welcome. */
 function useStateFade() {

@@ -66,8 +66,7 @@ export function useBlogNews(): BlogNews {
   }, [isLoading, startLoad]);
 
   useEffect(() => {
-    // The state is set after the await (the first render is already loading), never in the body of this effect.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // The first render is already loading: the state is set only after the await.
     startLoad(false);
     return () => currentLoad.current?.abort();
   }, [startLoad]);

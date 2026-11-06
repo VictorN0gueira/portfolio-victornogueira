@@ -2,7 +2,7 @@ import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../test/render';
 import { testArticle } from './articleFixtures';
-import { BlogResults, pickState } from './BlogResults';
+import { BlogResults } from './BlogResults';
 
 type ResultsProps = Parameters<typeof BlogResults>[0];
 
@@ -95,24 +95,5 @@ describe('BlogResults states', () => {
     renderWithProviders(<BlogResults {...resultsProps({ error: 'A rede caiu', articles: [], visibleArticles: [] })} />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('A rede caiu');
-  });
-});
-
-describe('pickState', () => {
-  it('shows the skeleton while a load runs, whatever else is true', () => {
-    expect(pickState(true, 'erro', 3, 3)).toBe('loading');
-  });
-
-  it('shows the error when the load failed, and only then the lists', () => {
-    expect(pickState(false, 'erro', 3, 3)).toBe('error');
-  });
-
-  it('tells no article at all from filters that match nothing', () => {
-    expect(pickState(false, null, 0, 0)).toBe('empty');
-    expect(pickState(false, null, 4, 0)).toBe('no-match');
-  });
-
-  it('shows the articles when some pass the filters', () => {
-    expect(pickState(false, null, 4, 2)).toBe('articles');
   });
 });
