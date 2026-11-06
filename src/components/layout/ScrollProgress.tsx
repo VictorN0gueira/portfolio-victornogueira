@@ -4,51 +4,29 @@ import { KEEPS_PLACE_UNDER_SCROLL_LOCK } from '../../lib/scrollLock';
 
 const SPRING = { stiffness: 100, damping: 30, restDelta: 0.001 } as const;
 
-type ScrollProgressTone = 'light' | 'dark';
-
-// Ink on a light page, white on a dark one, both palette colors. The dark tone is unused since the blog entered the
-// layout: batch Z removes it.
-const TONE_CLASSES: Record<ScrollProgressTone, string> = {
-  light: 'bg-vn-ink',
-  dark: 'bg-white/80',
-};
-
-interface ScrollProgressProps {
-  /** The tone of the page behind the bar: `light` pages get an ink bar, `dark` pages a white one. */
-  tone?: ScrollProgressTone;
-}
-
-interface BarProps {
-  tone: ScrollProgressTone;
-}
-
-const BAR_CLASSES = `${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed inset-x-0 top-0 z-(--vn-z-progress) h-0.5 origin-left`;
+const BAR_CLASSES = `${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed inset-x-0 top-0 z-(--vn-z-progress) h-0.5 origin-left bg-vn-ink`;
 
 /** The bar follows the scroll position exactly. */
-function PlainBar({ tone }: BarProps) {
+function PlainBar() {
   const { scrollYProgress } = useScroll();
 
-  return (
-    <m.div aria-hidden="true" className={`${BAR_CLASSES} ${TONE_CLASSES[tone]}`} style={{ scaleX: scrollYProgress }} />
-  );
+  return <m.div aria-hidden="true" className={BAR_CLASSES} style={{ scaleX: scrollYProgress }} />;
 }
 
 /** The bar follows the scroll through a spring that smooths it. The spring exists only here, where motion is welcome. */
-function SmoothBar({ tone }: BarProps) {
+function SmoothBar() {
   const { scrollYProgress } = useScroll();
   const smoothProgress = useSpring(scrollYProgress, SPRING);
 
-  return (
-    <m.div aria-hidden="true" className={`${BAR_CLASSES} ${TONE_CLASSES[tone]}`} style={{ scaleX: smoothProgress }} />
-  );
+  return <m.div aria-hidden="true" className={BAR_CLASSES} style={{ scaleX: smoothProgress }} />;
 }
 
 /**
- * A 2px bar across the top of the page that fills as the visitor scrolls. The spring smooths it only
+ * An ink 2px bar across the top of the page that fills as the visitor scrolls. The spring smooths it only
  * when motion is welcome, otherwise the bar follows the scroll position exactly and no spring is created.
  */
-export function ScrollProgress({ tone = 'light' }: ScrollProgressProps) {
+export function ScrollProgress() {
   const isMotionAllowed = useMotionAllowed();
 
-  return isMotionAllowed ? <SmoothBar tone={tone} /> : <PlainBar tone={tone} />;
+  return isMotionAllowed ? <SmoothBar /> : <PlainBar />;
 }

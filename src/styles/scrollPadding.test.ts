@@ -38,7 +38,7 @@ describe('scroll padding at the bottom of the window', () => {
     expect(blockBody(indexCss, "html[data-vn-tab-band='top']")).toContain('scroll-padding-top: max(var(--vn-tab-pad), 96px, calc(env(safe-area-inset-top) + 84px))');
   });
 
-  // At the end of the page the scroll cannot help: the footer grows by what the tab still covers past 4rem, the least bottom padding a footer has (the blog one).
+  // At the end of the page the scroll cannot help: the footer grows by what the tab still covers past 4rem. The site footer pads 6rem below its last control, so 2rem of air stays between that control and the tab.
   it('grows the footer at the end of the page when the tab sits low, past its own bottom padding', () => {
     const footer = blockBody(indexCss, "html[data-vn-tab-band='bottom'] footer::after");
 

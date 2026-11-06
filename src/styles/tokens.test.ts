@@ -59,8 +59,9 @@ describe('src/index.css palette', () => {
   const indexCss = readFileSync(resolve(__dirname, '../index.css'), 'utf8')
 
   it('finds the colors it is supposed to check', () => {
-    expect(findHexLiterals(indexCss).length).toBeGreaterThan(5)
-    // index.css no longer holds an rgb() value; the scanner is proven on a fixed sample instead.
+    // index.css holds a single hex (the alias of the cream) and no rgb() value; the scanners are proven on fixed samples too.
+    expect(findHexLiterals(indexCss)).toEqual(['#F2F2F2'])
+    expect(findHexLiterals('a { color: #1A1A1A; background: #fff; }').length).toBe(2)
     expect(findRgbLiterals('a { box-shadow: 0 0 1px rgba(26, 26, 26, 0.2); color: rgb(10, 10, 10); }').length).toBe(2)
   })
 

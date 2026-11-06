@@ -18,34 +18,21 @@ describe('SectionSkeleton as a band of the new design', () => {
   });
 });
 
-describe('SectionSkeleton as the compact placeholder of the legacy pages', () => {
-  it('is transparent, centered and has no height of its own, as it was before the redesign', () => {
-    const { container } = render(<SectionSkeleton />);
-    const root = container.firstElementChild as HTMLElement;
-
-    expect(root).toHaveClass('items-center', 'py-24');
-    expect(root.className).not.toMatch(/bg-|min-h-/);
-  });
-
-  it('draws its label dark enough for a cream page (gray-dark, 7.5:1), not gray-mid (3.1:1)', () => {
-    render(<SectionSkeleton />);
-    const label = screen.getByText('Carregando...');
-
-    expect(label).toHaveClass('text-vn-gray-dark');
-    expect(label.className).not.toContain('text-vn-gray-mid');
-  });
-});
-
-describe('SectionSkeleton in both looks', () => {
-  it.each([
-    ['the band', <SectionSkeleton key="band" heightClassName="min-h-[10rem]" />],
-    ['the compact one', <SectionSkeleton key="compact" />],
-  ])('is hidden from assistive tech (%s), so a page of eight of them does not announce loading eight times', (_name, ui) => {
-    const { container } = render(ui);
+describe('SectionSkeleton for assistive tech and motion', () => {
+  it('is hidden from assistive tech, so a page of eight of them does not announce loading eight times', () => {
+    const { container } = render(<SectionSkeleton heightClassName="min-h-[10rem]" />);
 
     expect(container.firstElementChild).toHaveAttribute('aria-hidden', 'true');
     expect(container.querySelector('[role="status"]')).toBeNull();
     expect(screen.getByText('Carregando...')).toBeInTheDocument();
+  });
+
+  it('draws its label dark enough for a cream band (gray-dark, 7.5:1), not gray-mid (3.1:1)', () => {
+    render(<SectionSkeleton heightClassName="min-h-[10rem]" />);
+    const label = screen.getByText('Carregando...');
+
+    expect(label).toHaveClass('text-vn-gray-dark');
+    expect(label.className).not.toContain('text-vn-gray-mid');
   });
 
   it('uses only VN One tokens: no dark variants, no zinc or numbered gray palette', () => {
@@ -55,7 +42,7 @@ describe('SectionSkeleton in both looks', () => {
   });
 
   it('spins only when motion is welcome', () => {
-    const { container } = render(<SectionSkeleton />);
+    const { container } = render(<SectionSkeleton heightClassName="min-h-[10rem]" />);
 
     expect(container.innerHTML).toContain('motion-safe:animate-spin');
     expect(container.innerHTML).not.toMatch(/(?<!:)\banimate-spin/);
