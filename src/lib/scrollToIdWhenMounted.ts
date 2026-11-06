@@ -20,6 +20,12 @@ function readScrollPadding(): number {
   return Number.isFinite(padding) ? padding : 0;
 }
 
+/** The scroll-margin-top of the element: an anchor puts it that far below the scroll padding. Zero when it has none. */
+function readScrollMargin(element: HTMLElement): number {
+  const margin = parseFloat(getComputedStyle(element).scrollMarginTop);
+  return Number.isFinite(margin) ? margin : 0;
+}
+
 /** Keeps the element where an anchor puts it while the content around it settles, until the visitor takes over. */
 function keepAligned(element: HTMLElement): () => void {
   let lastScrollAt = performance.now();
@@ -33,7 +39,7 @@ function keepAligned(element: HTMLElement): () => void {
       checkTimer = window.setTimeout(check, SCROLL_IDLE_MS);
       return;
     }
-    const deviation = element.getBoundingClientRect().top - readScrollPadding();
+    const deviation = element.getBoundingClientRect().top - readScrollPadding() - readScrollMargin(element);
     // Instant: the page has scroll-behavior smooth, and a correction that glides would be seen as a second scroll.
     if (Math.abs(deviation) > DEVIATION_PX) window.scrollBy({ top: deviation, behavior: 'instant' });
   };
