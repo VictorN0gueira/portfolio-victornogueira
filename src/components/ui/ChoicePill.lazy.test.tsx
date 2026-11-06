@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -85,6 +85,97 @@ describe('ChoicePill popover chunk', () => {
     const realPill = screen.getByRole('button', { name: TRIGGER_NAME });
     expect(realPill).toHaveFocus();
     expect(realPill).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  describe('a list that opens in the middle of a press', () => {
+    const press = { button: 0, pointerId: 1, pointerType: 'mouse' };
+
+    it('gets the focus back on its option when the press ends and the browser had dropped the focus', async () => {
+      renderWithProviders(<Harness />);
+
+      fireEvent.pointerDown(screen.getByRole('button', { name: TRIGGER_NAME }), press);
+      const option = await screen.findByRole('option', { name: '10 horas' });
+      await waitFor(() => expect(option).toHaveFocus());
+      // The browser's own mousedown comes after the swap and drops the focus: the pill that was pressed is gone.
+      act(() => (document.activeElement as HTMLElement).blur());
+      expect(document.body).toHaveFocus();
+
+      fireEvent.pointerUp(document.body, press);
+
+      await waitFor(() => expect(screen.getByRole('option', { name: '10 horas' })).toHaveFocus());
+    });
+
+    it('leaves the focus where the visitor put it when it is not lost', async () => {
+      renderWithProviders(
+        <>
+          <button type="button">outro</button>
+          <Harness />
+        </>,
+      );
+
+      fireEvent.pointerDown(screen.getByRole('button', { name: TRIGGER_NAME }), press);
+      await waitFor(() => expect(screen.getByRole('option', { name: '10 horas' })).toHaveFocus());
+      act(() => screen.getByRole('button', { name: 'outro' }).focus());
+
+      fireEvent.pointerUp(document.body, press);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      expect(screen.getByRole('button', { name: 'outro' })).toHaveFocus();
+    });
+
+    it('also checks after the mouse events a tap sends later, as a touch screen does', async () => {
+      renderWithProviders(<Harness />);
+
+      fireEvent.pointerDown(screen.getByRole('button', { name: TRIGGER_NAME }), { ...press, pointerType: 'touch' });
+      await waitFor(() => expect(screen.getByRole('option', { name: '10 horas' })).toHaveFocus());
+      fireEvent.pointerUp(document.body, { ...press, pointerType: 'touch' });
+      // The focus is still on the option when the pointer goes up: the compatibility mousedown comes later and drops it.
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      act(() => (document.activeElement as HTMLElement).blur());
+      fireEvent.mouseUp(document.body);
+
+      await waitFor(() => expect(screen.getByRole('option', { name: '10 horas' })).toHaveFocus());
+    });
+
+    it('also puts the focus back when the press is cancelled', async () => {
+      renderWithProviders(<Harness />);
+
+      fireEvent.pointerDown(screen.getByRole('button', { name: TRIGGER_NAME }), press);
+      await waitFor(() => expect(screen.getByRole('option', { name: '10 horas' })).toHaveFocus());
+      act(() => (document.activeElement as HTMLElement).blur());
+
+      fireEvent.pointerCancel(document.body, press);
+
+      await waitFor(() => expect(screen.getByRole('option', { name: '10 horas' })).toHaveFocus());
+    });
+
+    it('does nothing when the pointer was already up at the swap, even if the focus is lost later', async () => {
+      renderWithProviders(<Harness />);
+
+      fireEvent.pointerDown(screen.getByRole('button', { name: TRIGGER_NAME }), press);
+      fireEvent.pointerUp(document.body, press);
+      await waitFor(() => expect(screen.getByRole('option', { name: '10 horas' })).toHaveFocus());
+      act(() => (document.activeElement as HTMLElement).blur());
+      fireEvent.pointerDown(document.body, press);
+      fireEvent.pointerUp(document.body, press);
+      await new Promise((resolve) => setTimeout(resolve, 30));
+
+      expect(document.body).toHaveFocus();
+    });
+
+    it('does nothing to the focus when the list has closed before the check runs', async () => {
+      renderWithProviders(<Harness />);
+
+      fireEvent.pointerDown(screen.getByRole('button', { name: TRIGGER_NAME }), press);
+      const option = await screen.findByRole('option', { name: '10 horas' });
+      await waitFor(() => expect(option).toHaveFocus());
+      fireEvent.pointerUp(document.body, press);
+      fireEvent.keyDown(option, { key: 'Escape' });
+      await new Promise((resolve) => setTimeout(resolve, 30));
+
+      expect(screen.queryByRole('listbox')).toBeNull();
+      expect(screen.getByRole('button', { name: TRIGGER_NAME })).toHaveFocus();
+    });
   });
 
   it('opens with the arrow keys before the chunk arrived, as a native select does', async () => {

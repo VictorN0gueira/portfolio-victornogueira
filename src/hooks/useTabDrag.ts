@@ -55,6 +55,116 @@ export interface TabDrag {
   takeSuppressedClick: () => boolean;
 }
 
+/** A press on the tab: where it began and the box the tab had. Null when the button is gone. */
+function startDrag(event: ReactPointerEvent<HTMLElement>, options: UseTabDragOptions): DragState | null {
+  const trigger = options.triggerRef.current;
+  if (!trigger) return null;
+  const rect = toBox(trigger.getBoundingClientRect());
+  try {
+    trigger.setPointerCapture(event.pointerId);
+  } catch {
+    // Without capture the drag still follows the pointer while it stays over the button.
+  }
+  return {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    rect,
+    view: options.readView(),
+    last: rect,
+    moved: false,
+  };
+}
+
+/** The pointer moved by (rawX, rawY) from where it pressed: past the tap slop it is a drag and the tab follows it. */
+function moveDrag(state: DragState, rawX: number, rawY: number, options: UseTabDragOptions): void {
+  const { triggerRef, wrapperRef, onStart, onLive } = options;
+  if (!state.moved && Math.hypot(rawX, rawY) < TAP_SLOP_PX) return;
+  if (!state.moved) {
+    if (triggerRef.current) triggerRef.current.dataset.dragging = 'true';
+    onStart?.(state.rect);
+  }
+  state.moved = true;
+  const { dx, dy } = clampDragOffset({ rect: state.rect, dx: rawX, dy: rawY, ...state.view });
+  if (wrapperRef.current) {
+    wrapperRef.current.style.transition = 'none';
+    wrapperRef.current.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+  }
+  state.last = { ...state.rect, left: state.rect.left + dx, top: state.rect.top + dy };
+  onLive(state.last, nearestSide(state.last.left + state.last.width / 2, state.view.viewport.width));
+}
+
+/** The drawing side of the end of a press: the transform goes (cancel) or the place is kept (release). */
+function endDrag(state: DragState, isCancel: boolean, options: UseTabDragOptions): void {
+  const { triggerRef, wrapperRef, onRelease, onCancel } = options;
+  if (triggerRef.current) delete triggerRef.current.dataset.dragging;
+  if (!state.moved) return;
+  if (!isCancel) {
+    onRelease(releasePosition(state.last, state.view.viewport), state.last);
+    return;
+  }
+  if (wrapperRef.current) wrapperRef.current.style.transform = '';
+  onCancel();
+}
+
+/** Escape anywhere on the page calls `onEscape`. */
+function useEscapeKey(onEscape: () => void) {
+  useEffect(() => {
+    const listen = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onEscape();
+    };
+    document.addEventListener('keydown', listen);
+    return () => document.removeEventListener('keydown', listen);
+  }, [onEscape]);
+}
+
+/**
+ * The click the browser fires on release must not toggle the panel after a drag. It comes in the same task as the
+ * release, so the flag lives for one task. A drag cancelled with the pointer still down (Escape, blur) has no release
+ * yet: the pointer is remembered and the flag is raised when that pointer is released, however late.
+ */
+function useClickSuppression() {
+  const isSuppressed = useRef(false);
+  const awaitingRelease = useRef<number | null>(null);
+
+  const suppressNext = useCallback(() => {
+    isSuppressed.current = true;
+    window.setTimeout(() => {
+      isSuppressed.current = false;
+    }, 0);
+  }, []);
+
+  /** A new press on the tab: nothing from an earlier one is pending any more. */
+  const startPress = useCallback((pointerId: number) => {
+    isSuppressed.current = false;
+    if (awaitingRelease.current === pointerId) awaitingRelease.current = null;
+  }, []);
+
+  /** A drag was cancelled while this pointer is still down. */
+  const awaitRelease = useCallback((pointerId: number) => {
+    awaitingRelease.current = pointerId;
+  }, []);
+
+  /** This pointer went up: if a cancelled drag was waiting for it, its click is swallowed. */
+  const release = useCallback(
+    (pointerId: number) => {
+      if (awaitingRelease.current !== pointerId) return;
+      awaitingRelease.current = null;
+      suppressNext();
+    },
+    [suppressNext],
+  );
+
+  /** True once, right after a drag ended. */
+  const take = useCallback(() => {
+    const wasDrag = isSuppressed.current;
+    isSuppressed.current = false;
+    return wasDrag;
+  }, []);
+
+  return { suppressNext, startPress, awaitRelease, release, take };
+}
+
 /**
  * Drags the tab with a mouse, a finger or a pen (Pointer Events, pointer capture on the button). The tab follows the
  * pointer in real time with a transform on the wrapper only, held inside the window. A press that moves less than
@@ -64,93 +174,47 @@ export interface TabDrag {
 export function useTabDrag(options: UseTabDragOptions): TabDrag {
   const optionsRef = useRef(options);
   const stateRef = useRef<DragState | null>(null);
-  const suppressClick = useRef(false);
+  const { suppressNext, startPress, awaitRelease, release, take } = useClickSuppression();
 
   useEffect(() => {
     optionsRef.current = options;
   });
 
-  const finish = useCallback((isCancel: boolean) => {
-    const state = stateRef.current;
-    if (!state) return;
-    stateRef.current = null;
-    const { triggerRef, wrapperRef, onRelease, onCancel } = optionsRef.current;
-    if (triggerRef.current) delete triggerRef.current.dataset.dragging;
-    if (!state.moved) return;
-    suppressClick.current = true;
-    window.setTimeout(() => {
-      suppressClick.current = false;
-    }, 0);
-    if (isCancel) {
-      if (wrapperRef.current) wrapperRef.current.style.transform = '';
-      onCancel();
-    } else {
-      onRelease(releasePosition(state.last, state.view.viewport), state.last);
-    }
-  }, []);
+  // `isPointerDown` is false for a pointercancel: the browser took the pointer, so no release (and no click) will come.
+  const finish = useCallback(
+    (isCancel: boolean, isPointerDown = true) => {
+      const state = stateRef.current;
+      if (!state) return;
+      stateRef.current = null;
+      if (state.moved && isCancel && isPointerDown) awaitRelease(state.pointerId);
+      if (state.moved && !isCancel) suppressNext();
+      endDrag(state, isCancel, optionsRef.current);
+    },
+    [awaitRelease, suppressNext],
+  );
 
-  useEffect(() => {
-    const cancelOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') finish(true);
-    };
-    document.addEventListener('keydown', cancelOnEscape);
-    return () => document.removeEventListener('keydown', cancelOnEscape);
-  }, [finish]);
+  useEscapeKey(useCallback(() => finish(true), [finish]));
 
   const onPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     if (stateRef.current) return;
-    const trigger = optionsRef.current.triggerRef.current;
-    if (!trigger) return;
-    suppressClick.current = false;
-    const rect = toBox(trigger.getBoundingClientRect());
-    stateRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      rect,
-      view: optionsRef.current.readView(),
-      last: rect,
-      moved: false,
-    };
-    try {
-      trigger.setPointerCapture(event.pointerId);
-    } catch {
-      // Without capture the drag still follows the pointer while it stays over the button.
-    }
+    startPress(event.pointerId);
+    stateRef.current = startDrag(event, optionsRef.current);
   };
 
   const onPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
     const state = stateRef.current;
-    const { triggerRef, wrapperRef, onLive } = optionsRef.current;
     if (!state || event.pointerId !== state.pointerId) return;
-    const rawX = event.clientX - state.startX;
-    const rawY = event.clientY - state.startY;
-    if (!state.moved && Math.hypot(rawX, rawY) < TAP_SLOP_PX) return;
-    if (!state.moved) {
-      if (triggerRef.current) triggerRef.current.dataset.dragging = 'true';
-      optionsRef.current.onStart?.(state.rect);
-    }
-    state.moved = true;
-    const { dx, dy } = clampDragOffset({ rect: state.rect, dx: rawX, dy: rawY, ...state.view });
-    if (wrapperRef.current) {
-      wrapperRef.current.style.transition = 'none';
-      wrapperRef.current.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
-    }
-    state.last = { ...state.rect, left: state.rect.left + dx, top: state.rect.top + dy };
-    onLive(state.last, nearestSide(state.last.left + state.last.width / 2, state.view.viewport.width));
+    moveDrag(state, event.clientX - state.startX, event.clientY - state.startY, optionsRef.current);
   };
 
   const onPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
-    if (stateRef.current && event.pointerId === stateRef.current.pointerId) finish(false);
+    if (stateRef.current?.pointerId === event.pointerId) finish(false);
+    else release(event.pointerId);
   };
 
   return {
-    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: () => finish(true), onBlur: () => finish(true) },
-    takeSuppressedClick: () => {
-      const wasDrag = suppressClick.current;
-      suppressClick.current = false;
-      return wasDrag;
-    },
+    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: () => finish(true, false), onBlur: () => finish(true) },
+    takeSuppressedClick: take,
   };
 }

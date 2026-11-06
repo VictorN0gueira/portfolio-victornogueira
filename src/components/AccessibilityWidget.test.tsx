@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { stubMatchMedia } from '../test/matchMedia';
 import { renderWithProviders } from '../test/render';
+import { TAB_SLIDE_EASE, TAB_SLIDE_MS } from '../lib/floatingLayout';
 import AccessibilityWidget from './AccessibilityWidget';
 import { A11Y_STORAGE_KEY } from '../contexts/AccessibilityContext';
 
@@ -54,7 +55,13 @@ describe('AccessibilityWidget', () => {
   it('caps the panel by the height of the window, so it fits a short phone, and scrolls the list inside it', async () => {
     const { panel } = await openPanel();
 
-    expect(panel).toHaveClass('max-h-[calc(100svh-112px-max(16px,env(safe-area-inset-bottom)))]', 'sm:max-h-[calc(100svh-8rem)]', 'flex', 'flex-col', 'overflow-hidden');
+    expect(panel).toHaveClass(
+      'max-h-[calc(100svh-112px-max(16px,env(safe-area-inset-bottom)))]',
+      'sm:max-h-[calc(100svh-8rem)]',
+      'flex',
+      'flex-col',
+      'overflow-hidden',
+    );
     // The options and the position group share one scroll region, between the header and the reset row.
     expect(within(panel).getAllByRole('list')[0].parentElement).toHaveClass('overflow-y-auto', 'min-h-0');
   });
@@ -106,8 +113,19 @@ describe('AccessibilityWidget', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog', { name: PANEL_NAME })).toBeNull());
     const badge = screen.getByRole('button', { name: TRIGGER_NAME }).querySelector('span[aria-hidden="true"]');
-    expect(badge).toHaveTextContent('1');
+    // WCAG 2.5.3 Label in Name: the digit is drawn by CSS (data-count), so no visible text in the button is missing from its name.
+    expect(badge).toHaveAttribute('data-count', '1');
+    expect(badge).toBeEmptyDOMElement();
+    expect(screen.getByRole('button', { name: TRIGGER_NAME })).toHaveTextContent('');
     expect(badge).toHaveClass('right-0');
     expect(badge).not.toHaveClass('-right-1');
+  });
+
+  it('hands the stylesheet the length and the curve of the slide of the tab, from the constants of floatingLayout', () => {
+    renderWithProviders(<AccessibilityWidget />);
+    const trigger = screen.getByRole('button', { name: TRIGGER_NAME });
+    expect(trigger).toHaveClass('vn-tab-trigger');
+    expect(trigger.style.getPropertyValue('--vn-tab-slide-ms')).toBe(`${TAB_SLIDE_MS}ms`);
+    expect(trigger.style.getPropertyValue('--vn-tab-slide-ease')).toBe(TAB_SLIDE_EASE);
   });
 });
