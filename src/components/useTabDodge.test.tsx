@@ -662,6 +662,28 @@ describe('readDodge', () => {
   });
 });
 
+describe('the end of a drag', () => {
+  it('puts the tab home at once when the pointer lets go of a drag, before the new place is laid out', () => {
+    const { tab, a } = setup();
+    act(() => a.focus());
+    frame();
+    expect(dy(tab)).toBe('-38px');
+
+    tab.dataset.dragging = 'true';
+    fireEvent.pointerUp(document.body);
+    expect(dy(tab)).toBe('0px');
+    expect(tab.style.transition).toBe('');
+  });
+
+  it('leaves a dodge alone when the pointer lets go of something that was not a drag of the tab', () => {
+    const { tab, a } = setup();
+    act(() => a.focus());
+    frame();
+    fireEvent.pointerUp(document.body);
+    expect(dy(tab)).toBe('-38px');
+  });
+});
+
 describe('clearDodge', () => {
   it('puts the tab home with no transition, and does nothing when it is already home', () => {
     const { tab, a } = setup();
@@ -680,28 +702,10 @@ describe('clearDodge', () => {
 });
 
 describe('motion off', () => {
-  it('is left to the stylesheet: the move is a translate with a transition of the slide length, which the motion off rule makes instant', () => {
+  it('is left to the stylesheet: the stop of every transition is the one of motion.css, and the tab is drawn by a class', () => {
     const widget = readFileSync(resolve(__dirname, './AccessibilityWidget.tsx'), 'utf8');
     const motion = readFileSync(resolve(__dirname, '../styles/motion.css'), 'utf8');
-    expect(TAB_SLIDE_MS).toBe(220);
-    expect(widget).toContain('translate-x-[var(--vn-dodge-x,0px)]');
-    // Every property the old transition-colors covered keeps its 300ms, and only the translate takes the slide length.
-    for (const property of [
-      'color',
-      'background-color',
-      'border-color',
-      'outline-color',
-      'text-decoration-color',
-      'fill',
-      'stroke',
-    ]) {
-      expect(widget).toContain(property);
-    }
-    expect(widget).toContain(
-      '[transition-property:color,background-color,border-color,outline-color,text-decoration-color,fill,stroke,translate]',
-    );
-    expect(widget).toContain('[transition-duration:300ms,300ms,300ms,300ms,300ms,300ms,300ms,220ms]');
-    expect(widget).toContain('[transition-timing-function:var(--ease-out)]');
+    expect(widget).toContain('vn-tab-trigger');
     expect(motion).toContain('transition-duration: .01ms !important');
   });
 });

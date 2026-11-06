@@ -59,9 +59,18 @@ export function readDodge(trigger: HTMLElement): { dx: number; dy: number } {
   return { dx: read(DODGE_X), dy: read(DODGE_Y) };
 }
 
+/**
+ * The box a tab drawn at `drawn` rests at: drawn minus the dodge it carries. A drag from the default place pins the layout
+ * there, not where the tab is drawn, or the step aside would count twice and the tab would sit off the pointer.
+ */
+export function restRect(trigger: HTMLElement | null, drawn: Box): Box {
+  const { dx, dy } = trigger ? readDodge(trigger) : { dx: 0, dy: 0 };
+  return { ...drawn, left: drawn.left - dx, top: drawn.top - dy };
+}
+
 /** The tab goes home with no slide: a drag lets go of it, and the new place is laid out from where it rests. */
-export function clearDodge(trigger: HTMLElement): void {
-  setDodge(trigger, 0, 0, true);
+export function clearDodge(trigger: HTMLElement | null): void {
+  if (trigger) setDodge(trigger, 0, 0, true);
 }
 
 function isInTopLayer(element: Element): boolean {
@@ -239,6 +248,8 @@ function createHandlers(refs: Refs, latch: Latch, timing: Timing) {
     timing.settled(SETTLE_MS);
   };
   const release = () => {
+    // The pointer lets go of a drag: the tab is laid out clean at its new place (see useTabPlacement) and judged again.
+    if (refs.triggerRef.current?.dataset.dragging === 'true') clearDodge(refs.triggerRef.current);
     if (!latch.isHolding) return;
     latch.isHolding = false;
     timing.soon();

@@ -18,6 +18,8 @@ const STEP_RATIO = 0.1;
 const PANEL_WIDTH_PX = 208;
 /** How long the tab takes to slide into its place after a drag or a move of the panel buttons. */
 export const TAB_SLIDE_MS = 220;
+/** The curve of every slide of the tab: after a drag or a move of the panel buttons, and a step aside for the keyboard. */
+export const TAB_SLIDE_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
 /** The gap between the tab and the panel that opens beside it. */
 export const PANEL_GAP_PX = 8;
 /** Air kept between the tab and a focused control the browser scrolls into view. */

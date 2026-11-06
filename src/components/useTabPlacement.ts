@@ -9,6 +9,7 @@ import {
   tabLeft,
   topFromRatio,
   TAB_SIZE_PX,
+  TAB_SLIDE_EASE,
   TAB_SLIDE_MS,
   type Box,
   type Size,
@@ -17,11 +18,9 @@ import {
   type TabSide,
 } from '../lib/floatingLayout';
 import { readFloatingView, type FloatingView } from '../lib/floatingView';
-import { clearDodge, readDodge } from './useTabDodge';
+import { restRect } from './useTabDodge';
 import { clearTabPosition, readTabPosition, writeTabPosition } from '../lib/tabPositionStorage';
 
-// The same token as the slide of the dodge (AccessibilityTrigger): one easing for every move of the tab.
-const SLIDE_EASE = 'var(--ease-out)';
 const BAND_ATTRIBUTE = 'data-vn-tab-band';
 const BAND_PAD_PROPERTY = '--vn-tab-pad';
 
@@ -180,7 +179,7 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
     wrapper.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
     void wrapper.offsetWidth;
-    wrapper.style.transition = `transform ${TAB_SLIDE_MS}ms ${SLIDE_EASE}`;
+    wrapper.style.transition = `transform ${TAB_SLIDE_MS}ms ${TAB_SLIDE_EASE}`;
     wrapper.style.transform = '';
   }, [position, wrapperRef, triggerRef]);
 
@@ -192,12 +191,7 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
       // From the default place, the layout is pinned where the tab is, so the open panel can follow it.
       beforeDrag.current = position;
       dragCache.current = { view, panel: null };
-      // The tab keeps the step aside it has taken (drawn = laid out + dodge), so the layout is pinned where it rests, not
-      // where it is drawn: pinned at the drawn rect the dodge would count twice and the tab would sit off the pointer.
-      if (position === null) {
-        const { dx, dy } = triggerRef.current ? readDodge(triggerRef.current) : { dx: 0, dy: 0 };
-        setPosition(releasePosition({ ...rect, left: rect.left - dx, top: rect.top - dy }, view.viewport));
-      }
+      if (position === null) setPosition(releasePosition(restRect(triggerRef.current, rect), view.viewport));
     },
     onLive: (rect, side) => {
       liveRect.current = rect;
@@ -205,8 +199,6 @@ export function useTabPlacement(options: TabPlacementOptions): TabPlacement {
       applyPanel(rect, side);
     },
     onRelease: (next, from) => {
-      // A tab that was dodging lets go of its step aside with the drag: the new place is laid out clean and judged again.
-      if (triggerRef.current) clearDodge(triggerRef.current);
       liveRect.current = null;
       dragCache.current = null;
       setLiveSide(null);
