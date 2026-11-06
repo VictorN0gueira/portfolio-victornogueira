@@ -196,8 +196,8 @@ describe('the Dependabot automation', () => {
     expect(job.slice(1)).not.toMatch(/\n {2}(?!dependabot-merge)[\w-]+:\n/);
   });
 
-  it('waits for verify and image, so a failed check means no merge', () => {
-    expect(job).toMatch(/\n {4}needs: \[verify, image\]\n/);
+  it('waits for verify, image and db-rls, so a failed check means no merge', () => {
+    expect(job).toMatch(/\n {4}needs: \[verify, image, db-rls\]\n/);
   });
 
   it('holds the write permissions on that job alone: the workflow default stays read only', () => {
@@ -233,5 +233,60 @@ describe('the Dependabot automation', () => {
   it('passes the metadata through env, never through the script text', () => {
     const script = job.slice(job.indexOf('run: |'), job.indexOf('- name: Leave a major update'));
     expect(script).not.toMatch(/\$\{\{/);
+  });
+});
+
+// The proof of the row level security must be one nobody can skip or weaken by accident: always on, with no secret, no
+// write permission and an image that a moved tag cannot change.
+describe('the db-rls job', () => {
+  const workflow = read('.github/workflows/ci.yml');
+  const start = workflow.indexOf('\n  db-rls:\n');
+  const rest = workflow.slice(start + 1);
+  // The job runs to the next key of the same indent (two spaces), or to the end of the file.
+  const next = rest.slice('  db-rls:\n'.length).search(/\n {2}[\w-]+:\n/);
+  const job = next === -1 ? rest : rest.slice(0, '  db-rls:\n'.length + next);
+  const jobCode = job
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('#'))
+    .join('\n');
+
+  it('exists once and is a job of its own', () => {
+    expect(start).toBeGreaterThan(-1);
+    expect(workflow.match(/\n {2}db-rls:\n/g)).toHaveLength(1);
+  });
+
+  it('has no condition and cannot be failed over: it always runs and always counts', () => {
+    expect(jobCode).not.toMatch(/\bif:/);
+    expect(jobCode).not.toMatch(/continue-on-error/);
+    expect(jobCode).not.toMatch(/\|\| true/);
+  });
+
+  it('uses no secret and holds no permission of its own, so the read only default stands', () => {
+    expect(jobCode).not.toMatch(/secrets\./);
+    expect(jobCode).not.toMatch(/permissions:/);
+    expect(jobCode).not.toMatch(/: write/);
+    expect(jobCode).not.toMatch(/GITHUB_TOKEN|github\.token/);
+  });
+
+  it('runs on the pinned runner with a timeout, next to the other jobs and not after them', () => {
+    expect(jobCode).toMatch(/runs-on: ubuntu-24\.04\n/);
+    expect(jobCode).toMatch(/timeout-minutes: 10\n/);
+    expect(jobCode).not.toMatch(/\n {4}needs:/);
+  });
+
+  it('keeps its Postgres image pinned by digest, with the tag in a comment', () => {
+    expect(jobCode).toMatch(/image: postgres:15@sha256:[0-9a-f]{64}\n/);
+    expect(job).toMatch(/# Pinned by digest[^\n]*postgres:15/);
+  });
+
+  it('runs the suite in two locales, against a local database only', () => {
+    expect(jobCode.match(/run: npm run db:test/g)).toHaveLength(2);
+    expect(jobCode).toMatch(/DATABASE_URL: postgres:\/\/postgres:test@localhost:5432\/postgres\n/);
+    expect(jobCode).toMatch(/DATABASE_URL: postgres:\/\/postgres:test@localhost:5432\/rls_c\n/);
+    expect(jobCode).toMatch(/locale 'C'/);
+  });
+
+  it('is waited for by the Dependabot merge, so a red proof blocks it', () => {
+    expect(workflow).toMatch(/needs: \[verify, image, db-rls\]\n/);
   });
 });

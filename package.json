@@ -19,6 +19,10 @@
     "favicons": "node scripts/build-favicons.mjs",
     "headers": "node scripts/generate-security-headers.mjs",
     "headers:check": "node scripts/generate-security-headers.mjs --check",
+    "db:plan": "node scripts/db-migrate.mjs",
+    "db:migrate": "node scripts/db-migrate.mjs --apply",
+    "db:audit": "node scripts/db-audit.mjs",
+    "db:test": "node scripts/run-rls-tests.mjs",
     "budget": "node scripts/check-bundle-budget.mjs",
     "lcp": "node scripts/measure-lcp.mjs",
     "measure:skeletons": "node scripts/measure-skeletons.mjs"
