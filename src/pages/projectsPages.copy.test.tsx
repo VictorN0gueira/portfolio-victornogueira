@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { getProjectBySlug } from '../data/projects';
 import { DASH_RULE, FIRST_PERSON_RULE, NUMBER_RULE, SALES_RULE, SLASH_RULE, withoutAllowedNumbers } from '../test/projectCopy';
 import { renderWithProviders } from '../test/render';
@@ -8,7 +8,6 @@ import ProjectDetailPage from './ProjectDetailPage';
 import ProjectsPage from './ProjectsPage';
 
 const TEST_TIMEOUT_MS = 20_000;
-const LAZY_LOAD_TIMEOUT_MS = 8000;
 const MIN_TEXT_LENGTH = 200;
 const CASE_SLUGS = ['dizpara', 'portal-link-in-bio'];
 
@@ -22,13 +21,9 @@ function readableText(rendered: HTMLElement): string {
 }
 
 describe('the rendered projects pages follow the copy rules', { timeout: TEST_TIMEOUT_MS }, () => {
-  beforeAll(async () => {
-    await import('../components/Projects');
-  });
-
   async function pages(): Promise<[string, string][]> {
     const list = renderWithProviders(<ProjectsPage />, { route: '/projetos' });
-    await screen.findByRole('region', { name: 'Projetos' }, { timeout: LAZY_LOAD_TIMEOUT_MS });
+    expect(screen.getByRole('region', { name: 'Projetos' })).toBeInTheDocument();
     const listText = readableText(list.container);
     list.unmount();
     const cases = CASE_SLUGS.map((slug) => {

@@ -30,11 +30,11 @@ describe.each(projects.map((project) => [project.slug, project] as const))('%s h
     expect(within(link).getByText('Ver detalhes')).toBeInTheDocument();
   });
 
-  it('on its case page, no link and no button, and no Resultados block', () => {
+  it('on its case page, no link but the one to /contato, no button, and no Resultados block', () => {
     const { container } = renderWithProviders(<ProjectDetail project={project} />);
 
     expectNoAccess(container);
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(screen.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(['/contato']);
     expect(screen.queryAllByRole('button')).toHaveLength(0);
     expect(screen.queryByText('Resultados')).toBeNull();
   });
@@ -64,20 +64,19 @@ describe('ProjectDetail text', () => {
     const project = projects[0];
     renderWithProviders(<ProjectDetail project={project} />);
 
-    const features = screen.getByRole('region', { name: 'O que faz' });
+    const features = screen.getByRole('heading', { level: 2, name: 'O que faz' }).parentElement as HTMLElement;
 
     expect(within(features).getAllByRole('listitem')).toHaveLength(project.features?.length ?? -1);
-    expect(within(screen.getByRole('region', { name: 'Tecnologias e recursos' })).getAllByRole('listitem')).toHaveLength(project.tags.length);
+    expect(within(screen.getByRole('heading', { level: 2, name: 'Tecnologias e recursos' }).parentElement as HTMLElement).getAllByRole('listitem')).toHaveLength(project.tags.length);
   });
 
-  it('has one h1 and h2 sections only: no heading level is skipped', () => {
+  it('has h2 sections only, under the h1 of the hero: no heading level is skipped', () => {
     for (const project of [projects[0], projects[2]]) {
       const { unmount } = renderWithProviders(<ProjectDetail project={project} />);
       const levels = screen.getAllByRole('heading').map((heading) => Number(heading.tagName.slice(1)));
 
-      expect(levels[0]).toBe(1);
-      expect(levels.filter((level) => level === 1)).toHaveLength(1);
-      expect(levels.every((level) => level <= 2)).toBe(true);
+      expect(levels.length).toBeGreaterThan(0);
+      expect(levels.every((level) => level === 2)).toBe(true);
       unmount();
     }
   });

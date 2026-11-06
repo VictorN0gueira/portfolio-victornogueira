@@ -32,6 +32,9 @@ const PAGES: readonly PageEntry[] = [
     title: withBrand('Serviços de automação, agentes de IA e sites'),
     description:
       'Automação de processos, agentes de IA, sites e sistemas web sob medida. Cada serviço mostra o que está incluso, tem escopo claro e prazo estimado.',
+    // hasFaq omitted intentionally: /servicos has a visible FAQ accordion but it is a sales feature list,
+    // not a standalone FAQ page. The JSON-LD FAQPage schema would duplicate /contato's structured data
+    // and confuse search engines about which page owns the FAQ.
   },
   {
     path: '/sobre',

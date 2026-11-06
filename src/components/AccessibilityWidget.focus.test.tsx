@@ -161,7 +161,7 @@ describe('AccessibilityWidget closure gaps (C2-4)', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog', { name: PANEL_NAME })).toBeNull());
     expect(trigger).toHaveAccessibleDescription('1 opção ativa');
-    expect(trigger.querySelector('span[aria-hidden="true"]')).toHaveTextContent('1');
+    expect(trigger.querySelector('span[aria-hidden="true"]')).toHaveAttribute('data-count', '1');
   });
 
   it('points aria-controls at the dialog only while the panel exists', async () => {
@@ -184,7 +184,7 @@ describe('AccessibilityWidget closure gaps (C2-4)', () => {
     const trigger = screen.getByRole('button', { name: TRIGGER_NAME });
     const badge = () => trigger.querySelector('span[aria-hidden="true"]');
 
-    expect(badge()).toHaveTextContent('1');
+    expect(badge()).toHaveAttribute('data-count', '1');
 
     await user.click(trigger);
     await screen.findByRole('dialog', { name: PANEL_NAME });
@@ -192,7 +192,7 @@ describe('AccessibilityWidget closure gaps (C2-4)', () => {
 
     await user.click(trigger);
     await waitFor(() => expect(screen.queryByRole('dialog', { name: PANEL_NAME })).toBeNull());
-    expect(badge()).toHaveTextContent('1');
+    expect(badge()).toHaveAttribute('data-count', '1');
   });
 
   it('closes the panel when a Tab leaves the last control (Voltar ao padrão, since the position group) for the next control of the page', async () => {
@@ -269,7 +269,7 @@ describe('AccessibilityWidget trigger ring (X:M-1)', () => {
     const light = stubBackdrop('rgb(255, 255, 255)');
     renderWithProviders(<AccessibilityWidget />);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: TRIGGER_NAME })).toHaveClass('focus-visible:outline-zinc-950'));
+    await waitFor(() => expect(screen.getByRole('button', { name: TRIGGER_NAME })).toHaveClass('focus-visible:outline-vn-black'));
     light.remove();
   });
 

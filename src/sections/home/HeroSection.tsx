@@ -1,11 +1,6 @@
-import { useState, type CSSProperties } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  HEADER_HEIGHT,
-  HEADER_HEIGHT_LANDSCAPE,
-  HEADER_LANDSCAPE_LIFT,
-  HEADER_TOP_OFFSET,
-} from '../../components/layout/headerMetrics';
+import { CONTENT_TOP_CLASSES, CONTENT_TOP_VARS } from '../../components/layout/contentTop';
 import { Button } from '../../components/ui/Button';
 import { Container } from '../../components/ui/Container';
 import { Kicker } from '../../components/ui/Kicker';
@@ -17,16 +12,6 @@ import { AutomationPanel } from './AutomationPanel';
 import { HeroAnnotation, HeroFinePrint, HeroSentence } from './HeroSentence';
 
 const DEFAULT_TASK: HeroTaskId = 'planilha-whatsapp';
-
-// The content starts below the fixed header, with room to breathe (a little more on wide screens).
-// The header's own numbers come from Header.tsx, in rem, so this follows a larger font and the notch like it does.
-// A phone held sideways has a shorter header that sits 0.5rem higher, so it gets its own offset.
-const BREATHING_ROOM = 'clamp(2rem, 1rem + 4vw, 5rem)';
-const CONTENT_TOP_VARS = {
-  '--hero-top': `calc(${HEADER_TOP_OFFSET} + ${HEADER_HEIGHT} + ${BREATHING_ROOM})`,
-  '--hero-top-landscape': `calc(${HEADER_TOP_OFFSET} - ${HEADER_LANDSCAPE_LIFT} + ${HEADER_HEIGHT_LANDSCAPE} + ${BREATHING_ROOM})`,
-} as CSSProperties;
-const CONTENT_TOP_CLASSES = 'pt-[var(--hero-top)] vn-landscape:pt-[var(--hero-top-landscape)]';
 
 // The panel lies flat in the reading position, so this is the column the sentence and the panel live in.
 const COLUMN_CLASSES = 'w-full max-w-5xl';

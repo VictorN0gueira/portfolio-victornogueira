@@ -55,6 +55,7 @@ describe('files nothing references are not in the repo', () => {
     'blog_page_preview.png',
     'homepage_with_blog_nav.png',
     'public/victor-photo.jpg',
+    'public/victor-photo.webp',
     'public/brand/vn-one-logo-chrome.png',
     'public/projects/screenshots',
   ])('has no %s', (path) => {

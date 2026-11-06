@@ -144,7 +144,7 @@ describe('AccessibilityWidget position', () => {
     backdrop.style.backgroundColor = 'rgb(255, 255, 255)';
     const { user, group } = await openPanel();
     const trigger = screen.getByRole('button', { name: TRIGGER_NAME });
-    expect(trigger).toHaveClass('bg-zinc-950');
+    expect(trigger).toHaveClass('bg-vn-black');
 
     backdrop.style.backgroundColor = 'rgb(0, 0, 0)';
     await user.click(within(group).getByRole('button', { name: 'Mover o botão para a esquerda' }));

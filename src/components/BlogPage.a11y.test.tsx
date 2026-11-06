@@ -41,31 +41,31 @@ async function renderLoaded() {
   return { user, ...view };
 }
 
-describe('BlogPage landmarks', () => {
-  it('has a banner with the way back, one main landmark named by the title, and a footer', async () => {
+describe('BlogPage inside the site layout', () => {
+  it('brings no banner, main, footer or skip link of its own: the layout owns them', async () => {
     await renderLoaded();
 
-    const main = screen.getByRole('main');
-    expect(main).toHaveAttribute('id', 'main-content');
-    expect(main).toHaveAttribute('tabindex', '-1');
-    expect(main).toHaveAccessibleName(screen.getByRole('heading', { level: 1 }).textContent ?? '');
-    expect(screen.getAllByRole('main')).toHaveLength(1);
-    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Voltar para a VN One' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
-    expect(within(main).queryByRole('banner')).toBeNull();
+    expect(screen.queryByRole('main')).toBeNull();
+    expect(screen.queryByRole('banner')).toBeNull();
+    expect(screen.queryByRole('contentinfo')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Pular para o conteúdo' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Voltar para a VN One' })).toBeNull();
+    expect(document.getElementById('main-content')).toBeNull();
   });
 
-  it('starts with the skip link, which moves focus to the main landmark', async () => {
-    const { user } = await renderLoaded();
+  it('names the hero section by its title and has one search landmark', async () => {
+    const { container } = await renderLoaded();
 
-    await user.tab();
-    const skip = screen.getByRole('link', { name: 'Pular para o conteúdo' });
-    expect(skip).toHaveFocus();
+    const title = screen.getByRole('heading', { level: 1 });
+    expect(container.querySelector(`section[aria-labelledby="${title.id}"]`)).not.toBeNull();
+    expect(screen.getAllByRole('search')).toHaveLength(1);
+  });
 
-    await user.keyboard('{Enter}');
+  it('does not move focus or scroll by itself: the layout does it', async () => {
+    await renderLoaded();
 
-    expect(screen.getByRole('main')).toHaveFocus();
-    expect(window.location.hash).toBe('');
+    expect(document.body).toHaveFocus();
+    expect(window.scrollTo).not.toHaveBeenCalled();
   });
 
   it('keeps the heading levels in order: one h1, then h2, then h3, never a jump', async () => {
@@ -95,12 +95,6 @@ describe('BlogPage landmarks', () => {
     expect(empty.tagName).toBe('H2');
   });
 
-  it('does not move focus when the page is the first one the visitor opened', async () => {
-    await renderLoaded();
-
-    expect(screen.getByRole('main')).not.toHaveFocus();
-  });
-
   it('announces the loading as a status while the sources answer', async () => {
     getNewsArticles.mockReturnValue(new Promise(() => undefined));
     renderWithProviders(<BlogPage />, { route: '/blog' });
@@ -110,7 +104,7 @@ describe('BlogPage landmarks', () => {
 });
 
 describe('BlogPage search and filters', () => {
-  it('names the clear button, makes it a plain button, and gives it a target of at least 24px', async () => {
+  it('names the clear button, makes it a plain button, and gives it the 44px class (jsdom paints no boxes: e2e measures the target)', async () => {
     const { user } = await renderLoaded();
     expect(screen.queryByRole('button', { name: 'Limpar busca' })).toBeNull();
 
@@ -118,7 +112,7 @@ describe('BlogPage search and filters', () => {
     const clear = screen.getByRole('button', { name: 'Limpar busca' });
 
     expect(clear).toHaveAttribute('type', 'button');
-    expect(clear).toHaveClass('size-8');
+    expect(clear).toHaveClass('size-11');
     await user.click(clear);
     expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toHaveValue('');
   });
@@ -127,7 +121,7 @@ describe('BlogPage search and filters', () => {
     await renderLoaded();
 
     const search = screen.getByRole('textbox', { name: 'Buscar artigos' });
-    expect(search).toHaveClass('vn-focus-ring');
+    expect(search).toHaveClass('vn-focus-ring-ink');
     expect(search).not.toHaveClass('focus:outline-none');
   });
 
@@ -187,7 +181,11 @@ describe('BlogPage article cards', () => {
     const summary = within(englishLink).getByText('An English summary');
     expect(title.closest('[lang]')).toHaveAttribute('lang', 'en');
     expect(summary.closest('[lang]')).toHaveAttribute('lang', 'en');
-    expect(within(screen.getByRole('link', { name: 'Artigo de teste 2' })).getByText('Resumo do artigo 2').closest('[lang]')).toBeNull();
+    expect(
+      within(screen.getByRole('link', { name: 'Artigo de teste 2' }))
+        .getByText('Resumo do artigo 2')
+        .closest('[lang]'),
+    ).toBeNull();
   });
 
   it('puts the article titles one level under a heading of the list', async () => {
@@ -196,6 +194,10 @@ describe('BlogPage article cards', () => {
     const list = screen.getByRole('heading', { level: 2, name: 'Artigos' });
     expect(list).toBeInTheDocument();
     const titles = screen.getAllByRole('heading', { level: 3 });
-    expect(titles.map((title) => title.textContent)).toEqual(['Artigo de teste 1', 'Artigo de teste 2', 'Article in English']);
+    expect(titles.map((title) => title.textContent)).toEqual([
+      'Artigo de teste 1',
+      'Artigo de teste 2',
+      'Article in English',
+    ]);
   });
 });

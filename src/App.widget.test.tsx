@@ -4,6 +4,7 @@ import { App } from './App';
 import { RELOAD_STORAGE_KEY } from './lib/lazyWithRetry';
 import { rejectUnexpectedFetch } from './test/contactForm';
 import { stubMatchMedia } from './test/matchMedia';
+import { NOT_FOUND_HEADING } from './test/notFoundHeading';
 import { renderWithProviders } from './test/render';
 
 // The chunk of the accessibility widget is gone for good. One test in this file, on purpose: React.lazy keeps the
@@ -67,13 +68,13 @@ describe('App when the accessibility widget cannot be loaded', () => {
 
   it('keeps the page and shows no recovery panel when the widget chunk fails', async () => {
     renderWithProviders(<App />, { route: '/nao-existe' });
-    expect(await screen.findByRole('heading', { level: 1, name: 'Página não encontrada' }, { timeout: 20_000 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', NOT_FOUND_HEADING, { timeout: 20_000 })).toBeInTheDocument();
 
     await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
 
     expect(screen.queryByRole('button', { name: 'Abrir opções de acessibilidade' })).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
-    expect(screen.getByRole('heading', { level: 1, name: 'Página não encontrada' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', NOT_FOUND_HEADING)).toBeInTheDocument();
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(reload).not.toHaveBeenCalled();
     expect(window.sessionStorage.getItem(RELOAD_STORAGE_KEY)).toBeNull();

@@ -22,7 +22,7 @@ const PLACES = [
 const PAGES = [
   { name: 'services', path: '/servicos' },
   { name: 'contact', path: '/contato' },
-  // The blog has its own footer, with less bottom padding than the site footer.
+  // The blog is inside the site layout: it has the footer of the site, like the other pages.
   { name: 'blog', path: '/blog' },
 ];
 const MIN_STOPS = 8;

@@ -43,7 +43,7 @@ export function AccessibilityOptions({ state, onToggle, firstOptionRef }: Access
               className={cn(
                 'flex min-h-11 w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors sm:py-2.5',
                 PANEL_FOCUS_RING,
-                isActive ? 'bg-white/15 text-white' : 'text-white/60 hover:bg-white/8 hover:text-white/90',
+                isActive ? 'bg-white/15 text-white' : 'text-vn-gray-light hover:bg-white/8 hover:text-vn-white',
               )}
             >
               <Icon aria-hidden="true" className="size-5 shrink-0" />
