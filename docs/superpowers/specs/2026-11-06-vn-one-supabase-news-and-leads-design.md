@@ -52,6 +52,14 @@ Cada item abaixo é palpite meu, não decisão dele.
 6. **Retenção dos leads** fica em aberto: precisa de decisão do dono junto com o ajuste do texto jurídico.
 7. **Migrações** em `supabase/migrations/*.sql` no repositório, aplicadas por um script (`/pg/query`) que mostra o que vai rodar antes e é idempotente. Rollback: cada migração tem seu desfazer.
 
+## Escolhas que o revisor do desenho pediu (minhas, o dono confere)
+
+8. **URL e chave pública (anon) no site: constantes no código**, em `src/lib/constants.ts`. A chave anon é pública por desenho (qualquer navegador a vê) e o que protege os dados é o RLS. Isso funciona em todos os builds (EasyPanel, CI, testes) sem passo novo do dono. A chave de serviço nunca vai para o código.
+9. **Menor privilégio também no job das notícias.** Um papel `news_writer`, só com inserir, atualizar e apagar em `articles`, e a chave do job é um token desse papel, não a chave de serviço. O token é gerado a partir do segredo JWT do projeto, com validade longa e anotado para troca. O Postgres não é alcançável do GitHub, então o job fala com a API REST.
+10. **Testes do RLS:** num Postgres descartável dentro do CI (com os papéis `anon`, `authenticated`, `service_role` e `news_writer` simulados, rodando as mesmas migrações), sem nenhum segredo no CI, então Dependabot e forks funcionam. Depois de aplicar no banco real, rodo uma verificação manual com a chave anon que prova o mesmo (lê `articles`, não lê `leads`, não escreve em nada). Nenhum teste de CI toca produção.
+11. **Os caminhos de código citados são os da branch da reforma do site** (`src/sections/blog`, `src/utils/newsFeeds.ts`), que ainda não entrou na `main`. A fundação (migrações, tabelas, papéis) não depende dela. A leitura no blog só entra depois que a reforma estiver na `main`.
+12. **Passo do n8n:** se eu não puder ver os fluxos `portfolio-vn-email` e `portfolio-vn-whatsapp`, entrego o nó genérico com "continuar em caso de erro" e a ligação marcada como não verificada. O WhatsApp é guardado como o formulário o manda (formato Evolution), `servico` é texto livre, sem restrição de valores, e o nó fica numa ramificação paralela, para nunca atrasar nem derrubar a entrega do lead.
+
 ## Ordem
 
 1. Fundação: pasta de migrações, script que aplica, tabelas e papéis, com testes que provam o RLS (o público lê só `articles`, não lê `leads`, e não escreve em nada).
