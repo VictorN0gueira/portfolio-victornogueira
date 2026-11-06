@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { collectToc, slugify, tocHeadings } from './legalToc';
+import { collectToc, slugify, tocHeadings, type TocEntry } from './legalToc';
 
 function rootWith(html: string): HTMLElement {
   const root = document.createElement('div');
@@ -29,12 +29,16 @@ describe('slugify', () => {
 
 describe('collectToc', () => {
   it('reads the h2 of the root, in order, with the label and an id for each', () => {
-    const root = rootWith('<h1>Título</h1><h2>Primeiro</h2><p>x</p><h2>Segundo <strong>item</strong></h2><h3>Fora</h3>');
+    const root = rootWith(
+      '<h1>Título</h1><h2>Primeiro</h2><p>x</p><h2>Segundo <strong>item</strong></h2><h3>Fora</h3>',
+    );
 
-    expect(collectToc(root)).toEqual([
+    const expected: TocEntry[] = [
       { id: 'primeiro', label: 'Primeiro' },
       { id: 'segundo-item', label: 'Segundo item' },
-    ]);
+    ];
+
+    expect(collectToc(root)).toEqual(expected);
   });
 
   it('numbers a repeated title: second gets -2 and third -3', () => {
