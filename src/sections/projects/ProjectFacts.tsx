@@ -28,7 +28,7 @@ interface ProjectFactsProps {
 function Features({ items }: { items: readonly string[] }) {
   return (
     <div>
-      <h2 className={LABEL_CLASSES}>{FEATURES_LABEL}</h2>
+      <p className={LABEL_CLASSES}>{FEATURES_LABEL}</p>
       {/* role="list": Tailwind preflight removes the markers, and Safari then drops the list semantics. */}
       <ul role="list" className="mt-4 flex flex-col gap-3">
         {items.map((item) => (
@@ -47,7 +47,7 @@ function Features({ items }: { items: readonly string[] }) {
 function Tags({ tags }: { tags: readonly string[] }) {
   return (
     <div>
-      <h2 className={LABEL_CLASSES}>{TAGS_LABEL}</h2>
+      <p className={LABEL_CLASSES}>{TAGS_LABEL}</p>
       <TagList tags={tags} className="mt-4" />
     </div>
   );

@@ -31,8 +31,8 @@ export function CompanySection() {
                 {company.heading}
               </Heading>
             </RevealItem>
-            {company.paragraphs.map((paragraph) => (
-              <RevealItem key={paragraph} className="mt-6 max-w-2xl">
+            {company.paragraphs.map((paragraph, i) => (
+              <RevealItem key={i} className="mt-6 max-w-2xl">
                 <p className="text-pretty text-base text-vn-gray-dark md:text-lg">{paragraph}</p>
               </RevealItem>
             ))}

@@ -68,7 +68,7 @@ export function useTocEntries(
       restores.forEach((restore) => restore());
       headingsRef.current = [];
     };
-  }, [bodyRef, headingsRef, onChange]);
+  }, [onChange]);
 
   return entries;
 }

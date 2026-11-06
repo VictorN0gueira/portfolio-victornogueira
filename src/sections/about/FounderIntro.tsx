@@ -36,8 +36,8 @@ export function FounderIntro() {
   return (
     <PageHero kicker={founderVoice.place} title={founderVoice.title} hasCursor aside={<FounderPhoto />}>
       <div className="mt-6 flex max-w-2xl flex-col gap-5">
-        {founderVoice.paragraphs.map((segments) => (
-          <Paragraph key={segments.map((segment) => segment.text).join('')} segments={segments} />
+        {founderVoice.paragraphs.map((segments, i) => (
+          <Paragraph key={i} segments={segments} />
         ))}
       </div>
       <NewTabHint id={newTabHintId} />

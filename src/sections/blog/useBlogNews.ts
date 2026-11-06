@@ -15,9 +15,9 @@ interface BlogNews {
 type Outcome = { articles: NewsArticle[]; origin: NewsOrigin } | { error: string };
 
 /** One load of the list. It never throws: a failure becomes words the visitor can read, never the message of the error. */
-async function loadList(forceRefresh: boolean): Promise<Outcome> {
+async function loadList(forceRefresh: boolean, signal: AbortSignal): Promise<Outcome> {
   try {
-    const { articles, origin } = await getNewsArticles({ forceRefresh });
+    const { articles, origin } = await getNewsArticles({ forceRefresh, signal });
     return { articles, origin };
   } catch {
     return { error: blogCopy.states.errorFallback };
@@ -42,7 +42,7 @@ export function useBlogNews(): BlogNews {
     currentLoad.current = controller;
     // The answer goes into the state only after the await, so the first load (the state starts as loading) never sets state
     // inside the effect that starts it.
-    void loadList(forceRefresh).then((outcome) => {
+    void loadList(forceRefresh, controller.signal).then((outcome) => {
       if (controller.signal.aborted) return;
       if ('error' in outcome) {
         setError(outcome.error);

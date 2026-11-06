@@ -33,12 +33,20 @@ export function LegalFrame({ children }: { children: ReactNode }) {
   return (
     <div style={CONTENT_TOP_VARS} className={FRAME_CLASSES}>
       <Container>
+        {/* ToC rendered before the body in DOM order on all viewports so keyboard users reach navigation links
+            before the full legal text. On desktop, order-last / order-first place body left and ToC right inside
+            the CSS grid without changing the DOM sequence (WCAG 2.4.3 Focus Order). */}
         <div className={TWO_COLUMNS_CLASSES}>
-          {isWide ? null : toc}
-          <div ref={bodyRef} data-legal-body className="vn-legal min-w-0">
+          <div className={isWide ? 'lg:order-last' : undefined}>
+            {toc}
+          </div>
+          <div
+            ref={bodyRef}
+            data-legal-body
+            className={isWide ? 'vn-legal min-w-0 lg:order-first' : 'vn-legal min-w-0'}
+          >
             {children}
           </div>
-          {isWide ? toc : null}
         </div>
       </Container>
     </div>

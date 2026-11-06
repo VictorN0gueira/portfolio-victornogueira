@@ -191,6 +191,8 @@ export interface NewsOptions {
    * where it is until a source gives a new one (if none does, it is what is shown, not the fixed list).
    */
   forceRefresh?: boolean;
+  /** Caller-supplied abort signal. Combined with the per-request timeout so either source can cancel the fetch. */
+  signal?: AbortSignal;
 }
 
 /** The result with the failures beside it, and without the field when there is none. */
@@ -205,12 +207,12 @@ interface LiveList {
 }
 
 // Edge Function Supabase (proxy seguro). Indisponível: o motivo fica no registro e a próxima fonte responde.
-async function readEdgeFunction(log: FailureLog): Promise<LiveList | null> {
+async function readEdgeFunction(log: FailureLog, signal?: AbortSignal): Promise<LiveList | null> {
   try {
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(8000),
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(8000)]) : AbortSignal.timeout(8000),
     });
 
     if (!response.ok) throw new Error(`Edge function error: ${response.status}`);
@@ -238,7 +240,7 @@ async function readPublicFeeds(log: FailureLog): Promise<LiveList | null> {
   }
 }
 
-export async function getNewsArticles({ forceRefresh = false }: NewsOptions = {}): Promise<NewsResult> {
+export async function getNewsArticles({ forceRefresh = false, signal }: NewsOptions = {}): Promise<NewsResult> {
   const log = createFailureLog();
 
   // 1. Cache local válido
@@ -249,7 +251,7 @@ export async function getNewsArticles({ forceRefresh = false }: NewsOptions = {}
   }
 
   // 2 e 3. Edge Function, depois as fontes públicas
-  const live = (await readEdgeFunction(log)) ?? (await readPublicFeeds(log));
+  const live = (await readEdgeFunction(log, signal)) ?? (await readPublicFeeds(log));
   if (live) {
     setCachedArticles(live.articles, live.source, log);
     return withFailures({ ...live, origin: 'live' }, log);

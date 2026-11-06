@@ -61,7 +61,7 @@ function FoldedToc(props: Omit<TocNavProps, 'isWide'>) {
 
   return (
     <nav aria-label={legalCopy.tocLabel} className="mb-10">
-      <details ref={detailsRef} className="group rounded-card border border-vn-gray-light bg-vn-white">
+      <details ref={detailsRef} className="group rounded-card border border-vn-gray-mid bg-vn-white">
         <summary className="vn-focus-ring-ink flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-card px-4 font-mono text-xs tracking-[.18em] text-vn-ink uppercase [&::-webkit-details-marker]:hidden">
           <span>{legalCopy.tocLabel}</span>
           <ChevronDown aria-hidden="true" className="size-4 transition-transform group-open:rotate-180" />
