@@ -15,7 +15,8 @@ const TEST_FILE = /\.test\.tsx?$/;
 const SCANNERS_FOLDER = 'test/';
 
 const COLOR_PREFIX = '(?:text|bg|border|from|via|to|ring|fill|stroke|outline|divide|shadow|decoration|accent|caret)';
-const FOREIGN_FAMILY = '(?:emerald|purple|violet|cyan|blue|green|red|amber|zinc|slate|stone|neutral|gray|indigo|pink|rose|orange|yellow|lime|teal|sky|fuchsia)';
+const FOREIGN_FAMILY =
+  '(?:emerald|purple|violet|cyan|blue|green|red|amber|zinc|slate|stone|neutral|gray|indigo|pink|rose|orange|yellow|lime|teal|sky|fuchsia)';
 
 interface Rule {
   readonly name: string;
@@ -28,8 +29,14 @@ const RULES: readonly Rule[] = [
   { name: 'a dark: variant', pattern: /(?<![\w-])dark:(?=[\w[!-])/ },
   { name: 'italic', pattern: /(?<![\w-])italic(?![\w-])/ },
   { name: 'text-[10px]', pattern: /(?<![\w-])text-\[10px\]/ },
-  { name: 'a color family outside the palette', pattern: new RegExp(`(?<![\\w-])${COLOR_PREFIX}-${FOREIGN_FAMILY}(?![a-z])`) },
-  { name: 'a decorative gradient', pattern: /(?<![\w-])bg-(?:gradient|linear|radial|conic)|(?<![\w-])bg-\[(?:radial|conic)/ },
+  {
+    name: 'a color family outside the palette',
+    pattern: new RegExp(`(?<![\\w-])${COLOR_PREFIX}-${FOREIGN_FAMILY}(?![a-z])`),
+  },
+  {
+    name: 'a decorative gradient',
+    pattern: /(?<![\w-])bg-(?:gradient|linear|radial|conic)|(?<![\w-])bg-\[(?:radial|conic)/,
+  },
   { name: 'text-white/N (a translucent white that is no palette gray)', pattern: /(?<![\w-])text-white\/\d/ },
 ];
 
@@ -38,15 +45,20 @@ const RULES: readonly Rule[] = [
  * leave the list (the last test), so the list only shrinks.
  */
 const EXCEPTIONS: Readonly<Record<string, string>> = {
-  'pages/PrivacyPage.tsx': 'frozen: the legal text and its classes are byte identical to the audited copy (frozenFiles.test.ts); legal.css restyles it from outside',
-  'pages/LgpdPage.tsx': 'frozen: the legal text and its classes are byte identical to the audited copy (frozenFiles.test.ts); legal.css restyles it from outside',
-  'pages/legal/legal.css': 'it names the old classes of the two frozen pages (italic, text-[10px], zinc, emerald) in its selectors, to restyle them from outside',
-  'pages/legal/legalToc.ts': 'it names the old classes of the two frozen pages (text-[10px], bg-zinc-950) to find their kickers and black card in the rendered tree',
+  'pages/PrivacyPage.tsx':
+    'frozen: the legal text and its classes are byte identical to the audited copy (frozenFiles.test.ts); legal.css restyles it from outside',
+  'pages/LgpdPage.tsx':
+    'frozen: the legal text and its classes are byte identical to the audited copy (frozenFiles.test.ts); legal.css restyles it from outside',
+  'pages/legal/legal.css':
+    'it names the old classes of the two frozen pages (italic, text-[10px], zinc, emerald) in its selectors, to restyle them from outside',
+  'pages/legal/legalToc.ts':
+    'it names the old classes of the two frozen pages (text-[10px], bg-zinc-950) to find their kickers and black card in the rendered tree',
 };
 
 /** Files the off palette hex rule lets by, each with the reason. */
 const HEX_EXCEPTIONS: Readonly<Record<string, string>> = {
-  'sections/about/toolMarks.ts': 'TOOL_BRAND_COLORS: the original brand color of each tool, which the owner asked for explicitly; one named map, hex only here',
+  'sections/about/toolMarks.ts':
+    'TOOL_BRAND_COLORS: the original brand color of each tool, which the owner asked for explicitly; one named map, hex only here',
 };
 
 interface Finding {
@@ -69,9 +81,16 @@ const FILES = sourceFiles(SRC)
   .filter(({ file }) => !file.startsWith(SCANNERS_FOLDER));
 
 function scanLines(file: string, text: string): Finding[] {
-  return text.split('\n').flatMap((lineText, index) =>
-    RULES.filter((rule) => rule.pattern.test(lineText)).map((rule) => ({ file, line: index + 1, rule: rule.name, text: lineText.trim().slice(0, 120) })),
-  );
+  return text
+    .split('\n')
+    .flatMap((lineText, index) =>
+      RULES.filter((rule) => rule.pattern.test(lineText)).map((rule) => ({
+        file,
+        line: index + 1,
+        rule: rule.name,
+        text: lineText.trim().slice(0, 120),
+      })),
+    );
 }
 
 // A color is 3, 6 or 8 hex digits right after a #, not glued to a word or an entity (&#39;), so #a and #7-seus-direitos are anchors.
@@ -79,11 +98,18 @@ const HEX_COLOR = /(?<![\w&])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})(?
 
 function scanHex(file: string, text: string): Finding[] {
   if (!/\.tsx?$/.test(file)) return [];
-  return text.split('\n').flatMap((lineText, index) =>
-    [...lineText.matchAll(HEX_COLOR)]
-      .filter(([literal]) => !PALETTE.has(toSixDigitHex(literal) ?? ''))
-      .map(([literal]) => ({ file, line: index + 1, rule: 'an off palette hex literal', text: `${literal} in ${lineText.trim().slice(0, 100)}` })),
-  );
+  return text
+    .split('\n')
+    .flatMap((lineText, index) =>
+      [...lineText.matchAll(HEX_COLOR)]
+        .filter(([literal]) => !PALETTE.has(toSixDigitHex(literal) ?? ''))
+        .map(([literal]) => ({
+          file,
+          line: index + 1,
+          rule: 'an off palette hex literal',
+          text: `${literal} in ${lineText.trim().slice(0, 100)}`,
+        })),
+    );
 }
 
 const describeFinding = ({ file, line, rule, text }: Finding) => `${file}:${line} ${rule}: ${text}`;
@@ -138,7 +164,9 @@ describe('the scanner sees what it is meant to ban', () => {
 
 describe('no visual leftover of the old design is in the source', () => {
   it.each(RULES.map(({ name }) => name))('has no %s outside the closed list of exceptions', (name) => {
-    const offenders = lineFindings.filter(({ rule, file }) => rule === name && !(file in EXCEPTIONS)).map(describeFinding);
+    const offenders = lineFindings
+      .filter(({ rule, file }) => rule === name && !(file in EXCEPTIONS))
+      .map(describeFinding);
 
     expect(offenders).toEqual([]);
   });
@@ -153,7 +181,9 @@ describe('no visual leftover of the old design is in the source', () => {
 describe('the lists of exceptions', () => {
   it('only name files that still break a rule, so a file that was cleaned leaves the list', () => {
     const stale = Object.keys(EXCEPTIONS).filter((file) => !lineFindings.some((finding) => finding.file === file));
-    const staleHex = Object.keys(HEX_EXCEPTIONS).filter((file) => !hexFindings.some((finding) => finding.file === file));
+    const staleHex = Object.keys(HEX_EXCEPTIONS).filter(
+      (file) => !hexFindings.some((finding) => finding.file === file),
+    );
 
     expect([...stale, ...staleHex]).toEqual([]);
   });
