@@ -15,8 +15,9 @@ const CONTRACT: PageContract = {
 const GLITCH_LAYERS = ['.vn-glitch-a', '.vn-glitch-b'];
 // The layers rest fully clipped: nothing of them is drawn.
 const CLIPPED_AWAY = /inset\(0px 0px 100%/;
-// The widths where the title sits close to a line break: the width of a scrambled frame used to flip it between 1 and 2 lines.
-const JITTER_WIDTHS = [390, 412, 430];
+// Every width the title wraps differently: the width of a scrambled frame used to flip the h1 between 1 and 2 lines
+// (it did at 390, 412 and 430). The five phones, the tablet and the laptop.
+const JITTER_WIDTHS = [280, 320, 360, 390, 412, 430, 768, 1440];
 const SAMPLE_WINDOW_MS = 2200;
 const MAX_LAYOUT_SHIFT = 0.01;
 const LANDSCAPE = { width: 844, height: 390 };
@@ -128,7 +129,7 @@ test.describe('the 404 page', () => {
   });
 
   test.describe('while the title scrambles', () => {
-    test('the h1 keeps one box, the block does not move and nothing shifts, at 390, 412 and 430', async ({
+    test('the h1 keeps one box, the block does not move and nothing shifts, from 280 to 1440', async ({
       page,
     }, testInfo) => {
       test.skip(testInfo.project.name !== 'desktop', ONLY_IN_DESKTOP);
