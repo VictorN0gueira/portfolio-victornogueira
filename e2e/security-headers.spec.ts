@@ -145,7 +145,7 @@ test.describe('no page breaks the policy', () => {
   });
 });
 
-const EDGE_FUNCTION = 'https://qpcwoioflaxiasmcdfbd.supabase.co/functions/v1/gnews-proxy';
+const SUPABASE_ARTICLES = '**/rest/v1/articles*';
 // A host the site already talks to (a feed it may fetch), but one that is not on the image list: the policy must refuse it for images.
 const HOSTILE_IMAGE = 'https://www.tabnews.com.br/hostile-pixel.png';
 const FALLBACK_IMAGE_PREFIX = 'data:image/svg+xml';
@@ -155,23 +155,23 @@ const CORS_JSON = { 'access-control-allow-origin': '*', 'access-control-allow-he
 function sampleArticle(index: number, image: string) {
   return {
     title: `Artigo de teste ${index}`,
-    description: 'Texto de teste da política de segurança.',
+    summary: 'Texto de teste da política de segurança.',
     url: `https://dev.to/teste/artigo-${index}`,
     image,
-    publishedAt: new Date(Date.now() - index * 3_600_000).toISOString(),
-    source: { name: 'Dev.to', url: 'https://dev.to' },
+    published_at: new Date(Date.now() - index * 3_600_000).toISOString(),
+    source: 'Dev.to',
     language: 'pt',
   };
 }
 
-/** The blog's edge function answers with `articles`; the browser's preflight is answered too. */
+/** The blog's Supabase PostgREST endpoint answers with `articles` as a plain DB row array; preflight is answered too. */
 async function serveArticles(page: Page, articles: readonly object[]) {
-  await page.route(EDGE_FUNCTION, async (route) => {
+  await page.route(SUPABASE_ARTICLES, async (route) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: CORS_JSON });
       return;
     }
-    await route.fulfill({ status: 200, headers: CORS_JSON, contentType: 'application/json', body: JSON.stringify({ articles, source: 'edge-function' }) });
+    await route.fulfill({ status: 200, headers: CORS_JSON, contentType: 'application/json', body: JSON.stringify(articles) });
   });
 }
 
