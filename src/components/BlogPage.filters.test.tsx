@@ -193,13 +193,36 @@ describe('BlogPage keeps the focus and the band of the filters', () => {
     expect(screen.getByRole('button', { name: /Atualizar/ })).toHaveFocus();
   });
 
-  it('keeps the band, disabled, when the sources fail', async () => {
+  it('keeps the band in the page, usable and not busy, when the sources fail', async () => {
     getNewsArticles.mockRejectedValue(new Error('A rede caiu'));
     renderWithProviders(<BlogPage />, { route: '/blog' });
 
-    await screen.findByText('A rede caiu');
+    await screen.findByText('Erro ao carregar notícias');
 
-    expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toBeDisabled();
+    const search = screen.getByRole('textbox', { name: 'Buscar artigos' });
+    expect(search).toBeEnabled();
+    expect(search.closest('[aria-busy]')).toHaveAttribute('aria-busy', 'false');
+  });
+
+  it('shows one alert, no success status and a usable band when a refresh throws', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+    await screen.findAllByText('Artigo de teste 1');
+    expect(screen.getByText('Lista carregada agora')).toBeInTheDocument();
+    getNewsArticles.mockRejectedValue(new Error('boom'));
+
+    await user.click(screen.getByRole('button', { name: /Atualizar/ }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Erro ao carregar notícias');
+    expect(alert).not.toHaveTextContent('boom');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.queryByText('Lista carregada agora')).toBeNull();
+    const search = screen.getByRole('textbox', { name: 'Buscar artigos' });
+    expect(search).toBeEnabled();
+    expect(search.closest('[aria-busy]')).toHaveAttribute('aria-busy', 'false');
+    expect(screen.queryByText(/artigos? encontrados?/)).toBeNull();
+    expect(screen.getByRole('button', { name: /Atualizar/ })).toHaveAttribute('aria-disabled', 'false');
   });
 
   it('puts the focus on the search field after the Limpar filtros of the empty block, and the field is empty', async () => {

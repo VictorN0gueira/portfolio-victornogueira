@@ -13,9 +13,9 @@ interface BlogFiltersProps {
   /** How many articles pass the filters: it is read out in the status region once a filter is on. */
   resultCount: number;
   hasActiveFilters: boolean;
-  /** Nothing to filter yet (loading, error, no article): the band stays, with every control off, so the page does not move. */
-  isDisabled: boolean;
-  /** The search field. The controls that disappear when they are used give the focus back to it. */
+  /** The sources are answering: the band stays, with every control off and aria-busy, so the page does not move. */
+  isLoading: boolean;
+  /** The search field. Limpar busca gives the focus back to it; after Limpar filtros the owner of the filters does (see useBlogFilters). */
   searchRef: RefObject<HTMLInputElement | null>;
   onSearchChange: (query: string) => void;
   onLangChange: (filter: LangFilter) => void;
@@ -35,12 +35,12 @@ const CAT_FILTERS = Object.keys(CAT_LABELS) as CatFilter[];
 
 interface SearchFieldProps {
   query: string;
-  isDisabled: boolean;
+  isLoading: boolean;
   inputRef: RefObject<HTMLInputElement | null>;
   onChange: (query: string) => void;
 }
 
-function SearchField({ query, isDisabled, inputRef, onChange }: SearchFieldProps) {
+function SearchField({ query, isLoading, inputRef, onChange }: SearchFieldProps) {
   // The clear button goes away with the query: the focus goes to the field, or it would drop to the body (WCAG 2.4.3).
   const clearSearch = () => {
     onChange('');
@@ -57,7 +57,7 @@ function SearchField({ query, isDisabled, inputRef, onChange }: SearchFieldProps
         id="search"
         ref={inputRef}
         value={query}
-        disabled={isDisabled}
+        disabled={isLoading}
         onChange={(event) => onChange(event.target.value)}
         placeholder={blogCopy.filters.searchPlaceholder}
         className="h-12 w-full rounded-full border border-vn-gray-light bg-vn-white pl-11 pr-12 text-base text-vn-ink placeholder:text-vn-gray-dark vn-focus-ring-ink disabled:cursor-not-allowed disabled:opacity-50"
@@ -66,7 +66,7 @@ function SearchField({ query, isDisabled, inputRef, onChange }: SearchFieldProps
         <button
           type="button"
           aria-label={blogCopy.filters.clearSearch}
-          disabled={isDisabled}
+          disabled={isLoading}
           onClick={clearSearch}
           className="absolute right-0.5 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full text-vn-ink focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-vn-ink disabled:opacity-50"
         >
@@ -81,12 +81,12 @@ interface ChipRowProps<T extends string> {
   label: string;
   options: readonly T[];
   selected: T;
-  isDisabled: boolean;
+  isLoading: boolean;
   onSelect: (option: T) => void;
   renderLabel: (option: T) => ReactNode;
 }
 
-function ChipRow<T extends string>({ label, options, selected, isDisabled, onSelect, renderLabel }: ChipRowProps<T>) {
+function ChipRow<T extends string>({ label, options, selected, isLoading, onSelect, renderLabel }: ChipRowProps<T>) {
   return (
     <div role="group" aria-label={label} className={ROW_CLASSES}>
       {options.map((option) => (
@@ -94,7 +94,7 @@ function ChipRow<T extends string>({ label, options, selected, isDisabled, onSel
           key={option}
           type="button"
           aria-pressed={selected === option}
-          disabled={isDisabled}
+          disabled={isLoading}
           onClick={() => onSelect(option)}
           className={cn(CHIP_BASE, selected === option ? CHIP_ON : CHIP_OFF)}
         >
@@ -118,12 +118,12 @@ function renderLanguage(filter: LangFilter) {
 interface CountRowProps {
   count: string;
   hasClearButton: boolean;
-  isDisabled: boolean;
+  isLoading: boolean;
   onClear: () => void;
 }
 
 /** The count of the results, in the status region that is always in the page, and the button that clears the filters. */
-function CountRow({ count, hasClearButton, isDisabled, onClear }: CountRowProps) {
+function CountRow({ count, hasClearButton, isLoading, onClear }: CountRowProps) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 has-[p:empty]:-mt-4">
       <p role="status" className="font-mono text-xs uppercase tracking-[.12em] text-vn-gray-dark">
@@ -132,7 +132,7 @@ function CountRow({ count, hasClearButton, isDisabled, onClear }: CountRowProps)
       {hasClearButton && (
         <button
           type="button"
-          disabled={isDisabled}
+          disabled={isLoading}
           onClick={onClear}
           className="inline-flex min-h-11 items-center font-mono text-xs uppercase tracking-[.12em] text-vn-ink underline underline-offset-4 vn-focus-ring-ink disabled:opacity-50"
         >
@@ -147,32 +147,23 @@ function CountRow({ count, hasClearButton, isDisabled, onClear }: CountRowProps)
  * The search, the two rows of chips and the count, on a white band under the hero. The count is a polite status region that
  * is in the page before any filter is used, so the number is announced when it appears and when it changes. It is the only
  * announcement of the results (the empty block of the list is plain text). When nothing matches, the empty block has the
- * Limpar filtros button, so the band does not show a second one.
+ * Limpar filtros button, so the band does not show a second one. It is only off while the sources answer: after an error or
+ * with no article it stays usable.
  */
 export function BlogFilters(props: BlogFiltersProps) {
-  const { searchQuery, langFilter, catFilter, resultCount, hasActiveFilters, isDisabled, searchRef } = props;
+  const { searchQuery, langFilter, catFilter, resultCount, hasActiveFilters, isLoading, searchRef } = props;
   const hasClearButton = hasActiveFilters && resultCount > 0;
-  // The button goes away with the filters: the focus goes to the search field, or it would drop to the body (WCAG 2.4.3).
-  const clearFilters = () => {
-    props.onClear();
-    searchRef.current?.focus();
-  };
 
   return (
     <Section tone="white" className="border-b border-vn-gray-light py-[clamp(1.5rem,1rem+2vw,2.5rem)]">
       <Container>
-        <div className="flex flex-col gap-4" aria-busy={isDisabled}>
-          <SearchField
-            query={searchQuery}
-            isDisabled={isDisabled}
-            inputRef={searchRef}
-            onChange={props.onSearchChange}
-          />
+        <div className="flex flex-col gap-4" aria-busy={isLoading}>
+          <SearchField query={searchQuery} isLoading={isLoading} inputRef={searchRef} onChange={props.onSearchChange} />
           <ChipRow
             label={blogCopy.filters.languageGroup}
             options={LANG_FILTERS}
             selected={langFilter}
-            isDisabled={isDisabled}
+            isLoading={isLoading}
             onSelect={props.onLangChange}
             renderLabel={renderLanguage}
           />
@@ -180,15 +171,15 @@ export function BlogFilters(props: BlogFiltersProps) {
             label={blogCopy.filters.topicGroup}
             options={CAT_FILTERS}
             selected={catFilter}
-            isDisabled={isDisabled}
+            isLoading={isLoading}
             onSelect={props.onCatChange}
             renderLabel={(filter) => CAT_LABELS[filter]}
           />
           <CountRow
             count={hasActiveFilters ? countLabel(resultCount) : ''}
             hasClearButton={hasClearButton}
-            isDisabled={isDisabled}
-            onClear={clearFilters}
+            isLoading={isLoading}
+            onClear={props.onClear}
           />
         </div>
       </Container>

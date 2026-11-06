@@ -12,10 +12,22 @@ interface BlogNews {
   refresh: () => void;
 }
 
+type Outcome = { articles: NewsArticle[]; origin: NewsOrigin } | { error: string };
+
+/** One load of the list. It never throws: a failure becomes words the visitor can read, never the message of the error. */
+async function loadList(forceRefresh: boolean): Promise<Outcome> {
+  try {
+    const { articles, origin } = await getNewsArticles({ forceRefresh });
+    return { articles, origin };
+  } catch {
+    return { error: blogCopy.states.errorFallback };
+  }
+}
+
 /**
  * The articles of the blog and the state of their load. One load is current at a time: starting another (the first one, a
  * refresh) aborts the one before, so a slower answer of an older load never lands on top of a newer one, and nothing is set
- * after the page is gone.
+ * after the page is gone. A failed load leaves no list and no origin behind, so nothing on the page still talks about it.
  */
 export function useBlogNews(): BlogNews {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
@@ -23,32 +35,26 @@ export function useBlogNews(): BlogNews {
   const [error, setError] = useState<string | null>(null);
   const [origin, setOrigin] = useState<NewsOrigin | null>(null);
 
-  // The answer of the sources goes into the state only after the await, so the first load (the state starts as loading)
-  // never sets state inside the effect that starts it.
-  const loadNews = useCallback(async (signal: AbortSignal, forceRefresh: boolean) => {
-    try {
-      const result = await getNewsArticles({ forceRefresh });
-      if (signal?.aborted) return;
-      setArticles(result.articles);
-      setOrigin(result.origin);
-    } catch (err) {
-      if (signal?.aborted) return;
-      setError(err instanceof Error ? err.message : blogCopy.states.errorFallback);
-    } finally {
-      if (!signal?.aborted) setIsLoading(false);
-    }
-  }, []);
-
   const currentLoad = useRef<AbortController | null>(null);
-  const startLoad = useCallback(
-    (forceRefresh: boolean) => {
-      currentLoad.current?.abort();
-      const controller = new AbortController();
-      currentLoad.current = controller;
-      void loadNews(controller.signal, forceRefresh);
-    },
-    [loadNews],
-  );
+  const startLoad = useCallback((forceRefresh: boolean) => {
+    currentLoad.current?.abort();
+    const controller = new AbortController();
+    currentLoad.current = controller;
+    // The answer goes into the state only after the await, so the first load (the state starts as loading) never sets state
+    // inside the effect that starts it.
+    void loadList(forceRefresh).then((outcome) => {
+      if (controller.signal.aborted) return;
+      if ('error' in outcome) {
+        setError(outcome.error);
+        setArticles([]);
+        setOrigin(null);
+      } else {
+        setArticles(outcome.articles);
+        setOrigin(outcome.origin);
+      }
+      setIsLoading(false);
+    });
+  }, []);
 
   // The refresh button stays in the tab order while a load runs (a disabled button that held the focus would drop it to the
   // body, WCAG 2.4.3): it is aria-disabled, and the press does nothing here.

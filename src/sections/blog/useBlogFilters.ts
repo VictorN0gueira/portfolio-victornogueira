@@ -25,7 +25,10 @@ export function filterArticles(
   });
 }
 
-/** The state of the filters of the blog and the list they leave. Clearing them gives the focus to the search field. */
+/**
+ * The state of the filters of the blog and the list they leave. This is the one owner of the focus after the filters are
+ * cleared (by the band or by the empty block): it goes to the search field.
+ */
 export function useBlogFilters(articles: readonly NewsArticle[]) {
   const [language, setLanguage] = useState<LangFilter>('all');
   const [category, setCategory] = useState<CatFilter>('all');

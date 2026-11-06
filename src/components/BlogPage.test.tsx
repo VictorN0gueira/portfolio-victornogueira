@@ -47,12 +47,13 @@ describe('BlogPage states', () => {
     expect(container.querySelectorAll('[class*="animate-pulse"]')).toHaveLength(0);
   });
 
-  it('says so when the sources fail, with the reason', async () => {
+  it('says so when the sources fail, in words the visitor can read and not the message of the error', async () => {
     getNewsArticles.mockRejectedValue(new Error('A rede caiu'));
     renderWithProviders(<BlogPage />, { route: '/blog' });
 
     expect(await screen.findByText('Ops! Algo deu errado')).toBeInTheDocument();
-    expect(screen.getByText('A rede caiu')).toBeInTheDocument();
+    expect(screen.getByText('Erro ao carregar notícias')).toBeInTheDocument();
+    expect(screen.queryByText('A rede caiu')).toBeNull();
   });
 
   it('says so when there is no article at all', async () => {

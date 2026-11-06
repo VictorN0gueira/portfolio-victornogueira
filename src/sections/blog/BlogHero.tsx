@@ -26,9 +26,10 @@ export function BlogHero({ isLoading, status, onRefresh }: BlogHeroProps) {
           <RefreshCw className={cn('size-4', isLoading && 'motion-safe:animate-spin')} />
           {blogCopy.refresh}
         </button>
-        {/* Under the button, with its room kept (two lines on a phone, one from sm): the text is empty while a load runs
-            and comes back with the answer, and the page below must not move with it. */}
-        <p role="status" className="mt-3 min-h-10 max-w-md text-sm text-vn-gray-dark sm:min-h-5">
+        {/* Under the button, with the room of the longest message kept (three lines of its own line height on a phone, two from
+            sm, so it follows a larger font): the text is empty while a load runs and comes back with the answer, and the page
+            below must not move with it. */}
+        <p role="status" className="mt-3 min-h-[3lh] max-w-md text-sm text-vn-gray-dark sm:min-h-[2lh]">
           {status}
         </p>
       </div>

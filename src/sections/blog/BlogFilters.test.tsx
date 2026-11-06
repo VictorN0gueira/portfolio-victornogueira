@@ -21,7 +21,7 @@ function renderFilters(props: Partial<FiltersProps> = {}) {
       catFilter="all"
       resultCount={5}
       hasActiveFilters={false}
-      isDisabled={false}
+      isLoading={false}
       searchRef={createRef<HTMLInputElement>()}
       {...handlers}
       {...props}
@@ -144,7 +144,7 @@ describe('BlogFilters count', () => {
         catFilter="all"
         resultCount={3}
         hasActiveFilters
-        isDisabled={false}
+        isLoading={false}
         searchRef={createRef<HTMLInputElement>()}
         onSearchChange={vi.fn()}
         onLangChange={vi.fn()}
@@ -188,14 +188,13 @@ describe('BlogFilters keeps the focus when a control goes away (WCAG 2.4.3)', ()
     expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toHaveFocus();
   });
 
-  it('puts the focus on the search field after Limpar filtros, which disappears with the filters', async () => {
+  it('asks the page to clear the filters: the page owns the focus after it (BlogPage tests the focus)', async () => {
     const user = userEvent.setup();
     const { onClear } = renderFilters({ hasActiveFilters: true });
 
     await user.click(screen.getByRole('button', { name: 'Limpar filtros' }));
 
     expect(onClear).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toHaveFocus();
   });
 
   it('keeps one Limpar filtros on the screen when nothing matches: the empty block has its own', () => {
@@ -206,17 +205,26 @@ describe('BlogFilters keeps the focus when a control goes away (WCAG 2.4.3)', ()
   });
 });
 
-describe('BlogFilters while there is nothing to filter (loading, error, no article)', () => {
-  it('stays in the page with every control disabled, so the band keeps its height and nothing moves', () => {
-    renderFilters({ isDisabled: true, searchQuery: 'x', hasActiveFilters: true });
+describe('BlogFilters while the sources answer', () => {
+  it('stays in the page with every control disabled and aria-busy, so the band keeps its height and nothing moves', () => {
+    renderFilters({ isLoading: true, searchQuery: 'x', hasActiveFilters: true });
 
     expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toBeDisabled();
     for (const button of screen.getAllByRole('button')) expect(button).toBeDisabled();
     expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Buscar artigos' }).closest('[aria-busy]')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
   });
 
-  it('is enabled again as soon as there is a list', () => {
-    renderFilters({ isDisabled: false });
+  it('is enabled and not busy as soon as nothing is loading', () => {
+    renderFilters({ isLoading: false });
+
+    expect(screen.getByRole('textbox', { name: 'Buscar artigos' }).closest('[aria-busy]')).toHaveAttribute(
+      'aria-busy',
+      'false',
+    );
 
     expect(screen.getByRole('textbox', { name: 'Buscar artigos' })).toBeEnabled();
     for (const button of screen.getAllByRole('button')) expect(button).toBeEnabled();

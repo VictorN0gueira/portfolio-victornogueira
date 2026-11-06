@@ -1,6 +1,6 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { blogCopy } from '../src/sections/blog/blogCopy';
-import { addressTitleArticles, routeNews, stressArticles } from './blogFixtures';
+import { EDGE_FUNCTION, addressTitleArticles, routeNews, stressArticles } from './blogFixtures';
 import {
   ACCENT_RGB,
   MIN_TOUCH_PX,
@@ -190,6 +190,19 @@ test.describe('/blog keeps the keyboard focus when a clear button goes away (WCA
   });
 });
 
+/** Collects the layout-shift entries of the page in window.__shifts, from the first paint. */
+async function watchShifts(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const shifts: number[] = [];
+    (window as unknown as { __shifts: number[] }).__shifts = shifts;
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries() as unknown as Array<{ value: number; hadRecentInput: boolean }>) {
+        if (!entry.hadRecentInput) shifts.push(entry.value);
+      }
+    }).observe({ type: 'layout-shift', buffered: true });
+  });
+}
+
 // The layout-shift entries of the page, from the moment the skeleton is on the screen: the list arriving must not push
 // what the visitor already sees. (The jump of the footer when ANY lazy page replaces its fallback is a site-wide matter and
 // happens before this point.)
@@ -204,15 +217,7 @@ test.describe('/blog does not move when the list arrives', () => {
   ]) {
     test(`shifts the layout by less than ${MAX_SHIFT} at ${viewport.width}px`, async ({ page }) => {
       await page.setViewportSize(viewport);
-      await page.addInitScript(() => {
-        const shifts: number[] = [];
-        (window as unknown as { __shifts: number[] }).__shifts = shifts;
-        new PerformanceObserver((list) => {
-          for (const entry of list.getEntries() as unknown as Array<{ value: number; hadRecentInput: boolean }>) {
-            if (!entry.hadRecentInput) shifts.push(entry.value);
-          }
-        }).observe({ type: 'layout-shift', buffered: true });
-      });
+      await watchShifts(page);
       let release: () => void = () => undefined;
       await routeNews(page, stressArticles(), new Promise<void>((resolve) => (release = resolve)));
       await page.goto('/blog');
@@ -252,6 +257,29 @@ test.describe('/blog does not move when the list arrives', () => {
     await expect(page.locator('main a[target="_blank"]').first()).toBeVisible();
     await expect(field).toBeEnabled();
     expect(await placeOf()).toBe(before);
+  });
+
+  test('keeps the band and the list where they were when the stale-list message comes back, at 280px with the font at 120 percent', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 280, height: 640 });
+    await enableLargeFont(page);
+    await openPage(page, CONTRACT);
+    const field = page.getByRole('textbox', { name: blogCopy.filters.searchLabel });
+    const featured = page.locator('main a[target="_blank"]').first();
+    // Their place in the document, in pixels: a layout shift score is too coarse for 24px of a tall page.
+    const placeOf = (target: Locator) =>
+      target.evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
+    const before = [await placeOf(field), await placeOf(featured)];
+    // Every source fails now: the list that was saved comes back, with the longest message of the status line.
+    await page.route(EDGE_FUNCTION, (route) => route.abort());
+
+    await page.getByRole('button', { name: new RegExp(blogCopy.refresh) }).click();
+
+    await expect(page.getByRole('status').filter({ hasText: blogCopy.dataSource.staleBrowserCache })).toBeVisible();
+    await expect(featured).toBeVisible();
+    await waitForSteadyHeight(page);
+    expect([await placeOf(field), await placeOf(featured)]).toEqual(before);
   });
 });
 

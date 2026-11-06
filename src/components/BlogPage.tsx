@@ -22,7 +22,7 @@ export default function BlogPage() {
       <SEO path="/blog" />
       <BlogHero
         isLoading={isLoading}
-        status={origin && !isLoading ? describeDataSource(origin) : ''}
+        status={origin && !isLoading && error === null ? describeDataSource(origin) : ''}
         onRefresh={refresh}
       />
       <BlogFilters
@@ -30,8 +30,8 @@ export default function BlogPage() {
         langFilter={filters.language}
         catFilter={filters.category}
         resultCount={filters.visibleArticles.length}
-        hasActiveFilters={filters.hasActiveFilters}
-        isDisabled={isLoading || error !== null || articles.length === 0}
+        hasActiveFilters={filters.hasActiveFilters && articles.length > 0}
+        isLoading={isLoading}
         searchRef={filters.searchRef}
         onSearchChange={filters.setQuery}
         onLangChange={filters.setLanguage}

@@ -1,4 +1,5 @@
 import { AnimatePresence, m } from 'motion/react';
+import { useMemo } from 'react';
 import { Container } from '../../components/ui/Container';
 import { NewTabHint } from '../../components/ui/NewTabHint';
 import { RevealGroup, RevealItem } from '../../components/ui/Reveal';
@@ -24,9 +25,32 @@ interface BlogResultsProps {
   onClearFilters: () => void;
 }
 
+type ResultsState = 'error' | 'loading' | 'empty' | 'no-match' | 'articles';
+
 const GRID_CLASSES = 'mt-6 grid list-none grid-cols-1 gap-6 p-0 md:grid-cols-2 lg:grid-cols-3';
 const STATE_FADE_S = 0.3;
 const CARD_STAGGER_S = 0.04;
+
+/** What the list shows: one state at a time. */
+export function pickState(
+  isLoading: boolean,
+  error: string | null,
+  articleCount: number,
+  visibleCount: number,
+): ResultsState {
+  if (isLoading) return 'loading';
+  if (error) return 'error';
+  if (articleCount === 0) return 'empty';
+  return visibleCount === 0 ? 'no-match' : 'articles';
+}
+
+/** A short fade between the states, only where motion is welcome. */
+function useStateFade() {
+  const isMotionAllowed = useMotionAllowed();
+  return isMotionAllowed
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: STATE_FADE_S } }
+    : {};
+}
 
 function ArticleList({ articles, isFixedList }: { articles: NewsArticle[]; isFixedList: boolean }) {
   const [featured, ...rest] = articles;
@@ -56,57 +80,37 @@ function ArticleList({ articles, isFixedList }: { articles: NewsArticle[]; isFix
   );
 }
 
+interface StateContentProps extends BlogResultsProps {
+  state: ResultsState;
+  visible: NewsArticle[];
+}
+
+function StateContent({ state, error, origin, visible, onClearFilters }: StateContentProps) {
+  if (state === 'loading') return <BlogSkeletons />;
+  if (state === 'error') return <ErrorState message={error ?? blogCopy.states.errorFallback} />;
+  if (state === 'empty') return <EmptyState />;
+  if (state === 'no-match') return <NoMatchState onClear={onClearFilters} />;
+  return <ArticleList articles={visible} isFixedList={origin === 'fallback'} />;
+}
+
 /**
  * The list of the blog, on a cream band: the skeleton while the sources answer, then the articles (the first as the black
  * featured card), or the error, or the empty states. The states swap one at a time, with a short fade only where motion is
- * welcome.
+ * welcome. Only what a card can be made of is listed, each address once (the keys of the cards depend on it).
  */
-export function BlogResults({
-  isLoading,
-  error,
-  origin,
-  articles: allArticles,
-  visibleArticles: allVisible,
-  onClearFilters,
-}: BlogResultsProps) {
-  // Only what a card can be made of, each address once: the list below and the keys of its cards depend on it.
-  const articles = listableArticles(allArticles);
-  const visibleArticles = listableArticles(allVisible);
-  const isMotionAllowed = useMotionAllowed();
-  const fade = isMotionAllowed
-    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: STATE_FADE_S } }
-    : {};
-  const isSettled = !isLoading && !error;
+export function BlogResults(props: BlogResultsProps) {
+  const fade = useStateFade();
+  const all = useMemo(() => listableArticles(props.articles), [props.articles]);
+  const visible = useMemo(() => listableArticles(props.visibleArticles), [props.visibleArticles]);
+  const state = pickState(props.isLoading, props.error, all.length, visible.length);
 
   return (
     <Section tone="cream" className="py-[clamp(2rem,1rem+4vw,5rem)]">
       <Container>
         <AnimatePresence mode="wait">
-          {error && !isLoading && (
-            <m.div key="error" {...fade}>
-              <ErrorState message={error} />
-            </m.div>
-          )}
-          {isLoading && (
-            <m.div key="loading" {...fade}>
-              <BlogSkeletons />
-            </m.div>
-          )}
-          {isSettled && articles.length === 0 && (
-            <m.div key="empty" {...fade}>
-              <EmptyState />
-            </m.div>
-          )}
-          {isSettled && articles.length > 0 && visibleArticles.length === 0 && (
-            <m.div key="no-filter-results" {...fade}>
-              <NoMatchState onClear={onClearFilters} />
-            </m.div>
-          )}
-          {isSettled && visibleArticles.length > 0 && (
-            <m.div key="articles" {...fade}>
-              <ArticleList articles={visibleArticles} isFixedList={origin === 'fallback'} />
-            </m.div>
-          )}
+          <m.div key={state} {...fade}>
+            <StateContent {...props} state={state} visible={visible} />
+          </m.div>
         </AnimatePresence>
         <p className="mt-12 max-w-2xl text-sm text-vn-gray-dark">{blogCopy.thirdPartyNote}</p>
       </Container>
