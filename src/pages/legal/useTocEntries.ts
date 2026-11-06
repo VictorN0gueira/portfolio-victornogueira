@@ -68,6 +68,7 @@ export function useTocEntries(
       restores.forEach((restore) => restore());
       headingsRef.current = [];
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- bodyRef and headingsRef are refs (stable identity, never change between renders); including them would mislead future editors into thinking the effect re-runs when ref.current mutates
   }, [onChange]);
 
   return entries;
