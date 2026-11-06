@@ -9,7 +9,7 @@ const DODGE_Y = '--vn-dodge-y';
 /** How long a scroll has to be quiet before the tab judges where the focused control ended up. */
 const SETTLE_MS = 100;
 /** What the browser puts in the top layer (a modal dialog, an open popover): it paints over everything, whatever its z-index. */
-const TOP_LAYER = ':modal, :popover-open';
+const TOP_LAYER_SELECTORS = [':modal', ':popover-open'];
 /** A focus this soon after a press or a release of the pointer is the one the pointer brought; a later one is not. */
 const PRESS_FOCUS_MS = 500;
 const TEXT_ENTRY = 'input, textarea, [contenteditable]';
@@ -75,28 +75,78 @@ export function clearDodge(trigger: HTMLElement | null): void {
   if (trigger) setDodge(trigger, 0, 0, true);
 }
 
+/** Each selector is asked on its own: a browser that does not know one of the pseudo-classes throws for the whole list. */
 function isInTopLayer(element: Element): boolean {
-  try {
-    return element.closest(TOP_LAYER) !== null;
-  } catch {
-    // A browser without these pseudo-classes has no top layer to speak of; a non-modal dialog is not in it anyway.
-    return false;
-  }
+  return TOP_LAYER_SELECTORS.some((selector) => {
+    try {
+      return element.closest(selector) !== null;
+    } catch {
+      return false; // This browser does not know the pseudo-class, so nothing is in that part of the top layer.
+    }
+  });
 }
 
-const isSet = (value: string) => value !== '' && value !== 'none';
+/** Properties that start a stacking context with any value but `none`. */
+const CONTEXT_WHEN_SET = [
+  'transform',
+  'translate',
+  'rotate',
+  'scale',
+  'filter',
+  'backdrop-filter',
+  'perspective',
+  'clip-path',
+  'mask-image',
+  'mask-border-source',
+  'view-transition-name',
+];
+/** The properties a will-change may name for the box to start a stacking context at once. */
+const WILL_CHANGE_CONTEXT = new Set([
+  'transform',
+  'translate',
+  'rotate',
+  'scale',
+  'opacity',
+  'filter',
+  'backdrop-filter',
+  'perspective',
+  'clip-path',
+  'mask',
+  'mask-image',
+  'mask-border',
+  'mix-blend-mode',
+  'isolation',
+  'contain',
+  'position',
+  'view-transition-name',
+]);
 
-/** True when the element starts a stacking context: its z-index then caps everything inside it. */
-function isStackingContext(style: CSSStyleDeclaration): boolean {
-  const isPositioned = style.position !== 'static' && style.position !== '';
+/**
+ * True when the element starts a stacking context: its z-index then caps everything inside it. The list is the one of MDN
+ * ("Stacking context"), less the root and what the page never has: a positioned box with a z-index, position fixed or
+ * sticky, a flex or grid item with a z-index (even static), opacity under 1, mix-blend-mode, isolation, contain
+ * (layout, paint, strict, content), container-type (size, inline-size), will-change naming one of these, and any value of
+ * transform, translate, rotate, scale, filter, backdrop-filter, perspective, clip-path, mask-image, mask-border-source
+ * and view-transition-name. Read with getPropertyValue, which also answers for the properties the types do not know.
+ */
+function isStackingContext(style: CSSStyleDeclaration, parent: Element | null): boolean {
+  const read = (name: string) => style.getPropertyValue(name);
+  const position = read('position');
+  const hasZIndex = !['', 'auto'].includes(read('z-index'));
+  if (hasZIndex && position !== 'static' && position !== '') return true;
+  if (position === 'fixed' || position === 'sticky') return true;
+  if (hasZIndex && parent && /flex|grid/.test(getComputedStyle(parent).getPropertyValue('display'))) return true;
+  const opacity = read('opacity');
   return (
-    (isPositioned && style.zIndex !== 'auto' && style.zIndex !== '') ||
-    style.position === 'fixed' ||
-    style.position === 'sticky' ||
-    (style.opacity !== '' && Number(style.opacity) < 1) ||
-    isSet(style.transform) ||
-    isSet(style.filter) ||
-    style.isolation === 'isolate'
+    (opacity !== '' && Number(opacity) < 1) ||
+    !['', 'normal'].includes(read('mix-blend-mode')) ||
+    read('isolation') === 'isolate' ||
+    /layout|paint|strict|content/.test(read('contain')) ||
+    /size/.test(read('container-type')) ||
+    CONTEXT_WHEN_SET.some((name) => !['', 'none'].includes(read(name))) ||
+    read('will-change')
+      .split(',')
+      .some((name) => WILL_CHANGE_CONTEXT.has(name.trim()))
   );
 }
 
@@ -106,27 +156,28 @@ function isStackingContext(style: CSSStyleDeclaration): boolean {
  */
 function isAboveWidget(element: Element, widget: Element): boolean {
   if (isInTopLayer(element)) return true;
-  const widgetZ = Number.parseInt(getComputedStyle(widget).zIndex, 10);
+  const widgetZ = Number.parseInt(getComputedStyle(widget).getPropertyValue('z-index'), 10);
   if (Number.isNaN(widgetZ)) return false;
   let outermost = 0;
   for (let node: Element | null = element; node && node !== document.body; node = node.parentElement) {
     const style = getComputedStyle(node);
-    if (isStackingContext(style)) outermost = Number.parseInt(style.zIndex, 10) || 0;
+    if (isStackingContext(style, node.parentElement))
+      outermost = Number.parseInt(style.getPropertyValue('z-index'), 10) || 0;
   }
   return outermost > widgetZ;
 }
 
 /**
  * The focused control the tab has to stay clear of: none when nothing is focused, when the focus is in the widget (the
- * panel), when it is not keyboard driven (:focus-visible), when the pointer put it in a text field (which is always
- * focus-visible), or when the control paints over the widget.
+ * panel), when it is not keyboard driven (:focus-visible), or when the pointer put it in a text field (which is always
+ * focus-visible).
  */
 function focusedControl(widget: HTMLElement, pointerTarget: Element | null): Element | null {
   const active = document.activeElement;
   if (!active || active === document.body || active === document.documentElement || widget.contains(active))
     return null;
   if (!active.matches(':focus-visible') || (active === pointerTarget && active.matches(TEXT_ENTRY))) return null;
-  return isAboveWidget(active, widget) ? null : active;
+  return active;
 }
 
 function intersect(a: Box, b: Box): Box | null {
@@ -202,7 +253,9 @@ function judge({ wrapperRef, triggerRef }: Refs, latch: Latch, canDodge: boolean
   if (!widget || !trigger || latch.isHolding || trigger.dataset.dragging === 'true') return;
   const home = restBox(widget, trigger);
   const control = focusedControl(widget, latch.pointerTarget);
-  const target = control ? coveredBox(home, control) : null;
+  // Whether the control paints over the widget is worked out last: only a control under the tab needs the walk.
+  const covered = control ? coveredBox(home, control) : null;
+  const target = control && covered && !isAboveWidget(control, widget) ? covered : null;
   if (target && !canDodge) return;
   const { dx, dy } = target ? dodgeOffset({ tab: home, target, ...readFloatingView() }) : { dx: 0, dy: 0 };
   setDodge(trigger, dx, dy, false);

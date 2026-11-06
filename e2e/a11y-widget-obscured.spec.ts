@@ -517,6 +517,52 @@ test.describe('the tab is still the visitor’s: a press on a dodged tab, and th
     await page.mouse.up();
   });
 
+  // A box that is a stacking context for another reason than a z-index caps what is inside it: a link at 9999 in it is
+  // still below the tab (z-index 150 in the root context). The first is what Tailwind v4 emits for translate-*, the
+  // second the containment of a card. The container has no z-index of its own.
+  for (const [name, css] of [
+    ['translate', 'translate: 1px 0'],
+    ['contain: paint', 'contain: paint'],
+  ]) {
+    test(`a link with a high z-index inside a box with ${name} is still under the tab: the tab steps aside`, async ({
+      page,
+    }) => {
+      await openProbe(page, { place: PHONE_PLACE });
+      const home = await rectOf(trigger(page));
+      await page.evaluate(
+        ({ top, style }) => {
+          const box = document.createElement('div');
+          box.id = 'vn-cap';
+          box.style.cssText = `position:absolute;left:0;right:0;top:${top}px;height:44px;${style}`;
+          const link = document.createElement('a');
+          link.href = '#cap-link';
+          link.textContent = 'Link na caixa';
+          link.style.cssText =
+            'position:relative;z-index:9999;display:block;height:44px;background:#fff;color:#000;border:1px solid #000';
+          box.append(link);
+          document.body.prepend(box);
+        },
+        { top: Math.round(home.top), style: css },
+      );
+      expect(
+        await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('aside') !== null, {
+          x: home.left + 10,
+          y: home.top + 10,
+        }),
+        'the tab paints over the link',
+      ).toBe(true);
+
+      await page.keyboard.press('Tab');
+      await waitForCalm(page);
+
+      const link = await rectOf(page.locator('#vn-cap a:focus'));
+      const tab = await rectOf(trigger(page));
+      expect(overlaps(link, home)).toBe(true);
+      expect(overlaps(link, tab)).toBe(false);
+      expect(boundsProblems(tab, PHONE)).toEqual([]);
+    });
+  }
+
   test('the tab can still be reached with the keyboard and opens its panel', async ({ page }) => {
     await openProbe(page, { place: PHONE_PLACE });
     await trigger(page).focus();
