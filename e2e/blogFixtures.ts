@@ -99,3 +99,16 @@ export async function routeNews(
     });
   });
 }
+
+/** Collects the layout-shift entries of the page in window.__shifts, from the first paint. */
+export async function watchShifts(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const shifts: number[] = [];
+    (window as unknown as { __shifts: number[] }).__shifts = shifts;
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries() as unknown as Array<{ value: number; hadRecentInput: boolean }>) {
+        if (!entry.hadRecentInput) shifts.push(entry.value);
+      }
+    }).observe({ type: 'layout-shift', buffered: true });
+  });
+}

@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { blogCopy } from '../src/sections/blog/blogCopy';
-import { EDGE_FUNCTION, addressTitleArticles, routeNews, stressArticles } from './blogFixtures';
+import { EDGE_FUNCTION, addressTitleArticles, routeNews, stressArticles, watchShifts } from './blogFixtures';
 import {
   ACCENT_RGB,
   MIN_TOUCH_PX,
@@ -189,19 +189,6 @@ test.describe('/blog keeps the keyboard focus when a clear button goes away (WCA
     await expect(page.locator('main a[target="_blank"]').first()).toBeVisible();
   });
 });
-
-/** Collects the layout-shift entries of the page in window.__shifts, from the first paint. */
-async function watchShifts(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    const shifts: number[] = [];
-    (window as unknown as { __shifts: number[] }).__shifts = shifts;
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries() as unknown as Array<{ value: number; hadRecentInput: boolean }>) {
-        if (!entry.hadRecentInput) shifts.push(entry.value);
-      }
-    }).observe({ type: 'layout-shift', buffered: true });
-  });
-}
 
 // The layout-shift entries of the page, from the moment the skeleton is on the screen: the list arriving must not push
 // what the visitor already sees. (The jump of the footer when ANY lazy page replaces its fallback is a site-wide matter and
