@@ -1,0 +1,259 @@
+/*
+ * The look of the two legal pages inside the frame (LegalFrame). The pages are frozen: their markup carries the classes of the
+ * old design (italic, text-[10px], zinc and emerald colors, blurred glows, dark: variants that never match). This file restyles
+ * that markup from the outside, by descendant selectors of .vn-legal, with no important.
+ * It needs none: this file has no cascade layer, and a rule outside every layer beats the utilities Tailwind puts in
+ * @layer utilities, whatever the specificity. It only uses the tokens of the site (the custom properties of tokens.css).
+ * The browser test of the two pages (e2e/page-legal.spec.ts) reads the computed styles of the frozen markup, so a rule here
+ * that stops reaching its class is caught there.
+ */
+
+.vn-legal {
+  /* The reading column is a size container, so a grid inside it follows the column and not the window. */
+  container-type: inline-size;
+  min-width: 0;
+  color: var(--color-vn-gray-dark);
+  font-family: var(--font-sans);
+}
+
+/* The page and its sections bring a background, a full screen height and their own gutters: the frame owns all three. */
+.vn-legal > div {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.vn-legal section {
+  padding-inline: 0;
+  padding-block: clamp(1.75rem, 1.2rem + 2vw, 3rem);
+}
+
+.vn-legal > div > section:first-child {
+  padding-top: 0;
+}
+
+.vn-legal > div > section:last-child {
+  padding-bottom: 0;
+}
+
+/* The sections of the privacy text space themselves with a margin of their own. */
+.vn-legal section[class*='mb-10'] {
+  padding-block: 0;
+}
+
+/* The wrappers of the old design center themselves and cap their width: the column does both, and it reads from the left. */
+.vn-legal [class*='max-w-3xl'],
+.vn-legal [class*='max-w-4xl'],
+.vn-legal [class*='max-w-5xl'] {
+  max-width: none;
+  margin-inline: 0;
+}
+
+/* Titles: Space Grotesk bold, lowercase, tight, ink. Never italic. */
+.vn-legal h1,
+.vn-legal h2,
+.vn-legal h3,
+.vn-legal .italic {
+  font-style: normal;
+}
+
+.vn-legal h1,
+.vn-legal h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-transform: lowercase;
+  color: var(--color-vn-ink);
+  overflow-wrap: break-word;
+}
+
+.vn-legal h1 {
+  font-size: clamp(1.75rem, 1rem + 4vw, 4.5rem);
+  line-height: 0.96;
+}
+
+.vn-legal h2 {
+  font-size: clamp(1.375rem, 1.05rem + 1.3vw, 2rem);
+  line-height: 1.08;
+}
+
+.vn-legal h3 {
+  color: var(--color-vn-ink);
+  overflow-wrap: break-word;
+}
+
+.vn-legal h2:focus-visible {
+  outline: 2px solid var(--color-vn-ink);
+  outline-offset: 0.25em;
+}
+
+/* Text: gray-dark on the light surfaces. The weight 300 of the old design is not loaded, so it is the regular one. */
+.vn-legal :is(p, li) {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.vn-legal [class*='font-light'] {
+  font-weight: 400;
+}
+
+.vn-legal [class*='text-lg'] {
+  font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem);
+}
+
+.vn-legal strong {
+  font-weight: 500;
+  color: var(--color-vn-ink);
+}
+
+/* The small print the old design set at 10px: mono, 12px at least. */
+.vn-legal [class*='text-[10px]'] {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
+}
+
+.vn-legal [class*='text-xs'] {
+  font-size: 0.875rem;
+}
+
+.vn-legal [class*='text-zinc-'] {
+  color: var(--color-vn-gray-dark);
+}
+
+.vn-legal [class*='text-zinc-900'] {
+  color: var(--color-vn-ink);
+}
+
+/* Links: ink and underlined. They wrap in the middle of an address, so a long e-mail never pushes the column. */
+.vn-legal a {
+  color: var(--color-vn-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  overflow-wrap: anywhere;
+}
+
+.vn-legal a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.vn-legal a:focus-visible {
+  outline: 2px solid var(--color-vn-ink);
+  outline-offset: 2px;
+}
+
+/* Colors of the old design that are not in the palette: the accent family and the zinc surfaces. */
+.vn-legal [class*='text-emerald-'] {
+  color: var(--color-vn-ink);
+}
+
+.vn-legal [class*='bg-emerald-'] {
+  background-color: var(--color-vn-cream);
+}
+
+.vn-legal [class*='rounded-full'][class*='bg-emerald-'] {
+  background-color: var(--color-vn-white);
+}
+
+.vn-legal [class*='border-emerald-'],
+.vn-legal [class*='border-zinc-'] {
+  border-color: var(--color-vn-gray-light);
+}
+
+.vn-legal [class*='bg-zinc-50'] {
+  background-color: var(--color-vn-white);
+}
+
+.vn-legal [class*='bg-zinc-950'] {
+  background-color: var(--color-vn-black);
+}
+
+.vn-legal [class*='hover:border-emerald-']:hover {
+  border-color: var(--color-vn-ink);
+}
+
+/* The radii of the old design (rounded-3xl, rounded-2xl and the 2.5rem of the last card) become the ones of the site. */
+.vn-legal [class*='rounded-3xl'] {
+  border-radius: var(--radius-card);
+}
+
+.vn-legal [class*='rounded-[2.5rem]'] {
+  border-radius: var(--radius-shell);
+}
+
+.vn-legal [class*='rounded-2xl'] {
+  border-radius: 0.75rem;
+}
+
+/* The blurred glows are decoration, and the site has no decorative gradient or glow. */
+.vn-legal [class*='blur-['] {
+  display: none;
+}
+
+/* The black cards: light text on black, a white ring for focus. */
+.vn-legal [class*='bg-zinc-950'] [class*='text-zinc-'] {
+  color: var(--color-vn-gray-light);
+}
+
+.vn-legal [class*='bg-zinc-950'] :is(h2, h3) {
+  color: var(--color-vn-white);
+}
+
+.vn-legal [class*='bg-zinc-950'] a {
+  color: var(--color-vn-white);
+}
+
+.vn-legal [class*='bg-zinc-950'] a:hover {
+  color: var(--color-vn-white);
+}
+
+.vn-legal [class*='bg-zinc-950'] a:focus-visible {
+  outline-color: var(--color-vn-white);
+}
+
+/* The button of the last card: a white pill with black text, not a link in the text. */
+.vn-legal a[class*='bg-white'] {
+  background-color: var(--color-vn-white);
+  color: var(--color-vn-black);
+  text-decoration: none;
+}
+
+.vn-legal [class*='bg-zinc-950'] a[class*='bg-white'] {
+  color: var(--color-vn-black);
+}
+
+.vn-legal a[class*='bg-white']:hover {
+  background-color: var(--color-vn-cream);
+  color: var(--color-vn-black);
+  text-decoration: none;
+}
+
+.vn-legal a[class*='px-8'] {
+  padding-inline: clamp(1rem, 6cqi, 2rem);
+}
+
+/*
+ * The grids of the old design change their number of columns by the width of the window (sm:, md:, lg:). Inside the column
+ * the width that counts is the column's, so they follow its own width: one column, two from 34rem, three from 50rem.
+ */
+.vn-legal [class*='grid-cols-'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@container (min-width: 34rem) {
+  .vn-legal [class*='sm:grid-cols-2'],
+  .vn-legal [class*='md:grid-cols-2'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 50rem) {
+  .vn-legal [class*='lg:grid-cols-3'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
