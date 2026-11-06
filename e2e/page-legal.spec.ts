@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { legalCopy } from '../src/data/legalCopy';
 import { ANCHOR_BOUNDS } from './headerBounds';
 import { PAGE_LOAD_TIMEOUT_MS, brokenWordsIn, enableLargeFont, measureOverflow, nextFrames } from './homeSupport';
@@ -49,10 +49,50 @@ const TRANSPARENT = 'rgba(0, 0, 0, 0)';
 const INK_RGB = 'rgb(26, 26, 26)';
 const WHITE_RGB = 'rgb(255, 255, 255)';
 const MIN_SMALL_PRINT_PX = 12;
+// A scroll has settled when the top of the title did not move for this many frames in a row (about 200ms).
+const SETTLED_FRAMES = 12;
+const SETTLE_TIMEOUT_MS = 8000;
 
 // An id may start with a digit ("7-seus-direitos"), which a #selector cannot.
 const byId = (page: Page, id: string) => page.locator(`[id="${id}"]`);
 const tocLinks = (page: Page) => page.locator(`${TOC_NAV} a`);
+
+/**
+ * Where the top of the title is once the scroll to it has finished: sampled every frame until it holds still. Reading it
+ * while the scroll is still going (or polling until it is first inside the bounds) says nothing about where it lands.
+ */
+function settledTop(heading: Locator): Promise<number> {
+  return heading.evaluate(
+    (element, { frames, timeout }) =>
+      new Promise<number>((resolve, reject) => {
+        const startedAt = performance.now();
+        let last = Number.NaN;
+        let still = 0;
+        const sample = () => {
+          const top = element.getBoundingClientRect().top;
+          still = top === last ? still + 1 : 0;
+          last = top;
+          if (still >= frames) resolve(top);
+          else if (performance.now() - startedAt > timeout) reject(new Error('the scroll never settled'));
+          else requestAnimationFrame(sample);
+        };
+        requestAnimationFrame(sample);
+      }),
+    { frames: SETTLED_FRAMES, timeout: SETTLE_TIMEOUT_MS },
+  );
+}
+
+/** The first, a middle and the last entry of the contents: the ones a jump is most likely to get wrong. */
+async function entriesToTry(page: Page): Promise<number[]> {
+  const count = await tocLinks(page).count();
+  return [...new Set([0, Math.floor(count / 2), count - 1])];
+}
+
+/** The title under the header, and not past it: both bounds on the position it settled at. */
+function expectJustBelowHeader(top: number, label: string): void {
+  expect(top, `${label}: below the header`).toBeGreaterThan(ANCHOR_BOUNDS.minTopPx);
+  expect(top, `${label}: not far down the screen`).toBeLessThan(ANCHOR_BOUNDS.maxTopPx);
+}
 
 test.describe('/privacidade and /lgpd', () => {
   for (const contract of PAGES) {
@@ -93,26 +133,19 @@ test.describe('the frame of the legal pages', () => {
     }) => {
       await page.setViewportSize(DESKTOP);
       await openPage(page, contract);
-      const links = tocLinks(page);
-      const last = links.nth((await links.count()) - 1);
-      const href = (await last.getAttribute('href')) ?? '';
-      const id = href.slice(1);
 
-      await last.click();
+      for (const index of await entriesToTry(page)) {
+        const link = tocLinks(page).nth(index);
+        const href = (await link.getAttribute('href')) ?? '';
+        await link.click();
 
-      const heading = byId(page, id);
-      await expect(heading).toBeFocused();
-      await expect
-        .poll(() => heading.evaluate((element) => element.getBoundingClientRect().top), {
-          timeout: PAGE_LOAD_TIMEOUT_MS,
-        })
-        .toBeGreaterThan(ANCHOR_BOUNDS.minTopPx);
-      await expect
-        .poll(() => heading.evaluate((element) => element.getBoundingClientRect().top))
-        .toBeLessThan(ANCHOR_BOUNDS.maxTopPx);
-      await expect(last).toHaveAttribute('aria-current', 'location');
-      expect(new URL(page.url()).hash).toBe(href);
-      expect(new URL(page.url()).pathname).toBe(contract.path);
+        const heading = byId(page, href.slice(1));
+        await expect(heading).toBeFocused();
+        expectJustBelowHeader(await settledTop(heading), `${contract.path} entry ${index}`);
+        await expect(link).toHaveAttribute('aria-current', 'location');
+        expect(new URL(page.url()).hash).toBe(href);
+        expect(new URL(page.url()).pathname).toBe(contract.path);
+      }
     });
 
     test(`${contract.path}: marks the section being read while scrolling, one at a time, at 1440`, async ({ page }) => {
@@ -125,7 +158,7 @@ test.describe('the frame of the legal pages', () => {
       await expect(page.locator(`${TOC_NAV} a[aria-current="location"]`)).toHaveCount(1);
     });
 
-    test(`${contract.path}: the contents are a folded list above the text at 390, and a choice closes it`, async ({
+    test(`${contract.path}: the contents are a folded list above the text at 390, and a choice closes it and lands on the title`, async ({
       page,
     }) => {
       await page.setViewportSize(PHONE);
@@ -135,19 +168,20 @@ test.describe('the frame of the legal pages', () => {
       await expect(details).not.toHaveAttribute('open', '');
       await page.screenshot({ path: `e2e/__shots__/legal-folded-${contract.path.slice(1)}-390x844.png` });
 
-      await details.locator('summary').click();
-      await expect(details).toHaveAttribute('open', '');
-      const links = tocLinks(page);
-      const box = await links.first().boundingBox();
-      expect(box?.height ?? 0, 'a row is a 44px target').toBeGreaterThanOrEqual(44 - 0.01);
-      const id = ((await links.nth(1).getAttribute('href')) ?? '').slice(1);
-      await links.nth(1).click();
+      for (const index of await entriesToTry(page)) {
+        await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+        await details.locator('summary').click();
+        await expect(details).toHaveAttribute('open', '');
+        const link = tocLinks(page).nth(index);
+        const box = await link.boundingBox();
+        expect(box?.height ?? 0, 'a row is a 44px target').toBeGreaterThanOrEqual(44 - 0.01);
+        const id = ((await link.getAttribute('href')) ?? '').slice(1);
+        await link.click();
 
-      await expect(details).not.toHaveAttribute('open', '');
-      await expect(byId(page, id)).toBeFocused();
-      await expect
-        .poll(() => byId(page, id).evaluate((element) => element.getBoundingClientRect().top))
-        .toBeGreaterThan(ANCHOR_BOUNDS.minTopPx);
+        await expect(details).not.toHaveAttribute('open', '');
+        await expect(byId(page, id)).toBeFocused();
+        expectJustBelowHeader(await settledTop(byId(page, id)), `${contract.path} entry ${index} at 390`);
+      }
     });
   }
 

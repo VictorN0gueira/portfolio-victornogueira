@@ -189,6 +189,20 @@ describe('LegalFrame', () => {
     expect((details as HTMLDetailsElement).open).toBe(false);
   });
 
+  it('closes the folded list before it scrolls, so the scroll aims at the layout the visitor will see', () => {
+    const { container } = renderFrame(PrivacyPage);
+    const details = container.querySelector('details') as HTMLDetailsElement;
+    details.open = true;
+    const openWhenScrolling: boolean[] = [];
+    scrollIntoView.mockImplementation(() => {
+      openWhenScrolling.push(details.open);
+    });
+
+    fireEvent.click(tocLinks()[2]);
+
+    expect(openWhenScrolling).toEqual([false]);
+  });
+
   it('shows the list as a sticky column from the desktop width, with no details', () => {
     stubMatchMedia({ [WIDE_QUERY]: true });
     const { container } = renderFrame(PrivacyPage);

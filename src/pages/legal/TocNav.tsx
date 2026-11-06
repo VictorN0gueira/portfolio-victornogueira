@@ -37,8 +37,10 @@ function TocList({ entries, activeId, onGo, onChosen }: Omit<TocNavProps, 'isWid
             onClick={(event) => {
               if (!isPlainClick(event)) return;
               event.preventDefault();
-              onGo(entry.id);
+              // The folded list closes first: it is above the text, so closing it moves the title, and a scroll that
+              // started before would aim at where the title used to be.
               onChosen?.();
+              onGo(entry.id);
             }}
           >
             {entry.label}
