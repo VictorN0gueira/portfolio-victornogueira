@@ -37,14 +37,13 @@ function scrambled(text: string, revealed: number): string {
 }
 
 /**
- * The text as it is typed on a terminal: after a short wait the letters are swapped for stand ins and the real ones settle
- * from the left, ending on the exact text. The hook only says what to draw: the real text stays the one the page is made of
- * (see NotFound), and a frame is a picture of it.
+ * The text as it is typed on a terminal: after a short wait the letters are swapped for stand ins and the real ones
+ * settle from the left, ending on the exact text. The hook only says what to draw: the real text stays the one the page
+ * is made of (see NotFound), and a frame is a picture of it.
  *
- * With reduced motion (the system, or the widget's "Pausar animações") or a translated page the real text is shown and no
- * timer runs. A pause in
- * the middle drops the run: resuming waits again and starts over. A title that already settled stays as it is. A new text
- * starts a new run.
+ * With reduced motion (the system, or the widget's "Pausar animações") or a translated page the real text is shown and
+ * no timer runs. A pause in the middle drops the run: resuming waits again and starts over. A title that already
+ * settled stays as it is. A new text starts a new run.
  */
 export function useScramble(text: string): Scramble {
   const [run, setRun] = useState<Run>({ text, phase: 'waiting', frame: '' });

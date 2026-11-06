@@ -10,7 +10,7 @@ import { componentsCss } from '../test/styles';
 describe('.vn-scramble-word in components.css', () => {
   const frame = declarations(blockBody(componentsCss, '.vn-scramble-word::after'));
 
-  it('is the frame of the word, from data-scramble, with an empty alternative so it is decoration for assistive tech', () => {
+  it('is the frame of the word, from data-scramble, with an empty alternative: decoration for assistive tech', () => {
     const contents = frame.filter((line) => line.startsWith('content:'));
 
     expect(contents).toEqual(['content: attr(data-scramble)', 'content: attr(data-scramble) / ""']);

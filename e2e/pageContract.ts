@@ -30,7 +30,7 @@ export interface PageContract {
   /** The <title> of the page. */
   title: RegExp;
   h1: string | RegExp;
-  /** A heading of level 2 that only exists once the page is ready (lazy sections included). A page with only its h1 (the 404) leaves it out. */
+  /** A heading of level 2 that only exists once the page is ready (lazy sections included). The 404 has none. */
   readyHeading?: string | RegExp;
   /** The page mounts the contact form: the test waits for form[name="contact"] and measures the Enviar button. */
   hasContactForm?: boolean;

@@ -3,9 +3,9 @@ const NUMBER = '404';
 const NUMBER_CLASSES = 'font-display font-bold leading-none text-[length:clamp(5rem,min(1rem+30vw,26dvh),16rem)]';
 
 /**
- * The 404 as a decoration (aria-hidden: the h1 says it). The base is chrome text. Two copies, one white and one mid gray,
- * sit on top of it and flick through a few bands of the number for a moment (`.vn-glitch-a` and `.vn-glitch-b` in
- * motion.css, transform and clip-path only). With reduced motion or "Pausar animações" they stay clipped, so the
+ * The 404 as a decoration (aria-hidden: the h1 says it). The base is chrome text. Two copies, one white and one mid
+ * gray, sit on top of it and flick through a few bands of the number for a moment (`.vn-glitch-a` and `.vn-glitch-b`
+ * in motion.css, transform and clip-path only). With reduced motion or "Pausar animações" they stay clipped, so the
  * number is the still chrome one.
  */
 export function NotFoundGlitch() {

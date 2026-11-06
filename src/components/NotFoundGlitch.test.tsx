@@ -58,13 +58,14 @@ describe('the glitch in motion.css', () => {
   });
 });
 
-// `animation: <name> <seconds>s <timing function, one word or "steps(1, end)"> <count>`: the count is a number, never "infinite".
+// `animation: <name> <seconds>s <timing function: one word or "steps(1, end)"> <count>`.
+// The count is a number, never "infinite".
 const ANIMATION_TIMING = /animation: [\w-]+ ([\d.]+)s \S+(?: \S+)? (\d+)$/;
 
 describe('what moves by itself stops by itself within 5 seconds (WCAG 2.2.2)', () => {
-  // Anything that would go on longer is stopped by "Pausar animações" in the accessibility widget, which hides or freezes
-  // every animation of the site. That is also what covers the scan line of the ScanGrid (two 8 s sweeps, decorative, in
-  // every dark section): it is display none under the widget and under reduced motion.
+  // Anything that would go on longer is stopped by "Pausar animações" in the accessibility widget, which hides or
+  // freezes every animation of the site. That is also what covers the scan line of the ScanGrid (two 8 s sweeps,
+  // decorative, in every dark section): it is display none under the widget and under reduced motion.
   const MAX_MOVEMENT_MS = 5000;
   const animationOf = (css: string, selector: string, name: string) => {
     const line = declarations(ruleBodyFor(css, selector).split('@variant')[0]).find((item) =>
@@ -88,10 +89,10 @@ describe('what moves by itself stops by itself within 5 seconds (WCAG 2.2.2)', (
 });
 
 describe('the glitch does not flash (WCAG 2.3.1)', () => {
-  // The area argument: each band shows a sliver of the number, at most 30% of its box, and the number is a part of the
-  // screen, so what changes at a time is far under the 25% of a 10 degree field that the general flash threshold counts.
-  // The rate argument, tested below: no window of one second holds more than 6 changes of the picture, and a change is one
-  // half of a flash, so at most 3 flashes in any second.
+  // The area argument: each band shows a sliver of the number, at most 30% of its box, and the number is a part of
+  // the screen, so what changes at a time is far under the 25% of a 10 degree field that the general flash threshold
+  // counts. The rate argument, tested below: no window of one second holds more than 6 changes of the picture, and a
+  // change is one half of a flash, so at most 3 flashes in any second.
   const MAX_CHANGES_PER_SECOND = 6;
   const MAX_BAND_SHARE = 0.3;
   const WINDOW_MS = 1000;

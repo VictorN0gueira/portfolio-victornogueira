@@ -22,10 +22,13 @@ import { Section } from './ui/Section';
 
 // The content starts below the floating header (the same top as the PageHero) and the block is centred in what is left.
 const BREATHING_ROOM = '1.5rem';
+const LANDSCAPE_HEADER = `${HEADER_TOP_OFFSET} - ${HEADER_LANDSCAPE_LIFT} + ${HEADER_HEIGHT_LANDSCAPE}`;
 const CONTENT_VARS = {
   '--nf-top': `calc(${HEADER_TOP_OFFSET} + ${HEADER_HEIGHT} + ${BREATHING_ROOM})`,
-  '--nf-top-landscape': `calc(${HEADER_TOP_OFFSET} - ${HEADER_LANDSCAPE_LIFT} + ${HEADER_HEIGHT_LANDSCAPE} + ${BREATHING_ROOM})`,
+  '--nf-top-landscape': `calc(${LANDSCAPE_HEADER} + ${BREATHING_ROOM})`,
 } as CSSProperties;
+const BODY_CLASSES =
+  'mt-6 max-w-md text-pretty text-base text-vn-gray-light md:text-lg vn-landscape:mt-3 vn-landscape:max-w-2xl';
 const CONTENT_CLASSES = 'w-full pt-[var(--nf-top)] pb-12 vn-landscape:pt-[var(--nf-top-landscape)] vn-landscape:pb-6';
 
 const ENTRANCE = {
@@ -35,8 +38,8 @@ const ENTRANCE = {
 } as const;
 
 /**
- * A word of the title, the one that sizes the line. While `frame` is set its letters are hidden and the frame is drawn over
- * them by `.vn-scramble-word::after` (components.css), which is not part of the text of the page.
+ * A word of the title, the one that sizes the line. While `frame` is set its letters are hidden and the frame is drawn
+ * over them by `.vn-scramble-word::after` (components.css), which is not part of the text of the page.
  */
 function TitleWord({ word, frame }: { word: string; frame: string | undefined }) {
   return (
@@ -47,9 +50,9 @@ function TitleWord({ word, frame }: { word: string; frame: string | undefined })
 }
 
 /**
- * The title: its real words are in the flow, so the box (the wrap, the height, the accessible name) is decided by the real
- * text alone and never moves while the scramble runs. The accent cursor is the one accent of the section and stays with
- * the last word, so it never sits alone on a line.
+ * The title: its real words are in the flow, so the box (the wrap, the height, the accessible name) is decided by the
+ * real text alone and never moves while the scramble runs. The accent cursor is the one accent of the section and stays
+ * with the last word, so it never sits alone on a line.
  */
 function ScrambledTitle({ text }: { text: string }) {
   const { shown, isScrambling } = useScramble(text);
@@ -94,9 +97,7 @@ export default function NotFound() {
             <Heading as="h1" size="l" id={headingId} className="mt-6 vn-landscape:mt-3">
               <ScrambledTitle text={notFoundCopy.title} />
             </Heading>
-            <p className="mt-6 max-w-md text-pretty text-base text-vn-gray-light md:text-lg vn-landscape:mt-3 vn-landscape:max-w-2xl">
-              {notFoundCopy.description}
-            </p>
+            <p className={BODY_CLASSES}>{notFoundCopy.description}</p>
             <Button asChild tone="dark" size="lg" className="mt-10 vn-landscape:mt-5 vn-landscape:min-h-11">
               <Link to="/">
                 <ArrowLeft aria-hidden="true" className="size-4 shrink-0" />

@@ -188,8 +188,8 @@ describe('useScramble', () => {
   });
 });
 
-// A translator rewrites the words of the page while the frames are drawn over them: the scramble would be jumbled in the
-// language of the visitor. A translated page gets the real title, and a translation that arrives in the middle stops it.
+// A translator rewrites the words of the page while the frames are drawn over them: the scramble would be jumbled in
+// the language of the visitor. A translated page gets the real title, and one that arrives in the middle stops it.
 describe('useScramble on a translated page', () => {
   const root = document.documentElement;
 

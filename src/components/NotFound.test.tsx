@@ -50,7 +50,7 @@ describe('NotFound', () => {
     expect(heading().textContent).toBe(TITLE);
   });
 
-  it('keeps the real title in the flow, once, whatever the scramble draws: it is the text, the name and the size', () => {
+  it('keeps the real title in the flow, once, whatever the scramble draws: the text, the name, the size', () => {
     stubMatchMedia();
     renderWithProviders(<NotFound />);
     advance(SCRAMBLE_START_MS);
@@ -100,7 +100,7 @@ describe('NotFound', () => {
     expect(heading().textContent).toBe(TITLE);
   });
 
-  it('draws each word through the vn-scramble-word rule, as an inline box so find in page reads the whole phrase', () => {
+  it('draws each word through vn-scramble-word, as an inline box so find in page reads the whole phrase', () => {
     stubMatchMedia();
     renderWithProviders(<NotFound />);
 

@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
-// The page is written in Portuguese (index.html: lang="pt-BR"). A translator changes the language of the root, and the one
-// of Google adds a class that starts with "translated-" (translated-ltr, translated-rtl).
+// The page is written in Portuguese (index.html: lang="pt-BR"). A translator changes the language of the root, and
+// the one of Google adds a class that starts with "translated-" (translated-ltr, translated-rtl).
 const PAGE_LANGUAGE = 'pt';
 const TRANSLATED_CLASS = /(^|\s)translated-/;
 const WATCHED_ATTRIBUTES = ['class', 'lang'];
@@ -21,8 +21,8 @@ function subscribe(onChange: () => void): () => void {
 const getServerSnapshot = (): boolean => false;
 
 /**
- * Whether a browser translator is working on the page. It rewrites the text nodes, so anything drawn over them (like the
- * scramble of the 404 title) would show jumbled words in the language of the visitor. Live: it follows the root.
+ * Whether a browser translator is working on the page. It rewrites the text nodes, so anything drawn over them (like
+ * the scramble of the 404 title) would show jumbled words in the language of the visitor. Live: it follows the root.
  */
 export function useIsTranslated(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
