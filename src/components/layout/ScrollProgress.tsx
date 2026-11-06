@@ -6,7 +6,8 @@ const SPRING = { stiffness: 100, damping: 30, restDelta: 0.001 } as const;
 
 type ScrollProgressTone = 'light' | 'dark';
 
-// ink on a light page, white on a dark one, both palette colors. Every page of the site is light today.
+// Ink on a light page, white on a dark one, both palette colors. The dark tone is unused since the blog entered the
+// layout: batch Z removes it.
 const TONE_CLASSES: Record<ScrollProgressTone, string> = {
   light: 'bg-vn-ink',
   dark: 'bg-white/80',

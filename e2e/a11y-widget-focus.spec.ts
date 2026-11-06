@@ -34,15 +34,10 @@ for (const viewport of WINDOWS) {
       test.use({ viewport });
 
       for (const { name, path } of PAGES) {
-        test(`nothing the keyboard reaches on the ${name} page is covered by a floating button`, async ({
-          page,
-        }, testInfo) => {
+        test(`nothing the keyboard reaches on the ${name} page is covered by a floating button`, async ({ page }, testInfo) => {
           test.skip(testInfo.project.name !== 'mobile', 'the fixed layers are measured with touch windows');
           test.setTimeout(TEST_TIMEOUT_MS);
-          await page.addInitScript(
-            ([key, value]) => window.localStorage.setItem(key, value),
-            [TAB_POSITION_STORAGE_KEY, JSON.stringify(place)],
-          );
+          await page.addInitScript(([key, value]) => window.localStorage.setItem(key, value), [TAB_POSITION_STORAGE_KEY, JSON.stringify(place)]);
           await openForTabbing(page, path, false);
 
           const { problems, visited } = await tabThroughPage(page);
