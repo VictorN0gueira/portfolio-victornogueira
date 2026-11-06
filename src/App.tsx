@@ -15,8 +15,8 @@ const ServicesPage = lazyWithRetry(() => import('./pages/ServicesPage'));
 const ProjectsPage = lazyWithRetry(() => import('./pages/ProjectsPage'));
 const ProjectDetailPage = lazyWithRetry(() => import('./pages/ProjectDetailPage'));
 const ContactPage = lazyWithRetry(() => import('./pages/ContactPage'));
-const PrivacyPage = lazyWithRetry(() => import('./pages/PrivacyPage'));
-const LgpdPage = lazyWithRetry(() => import('./pages/LgpdPage'));
+const PrivacyPage = lazyWithRetry(() => import('./pages/legal/PrivacyRoute'));
+const LgpdPage = lazyWithRetry(() => import('./pages/legal/LgpdRoute'));
 const BlogPage = lazyWithRetry(() => import('./components/BlogPage'));
 const NotFound = lazyWithRetry(() => import('./components/NotFound'));
 // The widget is not needed to read the page, so its chunk failing never reloads the page (the boundary hides it).
