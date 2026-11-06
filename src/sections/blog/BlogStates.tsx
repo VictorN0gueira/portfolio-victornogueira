@@ -20,14 +20,14 @@ function StateFrame({ icon, role, children }: { icon: ReactNode; role?: 'alert';
   );
 }
 
-/** The sources failed. The reason is the message of the error (or the generic one), in words the visitor can read. */
-export function ErrorState({ message }: { message: string }) {
+/** The sources failed. It says so in the words of the copy, never with the message of the error: it is for the visitor to read. */
+export function ErrorState() {
   return (
     <StateFrame icon={<AlertTriangle className="size-8" />} role="alert">
       <Heading as="h2" size="m">
         {blogCopy.states.errorTitle}
       </Heading>
-      <p className="mt-3 max-w-md break-words text-base text-vn-gray-dark">{message}</p>
+      <p className="mt-3 max-w-md break-words text-base text-vn-gray-dark">{blogCopy.states.errorFallback}</p>
     </StateFrame>
   );
 }

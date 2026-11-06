@@ -1,5 +1,4 @@
 import { AnimatePresence, m } from 'motion/react';
-import { useMemo } from 'react';
 import { Container } from '../../components/ui/Container';
 import { NewTabHint } from '../../components/ui/NewTabHint';
 import { RevealGroup, RevealItem } from '../../components/ui/Reveal';
@@ -7,7 +6,6 @@ import { Section } from '../../components/ui/Section';
 import { useMotionAllowed } from '../../hooks/useMotionAllowed';
 import type { NewsArticle, NewsOrigin } from '../../utils/newsService';
 import { ArticleCard } from './ArticleCard';
-import { listableArticles } from './articleLinks';
 import { BlogSkeletons } from './BlogSkeletons';
 import { EmptyState, ErrorState, NoMatchState } from './BlogStates';
 import { blogCopy } from './blogCopy';
@@ -19,7 +17,7 @@ interface BlogResultsProps {
   isLoading: boolean;
   error: string | null;
   origin: NewsOrigin | null;
-  /** Everything the sources gave. */
+  /** Everything the sources gave, from BlogPage: only what a card can be made of, each address once. */
   articles: NewsArticle[];
   /** What passes the filters: the first one is the featured one. */
   visibleArticles: NewsArticle[];
@@ -71,9 +69,9 @@ interface StateContentProps extends BlogResultsProps {
   visible: NewsArticle[];
 }
 
-function StateContent({ state, error, origin, visible, onClearFilters }: StateContentProps) {
+function StateContent({ state, origin, visible, onClearFilters }: StateContentProps) {
   if (state === 'loading') return <BlogSkeletons />;
-  if (state === 'error') return <ErrorState message={error ?? blogCopy.states.errorFallback} />;
+  if (state === 'error') return <ErrorState />;
   if (state === 'empty') return <EmptyState />;
   if (state === 'no-match') return <NoMatchState onClear={onClearFilters} />;
   return <ArticleList articles={visible} isFixedList={origin === 'fallback'} />;
@@ -82,13 +80,13 @@ function StateContent({ state, error, origin, visible, onClearFilters }: StateCo
 /**
  * The list of the blog, on a cream band: the skeleton while the sources answer, then the articles (the first as the black
  * featured card), or the error, or the empty states. The states swap one at a time, with a short fade only where motion is
- * welcome. Only what a card can be made of is listed, each address once (the keys of the cards depend on it).
+ * welcome. The lists arrive already cleaned by BlogPage (listableArticles): a usable address each, once (the keys of the
+ * cards depend on it).
  */
 export function BlogResults(props: BlogResultsProps) {
   const fade = useStateFade();
-  const all = useMemo(() => listableArticles(props.articles), [props.articles]);
-  const visible = useMemo(() => listableArticles(props.visibleArticles), [props.visibleArticles]);
-  const state = pickState(props.isLoading, props.error, all.length, visible.length);
+  const visible = props.visibleArticles;
+  const state = pickState(props.isLoading, props.error, props.articles.length, visible.length);
 
   return (
     <Section tone="cream" className="py-[clamp(2rem,1rem+4vw,5rem)]">

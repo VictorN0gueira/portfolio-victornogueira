@@ -28,7 +28,8 @@ export function BlogHero({ isLoading, status, onRefresh }: BlogHeroProps) {
         </button>
         {/* Under the button, with the room of the longest message kept (three lines of its own line height on a phone, two from
             sm, so it follows a larger font): the text is empty while a load runs and comes back with the answer, and the page
-            below must not move with it. */}
+            below must not move with it. The trade-off is kept on purpose: about 20px of empty space in the normal state buys
+            zero layout shift when the longest (stale list) message appears. */}
         <p role="status" className="mt-3 min-h-[3lh] max-w-md text-sm text-vn-gray-dark sm:min-h-[2lh]">
           {status}
         </p>

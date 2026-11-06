@@ -59,41 +59,10 @@ describe('BlogResults when the list changes under the cards', () => {
   });
 });
 
-describe('BlogResults and the addresses it is given', () => {
-  it('leaves out an article whose address is not http or https, and the next one becomes the featured card', () => {
-    const bad = testArticle({ title: 'Mau', url: 'javascript:alert(1)' });
-    const good = testArticle({ title: 'Bom', url: 'https://example.com/bom' });
-
-    renderWithProviders(<BlogResults {...resultsProps({ articles: [bad, good], visibleArticles: [bad, good] })} />);
-
-    expect(screen.queryByText('Mau')).toBeNull();
-    expect(screen.getByRole('heading', { level: 3, name: 'Bom' })).toBeInTheDocument();
-    expect(screen.getByText('Destaque')).toBeInTheDocument();
-  });
-
-  it('shows no link at all when no article has a usable address', () => {
-    const bad = testArticle({ url: 'data:text/html,x' });
-
-    renderWithProviders(<BlogResults {...resultsProps({ articles: [bad], visibleArticles: [bad] })} />);
-
-    expect(screen.queryByRole('link')).toBeNull();
-  });
-
-  it('shows the same article once when the list repeats an address', () => {
-    const one = testArticle({ title: 'Repetido', url: 'https://example.com/r' });
-
-    renderWithProviders(
-      <BlogResults {...resultsProps({ articles: [one, one, one], visibleArticles: [one, one, one] })} />,
-    );
-
-    expect(screen.getAllByRole('heading', { level: 3, name: 'Repetido' })).toHaveLength(1);
-  });
-});
-
 describe('BlogResults states', () => {
   it('announces the error as an alert', async () => {
     renderWithProviders(<BlogResults {...resultsProps({ error: 'A rede caiu', articles: [], visibleArticles: [] })} />);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('A rede caiu');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Erro ao carregar notícias');
   });
 });

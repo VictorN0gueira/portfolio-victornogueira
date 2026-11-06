@@ -250,3 +250,31 @@ describe('BlogPage keeps the focus and the band of the filters', () => {
     expect(screen.getByRole('button', { name: 'Todos tópicos' })).toHaveAttribute('aria-pressed', 'true');
   });
 });
+
+describe('BlogPage and the addresses it is given', () => {
+  it('leaves out an article whose address is not http or https, and shows a repeated address once', async () => {
+    const list = [
+      { ...newsArticle(1), title: 'Mau', url: 'javascript:alert(1)' },
+      { ...newsArticle(2), title: 'Bom', url: 'https://example.com/bom' },
+      { ...newsArticle(3), title: 'Bom de novo', url: 'https://example.com/bom' },
+    ];
+    getNewsArticles.mockResolvedValue({ articles: list, source: 'edge-function', origin: 'live' });
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+
+    expect(await screen.findByRole('heading', { level: 3, name: 'Bom' })).toBeInTheDocument();
+    expect(screen.queryByText('Mau')).toBeNull();
+    expect(screen.queryByText('Bom de novo')).toBeNull();
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+  });
+
+  it('says there is no article at all when none has a usable address', async () => {
+    getNewsArticles.mockResolvedValue({
+      articles: [{ ...newsArticle(1), url: 'data:text/html,x' }],
+      source: 'edge-function',
+      origin: 'live',
+    });
+    renderWithProviders(<BlogPage />, { route: '/blog' });
+
+    expect(await screen.findByText('Nenhuma notícia encontrada')).toBeInTheDocument();
+  });
+});
