@@ -424,7 +424,7 @@ describe('the hosts the network guard answers itself', () => {
 
   it('hold the hosts the pages still load from and no more: the blog image allow list, the feeds, and no minio', () => {
     expect([...MOCKED_IMAGE_HOSTS]).toEqual([...BLOG_IMAGE_HOSTS]);
-    expect([...MOCKED_FEED_HOSTS]).toEqual(['dev.to', 'www.tabnews.com.br', 'qpcwoioflaxiasmcdfbd.supabase.co']);
+    expect([...MOCKED_FEED_HOSTS]).toEqual(['dev.to', 'www.tabnews.com.br', 'db.vnone.com.br']);
     expect(MOCKED_HOSTS.some((host) => host.includes('minio'))).toBe(false);
   });
 });
