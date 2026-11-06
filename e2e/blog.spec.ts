@@ -198,6 +198,8 @@ test.describe('blog controls, contrast', () => {
   test('reaches 4.5:1 for the muted texts, the placeholder and the inactive chips', async ({ page }) => {
     await openBlog(page);
     await page.getByRole('textbox', { name: 'Buscar artigos' }).fill('xyz');
+    // The empty block has the one Limpar filtros (on the cream list); the band shows none when nothing matches.
+    await expect(page.getByText('Tenta outros filtros ou limpa a busca.')).toBeVisible();
 
     const colors = await page.evaluate(() => {
       const read = (element: Element | null, pseudo?: string) =>
@@ -223,7 +225,7 @@ test.describe('blog controls, contrast', () => {
     });
 
     for (const [name, value] of Object.entries(colors)) {
-      const background = ['status', 'note'].includes(name) ? CREAM : WHITE_BAND;
+      const background = ['status', 'note', 'clear'].includes(name) ? CREAM : WHITE_BAND;
       expect(contrast(parseRgb(value), background), name).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);
     }
   });
