@@ -63,7 +63,7 @@ describe('BlogFilters chips', () => {
     expect(screen.getByRole('button', { name: 'English' }).querySelector('[aria-hidden="true"]')).not.toBeNull();
   });
 
-  it('makes every chip a plain button of at least 44px that wraps, never scrolls sideways', () => {
+  it('makes every chip a plain button with the 44px class (jsdom paints no boxes: e2e measures them) in a row that wraps', () => {
     renderFilters();
 
     for (const chip of screen.getAllByRole('button')) {
@@ -106,7 +106,7 @@ describe('BlogFilters search', () => {
     expect(onSearchChange).toHaveBeenCalledWith('n');
   });
 
-  it('shows a clear button only when there is a query, a plain button of 44px', async () => {
+  it('shows a clear button only when there is a query, a plain button with the 44px class (e2e measures the box)', async () => {
     const user = userEvent.setup();
     const empty = renderFilters();
     expect(screen.queryByRole('button', { name: 'Limpar busca' })).toBeNull();

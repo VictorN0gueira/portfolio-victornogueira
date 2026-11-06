@@ -31,17 +31,22 @@ beforeEach(() => {
 });
 
 describe('BlogPage copy', () => {
-  it.each(['edge-function', 'fallback'])('says what the page is, with no filler and no claim that is not true (%s)', async (source) => {
-    getNewsArticles.mockResolvedValue({ articles: [article], source });
-    renderWithProviders(<BlogPage />, { route: '/blog' });
-    await screen.findAllByText('Artigo de teste');
+  it.each(['edge-function', 'fallback'])(
+    'says what the page is, with no filler and no claim that is not true (%s)',
+    async (source) => {
+      getNewsArticles.mockResolvedValue({ articles: [article], source });
+      renderWithProviders(<BlogPage />, { route: '/blog' });
+      await screen.findAllByText('Artigo de teste');
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Leituras sobre IA e automação');
-    const text = document.body.textContent ?? '';
-    expect(text).toMatch(/A gente junta artigos sobre inteligência artificial e automação/);
-    expect(text).not.toMatch(/futuro é|inteligente|benefícios|curadas|Atualizado diariamente|Cache|server-side|GNews|portfólio/i);
-    expect(text).not.toMatch(/insights|Dev\.to ao vivo|chat[\s-]?bot/i);
-  });
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Leituras sobre IA e automação');
+      const text = document.body.textContent ?? '';
+      expect(text).toMatch(/A gente junta artigos sobre inteligência artificial e automação/);
+      expect(text).not.toMatch(
+        /futuro é|inteligente|benefícios|curadas|Atualizado diariamente|Cache|server-side|GNews|portfólio/i,
+      );
+      expect(text).not.toMatch(/insights|Dev\.to ao vivo|chat[\s-]?bot/i);
+    },
+  );
 
   it('has no emoji badge, and the flags, which stay as decoration, are hidden from screen readers', async () => {
     getNewsArticles.mockResolvedValue({ articles: [article], source: 'stale-cache' });
@@ -69,6 +74,8 @@ describe('BlogPage copy', () => {
     renderWithProviders(<BlogPage />, { route: '/blog' });
     await screen.findAllByText('Artigo de teste');
 
-    expect(screen.getByText('Os artigos vêm de sites de terceiros e os links levam aos sites de quem publicou.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Os artigos vêm de sites de terceiros e os links levam aos sites de quem publicou.'),
+    ).toBeInTheDocument();
   });
 });

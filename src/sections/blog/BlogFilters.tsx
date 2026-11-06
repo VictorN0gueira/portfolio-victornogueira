@@ -115,6 +115,34 @@ function renderLanguage(filter: LangFilter) {
   );
 }
 
+interface CountRowProps {
+  count: string;
+  hasClearButton: boolean;
+  isDisabled: boolean;
+  onClear: () => void;
+}
+
+/** The count of the results, in the status region that is always in the page, and the button that clears the filters. */
+function CountRow({ count, hasClearButton, isDisabled, onClear }: CountRowProps) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 has-[p:empty]:-mt-4">
+      <p role="status" className="font-mono text-xs uppercase tracking-[.12em] text-vn-gray-dark">
+        {count}
+      </p>
+      {hasClearButton && (
+        <button
+          type="button"
+          disabled={isDisabled}
+          onClick={onClear}
+          className="inline-flex min-h-11 items-center font-mono text-xs uppercase tracking-[.12em] text-vn-ink underline underline-offset-4 vn-focus-ring-ink disabled:opacity-50"
+        >
+          {blogCopy.filters.clear}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /**
  * The search, the two rows of chips and the count, on a white band under the hero. The count is a polite status region that
  * is in the page before any filter is used, so the number is announced when it appears and when it changes. It is the only
@@ -156,21 +184,12 @@ export function BlogFilters(props: BlogFiltersProps) {
             onSelect={props.onCatChange}
             renderLabel={(filter) => CAT_LABELS[filter]}
           />
-          <div className="flex flex-wrap items-center gap-x-4 has-[p:empty]:-mt-4">
-            <p role="status" className="font-mono text-xs uppercase tracking-[.12em] text-vn-gray-dark">
-              {hasActiveFilters && countLabel(resultCount)}
-            </p>
-            {hasClearButton && (
-              <button
-                type="button"
-                disabled={isDisabled}
-                onClick={clearFilters}
-                className="inline-flex min-h-11 items-center font-mono text-xs uppercase tracking-[.12em] text-vn-ink underline underline-offset-4 vn-focus-ring-ink disabled:opacity-50"
-              >
-                {blogCopy.filters.clear}
-              </button>
-            )}
-          </div>
+          <CountRow
+            count={hasActiveFilters ? countLabel(resultCount) : ''}
+            hasClearButton={hasClearButton}
+            isDisabled={isDisabled}
+            onClear={clearFilters}
+          />
         </div>
       </Container>
     </Section>

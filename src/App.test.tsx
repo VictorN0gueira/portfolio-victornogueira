@@ -46,7 +46,9 @@ describe('App not found route', () => {
   it('loads the not found page on its own chunk and sets the noindex title', async () => {
     renderWithProviders(<App />, { route: '/nao-existe' });
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Página não encontrada' }, LAZY_WAIT)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Página não encontrada' }, LAZY_WAIT),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /voltar ao início/i })).toHaveAttribute('href', '/');
   });
 });
@@ -62,7 +64,9 @@ describe('App accessibility widget', () => {
     });
     vi.useRealTimers();
 
-    expect(await screen.findByRole('button', { name: 'Abrir opções de acessibilidade' }, LAZY_WAIT)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'Abrir opções de acessibilidade' }, LAZY_WAIT),
+    ).toBeInTheDocument();
   });
 
   it('cancels the wait when the app unmounts', () => {
@@ -88,7 +92,9 @@ describe('App pages that fail to load', () => {
     gate.isAboutBroken = false;
     await user.click(retry);
 
-    expect(await screen.findByRole('region', { name: 'Do primeiro papo ao fluxo rodando' }, LAZY_WAIT)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('region', { name: 'Do primeiro papo ao fluxo rodando' }, LAZY_WAIT),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 

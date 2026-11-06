@@ -282,7 +282,9 @@ test.describe('footer', () => {
 
   // The accessibility tab is fixed to the right edge, so on a narrow screen it can sit over the last letter.
   for (const viewport of [SMALLEST_PHONE, PHONE_320]) {
-    test(`keeps the wordmark clear of the accessibility tab at ${viewport.width}px with the large font`, async ({ page }, testInfo) => {
+    test(`keeps the wordmark clear of the accessibility tab at ${viewport.width}px with the large font`, async ({
+      page,
+    }, testInfo) => {
       test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
 
       await enableLargeFont(page);
@@ -311,7 +313,9 @@ test.describe('footer', () => {
     { viewport: PHONE_390, expectedFontSizePx: 85.8 },
     { viewport: DESKTOP_1440, expectedFontSizePx: 316.8 },
   ]) {
-    test(`keeps the design size of the wordmark at ${viewport.width}px with the normal font`, async ({ page }, testInfo) => {
+    test(`keeps the design size of the wordmark at ${viewport.width}px with the normal font`, async ({
+      page,
+    }, testInfo) => {
       test.skip(testInfo.project.name !== 'desktop', 'the viewport is set by this test');
 
       await page.setViewportSize(viewport);

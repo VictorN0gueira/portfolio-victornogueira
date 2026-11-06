@@ -26,7 +26,9 @@ const TRANSLUCENT_TEXT = /(?:text|placeholder:text)-(?:white|black|vn-white|vn-b
 const WEAK_GRAY_TEXT = /(?:text|placeholder:text)-vn-gray-mid/g;
 const BANNED_VISUALS =
   /\bdark:|\bitalic\b|text-\[10px\]|bg-gradient|bg-linear|bg-\[radial|\bblur-|backdrop-blur|\bfrom-|\bvia-/g;
-const ACCENT = /\b(?:bg|text)-vn-accent\b/g;
+// The accent in any paint (text, fill of a shape, border, ring, outline, icon fill or stroke, gradient stop, shadow), or its hex.
+const ACCENT =
+  /(?<![\w-])(?:bg|text|border|ring|outline|fill|stroke|from|via|to|decoration|divide|shadow|caret|accent)-vn-accent(?![\w-])|#00e5a0/gi;
 
 function findIn(pattern: RegExp): string[] {
   return SOURCES.flatMap(({ name, text }) => Array.from(text.matchAll(pattern), (match) => `${name}: ${match[0]}`));
@@ -85,6 +87,16 @@ describe('the blog colors', () => {
     expect('text-white/40 text-vn-white/[0.4] placeholder:text-white/30'.match(TRANSLUCENT_TEXT)).toHaveLength(3);
     expect('text-vn-white text-vn-gray-light'.match(TRANSLUCENT_TEXT)).toBeNull();
     expect('text-vn-gray-mid'.match(WEAK_GRAY_TEXT)).not.toBeNull();
+    for (const accent of [
+      'bg-vn-accent',
+      'border-vn-accent',
+      'ring-vn-accent',
+      'fill-vn-accent',
+      'stroke-vn-accent',
+      'text-[#00E5A0]',
+    ]) {
+      expect(accent.match(ACCENT), accent).not.toBeNull();
+    }
   });
 });
 

@@ -37,7 +37,7 @@ describe('BlogHero', () => {
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 
-  it('says it is busy with aria-disabled, stays in the tab order and keeps the focus while it loads', async () => {
+  it('says it is busy with aria-disabled, stays in the tab order, keeps the focus and has the 44px class (e2e measures the box) while it loads', async () => {
     const user = userEvent.setup();
     const { rerender, onRefresh } = renderHero();
     const button = screen.getByRole('button', { name: /Atualizar/ });

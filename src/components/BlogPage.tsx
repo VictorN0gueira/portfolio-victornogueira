@@ -1,10 +1,10 @@
-import { useMemo, useRef, useState } from 'react';
-import { detectCategory } from '../utils/newsService';
+import { useMemo } from 'react';
 import { listableArticles } from '../sections/blog/articleLinks';
 import { BlogFilters } from '../sections/blog/BlogFilters';
 import { BlogHero } from '../sections/blog/BlogHero';
 import { BlogResults } from '../sections/blog/BlogResults';
-import { describeDataSource, type CatFilter, type LangFilter } from '../sections/blog/blogMeta';
+import { describeDataSource } from '../sections/blog/blogMeta';
+import { useBlogFilters } from '../sections/blog/useBlogFilters';
 import { useBlogNews } from '../sections/blog/useBlogNews';
 import { SEO } from './SEO';
 
@@ -15,32 +15,7 @@ import { SEO } from './SEO';
 export default function BlogPage() {
   const { articles: fetched, isLoading, error, origin, refresh } = useBlogNews();
   const articles = useMemo(() => listableArticles(fetched), [fetched]);
-  const [langFilter, setLangFilter] = useState<LangFilter>('all');
-  const [catFilter, setCatFilter] = useState<CatFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const searchRef = useRef<HTMLInputElement>(null);
-
-  const visibleArticles = useMemo(() => {
-    const query = searchQuery.toLowerCase();
-    return articles.filter((article) => {
-      const matchesLang = langFilter === 'all' || article.language === langFilter;
-      const matchesCat = catFilter === 'all' || detectCategory(article) === catFilter;
-      const matchesSearch =
-        !query ||
-        article.title.toLowerCase().includes(query) ||
-        (article.description || '').toLowerCase().includes(query);
-      return matchesLang && matchesCat && matchesSearch;
-    });
-  }, [articles, langFilter, catFilter, searchQuery]);
-
-  const hasActiveFilters = langFilter !== 'all' || catFilter !== 'all' || searchQuery !== '';
-  const clearFilters = () => {
-    setLangFilter('all');
-    setCatFilter('all');
-    setSearchQuery('');
-    // The clear buttons go away with the filters: the focus goes to the search field, not to the body (WCAG 2.4.3).
-    searchRef.current?.focus();
-  };
+  const filters = useBlogFilters(articles);
 
   return (
     <>
@@ -51,25 +26,25 @@ export default function BlogPage() {
         onRefresh={refresh}
       />
       <BlogFilters
-        searchQuery={searchQuery}
-        langFilter={langFilter}
-        catFilter={catFilter}
-        resultCount={visibleArticles.length}
-        hasActiveFilters={hasActiveFilters}
+        searchQuery={filters.query}
+        langFilter={filters.language}
+        catFilter={filters.category}
+        resultCount={filters.visibleArticles.length}
+        hasActiveFilters={filters.hasActiveFilters}
         isDisabled={isLoading || error !== null || articles.length === 0}
-        searchRef={searchRef}
-        onSearchChange={setSearchQuery}
-        onLangChange={setLangFilter}
-        onCatChange={setCatFilter}
-        onClear={clearFilters}
+        searchRef={filters.searchRef}
+        onSearchChange={filters.setQuery}
+        onLangChange={filters.setLanguage}
+        onCatChange={filters.setCategory}
+        onClear={filters.clear}
       />
       <BlogResults
         isLoading={isLoading}
         error={error}
         origin={origin}
         articles={articles}
-        visibleArticles={visibleArticles}
-        onClearFilters={clearFilters}
+        visibleArticles={filters.visibleArticles}
+        onClearFilters={filters.clear}
       />
     </>
   );

@@ -18,7 +18,9 @@ describe('blogCopy', () => {
     expect(blogCopy.lead).toBe(
       'A gente junta artigos sobre inteligência artificial e automação, em português e em inglês. Dá para filtrar por idioma e por tópico.',
     );
-    expect(blogCopy.thirdPartyNote).toBe('Os artigos vêm de sites de terceiros e os links levam aos sites de quem publicou.');
+    expect(blogCopy.thirdPartyNote).toBe(
+      'Os artigos vêm de sites de terceiros e os links levam aos sites de quem publicou.',
+    );
     expect(blogCopy.states.errorTitle).toBe('Ops! Algo deu errado');
   });
 

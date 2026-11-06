@@ -53,7 +53,7 @@ describe('BlogPage inside the site layout', () => {
     expect(document.getElementById('main-content')).toBeNull();
   });
 
-  it('names its sections: the hero by the title, and no section without a name', async () => {
+  it('names the hero section by its title and has one search landmark', async () => {
     const { container } = await renderLoaded();
 
     const title = screen.getByRole('heading', { level: 1 });
@@ -104,7 +104,7 @@ describe('BlogPage inside the site layout', () => {
 });
 
 describe('BlogPage search and filters', () => {
-  it('names the clear button, makes it a plain button, and gives it a target of at least 44px', async () => {
+  it('names the clear button, makes it a plain button, and gives it the 44px class (jsdom paints no boxes: e2e measures the target)', async () => {
     const { user } = await renderLoaded();
     expect(screen.queryByRole('button', { name: 'Limpar busca' })).toBeNull();
 
@@ -181,7 +181,11 @@ describe('BlogPage article cards', () => {
     const summary = within(englishLink).getByText('An English summary');
     expect(title.closest('[lang]')).toHaveAttribute('lang', 'en');
     expect(summary.closest('[lang]')).toHaveAttribute('lang', 'en');
-    expect(within(screen.getByRole('link', { name: 'Artigo de teste 2' })).getByText('Resumo do artigo 2').closest('[lang]')).toBeNull();
+    expect(
+      within(screen.getByRole('link', { name: 'Artigo de teste 2' }))
+        .getByText('Resumo do artigo 2')
+        .closest('[lang]'),
+    ).toBeNull();
   });
 
   it('puts the article titles one level under a heading of the list', async () => {
@@ -190,6 +194,10 @@ describe('BlogPage article cards', () => {
     const list = screen.getByRole('heading', { level: 2, name: 'Artigos' });
     expect(list).toBeInTheDocument();
     const titles = screen.getAllByRole('heading', { level: 3 });
-    expect(titles.map((title) => title.textContent)).toEqual(['Artigo de teste 1', 'Artigo de teste 2', 'Article in English']);
+    expect(titles.map((title) => title.textContent)).toEqual([
+      'Artigo de teste 1',
+      'Artigo de teste 2',
+      'Article in English',
+    ]);
   });
 });

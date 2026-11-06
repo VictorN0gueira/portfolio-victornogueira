@@ -43,7 +43,9 @@ async function boxesOutsideViewport(page: Page): Promise<string[]> {
         Array.from(document.querySelectorAll(selector)).flatMap((element, index) => {
           const box = element.getBoundingClientRect();
           const outside = box.left < -slack || box.right > width + slack;
-          return outside ? [`${name} #${index}: ${Math.round(box.left)} to ${Math.round(box.right)} in a ${width}px viewport`] : [];
+          return outside
+            ? [`${name} #${index}: ${Math.round(box.left)} to ${Math.round(box.right)} in a ${width}px viewport`]
+            : [];
         }),
       );
     },
@@ -60,7 +62,12 @@ async function clippedRingSides(element: Locator): Promise<string[]> {
     const ring = { left: box.left - grow, top: box.top - grow, right: box.right + grow, bottom: box.bottom + grow };
     const slack = 0.5;
     const sides: string[] = [];
-    const check = (owner: string, area: { left: number; top: number; right: number; bottom: number }, horizontal: boolean, vertical: boolean) => {
+    const check = (
+      owner: string,
+      area: { left: number; top: number; right: number; bottom: number },
+      horizontal: boolean,
+      vertical: boolean,
+    ) => {
       if (horizontal && ring.left < area.left - slack) sides.push(owner + ' left');
       if (horizontal && ring.right > area.right + slack) sides.push(owner + ' right');
       if (vertical && ring.top < area.top - slack) sides.push(owner + ' top');
@@ -75,7 +82,12 @@ async function clippedRingSides(element: Locator): Promise<string[]> {
       const outer = ancestor.getBoundingClientRect();
       const left = outer.left + ancestor.clientLeft;
       const top = outer.top + ancestor.clientTop;
-      check(ancestor.tagName.toLowerCase() + '.' + ancestor.className.split(' ')[0], { left, top, right: left + ancestor.clientWidth, bottom: top + ancestor.clientHeight }, clipsX, clipsY);
+      check(
+        ancestor.tagName.toLowerCase() + '.' + ancestor.className.split(' ')[0],
+        { left, top, right: left + ancestor.clientWidth, bottom: top + ancestor.clientHeight },
+        clipsX,
+        clipsY,
+      );
     }
     return sides;
   });
@@ -102,7 +114,9 @@ for (const viewport of VIEWPORTS) {
   test.describe(`blog at ${viewport.width}px`, () => {
     test.use({ viewport });
 
-    test('has no horizontal scroll, a working skip link and filter chips that say which one is on', async ({ page }) => {
+    test('has no horizontal scroll, a working skip link and filter chips that say which one is on', async ({
+      page,
+    }) => {
       await openBlog(page);
 
       expect(await boxesOutsideViewport(page)).toEqual([]);
@@ -115,7 +129,9 @@ for (const viewport of VIEWPORTS) {
       await expect(page.getByRole('main')).toBeFocused();
       expect(new URL(page.url()).hash).toBe('');
 
-      const all = page.getByRole('group', { name: 'Filtrar por idioma' }).getByRole('button', { name: 'Todos idiomas' });
+      const all = page
+        .getByRole('group', { name: 'Filtrar por idioma' })
+        .getByRole('button', { name: 'Todos idiomas' });
       const english = page.getByRole('group', { name: 'Filtrar por idioma' }).getByRole('button', { name: 'English' });
       await expect(all).toHaveAttribute('aria-pressed', 'true');
       await expect(english).toHaveAttribute('aria-pressed', 'false');
@@ -150,14 +166,15 @@ test.describe('blog controls', () => {
     expect(box?.width).toBeGreaterThanOrEqual(MIN_TARGET_PX);
     expect(box?.height).toBeGreaterThanOrEqual(MIN_TARGET_PX);
   });
-
-})
+});
 
 for (const viewport of VIEWPORTS) {
   test.describe(`blog focus rings at ${viewport.width}px`, () => {
     test.use({ viewport });
 
-    test('shows the whole focus ring of the first and the last chip of each row, clipped by no ancestor', async ({ page }) => {
+    test('shows the whole focus ring of the first and the last chip of each row, clipped by no ancestor', async ({
+      page,
+    }) => {
       await openBlog(page);
 
       for (const row of ['Filtrar por idioma', 'Filtrar por tópico']) {
@@ -165,7 +182,9 @@ for (const viewport of VIEWPORTS) {
         for (const chip of [chips.first(), chips.last()]) {
           await chip.focus();
           // The ring is read once its width has settled.
-          await expect.poll(() => chip.evaluate((node) => parseFloat(getComputedStyle(node).outlineWidth))).toBeGreaterThanOrEqual(2);
+          await expect
+            .poll(() => chip.evaluate((node) => parseFloat(getComputedStyle(node).outlineWidth)))
+            .toBeGreaterThanOrEqual(2);
           expect(await clippedRingSides(chip), `${row}: ${await chip.textContent()}`).toEqual([]);
         }
       }
@@ -181,13 +200,18 @@ test.describe('blog controls, contrast', () => {
     await page.getByRole('textbox', { name: 'Buscar artigos' }).fill('xyz');
 
     const colors = await page.evaluate(() => {
-      const read = (element: Element | null, pseudo?: string) => (element ? getComputedStyle(element, pseudo).color : '');
+      const read = (element: Element | null, pseudo?: string) =>
+        element ? getComputedStyle(element, pseudo).color : '';
       const search = document.getElementById('search');
       const chip = Array.from(document.querySelectorAll('button[aria-pressed="false"]'))[0];
       const status = document.querySelector('main [role="status"]');
-      const note = Array.from(document.querySelectorAll('p')).find((p) => /sites de terceiros/.test(p.textContent ?? ''));
+      const note = Array.from(document.querySelectorAll('p')).find((p) =>
+        /sites de terceiros/.test(p.textContent ?? ''),
+      );
       const count = Array.from(document.querySelectorAll('p')).find((p) => /encontrado/.test(p.textContent ?? ''));
-      const clear = Array.from(document.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Limpar filtros');
+      const clear = Array.from(document.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'Limpar filtros',
+      );
       return {
         placeholder: read(search, '::placeholder'),
         chip: read(chip ?? null),
@@ -206,7 +230,10 @@ test.describe('blog controls, contrast', () => {
 });
 
 // A one pixel white PNG: the cover the third party might send, the worst case for a pill that has no surface of its own.
-const WHITE_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC', 'base64');
+const WHITE_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC',
+  'base64',
+);
 const WHITE_COVER = 'https://images.unsplash.com/photo-white-cover?w=800';
 const WHITE = [255, 255, 255];
 
@@ -225,11 +252,23 @@ test.describe('blog tag pills on a white cover', () => {
     test.describe(`at ${viewport.width}px`, () => {
       test.use({ viewport });
 
-      test('reads white text at 4.5:1 or more on the language pill and on the topic pill, even over a white picture', async ({ page }) => {
-        await page.route(WHITE_COVER, (route) => route.fulfill({ status: 200, contentType: 'image/png', body: WHITE_PNG }));
+      test('reads white text at 4.5:1 or more on the language pill and on the topic pill, even over a white picture', async ({
+        page,
+      }) => {
+        await page.route(WHITE_COVER, (route) =>
+          route.fulfill({ status: 200, contentType: 'image/png', body: WHITE_PNG }),
+        );
         const articles = [1, 2, 3].map((index) => ({ ...sampleArticle(index, 'pt'), image: WHITE_COVER }));
         await openBlog(page, articles);
-        await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('a img')).every((img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0))).toBe(true);
+        await expect
+          .poll(() =>
+            page.evaluate(() =>
+              Array.from(document.querySelectorAll('a img')).every(
+                (img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0,
+              ),
+            ),
+          )
+          .toBe(true);
 
         const pills = await page.evaluate(() =>
           Array.from(document.querySelectorAll('[id$="-tags"] > span')).map((pill) => {
@@ -255,20 +294,40 @@ const NARROW_VIEWPORTS = [320, 360, 390];
 const FRESH = () => new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
 function tagStressArticles(): SampleArticle[] {
-  const base = { description: 'Resumo do artigo', image: '', source: { name: 'Uma fonte com nome bem comprido', url: 'https://example.com' } };
+  const base = {
+    description: 'Resumo do artigo',
+    image: '',
+    source: { name: 'Uma fonte com nome bem comprido', url: 'https://example.com' },
+  };
   return [
     { ...sampleArticle(0, 'pt'), title: 'O destaque da lista' },
-    { ...sampleArticle(1, 'en'), ...base, title: 'Machine learning in production: a title long enough to wrap onto three lines of the card', publishedAt: FRESH() },
-    { ...sampleArticle(2, 'en'), ...base, title: 'Automação de processos para equipes pequenas, com um título que quebra em várias linhas', publishedAt: FRESH() },
+    {
+      ...sampleArticle(1, 'en'),
+      ...base,
+      title: 'Machine learning in production: a title long enough to wrap onto three lines of the card',
+      publishedAt: FRESH(),
+    },
+    {
+      ...sampleArticle(2, 'en'),
+      ...base,
+      title: 'Automação de processos para equipes pequenas, com um título que quebra em várias linhas',
+      publishedAt: FRESH(),
+    },
     { ...sampleArticle(3, 'pt'), ...base, title: 'Workflow n8n do começo ao fim', publishedAt: FRESH() },
     { ...sampleArticle(4, 'en'), ...base, title: 'Autonomous agent loop', publishedAt: FRESH() },
-    { ...sampleArticle(5, 'pt'), ...base, title: 'Machine learning em produção', publishedAt: new Date(Date.now() - 3 * 86_400_000).toISOString() },
+    {
+      ...sampleArticle(5, 'pt'),
+      ...base,
+      title: 'Machine learning em produção',
+      publishedAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+    },
   ];
 }
 
 async function overlappingCardParts(page: Page): Promise<string[]> {
   return page.evaluate(() => {
-    const intersects = (a: DOMRect, b: DOMRect) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+    const intersects = (a: DOMRect, b: DOMRect) =>
+      a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
     const problems: string[] = [];
     const cards = Array.from(document.querySelectorAll<HTMLElement>('main a[target="_blank"]')).slice(1);
     cards.forEach((card, cardIndex) => {
@@ -276,18 +335,27 @@ async function overlappingCardParts(page: Page): Promise<string[]> {
       const cover = card.querySelector('img')?.parentElement?.getBoundingClientRect();
       const pills = Array.from(card.querySelectorAll<HTMLElement>('[id$="-tags"] > span'));
       const novo = card.querySelector<HTMLElement>('[id$="-new"]');
-      const parts = [...pills.map((pill, index) => ({ name: `pill ${index} ${pill.textContent?.trim()}`, box: pill.getBoundingClientRect() })), ...(novo ? [{ name: 'NOVO', box: novo.getBoundingClientRect() }] : [])];
+      const parts = [
+        ...pills.map((pill, index) => ({
+          name: `pill ${index} ${pill.textContent?.trim()}`,
+          box: pill.getBoundingClientRect(),
+        })),
+        ...(novo ? [{ name: 'NOVO', box: novo.getBoundingClientRect() }] : []),
+      ];
       parts.forEach((part, index) => {
         parts.slice(index + 1).forEach((other) => {
           if (intersects(part.box, other.box)) problems.push(`${label}: ${part.name} touches ${other.name}`);
         });
-        if (cover && (part.box.left < cover.left || part.box.right > cover.right)) problems.push(`${label}: ${part.name} leaves the cover`);
+        if (cover && (part.box.left < cover.left || part.box.right > cover.right))
+          problems.push(`${label}: ${part.name} leaves the cover`);
       });
       const meta = Array.from(card.querySelectorAll<HTMLElement>('[id$="-meta"] > div'));
-      if (meta.length === 2 && intersects(meta[0].getBoundingClientRect(), meta[1].getBoundingClientRect())) problems.push(`${label}: the time and the source touch`);
+      if (meta.length === 2 && intersects(meta[0].getBoundingClientRect(), meta[1].getBoundingClientRect()))
+        problems.push(`${label}: the time and the source touch`);
       const metaBox = card.querySelector('[id$="-meta"]')?.getBoundingClientRect();
       meta.forEach((part) => {
-        if (metaBox && part.getBoundingClientRect().right > metaBox.right + 0.5) problems.push(`${label}: the meta line spills out of its card`);
+        if (metaBox && part.getBoundingClientRect().right > metaBox.right + 0.5)
+          problems.push(`${label}: the meta line spills out of its card`);
       });
     });
     return problems;
@@ -298,7 +366,9 @@ for (const width of NARROW_VIEWPORTS) {
   test.describe(`blog card tags at ${width}px`, () => {
     test.use({ viewport: { width, height: 800 } });
 
-    test('keeps the language and topic pills, the NOVO pill and the meta line from touching each other', async ({ page }) => {
+    test('keeps the language and topic pills, the NOVO pill and the meta line from touching each other', async ({
+      page,
+    }) => {
       await openBlog(page, tagStressArticles());
       await expect(page.getByRole('link', { name: /Machine learning in production/ })).toBeVisible();
       await expect(page.getByText('NOVO').first()).toBeVisible();
