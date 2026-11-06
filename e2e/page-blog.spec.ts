@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { blogCopy } from '../src/sections/blog/blogCopy';
-import { EDGE_FUNCTION, addressTitleArticles, routeNews, stressArticles, watchShifts } from './blogFixtures';
+import { SUPABASE_ARTICLES, addressTitleArticles, routeNews, stressArticles, watchShifts } from './blogFixtures';
 import {
   ACCENT_RGB,
   MIN_TOUCH_PX,
@@ -259,7 +259,7 @@ test.describe('/blog does not move when the list arrives', () => {
       target.evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
     const before = [await placeOf(field), await placeOf(featured)];
     // Every source fails now: the list that was saved comes back, with the longest message of the status line.
-    await page.route(EDGE_FUNCTION, (route) => route.abort());
+    await page.route(SUPABASE_ARTICLES, (route) => route.abort());
 
     await page.getByRole('button', { name: new RegExp(blogCopy.refresh) }).click();
 

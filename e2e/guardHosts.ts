@@ -12,8 +12,8 @@ export const N8N_HOST = 'n8n.vnone.com.br';
  */
 export const MOCKED_IMAGE_HOSTS: readonly string[] = [...BLOG_IMAGE_HOSTS];
 
-/** The article feeds the blog reads (the last one is its edge function). The guard answers them with an empty list. */
-export const MOCKED_FEED_HOSTS: readonly string[] = ['dev.to', 'www.tabnews.com.br', 'qpcwoioflaxiasmcdfbd.supabase.co'];
+/** The article feeds the blog reads. The guard answers them with an empty list. */
+export const MOCKED_FEED_HOSTS: readonly string[] = ['dev.to', 'www.tabnews.com.br', 'db.vnone.com.br'];
 
 /** Every host the guard answers itself. It never holds the n8n host or the host of the page under test. */
 export const MOCKED_HOSTS: readonly string[] = [...MOCKED_IMAGE_HOSTS, ...MOCKED_FEED_HOSTS];
