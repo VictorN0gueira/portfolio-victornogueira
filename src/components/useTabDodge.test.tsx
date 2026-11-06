@@ -1,179 +1,29 @@
-import { act, fireEvent, render } from '@testing-library/react';
+import { act, fireEvent } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { StrictMode, useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { dodgeOffset } from '../lib/floatingDodge';
-import { TAB_SIZE_PX, TAB_SLIDE_MS, type Box, type TabPosition } from '../lib/floatingLayout';
-import { clearDodge, readDodge, useTabDodge } from './useTabDodge';
+import { TAB_SIZE_PX, TAB_SLIDE_MS, type Box } from '../lib/floatingLayout';
+import { clearDodge, readDodge } from './useTabDodge';
+import {
+  dx,
+  dy,
+  env,
+  frame,
+  FRAME_MS,
+  installHarnessHooks,
+  overlapArea,
+  PHONE,
+  PHONE_SCENE,
+  PRESS_WINDOW_MS,
+  rectOf,
+  resizeTo,
+  setup,
+  SETTLE_MS,
+  SIDEWAYS,
+} from './useTabDodge.harness';
 
-// jsdom has no layout. The scene below says where the window is, where the tab rests and where the focused link is, and the
-// mocks answer from it, so a test can change the scene (a rotation, a scroll) and let the hook judge again.
-
-const FRAME_MS = 16;
-const SETTLE_MS = 100;
-const PRESS_WINDOW_MS = 500;
-const PHONE = { width: 390, height: 844 };
-const SIDEWAYS = { width: 844, height: 390 };
-
-interface Scene {
-  window: { width: number; height: number };
-  tab: Box;
-  link: Box;
-  clip?: Box;
-}
-
-let scene: Scene;
-// jsdom answers :focus-visible with its own idea of keyboard use: the tests say what the browser would.
-let isFocusVisible = true;
-
-const rectOf = ({ left, top, width, height }: Box): DOMRect =>
-  ({
-    left,
-    top,
-    width,
-    height,
-    right: left + width,
-    bottom: top + height,
-    x: left,
-    y: top,
-    toJSON: () => ({}),
-  }) as DOMRect;
-
-const PHONE_SCENE: Scene = {
-  window: PHONE,
-  tab: { left: 346, top: 316, width: TAB_SIZE_PX, height: TAB_SIZE_PX },
-  link: { left: 0, top: 330, width: 390, height: 40 },
-};
-
-interface HarnessProps {
-  isOpen?: boolean;
-  position?: TabPosition | null;
-}
-
-function Harness({ isOpen = false, position = null }: HarnessProps) {
-  const wrapperRef = useRef<HTMLElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  useTabDodge({ wrapperRef, triggerRef, isOpen, position });
-  return (
-    <>
-      <a href="#a" data-testid="link-a">
-        a
-      </a>
-      <a href="#b" data-testid="link-b">
-        b
-      </a>
-      <div data-testid="above" style={{ position: 'fixed', zIndex: 200 }}>
-        <a href="#c" data-testid="link-c">
-          c
-        </a>
-      </div>
-      <input data-testid="field" />
-      <div data-testid="clip" style={{ overflowX: 'hidden', overflowY: 'hidden' }}>
-        <a href="#d" data-testid="link-d">
-          d
-        </a>
-      </div>
-      <div data-testid="context" style={{ position: 'absolute', zIndex: 1 }}>
-        <a href="#f" data-testid="link-f" style={{ position: 'relative', zIndex: 9999 }}>
-          f
-        </a>
-      </div>
-      <div data-testid="cap-parent">
-        <div data-testid="cap">
-          <a href="#g" data-testid="link-g" style={{ position: 'relative', zIndex: 9999 }}>
-            g
-          </a>
-        </div>
-      </div>
-      <dialog open data-testid="dialog">
-        <a href="#e" data-testid="link-e">
-          e
-        </a>
-      </dialog>
-      <aside ref={wrapperRef} data-testid="wrapper" style={{ zIndex: 150 }}>
-        <button ref={triggerRef} type="button" data-testid="tab">
-          tab
-        </button>
-        <button type="button" data-testid="option">
-          option
-        </button>
-      </aside>
-    </>
-  );
-}
-
-function setup(props: HarnessProps = {}, isStrict = false) {
-  const element = <Harness {...props} />;
-  const view = render(isStrict ? <StrictMode>{element}</StrictMode> : element);
-  const wrapper = view.getByTestId('wrapper');
-  for (const id of ['link-a', 'link-b', 'link-c', 'link-d', 'link-e', 'link-f', 'link-g', 'field']) {
-    vi.spyOn(view.getByTestId(id), 'getClientRects').mockImplementation(
-      () =>
-        [
-          rectOf(id === 'link-b' ? { left: 0, top: 100, width: 390, height: 40 } : scene.link),
-        ] as unknown as DOMRectList,
-    );
-  }
-  const rerender = (next: HarnessProps) =>
-    view.rerender(
-      isStrict ? (
-        <StrictMode>
-          <Harness {...next} />
-        </StrictMode>
-      ) : (
-        <Harness {...next} />
-      ),
-    );
-  return {
-    view,
-    rerender,
-    tab: view.getByTestId('tab'),
-    a: view.getByTestId('link-a'),
-    b: view.getByTestId('link-b'),
-    wrapper,
-  };
-}
-
-function resizeTo(size: { width: number; height: number }) {
-  scene = { ...scene, window: size };
-  Object.defineProperty(window, 'innerHeight', { value: size.height, configurable: true });
-  Object.defineProperty(document.documentElement, 'clientWidth', { value: size.width, configurable: true });
-  act(() => {
-    window.dispatchEvent(new Event('resize'));
-    vi.advanceTimersByTime(FRAME_MS);
-  });
-}
-
-const dy = (tab: HTMLElement) => tab.style.getPropertyValue('--vn-dodge-y');
-const dx = (tab: HTMLElement) => tab.style.getPropertyValue('--vn-dodge-x');
-const frame = () => act(() => vi.advanceTimersByTime(FRAME_MS));
-const overlapArea = (a: Box, b: Box) =>
-  Math.max(0, Math.min(a.left + a.width, b.left + b.width) - Math.max(a.left, b.left)) *
-  Math.max(0, Math.min(a.top + a.height, b.top + b.height) - Math.max(a.top, b.top));
-
-beforeEach(() => {
-  vi.useFakeTimers();
-  scene = { ...PHONE_SCENE };
-  isFocusVisible = true;
-  // The wrapper is mounted before a test could spy on it, and the hook reads its box when it mounts.
-  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-    const id = this.getAttribute('data-testid');
-    const none = { left: 0, top: 0, width: 0, height: 0 };
-    return rectOf(id === 'wrapper' ? scene.tab : id === 'clip' ? (scene.clip ?? none) : none);
-  });
-  const matches = Element.prototype.matches;
-  vi.spyOn(Element.prototype, 'matches').mockImplementation(function (this: Element, selector: string) {
-    return selector === ':focus-visible' ? isFocusVisible : matches.call(this, selector);
-  });
-  Object.defineProperty(window, 'innerHeight', { value: PHONE.height, configurable: true });
-  Object.defineProperty(document.documentElement, 'clientWidth', { value: PHONE.width, configurable: true });
-});
-
-afterEach(() => {
-  vi.useRealTimers();
-  vi.restoreAllMocks();
-});
+installHarnessHooks();
 
 describe('the tab steps aside for a control the keyboard focused under it', () => {
   it('judges on the focus itself, in the next frame, with no key and no quiet moment: 32px clears the link', () => {
@@ -196,7 +46,7 @@ describe('the tab steps aside for a control the keyboard focused under it', () =
 
   it('does not move for a focus that is not focus-visible (the pointer put it there)', () => {
     const { tab, a } = setup();
-    isFocusVisible = false;
+    env.isFocusVisible = false;
     act(() => a.focus());
     frame();
     expect(dy(tab)).toBe('');
@@ -300,7 +150,7 @@ describe('the pointer', () => {
 
   it('does not move for a link the pointer focused when the browser does not call it focus-visible', () => {
     const { tab, a } = setup();
-    isFocusVisible = false;
+    env.isFocusVisible = false;
     fireEvent.pointerDown(document.body);
     act(() => a.focus());
     frame();
@@ -329,93 +179,6 @@ describe('the pointer', () => {
     act(() => vi.advanceTimersByTime(SETTLE_MS));
     expect(dy(tab)).toBe('-38px');
   });
-});
-
-describe('what makes a stacking context, which caps the z-index of what is inside it', () => {
-  const original = window.getComputedStyle.bind(window);
-
-  /** The computed style of the cap box (and its parent) says what the test wants; every other element answers as jsdom does. */
-  function overrideStyle(overrides: Record<string, Record<string, string>>) {
-    vi.spyOn(window, 'getComputedStyle').mockImplementation((element: Element, pseudo?: string | null) => {
-      const real = original(element, pseudo);
-      const extra = overrides[element.getAttribute('data-testid') ?? ''];
-      if (!extra) return real;
-      return new Proxy(real, {
-        get(target, property) {
-          if (property === 'getPropertyValue') return (name: string) => extra[name] ?? target.getPropertyValue(name);
-          const value = Reflect.get(target, property);
-          return typeof value === 'function' ? value.bind(target) : value;
-        },
-      });
-    });
-  }
-
-  function focusInner(overrides: Record<string, Record<string, string>>) {
-    overrideStyle(overrides);
-    const harness = setup();
-    act(() => harness.view.getByTestId('link-g').focus());
-    frame();
-    return dy(harness.tab);
-  }
-
-  const CREATORS: Array<[string, Record<string, string>]> = [
-    ['opacity under 1', { opacity: '0.5' }],
-    ['a transform', { transform: 'matrix(1, 0, 0, 1, 4, 0)' }],
-    ['a translate (what Tailwind v4 emits)', { translate: '4px 0px' }],
-    ['a rotate', { rotate: '5deg' }],
-    ['a scale', { scale: '1.1' }],
-    ['a filter', { filter: 'blur(1px)' }],
-    ['a backdrop-filter', { 'backdrop-filter': 'blur(4px)' }],
-    ['a perspective', { perspective: '100px' }],
-    ['a clip-path', { 'clip-path': 'circle(40%)' }],
-    ['a mask-image', { 'mask-image': 'linear-gradient(#000, transparent)' }],
-    ['a mask-border-source', { 'mask-border-source': 'url(x.svg)' }],
-    ['a mix-blend-mode', { 'mix-blend-mode': 'multiply' }],
-    ['isolation', { isolation: 'isolate' }],
-    ['contain: paint', { contain: 'paint' }],
-    ['contain: layout', { contain: 'layout' }],
-    ['contain: strict', { contain: 'strict' }],
-    ['contain: content', { contain: 'content' }],
-    ['container-type: size', { 'container-type': 'size' }],
-    ['container-type: inline-size', { 'container-type': 'inline-size' }],
-    ['a view-transition-name', { 'view-transition-name': 'hero' }],
-    ['will-change: transform', { 'will-change': 'transform' }],
-    ['will-change: opacity, scroll-position', { 'will-change': 'scroll-position, opacity' }],
-    ['position: fixed', { position: 'fixed' }],
-    ['position: sticky', { position: 'sticky' }],
-    ['a z-index on a positioned box', { position: 'relative', 'z-index': '2' }],
-  ];
-
-  for (const [name, values] of CREATORS) {
-    it(`caps the link inside it when it has ${name}: the link is below the widget and the tab steps aside`, () => {
-      expect(focusInner({ cap: values })).toBe('-38px');
-    });
-  }
-
-  for (const display of ['flex', 'inline-flex', 'grid', 'inline-grid']) {
-    it(`counts a static ${display} item with a z-index as a context`, () => {
-      expect(focusInner({ cap: { 'z-index': '1' }, 'cap-parent': { display } })).toBe('-38px');
-    });
-  }
-
-  const NOT_CREATORS: Array<[string, Record<string, string>]> = [
-    ['nothing at all', {}],
-    ['a z-index on a static box that is not a flex or grid item', { 'z-index': '1' }],
-    ['opacity 1', { opacity: '1' }],
-    ['transform: none', { transform: 'none' }],
-    ['translate: none', { translate: 'none' }],
-    ['mix-blend-mode: normal', { 'mix-blend-mode': 'normal' }],
-    ['contain: style', { contain: 'style' }],
-    ['container-type: normal', { 'container-type': 'normal' }],
-    ['will-change: scroll-position', { 'will-change': 'scroll-position' }],
-    ['position: relative without a z-index', { position: 'relative', 'z-index': 'auto' }],
-  ];
-
-  for (const [name, values] of NOT_CREATORS) {
-    it(`does not cap the link inside it for ${name}: the link at 9999 is above the widget`, () => {
-      expect(focusInner({ cap: values })).toBe('');
-    });
-  }
 });
 
 describe('a press on the tab', () => {
@@ -487,7 +250,7 @@ describe('what the tab can not cover', () => {
   const CLEAR_OF_TAB = { left: 0, top: 0, width: 300, height: 844 };
 
   it('ignores a control whose clipped part is clear of the tab', () => {
-    scene = { ...scene, clip: CLEAR_OF_TAB };
+    env.scene = { ...env.scene, clip: CLEAR_OF_TAB };
     const { tab, view } = setup();
     act(() => view.getByTestId('link-d').focus());
     frame();
@@ -495,7 +258,7 @@ describe('what the tab can not cover', () => {
   });
 
   it('judges a clipped control by the part that shows', () => {
-    scene = { ...scene, clip: { left: 0, top: 0, width: 390, height: 844 } };
+    env.scene = { ...env.scene, clip: { left: 0, top: 0, width: 390, height: 844 } };
     const { tab, view } = setup();
     act(() => view.getByTestId('link-d').focus());
     frame();
@@ -536,7 +299,7 @@ describe('what the tab can not cover', () => {
     inner.href = '#g';
     inner.style.cssText = 'position:relative;z-index:1';
     above.append(inner);
-    vi.spyOn(inner, 'getClientRects').mockImplementation(() => [rectOf(scene.link)] as unknown as DOMRectList);
+    vi.spyOn(inner, 'getClientRects').mockImplementation(() => [rectOf(env.scene.link)] as unknown as DOMRectList);
     act(() => inner.focus());
     frame();
     expect(dy(tab)).toBe('');
@@ -585,7 +348,7 @@ describe('a page that has room to scroll the control clear', () => {
     scrollY = 0;
     Object.defineProperty(root, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(window, 'scrollY', { get: () => scrollY, configurable: true });
-    scene = { ...scene, tab: LOW_TAB, link: LOW_LINK };
+    env.scene = { ...env.scene, tab: LOW_TAB, link: LOW_LINK };
   });
 
   afterEach(() => {
@@ -599,7 +362,7 @@ describe('a page that has room to scroll the control clear', () => {
     frame();
     expect(dy(tab)).toBe('');
 
-    scene = { ...scene, link: { ...LOW_LINK, top: 300 } };
+    env.scene = { ...env.scene, link: { ...LOW_LINK, top: 300 } };
     act(() => vi.advanceTimersByTime(SETTLE_MS));
     expect(dy(tab)).toBe('');
   });
@@ -643,7 +406,7 @@ describe('the judge never keeps an offset of its own', () => {
     expect(dy(tab)).toBe('-38px');
     rerender({ isOpen: false });
     expect(dy(tab)).toBe('-38px');
-    scene = { ...scene, link: { ...scene.link, top: 100 } };
+    env.scene = { ...env.scene, link: { ...env.scene.link, top: 100 } };
     rerender({ isOpen: true });
     rerender({ isOpen: false });
     frame();
@@ -654,7 +417,7 @@ describe('the judge never keeps an offset of its own', () => {
     const { tab, a, rerender } = setup();
     act(() => a.focus());
     frame();
-    scene = { ...scene, link: { ...scene.link, top: 100 } };
+    env.scene = { ...env.scene, link: { ...env.scene.link, top: 100 } };
 
     rerender({ position: { side: 'right', ratio: 0.4 } });
     act(() => vi.advanceTimersByTime(TAB_SLIDE_MS));
@@ -667,7 +430,7 @@ describe('the judge never keeps an offset of its own', () => {
     const { tab, a, view } = setup();
     act(() => a.focus());
     frame();
-    scene = { ...scene, link: { ...scene.link, top: 100 } };
+    env.scene = { ...env.scene, link: { ...env.scene.link, top: 100 } };
 
     act(() => {
       fireEvent.scroll(view.getByTestId('above'));
@@ -692,7 +455,7 @@ describe('the judge never keeps an offset of its own', () => {
       { window: PHONE, tab: PHONE_SCENE.tab, link: PHONE_SCENE.link },
     ];
     for (const next of places) {
-      scene = next;
+      env.scene = next;
       resizeTo(next.window);
       const drawn = {
         ...next.tab,
@@ -708,23 +471,23 @@ describe('the judge never keeps an offset of its own', () => {
   });
 
   it('keeps the tab where it can be reached for a control that fills the window: in the window, and no part of the control is lost', () => {
-    scene = { ...scene, link: { left: 0, top: 0, width: 390, height: 844 } };
+    env.scene = { ...env.scene, link: { left: 0, top: 0, width: 390, height: 844 } };
     const { tab, a } = setup();
     act(() => a.focus());
     frame();
     const offset = dodgeOffset({
-      tab: scene.tab,
-      target: scene.link,
+      tab: env.scene.tab,
+      target: env.scene.link,
       viewport: PHONE,
       insets: { top: 0, bottom: 0, left: 0, right: 0 },
     });
 
     expect(Number.parseFloat(dx(tab) || '0')).toBe(offset.dx);
     expect(Number.parseFloat(dy(tab) || '0')).toBe(offset.dy);
-    expect(scene.tab.left + offset.dx).toBeGreaterThanOrEqual(0);
-    expect(scene.tab.left + offset.dx + TAB_SIZE_PX).toBeLessThanOrEqual(PHONE.width);
-    expect(scene.tab.top + offset.dy).toBeGreaterThanOrEqual(0);
-    expect(scene.tab.top + offset.dy + TAB_SIZE_PX).toBeLessThanOrEqual(PHONE.height);
+    expect(env.scene.tab.left + offset.dx).toBeGreaterThanOrEqual(0);
+    expect(env.scene.tab.left + offset.dx + TAB_SIZE_PX).toBeLessThanOrEqual(PHONE.width);
+    expect(env.scene.tab.top + offset.dy).toBeGreaterThanOrEqual(0);
+    expect(env.scene.tab.top + offset.dy + TAB_SIZE_PX).toBeLessThanOrEqual(PHONE.height);
   });
 });
 
@@ -784,55 +547,6 @@ describe('readDodge', () => {
     act(() => a.focus());
     frame();
     expect(readDodge(tab)).toEqual({ dx: 0, dy: -38 });
-  });
-});
-
-describe('the end of a drag', () => {
-  it('puts the tab home at once when the pointer lets go of a drag, before the new place is laid out', () => {
-    const { tab, a } = setup();
-    act(() => a.focus());
-    frame();
-    expect(dy(tab)).toBe('-38px');
-
-    tab.dataset.dragging = 'true';
-    fireEvent.pointerUp(document.body);
-    expect(dy(tab)).toBe('0px');
-    expect(tab.style.transition).toBe('');
-  });
-
-  for (const [name, event] of [
-    ['a key', () => fireEvent.keyDown(document, { key: 'Shift' })],
-    ['the window losing the focus', () => fireEvent.blur(window)],
-    ['a context menu', () => fireEvent.contextMenu(document.body)],
-  ] as const) {
-    it(`keeps the tab under the pointer when ${name} comes in the middle of a drag`, () => {
-      const { tab, a } = setup();
-      act(() => a.focus());
-      frame();
-      tab.dataset.dragging = 'true';
-      act(() => {
-        event();
-      });
-      frame();
-      expect(dy(tab)).toBe('-38px');
-    });
-  }
-
-  it('puts the tab home when the pointer is cancelled in the middle of a drag', () => {
-    const { tab, a } = setup();
-    act(() => a.focus());
-    frame();
-    tab.dataset.dragging = 'true';
-    fireEvent.pointerCancel(document.body);
-    expect(dy(tab)).toBe('0px');
-  });
-
-  it('leaves a dodge alone when the pointer lets go of something that was not a drag of the tab', () => {
-    const { tab, a } = setup();
-    act(() => a.focus());
-    frame();
-    fireEvent.pointerUp(document.body);
-    expect(dy(tab)).toBe('-38px');
   });
 });
 

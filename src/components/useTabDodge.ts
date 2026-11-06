@@ -35,6 +35,8 @@ interface Refs {
  */
 interface Latch {
   isHolding: boolean;
+  /** The pointer that pressed the tab: only its release or cancel ends the drag of the tab. */
+  dragPointerId: number | null;
   pressedAt: number;
   pointerTarget: Element | null;
 }
@@ -99,6 +101,10 @@ const CONTEXT_WHEN_SET = [
   'mask-image',
   'mask-border-source',
   'view-transition-name',
+  'offset-path',
+  '-webkit-box-reflect',
+  '-webkit-mask-box-image',
+  '-webkit-mask-box-image-source',
 ];
 /** The properties a will-change may name for the box to start a stacking context at once. */
 const WILL_CHANGE_CONTEXT = new Set([
@@ -119,6 +125,9 @@ const WILL_CHANGE_CONTEXT = new Set([
   'contain',
   'position',
   'view-transition-name',
+  'z-index',
+  'content-visibility',
+  'offset-path',
 ]);
 
 /**
@@ -142,7 +151,11 @@ function isStackingContext(style: CSSStyleDeclaration, parent: Element | null): 
     !['', 'normal'].includes(read('mix-blend-mode')) ||
     read('isolation') === 'isolate' ||
     /layout|paint|strict|content/.test(read('contain')) ||
+    // MDN lists container-type size and inline-size, but Chromium measured no context for them: they count as one here,
+    // the safe direction (a tab that steps aside for nothing, never a covered control).
     /size/.test(read('container-type')) ||
+    ['auto', 'hidden'].includes(read('content-visibility')) ||
+    read('transform-style') === 'preserve-3d' ||
     CONTEXT_WHEN_SET.some((name) => !['', 'none'].includes(read(name))) ||
     read('will-change')
       .split(',')
@@ -291,7 +304,8 @@ type Binding = [EventTarget, string, EventListener, AddEventListenerOptions];
 
 /** The tab goes back to where it rests, with the slide. */
 function sendHome({ triggerRef }: Refs): void {
-  if (triggerRef.current) setDodge(triggerRef.current, 0, 0, false);
+  // The tab that is being dragged is drawn by the drag: a step aside it carries is not touched until the drag ends.
+  if (triggerRef.current && triggerRef.current.dataset.dragging !== 'true') setDodge(triggerRef.current, 0, 0, false);
 }
 
 /** A focus changed: judged the next frame (it only lets the tab come home while a scroll may be on its way), and again once quiet. */
@@ -311,10 +325,16 @@ function createHandlers(refs: Refs, latch: Latch, timing: Timing) {
     timing.soon();
   };
   // A touch brings its focus with the mouse events after the release, so the release counts as a press too.
-  const lift = () => {
+  const lift = (event: Event) => {
+    const { pointerId } = event as PointerEvent;
+    // Another pointer lifting or being cancelled while the tab is held is not the end of that press.
+    if (latch.dragPointerId !== null && pointerId !== latch.dragPointerId) return;
     latch.pressedAt = Date.now();
-    // Only the pointer ends a drag (a key, the window blur or a context menu do not): the tab is laid out clean at its
-    // new place by useTabPlacement, with no step aside left in its style, and judged again.
+    latch.dragPointerId = null;
+    // Only the pointer that dragged ends a drag, with its release or its cancel. A key, the window blur or a context menu do
+    // not end it with a release and leave the dodge alone (Escape and the blur of the button cancel the drag in
+    // useTabDrag, which draws the tab where it rests). The tab is then laid out clean at its new place by
+    // useTabPlacement, with no step aside left in its style, and judged again.
     if (refs.triggerRef.current?.dataset.dragging === 'true') clearDodge(refs.triggerRef.current);
     release();
   };
@@ -334,7 +354,9 @@ function createHandlers(refs: Refs, latch: Latch, timing: Timing) {
       const trigger = refs.triggerRef.current;
       if (!trigger) return;
       if (!(event.target instanceof Node && trigger.contains(event.target))) return home();
-      latch.isHolding ||= event.type === 'pointerdown' && ((event as PointerEvent).button ?? 0) === 0;
+      if (event.type !== 'pointerdown' || ((event as PointerEvent).button ?? 0) !== 0) return;
+      latch.isHolding = true;
+      latch.dragPointerId = (event as PointerEvent).pointerId;
     },
     wheel() {
       home();
@@ -390,7 +412,7 @@ function bindEvents(handlers: ReturnType<typeof createHandlers>, timing: Timing)
  * pointer lets go, so the click and the drag start under the pointer.
  */
 export function useTabDodge({ wrapperRef, triggerRef, isOpen, position }: TabDodgeOptions): void {
-  const latch = useRef<Latch>({ isHolding: false, pressedAt: 0, pointerTarget: null });
+  const latch = useRef<Latch>({ isHolding: false, dragPointerId: null, pressedAt: 0, pointerTarget: null });
   const lastPosition = useRef(position);
 
   useEffect(() => {

@@ -563,6 +563,49 @@ test.describe('the tab is still the visitor’s: a press on a dodged tab, and th
     });
   }
 
+  // Something else than the pointer that drags: a wheel turn, a second finger, another pointer lifting. None of them may
+  // make the dodged tab jump off the pointer that holds it.
+  for (const [name, dispatch] of [
+    ['a wheel turn', () => document.dispatchEvent(new WheelEvent('wheel', { bubbles: true }))],
+    [
+      'a pointerdown of another pointer',
+      () => document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 77, button: 0 })),
+    ],
+    [
+      'a pointerup of another pointer',
+      () => document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 77 })),
+    ],
+    [
+      'a pointercancel of another pointer',
+      () => document.body.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerId: 77 })),
+    ],
+  ] as const) {
+    test(`${name} in the middle of a drag of a dodged tab does not make the tab jump off the pointer`, async ({
+      page,
+    }) => {
+      await openProbe(page, { place: PHONE_PLACE });
+      const { dodged } = await dodgeTheTab(page);
+      const x = (dodged.left + dodged.right) / 2;
+      const y = (dodged.top + dodged.bottom) / 2;
+      const centreY = async () => {
+        const box = await rectOf(trigger(page));
+        return (box.top + box.bottom) / 2;
+      };
+
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(x, y + 40, { steps: 4 });
+      expect(Math.abs((await centreY()) - (y + 40)), 'the tab follows the pointer first').toBeLessThan(1);
+
+      await page.evaluate(dispatch);
+      await waitForCalm(page);
+      expect(Math.abs((await centreY()) - (y + 40)), `the tab stays under the pointer after ${name}`).toBeLessThan(1);
+      await page.mouse.move(x, y + 80, { steps: 4 });
+      expect(Math.abs((await centreY()) - (y + 80)), 'and keeps following it').toBeLessThan(1);
+      await page.mouse.up();
+    });
+  }
+
   test('the tab can still be reached with the keyboard and opens its panel', async ({ page }) => {
     await openProbe(page, { place: PHONE_PLACE });
     await trigger(page).focus();
