@@ -50,7 +50,7 @@ export function Specialties() {
         </RevealGroup>
         <RevealGroup stagger={CARD_STAGGER_S}>
           {/* role="list" on <ol>: Tailwind preflight removes list-style, and Safari then drops ordered-list semantics.
-              role="list" restores the list role but overrides the implicit ordered-list role — intentional here since
+              role="list" restores the list role but overrides the implicit ordered-list role: intentional here since
               ordinal position is conveyed by the visible badge below, which is not aria-hidden. */}
           <ol role="list" className={LIST_CLASSES}>
             {founderVoice.specialties.map(({ id, title, desc }) => {

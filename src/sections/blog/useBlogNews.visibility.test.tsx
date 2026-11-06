@@ -68,12 +68,14 @@ describe('useBlogNews tab visibility', () => {
 
     act(() => hide());
 
-    // Return 5 minutes later — not stale
+    // Return 5 minutes later: not stale
     vi.spyOn(Date, 'now').mockReturnValue(hiddenAt + 5 * 60 * 1000);
     act(() => show());
 
     // Brief pause; loading should not start
-    await act(async () => { /* flush microtasks */ });
+    await act(async () => {
+      /* flush microtasks */
+    });
     expect(result.current.isLoading).toBe(false);
     expect(getNewsArticles.mock.calls.length).toBe(callsBefore);
   });
@@ -87,7 +89,9 @@ describe('useBlogNews tab visibility', () => {
     // Show event without a preceding hide
     act(() => show());
 
-    await act(async () => { /* flush microtasks */ });
+    await act(async () => {
+      /* flush microtasks */
+    });
     expect(result.current.isLoading).toBe(false);
     expect(getNewsArticles.mock.calls.length).toBe(callsBefore);
   });

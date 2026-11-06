@@ -53,7 +53,6 @@ Artigos do blog renovados a cada 3h pelo `news-sync.yml` e leads copiados pelo n
 ## Os webhooks nunca são chamados em teste
 
 Nenhum teste chama o n8n de verdade. As URLs e o payload de `src/lib/contact.ts` não mudam sem combinar com o n8n.
-
 ## Plano e especificação
 
 - Especificação: `docs/superpowers/specs/2026-10-26-redesign-vn-one-design.md`
