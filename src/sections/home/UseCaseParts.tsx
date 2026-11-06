@@ -285,7 +285,7 @@ export function UseCasePanel({ useCase, isAuto, panelId, tabId }: UseCasePanelPr
         id={panelId}
         aria-labelledby={tabId}
         tabIndex={0}
-        className={cn('col-start-1 row-start-1 min-w-0 rounded-2xl', 'vn-focus-ring-ink')}
+        className={cn('col-start-1 row-start-1 min-w-0 rounded-2xl me-14 sm:me-0', 'vn-focus-ring-ink')}
       >
         <UseCaseContent key={isAuto ? AUTO_KEY : useCase.id} useCase={useCase} />
       </div>

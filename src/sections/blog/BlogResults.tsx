@@ -89,7 +89,7 @@ export function BlogResults(props: BlogResultsProps) {
   const state = pickState(props.isLoading, props.error, props.articles.length, visible.length);
 
   return (
-    <Section tone="cream" className="py-[clamp(2rem,1rem+4vw,5rem)]">
+    <Section tone="cream" className="pt-[clamp(2rem,1rem+4vw,5rem)] pb-24">
       <Container>
         <AnimatePresence mode="wait">
           <m.div key={state} {...fade}>

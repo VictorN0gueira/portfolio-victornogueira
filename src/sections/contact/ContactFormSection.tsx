@@ -44,7 +44,7 @@ export function ContactFormSection({ prefillMessage, prefillNonce, onMessageEdit
   };
 
   return (
-    <Section id={SECTION_ID} tone="cream" labelledBy={headingId}>
+    <Section id={SECTION_ID} tone="cream" labelledBy={headingId} className="pb-24">
       <Container>
         <RevealGroup className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:items-start lg:gap-16">
           <RevealItem className="@container min-w-0">

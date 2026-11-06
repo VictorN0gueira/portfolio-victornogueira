@@ -16,7 +16,7 @@ interface FeaturedArticleProps {
 
 type CardIds = ReturnType<typeof useCardIds>;
 
-const LINK_CLASSES = 'group block min-w-0 rounded-card vn-focus-ring-ink';
+const LINK_CLASSES = 'group block min-w-0 rounded-card vn-focus-ring-ink scroll-mt-20';
 const SURFACE_CLASSES =
   'grid overflow-hidden rounded-card bg-vn-black text-vn-white md:grid-cols-[minmax(0,11fr)_minmax(0,9fr)]';
 // The one accent of the section: it only ever sits here.

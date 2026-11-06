@@ -96,7 +96,7 @@ export function UseCaseTabs() {
   const headingId = useId();
 
   return (
-    <Section tone="white" labelledBy={headingId}>
+    <Section tone="white" labelledBy={headingId} className="pb-24">
       <Container>
         <UseCaseHeader headingId={headingId} />
         <UseCaseWidget />

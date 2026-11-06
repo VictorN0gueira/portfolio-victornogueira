@@ -14,7 +14,7 @@ interface ArticleCardProps {
 }
 
 const LINK_CLASSES =
-  'group flex h-full min-w-0 flex-col overflow-hidden rounded-card border border-vn-gray-light bg-vn-white text-vn-ink vn-focus-ring-ink hover:border-vn-ink';
+  'group flex h-full min-w-0 flex-col overflow-hidden rounded-card border border-vn-gray-light bg-vn-white text-vn-ink vn-focus-ring-ink hover:border-vn-ink scroll-mt-20';
 // Neutral on purpose: the accent of the section belongs to the featured article.
 const NEW_PILL_CLASSES =
   'inline-flex items-center rounded-full bg-vn-white px-3 py-1 font-mono text-xs font-bold uppercase tracking-[.12em] text-vn-ink';
