@@ -74,7 +74,7 @@ export function useLegalToc(bodyRef: RefObject<HTMLElement | null>): LegalToc {
   useLayoutEffect(() => {
     const body = bodyRef.current;
     if (!body) return;
-    const restores = new Map<HTMLElement, () => void>();
+    const restores = new Map<HTMLHeadingElement, () => void>();
     const refresh = () => {
       if (!isScrollingToRef.current) setActiveId(activeIdOf(headingsRef.current));
     };

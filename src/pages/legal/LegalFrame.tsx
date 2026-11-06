@@ -1,26 +1,15 @@
-import { useRef, type CSSProperties, type ReactNode } from 'react';
-import {
-  HEADER_HEIGHT,
-  HEADER_HEIGHT_LANDSCAPE,
-  HEADER_LANDSCAPE_LIFT,
-  HEADER_TOP_OFFSET,
-} from '../../components/layout/headerMetrics';
+import { useRef, type ReactNode } from 'react';
+import { CONTENT_TOP_CLASSES, CONTENT_TOP_VARS } from '../../components/layout/contentTop';
 import { Container } from '../../components/ui/Container';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useScrollToHash } from '../../hooks/useScrollToHash';
+import { cn } from '../../lib/utils';
 import './legal.css';
 import { TocNav } from './TocNav';
 import { useLegalToc } from './useLegalToc';
 
-// The same top as the PageHero of the other inner pages (copied, as the PageHero copied it from the home): the text starts
-// below the floating header with room to breathe.
-const BREATHING_ROOM = 'clamp(2rem, 1rem + 4vw, 5rem)';
-const CONTENT_TOP_VARS = {
-  '--hero-top': `calc(${HEADER_TOP_OFFSET} + ${HEADER_HEIGHT} + ${BREATHING_ROOM})`,
-  '--hero-top-landscape': `calc(${HEADER_TOP_OFFSET} - ${HEADER_LANDSCAPE_LIFT} + ${HEADER_HEIGHT_LANDSCAPE} + ${BREATHING_ROOM})`,
-} as CSSProperties;
-const FRAME_CLASSES =
-  'bg-vn-cream pt-[var(--hero-top)] pb-[clamp(4rem,3rem+5vw,9rem)] text-vn-ink vn-landscape:pt-[var(--hero-top-landscape)]';
+// The text starts where the other pages start, below the floating header with room to breathe (contentTop).
+const FRAME_CLASSES = cn(CONTENT_TOP_CLASSES, 'bg-vn-cream pb-[clamp(4rem,3rem+5vw,9rem)] text-vn-ink');
 // The text column and the 16rem of the contents. The text is held to a reading measure and the list sits at the other edge.
 const TWO_COLUMNS_CLASSES = 'lg:grid lg:grid-cols-[minmax(0,52rem)_16rem] lg:items-start lg:justify-between lg:gap-12';
 // Tailwind's lg, in rem like the breakpoint itself.

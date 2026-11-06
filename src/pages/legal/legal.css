@@ -75,6 +75,9 @@
 .vn-legal h2 {
   font-size: clamp(1.375rem, 1.05rem + 1.3vw, 2rem);
   line-height: 1.08;
+  /* A jump from the contents puts a title 3rem under where an anchor goes (scroll-padding-top of the page), so the small line
+     above a title in a black card is not left under the floating header. */
+  scroll-margin-top: 3rem;
 }
 
 .vn-legal h3 {
@@ -186,6 +189,8 @@
   border-radius: var(--radius-shell);
 }
 
+/* The icon wells are 44 to 48px squares: the card radius (20px and up) would turn them into circles, so they get a quarter
+   of their side. It is a size of its own, which no token of the site names. */
 .vn-legal [class*='rounded-2xl'] {
   border-radius: 0.75rem;
 }

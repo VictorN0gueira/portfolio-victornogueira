@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { legalCopy } from '../src/data/legalCopy';
-import { ANCHOR_BOUNDS } from './headerBounds';
+import { ANCHOR_BOUNDS, HEADER_BOTTOM_PX } from './headerBounds';
 import { PAGE_LOAD_TIMEOUT_MS, brokenWordsIn, enableLargeFont, measureOverflow, nextFrames } from './homeSupport';
 import { expect, test } from './n8nGuard';
 import { describePageContract, openPage, type PageContract } from './pageContract';
@@ -340,6 +340,26 @@ test.describe('the frame of the legal pages', () => {
         expect(ring.width, ring.name).toBeGreaterThanOrEqual(2);
         expect(ring.contrast, `${ring.name}: contrast of the ring`).toBeGreaterThanOrEqual(MIN_RING_CONTRAST);
       }
+    });
+  }
+
+  for (const viewport of [DESKTOP, PHONE]) {
+    test(`/lgpd: after a jump to the controller card its small line is not under the floating header, at ${viewport.width}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await openPage(page, LGPD);
+      if (viewport === PHONE) await page.locator(`${TOC_NAV} summary`).click();
+      const link = tocLinks(page).first();
+      const id = ((await link.getAttribute('href')) ?? '').slice(1);
+      await link.click();
+
+      const heading = byId(page, id);
+      await expect(heading).toBeFocused();
+      expectJustBelowHeader(await settledTop(heading), 'the title of the card');
+      const kicker = page.locator('[data-legal-body] [class*="bg-zinc-950"] p[class*="text-[10px]"]').first();
+      const kickerTop = await kicker.evaluate((element) => element.getBoundingClientRect().top);
+      expect(kickerTop, 'the kicker is below the header').toBeGreaterThan(HEADER_BOTTOM_PX);
     });
   }
 
