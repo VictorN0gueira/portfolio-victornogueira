@@ -19,33 +19,19 @@ Requer Node 22 ou mais novo.
 | `npm run budget` | Peso gzip do caminho crítico (entrada mais modulepreloads). `-- --enforce` falha acima de 160 kB (a meta é 150, o motivo da diferença está em `scripts/check-bundle-budget.mjs`) |
 | `npm run headers` | Regenera `nginx/security-headers.conf` a partir de `config/securityHeaders.mjs` |
 | `npm run og` | Regenera `public/og-banner.png` |
-| `npm run founder-photo` | Gera `public/founder/victor-{480,960}.{avif,webp}` (a foto da `/sobre`) a partir de `scripts/assets/victor-photo.jpg`, que fica fora do build. Nunca amplia a foto |
+| `npm run founder-photo` | Gera `public/founder/victor-{480,960}.{avif,webp}` (a foto da `/sobre`) de `scripts/assets/victor-photo.jpg`, que fica fora do build |
 | `npm run lcp` e `npm run measure:skeletons` | Medem LCP e as alturas dos esqueletos, só em páginas locais |
 
 ## Variáveis de ambiente
 
 Nenhuma. O site compila e roda sem `.env`. Tudo que começa com `VITE_` vai para o bundle público, então nada secreto entra por ali.
 
-## Rotas
-
-Só a `HomePage` entra no caminho crítico. Todas as outras são `lazyWithRetry` e ficam dentro do `SiteLayout` (cabeçalho, rodapé, botões flutuantes).
-
-| Rota | Página | O que tem |
-|---|---|---|
-| `/` | `HomePage` | A home, com as seções em `src/sections/home` |
-| `/servicos` | `ServicesPage` | Grade de serviços (`#<slug>` vem dos links do rodapé), pacotes sem preço, perguntas |
-| `/sobre` | `AboutPage` | O fundador (texto aprovado, foto em AVIF e WebP), a VN One, o método (`#metodo`) e as ferramentas |
-| `/projetos` | `ProjectsPage` | Dois projetos em destaque e a grade dos outros cinco. Não há abas nem campo de impacto |
-| `/projetos/:slug` | `ProjectDetailPage` | O caso do projeto. Slug removido redireciona para `/projetos`, slug desconhecido mostra o 404 com `noindex` |
-| `/contato` | `ContactPage` | Canais, simulador e o formulário (`ContactForm`, o mesmo da home) |
-| `/blog` | `BlogPage` | Artigos de outras fontes, filtros e esqueletos. Fora do índice até ter textos próprios |
-| `/privacidade` e `/lgpd` | `PrivacyRoute` e `LgpdRoute` | O texto jurídico congelado, dentro do `LegalFrame` (sumário e estilo por fora) |
-| qualquer outra | `NotFound` | O 404 com glitch cromado, `noindex` |
-
 ## Estrutura
 
-- `src/pages` e `src/sections/<página>`: as rotas e o que cada uma monta (`home`, `shared` com `PageHero`, `CtaBand` e `ServiceCard`, `services`, `about`, `projects`, `contact`, `blog`). `src/pages/legal` tem a moldura das duas páginas jurídicas.
+- Rotas (`src/App.tsx`): só `/` (`HomePage`) entra no caminho crítico. `/servicos`, `/sobre`, `/projetos`, `/projetos/:slug`, `/contato`, `/blog`, `/privacidade`, `/lgpd` e o 404 são `lazyWithRetry`, dentro do `SiteLayout`. `/projetos` não tem abas, e `/privacidade` e `/lgpd` têm o texto congelado.
+- `src/pages` e `src/sections/<página>`: as rotas e o que cada uma monta (`home`, `shared` com `PageHero` e `CtaBand`, `services`, `about`, `projects`, `contact`, `blog`). `src/pages/legal` é a moldura das páginas jurídicas.
 - `src/components`: UI compartilhada (`ui`, `layout`, `contact`), o formulário e o widget de acessibilidade.
+- Guardas de visual e texto em `src/test`: `pageHygiene` (sem `dark:`, `italic`, `text-[10px]`, cor fora da paleta, gradiente decorativo; exceções em lista fechada), `frozenFiles` e `copy-rules`.
 - `src/data`: o conteúdo (serviços, projetos, depoimentos, perguntas). `projectImages.ts` é gerado por `scripts/process-project-images.mjs`.
 - `src/lib` e `src/hooks`: regras puras, como o ROI (`roi.ts`) e o contrato dos webhooks (`contact.ts`).
 - `src/styles`: tokens, estilos de componentes, movimento e os esqueletos medidos.
@@ -70,12 +56,4 @@ O formulário de contato envia direto para dois webhooks do n8n, e é por eles q
 ## Plano e especificação
 
 - Especificação: `docs/superpowers/specs/2026-10-26-redesign-vn-one-design.md`
-- Plano da fundação e da home: `docs/superpowers/plans/2026-10-26-vn-one-v2-fundacao-home.md`
-- Plano das páginas internas: `docs/superpowers/plans/2026-11-01-vn-one-v2-paginas-internas.md`
-
-## Guardas que protegem o visual e o texto
-
-- `src/test/pageHygiene.test.ts`: sem `dark:`, `italic`, `text-[10px]`, família de cor fora da paleta, gradiente decorativo, `text-white/N` nem hex fora da paleta em TS. A lista de exceções é fechada: as duas páginas legais congeladas, os dois arquivos que as reestilizam e o mapa de cores das marcas das ferramentas (`TOOL_BRAND_COLORS`, que o dono pediu nas cores originais).
-- `src/test/frozenFiles.test.ts`: o canal de leads, o `ContactForm` e as duas páginas legais não mudam um byte.
-- `src/test/copy-rules.test.ts`: voz "a gente", sem travessão, sem " / ", sem palavra de venda.
-
+- Planos: `docs/superpowers/plans/2026-10-26-vn-one-v2-fundacao-home.md` (fundação e home) e `docs/superpowers/plans/2026-11-01-vn-one-v2-paginas-internas.md` (páginas internas)
