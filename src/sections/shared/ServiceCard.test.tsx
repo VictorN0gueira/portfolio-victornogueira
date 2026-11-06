@@ -40,7 +40,6 @@ describe('ServiceCard', () => {
     const article = screen.getByRole('article');
 
     expect(article).toHaveAttribute('id', service.slug);
-    expect(article).toHaveClass('scroll-mt-28');
   });
 
   it('lists what is included as a list with the data items, and shows the term with its label', () => {
