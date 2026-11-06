@@ -63,14 +63,15 @@ describe('SEO elements take their head from the route metadata', () => {
     );
   });
 
-  // The one exception: the 404 of the router is out of the index and has no metadata of its own, so it reads its sentence from
-  // src/data/notFoundCopy.ts, the same module the static 404.html is built from (src/seo/headHtml.ts).
-  // The two places that show the 404: the router (an unknown path) and the project page (an unknown project address).
+  // The exception: the two places that show the 404 are out of the index and have no metadata of their own, so
+  // they read their title and sentence from src/data/notFoundCopy.ts, the module the static 404.html is built from
+  // (src/seo/headHtml.ts).
+  // They are the router (an unknown path) and the project page (an unknown project address).
   const NOT_FOUND_FILES = new Set(['App.tsx', 'ProjectDetailPage.tsx']);
   const NOT_FOUND_DESCRIPTION = 'description={notFoundCopy.description}';
   const NOT_FOUND_TITLE = 'title={notFoundCopy.title}';
 
-  it('passes no description prop, except the noindex 404 of the router and of the project page, from notFoundCopy', () => {
+  it('passes no description prop, except the noindex 404s (router and project page), from notFoundCopy', () => {
     const own = checked.filter(({ block }) => /\sdescription=/.test(block));
     const isNotFound = ({ file, block }: (typeof own)[number]) =>
       NOT_FOUND_FILES.has(file) && /\snoindex\b/.test(block) && block.includes(NOT_FOUND_DESCRIPTION);
@@ -78,7 +79,7 @@ describe('SEO elements take their head from the route metadata', () => {
     expect(own.filter((item) => !isNotFound(item))).toEqual([]);
   });
 
-  it('gives every noindex 404 the one wording and the one sentence of notFoundCopy, so the head agrees with the page', () => {
+  it('gives every noindex 404 the one title and the one sentence of notFoundCopy, so the head agrees', () => {
     const notFounds = checked.filter(({ block }) => /\snoindex\b/.test(block));
 
     expect(notFounds.map(({ file }) => file).sort()).toEqual([...NOT_FOUND_FILES].sort());

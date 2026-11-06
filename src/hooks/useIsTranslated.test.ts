@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useIsTranslated } from './useIsTranslated';
 
 const root = document.documentElement;
@@ -67,12 +67,13 @@ describe('useIsTranslated', () => {
   });
 
   it('stops watching the root when the component goes away', async () => {
-    const { unmount, result } = renderHook(() => useIsTranslated());
+    const disconnect = vi.spyOn(MutationObserver.prototype, 'disconnect');
+    const { unmount } = renderHook(() => useIsTranslated());
+    expect(disconnect).not.toHaveBeenCalled();
+
     unmount();
 
-    root.classList.add('translated-ltr');
-    await flushObserver();
-
-    expect(result.current).toBe(false);
+    expect(disconnect).toHaveBeenCalledTimes(1);
+    disconnect.mockRestore();
   });
 });
