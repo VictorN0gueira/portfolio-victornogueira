@@ -44,7 +44,18 @@ afterEach(() => {
 
 describe('one bad item drops only that item (F-2)', () => {
   it('keeps the good dev.to articles around a null, a number, a text, an item with no title and one with a link that is not text', async () => {
-    stubPublicFeeds([null, 5, 'x', { published_at: '2026-10-01T10:00:00Z', url: 'https://dev.to/n/1' }, devTo(5, { url: 7 }), devTo(3), devTo(4)], []);
+    stubPublicFeeds(
+      [
+        null,
+        5,
+        'x',
+        { published_at: '2026-10-01T10:00:00Z', url: 'https://dev.to/n/1' },
+        devTo(5, { url: 7 }),
+        devTo(3),
+        devTo(4),
+      ],
+      [],
+    );
 
     const { articles, source } = await getNewsArticles();
 
@@ -66,12 +77,20 @@ describe('the cut and the order of the public feeds (F-7)', () => {
   it('shows the 20 newest dev.to articles, newest first, out of 25 that arrive in a shuffled order', async () => {
     const days = Array.from({ length: 25 }, (_, index) => index + 1);
     const shuffled = [...days.filter((day) => day % 2 === 0), ...days.filter((day) => day % 2 === 1)];
-    stubPublicFeeds(shuffled.map((day) => devTo(day)), []);
+    stubPublicFeeds(
+      shuffled.map((day) => devTo(day)),
+      [],
+    );
 
     const { articles } = await getNewsArticles();
 
     expect(articles).toHaveLength(20);
-    expect(articles.map((item) => item.title)).toEqual(days.slice(5).reverse().map((day) => `Dev dia ${String(day).padStart(2, '0')}`));
+    expect(articles.map((item) => item.title)).toEqual(
+      days
+        .slice(5)
+        .reverse()
+        .map((day) => `Dev dia ${String(day).padStart(2, '0')}`),
+    );
   });
 
   it('shows at most 8 TabNews articles, the first 8 that are about AI', async () => {
@@ -97,7 +116,17 @@ describe('how long the cache lives (F-7)', () => {
     localStorage.setItem(
       CACHE_KEY,
       JSON.stringify({
-        articles: [{ title: 'Do cache', description: '', url: 'https://example.com/c', image: '', publishedAt: '2026-10-01T10:00:00Z', source: { name: 'F', url: '' }, language: 'pt' }],
+        articles: [
+          {
+            title: 'Do cache',
+            description: '',
+            url: 'https://example.com/c',
+            image: '',
+            publishedAt: '2026-10-01T10:00:00Z',
+            source: { name: 'F', url: '' },
+            language: 'pt',
+          },
+        ],
         timestamp: NOW - age,
         source: 'cache',
       }),
@@ -105,7 +134,10 @@ describe('how long the cache lives (F-7)', () => {
 
   beforeEach(() => {
     vi.spyOn(Date, 'now').mockReturnValue(NOW);
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({}, 503)));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({}, 503)),
+    );
   });
 
   it('answers from the cache until it is 6 hours old', async () => {
@@ -135,6 +167,15 @@ describe('getTimeAgo', () => {
 
   const ago = (ms: number) => new Date(NOW - ms).toISOString();
 
+  it('says nothing for a date that is more than a few minutes ahead of the clock: it is not a publication date', () => {
+    expect(getTimeAgo(new Date(NOW + 10 * 60 * 1000).toISOString())).toBe('');
+    expect(getTimeAgo(new Date(NOW + 400 * DAY_MS).toISOString())).toBe('');
+  });
+
+  it('still says Agora mesmo for a source whose clock is a couple of minutes ahead', () => {
+    expect(getTimeAgo(new Date(NOW + 2 * 60 * 1000).toISOString())).toBe('Agora mesmo');
+  });
+
   it('says days up to the 6th and the date from the 7th (F-7)', () => {
     expect(getTimeAgo(ago(6 * DAY_MS))).toBe('6 dias atrás');
     expect(getTimeAgo(ago(7 * DAY_MS))).toMatch(/de \w+ de 2026$/);
@@ -153,8 +194,22 @@ describe('getTimeAgo', () => {
 
 // The reader is in Brazil: a date must show the day the feed wrote, in the zone of the reader (F-6).
 describe.each([
-  ['America/Fortaleza', { dayOnly: '30 de outubro de 2026', utcMidnightPlus30: '30 de outubro de 2026', offsetMinusThree: '30 de outubro de 2026' }],
-  ['UTC', { dayOnly: '30 de outubro de 2026', utcMidnightPlus30: '31 de outubro de 2026', offsetMinusThree: '31 de outubro de 2026' }],
+  [
+    'America/Fortaleza',
+    {
+      dayOnly: '30 de outubro de 2026',
+      utcMidnightPlus30: '30 de outubro de 2026',
+      offsetMinusThree: '30 de outubro de 2026',
+    },
+  ],
+  [
+    'UTC',
+    {
+      dayOnly: '30 de outubro de 2026',
+      utcMidnightPlus30: '31 de outubro de 2026',
+      offsetMinusThree: '31 de outubro de 2026',
+    },
+  ],
 ])('dates in %s', (zone, expected) => {
   const previous = process.env.TZ;
 

@@ -35,7 +35,7 @@ describe('ScrollProgress', () => {
       expect(renderBar('light')).toHaveClass('bg-vn-ink');
     });
 
-    it('is white at 80% for a dark page such as the blog, and then not ink', () => {
+    it('is white at 80% for a dark page, and then not ink', () => {
       const bar = renderBar('dark');
 
       expect(bar).toHaveClass('bg-white/80');
@@ -52,7 +52,7 @@ describe('ScrollProgress', () => {
   it('still renders the bar, without the spring, when the visitor turned animations off', () => {
     localStorage.setItem(A11Y_STORAGE_KEY, JSON.stringify({ noAnimations: true }));
 
-const bar = renderBar();
+    const bar = renderBar();
 
     expect(bar).toHaveClass('fixed', 'h-0.5', 'bg-vn-ink');
   });

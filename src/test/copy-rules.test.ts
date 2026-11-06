@@ -130,6 +130,7 @@ const SCANNED_FILES = [
   'src/components/ProjectTitle.tsx',
   // The fixed list the blog shows when no source answers: its strings are site copy too.
   'src/utils/newsService.ts',
+  'src/utils/newsFeeds.ts',
 ];
 // testimonials.ts holds the clients' own words, verbatim: they are not ours to edit.
 const SALES_WORDS_EXEMPT = new Set(['src/data/testimonials.ts']);

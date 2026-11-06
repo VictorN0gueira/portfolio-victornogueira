@@ -36,8 +36,10 @@ export interface PageContract {
   hasContactForm?: boolean;
   /** Measures the floating buttons (WhatsApp and accessibility) against the footer and the form, at 320 and 390. */
   hasFloatingClearance?: boolean;
-  /** A "not found" page: noindex and no canonical, instead of one canonical. */
+  /** A "not found" page, or one kept out of the index (the blog): noindex and no canonical, instead of one canonical. */
   isNoindex?: boolean;
+  /** Runs before every visit of the page: the spec routes the requests its page makes (the blog answers from its sources). */
+  beforeOpen?: (page: Page) => Promise<void>;
 }
 
 interface Viewport {
@@ -76,6 +78,7 @@ const sizeLabel = (viewport: Viewport): string => `${viewport.width}x${viewport.
 
 /** The page is ready when its h1, one heading of level 2 of the lazy part and (if it has one) the form are in the page. */
 export async function openPage(page: Page, contract: PageContract): Promise<void> {
+  await contract.beforeOpen?.(page);
   await page.goto(contract.path);
   if (contract.hasContactForm) {
     await expect(page.locator('form[name="contact"]')).toBeAttached({ timeout: PAGE_LOAD_TIMEOUT_MS });

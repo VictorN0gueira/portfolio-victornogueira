@@ -6,7 +6,8 @@ const SPRING = { stiffness: 100, damping: 30, restDelta: 0.001 } as const;
 
 type ScrollProgressTone = 'light' | 'dark';
 
-// ink on the light site, white on a dark page (the blog), both palette colors.
+// Ink on a light page, white on a dark one, both palette colors. The dark tone is unused since the blog entered the
+// layout: batch Z removes it.
 const TONE_CLASSES: Record<ScrollProgressTone, string> = {
   light: 'bg-vn-ink',
   dark: 'bg-white/80',
@@ -27,7 +28,9 @@ const BAR_CLASSES = `${KEEPS_PLACE_UNDER_SCROLL_LOCK} fixed inset-x-0 top-0 z-(-
 function PlainBar({ tone }: BarProps) {
   const { scrollYProgress } = useScroll();
 
-  return <m.div aria-hidden="true" className={`${BAR_CLASSES} ${TONE_CLASSES[tone]}`} style={{ scaleX: scrollYProgress }} />;
+  return (
+    <m.div aria-hidden="true" className={`${BAR_CLASSES} ${TONE_CLASSES[tone]}`} style={{ scaleX: scrollYProgress }} />
+  );
 }
 
 /** The bar follows the scroll through a spring that smooths it. The spring exists only here, where motion is welcome. */
@@ -35,7 +38,9 @@ function SmoothBar({ tone }: BarProps) {
   const { scrollYProgress } = useScroll();
   const smoothProgress = useSpring(scrollYProgress, SPRING);
 
-  return <m.div aria-hidden="true" className={`${BAR_CLASSES} ${TONE_CLASSES[tone]}`} style={{ scaleX: smoothProgress }} />;
+  return (
+    <m.div aria-hidden="true" className={`${BAR_CLASSES} ${TONE_CLASSES[tone]}`} style={{ scaleX: smoothProgress }} />
+  );
 }
 
 /**
