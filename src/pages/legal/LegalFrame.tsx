@@ -37,9 +37,7 @@ export function LegalFrame({ children }: { children: ReactNode }) {
             before the full legal text. On desktop, order-last / order-first place body left and ToC right inside
             the CSS grid without changing the DOM sequence (WCAG 2.4.3 Focus Order). */}
         <div className={TWO_COLUMNS_CLASSES}>
-          <div className={isWide ? 'lg:order-last lg:self-stretch' : undefined}>
-            {toc}
-          </div>
+          <div className={isWide ? 'lg:order-last lg:self-stretch' : undefined}>{toc}</div>
           <div
             ref={bodyRef}
             data-legal-body

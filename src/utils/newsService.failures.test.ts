@@ -175,12 +175,7 @@ describe('getNewsArticles says why a source failed', () => {
 
     expect(result.origin).toBe('fallback');
     expect(result.articles.length).toBeGreaterThan(0);
-    expect(result.failures?.map((failure) => failure.source)).toEqual([
-      'supabase',
-      'devto',
-      'tabnews',
-      'public-apis',
-    ]);
+    expect(result.failures?.map((failure) => failure.source)).toEqual(['supabase', 'devto', 'tabnews', 'public-apis']);
     expect(result.failures?.find((failure) => failure.source === 'tabnews')?.reason).toBe('Failed to fetch');
     expect(result.failures?.find((failure) => failure.source === 'public-apis')?.reason).toBe('All public APIs failed');
   });

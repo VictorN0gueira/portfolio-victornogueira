@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { SkipLink } from './SkipLink';
@@ -45,7 +45,7 @@ describe('SkipLink', () => {
 
     await user.click(link);
 
-    expect(screen.getByRole('main')).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole('main')).toHaveFocus());
     expect(window.location.hash).toBe('');
   });
 

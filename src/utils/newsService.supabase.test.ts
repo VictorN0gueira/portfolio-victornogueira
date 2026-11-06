@@ -83,7 +83,15 @@ describe('readSupabaseArticles (via getNewsArticles)', () => {
   it('discards articles with javascript: URLs from Supabase', async () => {
     const rows = [
       ...makeDbRows(3),
-      { url: 'javascript:alert(1)', title: 'Bad', summary: '', image: '', published_at: makeDbRows(1)[0].published_at, source: 'evil', language: 'en' },
+      {
+        url: 'javascript:alert(1)',
+        title: 'Bad',
+        summary: '',
+        image: '',
+        published_at: makeDbRows(1)[0].published_at,
+        source: 'evil',
+        language: 'en',
+      },
     ];
     mockFetch({ ok: true, status: 200, body: rows });
     const result = await getNewsArticles({ forceRefresh: true });

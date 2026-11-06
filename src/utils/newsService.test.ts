@@ -108,7 +108,12 @@ describe('getNewsArticles from Supabase', () => {
   });
 
   it('drops an item that has no title, a non text title or no date, and keeps the rest', async () => {
-    stubSupabase([dbRow({ title: '' }), dbRow({ title: 42 }), dbRow({ published_at: 'ontem' }), dbRow({ title: 'Fica' })]);
+    stubSupabase([
+      dbRow({ title: '' }),
+      dbRow({ title: 42 }),
+      dbRow({ published_at: 'ontem' }),
+      dbRow({ title: 'Fica' }),
+    ]);
 
     const { articles } = await getNewsArticles();
 

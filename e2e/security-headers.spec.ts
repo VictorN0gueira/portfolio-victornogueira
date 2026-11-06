@@ -18,7 +18,18 @@ import { N8N_WEBHOOK_PATTERN, expect, fulfillOk, n8nRoute, test } from './n8nGua
 
 // A project case page. The slug is written here because src/data/projects reads import.meta.env, which Playwright does not have.
 const PROJECT_SLUG = 'hub081';
-const PAGE_PATHS = ['/', '/projetos', `/projetos/${PROJECT_SLUG}`, '/sobre', '/servicos', '/contato', '/blog', '/privacidade', '/lgpd', '/pagina-que-nao-existe'];
+const PAGE_PATHS = [
+  '/',
+  '/projetos',
+  `/projetos/${PROJECT_SLUG}`,
+  '/sobre',
+  '/servicos',
+  '/contato',
+  '/blog',
+  '/privacidade',
+  '/lgpd',
+  '/pagina-que-nao-existe',
+];
 const MENU_DIALOG_NAME = 'Menu de navegação';
 
 interface Violation {
@@ -31,7 +42,8 @@ interface Violation {
 async function recordViolations(page: Page): Promise<() => Promise<Violation[]>> {
   const consoleErrors: string[] = [];
   page.on('console', (message) => {
-    if (message.type() === 'error' && /content security policy/i.test(message.text())) consoleErrors.push(message.text());
+    if (message.type() === 'error' && /content security policy/i.test(message.text()))
+      consoleErrors.push(message.text());
   });
   await page.addInitScript(() => {
     const store: Violation[] = [];
@@ -41,7 +53,9 @@ async function recordViolations(page: Page): Promise<() => Promise<Violation[]>>
     });
   });
   return async () => {
-    const seen = await page.evaluate(() => (window as unknown as { __cspViolations?: Violation[] }).__cspViolations ?? []);
+    const seen = await page.evaluate(
+      () => (window as unknown as { __cspViolations?: Violation[] }).__cspViolations ?? [],
+    );
     return [...seen, ...consoleErrors.map((text) => ({ directive: 'console', blocked: text, source: '' }))];
   };
 }
@@ -49,7 +63,8 @@ async function recordViolations(page: Page): Promise<() => Promise<Violation[]>>
 /** Scrolls down screen by screen, so lazy sections and lazy images load while the page is watched. */
 async function scrollThrough(page: Page) {
   await page.evaluate(async () => {
-    const frame = () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    const frame = () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     for (let top = 0; top < document.documentElement.scrollHeight; top += window.innerHeight) {
       window.scrollTo(0, top);
       await frame();
@@ -71,7 +86,8 @@ test.describe('security headers on the preview', () => {
     const ownOrigin = new URL(baseURL ?? 'http://localhost:4173').origin;
     const responses: { url: string; headers: Record<string, string> }[] = [];
     page.on('response', (response) => {
-      if (new URL(response.url()).origin === ownOrigin) responses.push({ url: response.url(), headers: response.headers() });
+      if (new URL(response.url()).origin === ownOrigin)
+        responses.push({ url: response.url(), headers: response.headers() });
     });
 
     const document = await page.goto('/sobre');
@@ -86,7 +102,9 @@ test.describe('security headers on the preview', () => {
     expect(font, 'a font was loaded').toBeDefined();
     for (const response of [script, font]) {
       expect(response?.headers['x-content-type-options'], response?.url).toBe('nosniff');
-      expect(response?.headers['content-security-policy'], response?.url).toBe(SECURITY_HEADERS['Content-Security-Policy']);
+      expect(response?.headers['content-security-policy'], response?.url).toBe(
+        SECURITY_HEADERS['Content-Security-Policy'],
+      );
     }
   });
 
@@ -107,7 +125,9 @@ test.describe('no page breaks the policy', () => {
     });
   }
 
-  test('the detector sees a forbidden request and an inline script (a control: the policy is really enforced)', async ({ page }) => {
+  test('the detector sees a forbidden request and an inline script (a control: the policy is really enforced)', async ({
+    page,
+  }) => {
     const violations = await recordViolations(page);
     await visit(page, '/sobre');
 
@@ -119,7 +139,9 @@ test.describe('no page breaks the policy', () => {
     });
 
     const seen = await violations();
-    expect(seen.map((violation) => violation.directive.split('-elem')[0])).toEqual(expect.arrayContaining(['connect-src', 'script-src']));
+    expect(seen.map((violation) => violation.directive.split('-elem')[0])).toEqual(
+      expect.arrayContaining(['connect-src', 'script-src']),
+    );
     expect(await page.evaluate(() => (window as unknown as { __inlineRan?: boolean }).__inlineRan)).toBeUndefined();
   });
 
@@ -127,7 +149,10 @@ test.describe('no page breaks the policy', () => {
     const violations = await recordViolations(page);
     await visit(page, '/');
 
-    await page.getByRole('button', { name: /^Ler depoimento completo/ }).first().click();
+    await page
+      .getByRole('button', { name: /^Ler depoimento completo/ })
+      .first()
+      .click();
     const testimonial = page.getByRole('dialog').first();
     await expect(testimonial).toBeVisible();
     await page.keyboard.press('Escape');
@@ -171,14 +196,24 @@ async function serveArticles(page: Page, articles: readonly object[]) {
       await route.fulfill({ status: 204, headers: CORS_JSON });
       return;
     }
-    await route.fulfill({ status: 200, headers: CORS_JSON, contentType: 'application/json', body: JSON.stringify(articles) });
+    await route.fulfill({
+      status: 200,
+      headers: CORS_JSON,
+      contentType: 'application/json',
+      body: JSON.stringify(articles),
+    });
   });
 }
 
 test.describe('the image sources of the policy', () => {
-  test('the blog shows a cover image from every allowed host with zero violations, and a hostile host never loads', async ({ page }) => {
+  test('the blog shows a cover image from every allowed host with zero violations, and a hostile host never loads', async ({
+    page,
+  }) => {
     const allowed = BLOG_IMAGE_HOSTS.map((host, index) =>
-      sampleArticle(index + 1, `https://${host}${host === CLOUDINARY_HOST ? CLOUDINARY_PATH_PREFIX : '/'}cover-${index}.png`),
+      sampleArticle(
+        index + 1,
+        `https://${host}${host === CLOUDINARY_HOST ? CLOUDINARY_PATH_PREFIX : '/'}cover-${index}.png`,
+      ),
     );
     const hostile = sampleArticle(BLOG_IMAGE_HOSTS.length + 1, HOSTILE_IMAGE);
     await serveArticles(page, [...allowed, hostile]);
@@ -193,16 +228,22 @@ test.describe('the image sources of the policy', () => {
       const cover = page.locator(`img[src^="https://${host}/"]`);
       await expect(cover, host).toHaveCount(1);
       await cover.scrollIntoViewIfNeeded();
-      await expect.poll(() => cover.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0), { message: host }).toBe(true);
+      await expect
+        .poll(() => cover.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0), { message: host })
+        .toBe(true);
     }
     // The sanitizer drops the foreign cover before it is rendered, so the card shows the built-in placeholder and nothing is requested.
     const hostileCover = page.getByRole('link', { name: new RegExp(hostile.title) }).locator('img');
-    await expect.poll(() => hostileCover.getAttribute('src').then((src) => src?.startsWith(FALLBACK_IMAGE_PREFIX))).toBe(true);
+    await expect
+      .poll(() => hostileCover.getAttribute('src').then((src) => src?.startsWith(FALLBACK_IMAGE_PREFIX)))
+      .toBe(true);
     expect([...requested]).not.toContain(HOSTILE_IMAGE);
     expect(await violations()).toEqual([]);
   });
 
-  test('the policy itself blocks an image from a host outside the list, even one the site fetches data from', async ({ page }) => {
+  test('the policy itself blocks an image from a host outside the list, even one the site fetches data from', async ({
+    page,
+  }) => {
     const violations = await recordViolations(page);
     await visit(page, '/blog');
 
@@ -227,7 +268,10 @@ test.describe('the image sources of the policy', () => {
 });
 
 test.describe('the lead channel under the policy', () => {
-  test('the contact form still reaches the e-mail webhook, with zero violations and never the real n8n', async ({ page, network }) => {
+  test('the contact form still reaches the e-mail webhook, with zero violations and never the real n8n', async ({
+    page,
+    network,
+  }) => {
     await page.route(N8N_WEBHOOK_PATTERN, n8nRoute(network, fulfillOk));
     const violations = await recordViolations(page);
     await visit(page, '/#contato');

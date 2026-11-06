@@ -61,7 +61,9 @@ export function Specialties() {
                     <SpotlightCard as="div" className={CARD_CLASSES}>
                       <div className="flex items-center justify-between gap-4">
                         <SpecialtyIcon aria-hidden="true" className="size-7 shrink-0" />
-                        <span aria-hidden="true" className="font-mono text-sm text-vn-gray-dark">{id}</span>
+                        <span aria-hidden="true" className="font-mono text-sm text-vn-gray-dark">
+                          {id}
+                        </span>
                       </div>
                       <div className="@container mt-8">
                         <Heading as="h3" size="m" className={TITLE_CLASSES}>
