@@ -1,8 +1,19 @@
 -- Stands in, in a throwaway Postgres, for what the Supabase already has before our first migration: the roles that
 -- PostgREST uses (anon, authenticated, service_role, authenticator) and the default privileges Supabase gives every new
--- table of the public schema. Those default privileges are the reason our migrations revoke explicitly: without that, a
--- new table would be open to anon until a policy said otherwise.
--- Never run this against a real Supabase. scripts/run-rls-tests.mjs refuses anything but a local database.
+-- table, function and sequence of the public schema. Those default privileges are the reason our migrations revoke
+-- explicitly: without that, a new table would be open to anon until a policy said otherwise.
+-- NEVER run this against a real Supabase. It refuses to run where one is: scripts/run-rls-tests.mjs checks the same before
+-- it starts, and this block checks again, so running the file by hand does not skip the guard.
+do $$
+begin
+  if exists (select from pg_roles where rolname = 'supabase_admin')
+     or exists (select from pg_roles where rolname in ('anon', 'service_role') and rolcanlogin)
+     or exists (select from pg_namespace where nspname in ('auth', 'storage', 'supabase_functions')) then
+    raise exception 'this looks like a real Supabase: the role stand-in only runs in a blank throwaway Postgres';
+  end if;
+end
+$$;
+
 do $$
 begin
   if not exists (select from pg_roles where rolname = 'anon') then
