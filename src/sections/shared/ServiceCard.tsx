@@ -5,7 +5,6 @@ import { Kicker } from '../../components/ui/Kicker';
 import { SpotlightCard } from '../../components/ui/SpotlightCard';
 import { serviceTermLabel } from '../../data/sharedCopy';
 import type { Service } from '../../data/services';
-import { cn } from '../../lib/utils';
 import { SERVICE_SUBGRID_CLASSES } from './serviceCardLayout';
 
 // The article is a plain flex column that names itself from its heading and has no look of its own: the SpotlightCard
@@ -15,8 +14,6 @@ const ARTICLE_CLASSES = `flex min-w-0 flex-1 ${SERVICE_SUBGRID_CLASSES}`;
 const SURFACE_LOOK_CLASSES =
   'flex w-full min-w-0 flex-col rounded-card border border-vn-gray-light bg-vn-white p-5 text-vn-ink md:p-6';
 const SURFACE_CLASSES = `${SURFACE_LOOK_CLASSES} ${SERVICE_SUBGRID_CLASSES}`;
-// Under the fixed header when /servicos#slug scrolls here.
-const ANCHOR_CLASSES = 'scroll-mt-28';
 
 interface ServiceCardProps {
   service: Service;
@@ -36,7 +33,7 @@ export function ServiceCard({ service, headingAs = 'h3', anchorId }: ServiceCard
   const nameId = useId();
 
   return (
-    <article id={anchorId} aria-labelledby={nameId} className={cn(ARTICLE_CLASSES, anchorId && ANCHOR_CLASSES)}>
+    <article id={anchorId} aria-labelledby={nameId} className={ARTICLE_CLASSES}>
       <SpotlightCard as="div" className={SURFACE_CLASSES}>
         <Kicker>{service.categoria}</Kicker>
         <Heading as={headingAs} size="m" id={nameId} className="mt-5">
