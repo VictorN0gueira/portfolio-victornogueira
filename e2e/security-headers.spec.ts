@@ -233,7 +233,10 @@ test.describe('the image sources of the policy', () => {
         .toBe(true);
     }
     // The sanitizer drops the foreign cover before it is rendered, so the card shows the built-in placeholder and nothing is requested.
-    const hostileCover = page.getByRole('link', { name: new RegExp(hostile.title) }).locator('img');
+    const hostileCover = page
+      .getByRole('article')
+      .filter({ has: page.getByRole('link', { name: new RegExp(hostile.title) }) })
+      .locator('img');
     await expect
       .poll(() => hostileCover.getAttribute('src').then((src) => src?.startsWith(FALLBACK_IMAGE_PREFIX)))
       .toBe(true);
