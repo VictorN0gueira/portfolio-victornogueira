@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { NewTabHint } from '../../components/ui/NewTabHint';
 import { renderWithProviders } from '../../test/render';
@@ -28,6 +28,36 @@ describe('FeaturedArticle', () => {
     expect(link).toHaveAccessibleDescription(/abre em nova aba/);
     expect(screen.getByText('Destaque')).toBeInTheDocument();
     expect(screen.getByText('Ler artigo')).toBeInTheDocument();
+  });
+
+  it('puts the link on the title and lets it cover the card: the keyboard stops on the title, never on a box as tall as the card', () => {
+    renderFeatured();
+
+    const card = screen.getByRole('article');
+    const link = screen.getByRole('link', { name: 'Artigo de teste' });
+    expect(within(card).getAllByRole('link')).toEqual([link]);
+    expect(link).toContainElement(screen.getByRole('heading', { level: 3 }));
+    expect(link).toHaveClass('vn-stretched-link', 'min-h-11');
+    expect(card).toHaveClass('vn-focus-ring-ink-card');
+  });
+
+  it('lets the overlay of the link cover the whole card: the spotlight, the only child of the article, is the nearest positioned ancestor', () => {
+    renderFeatured();
+
+    const card = screen.getByRole('article');
+    const link = screen.getByRole('link', { name: 'Artigo de teste' });
+    // The ::after of vn-stretched-link is absolute: it covers the nearest `relative` ancestor. That is the SpotlightCard
+    // (`relative isolate`), as big as the article, so the article itself needs no `relative`.
+    const surface = link.closest('.relative');
+    expect(surface).toHaveClass('vn-spotlight', 'relative');
+    expect(card.children).toHaveLength(1);
+    expect(card.firstElementChild).toBe(surface);
+    // Nothing between the link and that surface may be positioned, or the overlay would shrink to it.
+    for (let node = link.parentElement; node && node !== surface; node = node.parentElement) {
+      for (const positioned of ['relative', 'absolute', 'fixed', 'sticky']) {
+        expect(node, node.className).not.toHaveClass(positioned);
+      }
+    }
   });
 
   it('puts the title in an h3 and marks an English article with lang="en"', () => {

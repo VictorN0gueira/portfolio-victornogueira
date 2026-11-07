@@ -253,7 +253,7 @@ test.describe('/blog does not move when the list arrives', () => {
     await enableLargeFont(page);
     await openPage(page, CONTRACT);
     const field = page.getByRole('textbox', { name: blogCopy.filters.searchLabel });
-    const featured = page.locator('main a[target="_blank"]').first();
+    const featured = page.locator('main article').first();
     // Their place in the document, in pixels: a layout shift score is too coarse for 24px of a tall page.
     const placeOf = (target: Locator) =>
       target.evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
@@ -281,7 +281,7 @@ test.describe('/blog cards and accent', () => {
     for (const link of await links.all()) {
       expect((await link.getAttribute('rel'))?.split(' ').sort()).toEqual(['noopener', 'noreferrer']);
     }
-    for (const cover of await page.locator('main a img').all()) {
+    for (const cover of await page.locator('main article img').all()) {
       await expect(cover).toHaveAttribute('referrerpolicy', 'no-referrer');
     }
   });
@@ -307,7 +307,7 @@ test.describe('/blog cards and accent', () => {
 
     const cut = await page.evaluate(() =>
       Array.from(document.querySelectorAll('main h3')).flatMap((title, index) => {
-        const card = title.closest('a')?.getBoundingClientRect();
+        const card = title.closest('article')?.getBoundingClientRect();
         const box = title.getBoundingClientRect();
         // The featured card never clamps; a clamp hides whole lines, the few pixels the descenders of a tight line reach are not
         // that. The cards of the list clamp the title to three lines on purpose (the whole text stays in the link).
@@ -338,7 +338,7 @@ test.describe('/blog with an address as the title', () => {
       expect(overflow.documentExcess, 'no horizontal scroll').toBeLessThanOrEqual(0);
       expect(overflow.elements, 'nothing past the right edge').toEqual([]);
       const leaves = await page.evaluate(() =>
-        Array.from(document.querySelectorAll('main a[target="_blank"]')).flatMap((card) => {
+        Array.from(document.querySelectorAll('main article')).flatMap((card) => {
           const box = card.getBoundingClientRect();
           return Array.from(card.querySelectorAll('h3, p, span'))
             .filter((part) => part.getBoundingClientRect().right > box.right + 0.5)

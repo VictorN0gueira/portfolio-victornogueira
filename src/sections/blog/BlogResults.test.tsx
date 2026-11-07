@@ -29,7 +29,7 @@ function listOf(count: number) {
   );
 }
 
-const covers = () => Array.from(document.querySelectorAll<HTMLImageElement>('a img'));
+const covers = () => Array.from(document.querySelectorAll<HTMLImageElement>('article img'));
 const isBrandCover = (cover: HTMLImageElement) => cover.src.startsWith('data:image/svg+xml');
 
 describe('BlogResults when the list changes under the cards', () => {

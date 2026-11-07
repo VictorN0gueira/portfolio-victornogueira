@@ -17,12 +17,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
+  # Everything that is not a browser: lint, type check, unit tests, build and bundle budget. About 5 minutes. It runs
+  # next to the end to end shards below, not before them: the shards build their own copy of the site (the webServer of
+  # playwright.config.ts builds into dist-e2e-<port>), so nothing here feeds them.
+  static:
     # Pinned: ubuntu-latest moved to 26.04, which Playwright 1.58 cannot install Chromium on. Move this together
     # with a Playwright upgrade.
     runs-on: ubuntu-24.04
-    # The end to end suite takes about 26 minutes and grows with every spec: at 30 a run is cancelled while all tests pass.
-    timeout-minutes: 60
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -53,20 +55,81 @@ jobs:
       - name: Bundle budget
         run: npm run budget -- --enforce
 
+  # The end to end suite, cut into shards that run on their own runners at the same time. One full run was about 46
+  # minutes on one runner with 2 workers; each shard keeps the same 2 workers on the same 4 vCPU runner (the config
+  # comment says the suite flakes under more load), so a shard sees the load a full run saw and only the amount of
+  # tests per runner changes. To change the number of shards, edit only the list below: --shard and the artifact
+  # name read the size of the list (strategy.job-total).
+  #
+  # How Playwright 1.58 cuts: test files are never split (fullyParallel is off), and each shard takes a contiguous
+  # range of files, balanced by the number of tests, not by time. The projects come in config order, so the desktop
+  # files come first and the mobile ones after. Five shards is the smallest count that keeps the slowest range near
+  # 12 minutes; four leaves one range near 19 (the mobile accessibility widget files and the contact form sit
+  # together). Read the duration of each shard on the first runs and move the count if one of them stands out.
+  e2e:
+    name: e2e (${{ matrix.shard }} of ${{ strategy.job-total }})
+    runs-on: ubuntu-24.04
+    # A shard is expected to take 12 to 17 minutes. The limit stops a hang, it is not a budget.
+    timeout-minutes: 30
+    strategy:
+      # One red shard must not hide the failures of the others: a round should report everything that is broken.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      # The specs mock the network and never reach the lead webhooks (e2e/n8nGuard.ts).
-      - name: End to end tests
-        run: npm run e2e
+      # The specs mock the network and never reach the lead webhooks (e2e/n8nGuard.ts), so five runners at once send
+      # nothing anywhere.
+      - name: End to end tests (shard ${{ matrix.shard }} of ${{ strategy.job-total }})
+        env:
+          E2E_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+        run: npm run e2e -- --shard="$E2E_SHARD"
 
+      # One artifact per shard: upload-artifact refuses a second upload under the same name.
       - name: Keep the test results (screenshots, traces) when a test fails
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-results
+          name: playwright-results-${{ matrix.shard }}-of-${{ strategy.job-total }}
           path: test-results
           retention-days: 7
+
+  # The one gate for everything above, and the reason the name stays `verify`: it is the name the pull request has
+  # always shown, dependabot-merge waits for it, and a branch rule that requires `verify` keeps meaning "lint, unit
+  # tests, build, budget and every end to end spec passed". It runs when the jobs it waits for failed (a failed
+  # needs would skip it, and a skipped required check reads as passing), and not when the run was cancelled by a
+  # newer push.
+  verify:
+    needs: [static, e2e]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every static check and every end to end shard passed
+        env:
+          STATIC_RESULT: ${{ needs.static.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+        run: |
+          echo "static: $STATIC_RESULT"
+          echo "e2e (all shards): $E2E_RESULT"
+          if [ "$STATIC_RESULT" != "success" ] || [ "$E2E_RESULT" != "success" ]; then
+            echo "::error::A job this one waits for did not pass."
+            exit 1
+          fi
 
   # What the config tests cannot prove, because they only read nginx.conf as text: that the image builds, that nginx
   # accepts the configuration, and that a running container answers with the headers and the cache rules promised.

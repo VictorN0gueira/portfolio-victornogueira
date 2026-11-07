@@ -246,4 +246,17 @@ describe('shared geometry', () => {
     expect(widget).toContain('right-[calc(100%+8px)]');
     expect(widget).toContain('left-[calc(100%+8px)]');
   });
+
+  it('keeps the clearance the use case panel leaves for the tab: the tab and its gap from a panel, less the gutter of the Container', () => {
+    const useCaseParts = readFileSync(resolve(__dirname, '../sections/home/UseCaseParts.tsx'), 'utf8');
+    const container = readFileSync(resolve(__dirname, '../components/ui/Container.tsx'), 'utf8');
+    const clearancePx = TAB_SIZE_PX + PANEL_GAP_PX;
+
+    expect(clearancePx).toBe(52);
+    // The gutters the classes subtract mirror the padding of the Container: px-4 (1rem) under xs, xs:px-5 (1.25rem) up to md,
+    // and from md px-12 (3rem), which clears the 44px tab on its own. The tab is on the right edge below md (from sm it is
+    // centred on it), so the clearance stays up to md. Tailwind reads class names as plain text, so the px are spelled out.
+    expect(container).toContain('px-4 xs:px-5 md:px-12');
+    expect(useCaseParts).toContain(`'me-[calc(${clearancePx}px-1rem)] xs:me-[calc(${clearancePx}px-1.25rem)] md:me-0'`);
+  });
 });

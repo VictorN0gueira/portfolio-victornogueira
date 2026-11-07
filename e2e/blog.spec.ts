@@ -31,7 +31,7 @@ const LAYOUT_TARGETS: Record<string, string> = {
   'search field': '#search',
   'language chips row': '[role="group"][aria-label="Filtrar por idioma"]',
   'topic chips row': '[role="group"][aria-label="Filtrar por tópico"]',
-  'article cards': 'main a[target="_blank"]',
+  'article cards': 'main article',
   footer: 'footer',
 };
 
@@ -189,6 +189,59 @@ for (const viewport of VIEWPORTS) {
         }
       }
     });
+
+    test('draws the focus ring on the card when the keyboard reaches its title link, clipped by no ancestor', async ({
+      page,
+    }) => {
+      await openBlog(page);
+
+      const cards = page.locator('main article');
+      for (const card of [cards.first(), cards.last()]) {
+        const titleLine = () => card.locator('h3').evaluate((node) => getComputedStyle(node).textDecorationLine);
+        expect(await titleLine(), 'no underline before the keyboard arrives').toBe('none');
+        await card.getByRole('link').focus();
+        // The card wears the ring (the link itself draws none), read once its width has settled.
+        await expect
+          .poll(() => card.evaluate((node) => parseFloat(getComputedStyle(node).outlineWidth)))
+          .toBeGreaterThanOrEqual(2);
+        expect(await card.getByRole('link').evaluate((node) => getComputedStyle(node).outlineStyle)).toBe('none');
+        // The title is underlined as well, so the focus is clear where the ring is out of sight (400% zoom, a short window).
+        expect(await titleLine(), 'the title is underlined while the card wears the ring').toBe('underline');
+        expect(await clippedRingSides(card), (await card.getByRole('link').textContent()) ?? '').toEqual([]);
+      }
+    });
+  });
+}
+
+for (const viewport of VIEWPORTS) {
+  test.describe(`blog cards at ${viewport.width}px`, () => {
+    test.use({ viewport });
+
+    test('opens the article of a card from a click anywhere on it: the cover and the summary hit the title link', async ({
+      page,
+    }) => {
+      await openBlog(page);
+
+      const cards = page.locator('main article');
+      // The featured card (first, a stretched link inside a spotlight) and the last card of the list.
+      for (const card of [cards.first(), cards.last()]) {
+        const title = (await card.locator('h3').textContent()) ?? '';
+        const href = await card.getByRole('link').getAttribute('href');
+        for (const [part, selector] of [
+          ['cover image', 'img'],
+          ['summary text', '[id$="-summary"]'],
+        ]) {
+          // Where the pointer would land at the centre of the part, once the part is in view.
+          const hit = await card.locator(selector).evaluate((node) => {
+            node.scrollIntoView({ block: 'center', behavior: 'instant' });
+            const box = node.getBoundingClientRect();
+            const target = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+            return { href: target?.closest('a')?.getAttribute('href') ?? null, tag: target?.tagName ?? null };
+          });
+          expect(hit.href, `${part} of "${title}" is covered by its title link (hit a ${hit.tag})`).toBe(href);
+        }
+      }
+    });
   });
 }
 
@@ -265,7 +318,7 @@ test.describe('blog tag pills on a white cover', () => {
         await expect
           .poll(() =>
             page.evaluate(() =>
-              Array.from(document.querySelectorAll('a img')).every(
+              Array.from(document.querySelectorAll('article img')).every(
                 (img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0,
               ),
             ),
@@ -331,7 +384,7 @@ async function overlappingCardParts(page: Page): Promise<string[]> {
     const intersects = (a: DOMRect, b: DOMRect) =>
       a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
     const problems: string[] = [];
-    const cards = Array.from(document.querySelectorAll<HTMLElement>('main a[target="_blank"]')).slice(1);
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('main article')).slice(1);
     cards.forEach((card, cardIndex) => {
       const label = `card ${cardIndex + 1} (${card.querySelector('h3')?.textContent?.slice(0, 24)})`;
       const cover = card.querySelector('img')?.parentElement?.getBoundingClientRect();

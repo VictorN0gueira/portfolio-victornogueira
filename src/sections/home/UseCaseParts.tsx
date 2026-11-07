@@ -273,19 +273,29 @@ interface UseCasePanelProps {
 // It is the use case id once the visitor picks a tab, and that remount is the replay of a choice.
 const AUTO_KEY = 'auto';
 
+// Under md the accessibility tab is a 44px box on the right edge (96px over the bottom below sm, centred on the edge from
+// sm), and a tabpanel with a tab stop that ran under it could not be told apart from the tab. The cell keeps its right side
+// clear of it: the tab's 44px plus the 8px gap the tab itself keeps from its panel (TAB_SIZE_PX + PANEL_GAP_PX, 52px), less
+// the gutter of the Container (px-4, 1rem, under xs; xs:px-5, 1.25rem, up to md). From md the gutter is 3rem and clears the
+// tab by itself. The px are spelled out because Tailwind reads class names as plain text: src/lib/floatingLayout.test.ts
+// pins them to the constants and to the padding of the Container.
+// The margin sits on the cell and not on the panel, so the sizers wrap at the same width and the cell stays as tall as the
+// tallest content.
+const TAB_CLEARANCE_CLASSES = 'me-[calc(52px-1rem)] xs:me-[calc(52px-1.25rem)] md:me-0';
+
 /**
  * The one tabpanel, kept mounted so every tab can point at it with aria-controls. It has a tab stop because
  * nothing inside it takes the focus. The sizers sit behind it in the same grid cell.
  */
 export function UseCasePanel({ useCase, isAuto, panelId, tabId }: UseCasePanelProps) {
   return (
-    <div className="mt-8 grid md:mt-10">
+    <div className={cn('mt-8 grid md:mt-10', TAB_CLEARANCE_CLASSES)}>
       <div
         role="tabpanel"
         id={panelId}
         aria-labelledby={tabId}
         tabIndex={0}
-        className={cn('col-start-1 row-start-1 min-w-0 rounded-2xl me-14 sm:me-0', 'vn-focus-ring-ink')}
+        className={cn('col-start-1 row-start-1 min-w-0 rounded-2xl', 'vn-focus-ring-ink')}
       >
         <UseCaseContent key={isAuto ? AUTO_KEY : useCase.id} useCase={useCase} />
       </div>
