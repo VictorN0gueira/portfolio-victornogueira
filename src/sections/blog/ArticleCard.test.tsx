@@ -27,6 +27,36 @@ describe('ArticleCard', () => {
     expect(link.getAttribute('rel')?.split(' ').sort()).toEqual(['noopener', 'noreferrer']);
   });
 
+  it('puts the link on the title and lets it cover the card: the keyboard stops on the title, never on a box as tall as the card', () => {
+    renderCard();
+
+    const card = screen.getByRole('article');
+    const link = screen.getByRole('link', { name: 'Artigo de teste' });
+    expect(within(card).getAllByRole('link')).toEqual([link]);
+    expect(link).toContainElement(screen.getByRole('heading', { level: 3 }));
+    expect(link).toHaveClass('vn-stretched-link', 'min-h-11');
+    expect(card).toHaveClass('relative', 'vn-focus-ring-ink-card');
+    expect(card.querySelector('img')).not.toBeNull();
+  });
+
+  it('lets the overlay of the link cover the whole card: the card is the nearest positioned ancestor, no wrapper in between is', () => {
+    renderCard();
+
+    const card = screen.getByRole('article');
+    const link = screen.getByRole('link', { name: 'Artigo de teste' });
+    // The ::after of vn-stretched-link is absolute: it covers the nearest `relative` ancestor, so a wrapper with that class would shrink it.
+    expect(link.closest('.relative')).toBe(card);
+    const wrappers: HTMLElement[] = [];
+    for (let node = link.parentElement; node && node !== card; node = node.parentElement) wrappers.push(node);
+    expect(wrappers.length).toBeGreaterThan(0);
+    // One class at a time: `not.toHaveClass(a, b)` only says the element lacks one of them.
+    for (const wrapper of wrappers) {
+      for (const positioned of ['relative', 'absolute', 'fixed', 'sticky']) {
+        expect(wrapper, wrapper.className).not.toHaveClass(positioned);
+      }
+    }
+  });
+
   it('names the link by the title and describes it by the tags, the summary, the meta and the new tab hint', () => {
     renderCard({ article: testArticle({ language: 'en', title: 'Autonomous agent loop', description: 'A summary' }) });
 
@@ -79,14 +109,14 @@ describe('ArticleCard', () => {
 
     expect(screen.getByText('NOVO')).toBeInTheDocument();
     expect(screen.getByRole('link')).toHaveAccessibleDescription(/NOVO/);
-    expect(screen.getByRole('link').textContent).toMatch(/Agora mesmo/);
+    expect(screen.getByRole('article')).toHaveTextContent(/Agora mesmo/);
   });
 
   it('never says NOVO nor how long ago for the fixed list, whatever the date says', () => {
     renderCard({ article: testArticle({ publishedAt: FRESH() }), isFixedList: true });
 
     expect(screen.queryByText('NOVO')).toBeNull();
-    expect(screen.getByRole('link').textContent).not.toMatch(/Agora mesmo|atrás|Ontem/);
+    expect(screen.getByRole('article').textContent).not.toMatch(/Agora mesmo|atrás|Ontem/);
   });
 
   it('gives the language pill and the topic pill the same opaque dark surface with white text', () => {
@@ -116,8 +146,8 @@ describe('ArticleCard', () => {
     });
 
     expect(screen.getByRole('heading', { level: 3 })).toHaveClass('break-words');
-    expect(within(screen.getByRole('link')).getByText('Fonte'.repeat(20))).toHaveClass('break-words');
-    expect(screen.getByRole('link').innerHTML).not.toMatch(/truncate/);
+    expect(within(screen.getByRole('article')).getByText('Fonte'.repeat(20))).toHaveClass('break-words');
+    expect(screen.getByRole('article').innerHTML).not.toMatch(/truncate/);
   });
 
   it('uses only the tokens of the system: no zinc, purple, cyan, gradient, blur, italic or dark:', () => {

@@ -1,10 +1,10 @@
 import type { Page } from '@playwright/test';
 
 // What the specs of the blog share: the answer of the news source they route in place of the real network. The blog reads
-// its articles from third party sites, so no spec ever lets a request leave the machine: the Supabase proxy the blog asks
-// first is routed here (n8nGuard answers the public feeds itself, with an empty list, and blocks anything else).
+// its articles from third party sites, so no spec ever lets a request leave the machine: the Supabase PostgREST endpoint
+// is routed here (n8nGuard answers the public feeds itself, with an empty list, and blocks anything else).
 
-export const EDGE_FUNCTION = '**/functions/v1/gnews-proxy*';
+export const SUPABASE_ARTICLES = '**/rest/v1/articles*';
 const CORS_JSON = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' };
 const DAY_MS = 86_400_000;
 const FRESH_MS = 30 * 60 * 1000;
@@ -76,6 +76,18 @@ export function addressTitleArticles(): SampleArticle[] {
   ];
 }
 
+function toDbRow(article: SampleArticle): Record<string, unknown> {
+  return {
+    url: article.url,
+    title: article.title,
+    summary: article.description,
+    image: article.image,
+    published_at: article.publishedAt,
+    source: article.source.name,
+    language: article.language,
+  };
+}
+
 /**
  * Answers the blog's news source with these articles. Call it before the page opens. With a `gate`, the answer waits for it
  * to settle, so a spec can look at the page while the sources are still loading.
@@ -85,7 +97,7 @@ export async function routeNews(
   articles: SampleArticle[] = defaultArticles(),
   gate?: Promise<void>,
 ): Promise<void> {
-  await page.route(EDGE_FUNCTION, async (route) => {
+  await page.route(SUPABASE_ARTICLES, async (route) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: CORS_JSON });
       return;
@@ -95,7 +107,7 @@ export async function routeNews(
       status: 200,
       headers: CORS_JSON,
       contentType: 'application/json',
-      body: JSON.stringify({ articles, source: 'edge-function' }),
+      body: JSON.stringify(articles.map(toDbRow)),
     });
   });
 }

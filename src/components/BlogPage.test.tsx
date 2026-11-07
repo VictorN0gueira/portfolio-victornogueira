@@ -69,12 +69,12 @@ describe('BlogPage states', () => {
     renderWithProviders(<BlogPage />, { route: '/blog' });
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
     expect(getNewsArticles).toHaveBeenCalledTimes(1);
-    expect(getNewsArticles).toHaveBeenLastCalledWith({ forceRefresh: false });
+    expect(getNewsArticles).toHaveBeenLastCalledWith(expect.objectContaining({ forceRefresh: false }));
 
     await user.click(screen.getByRole('button', { name: /Atualizar/ }));
 
     await waitFor(() => expect(getNewsArticles).toHaveBeenCalledTimes(2));
-    expect(getNewsArticles).toHaveBeenLastCalledWith({ forceRefresh: true });
+    expect(getNewsArticles).toHaveBeenLastCalledWith(expect.objectContaining({ forceRefresh: true }));
     expect(localStorage.getItem('blog_news_cache')).toBe('saved list');
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
   });
@@ -97,7 +97,7 @@ describe('BlogPage states', () => {
   it('shows the fallback cover when a cover image fails to load', async () => {
     renderWithProviders(<BlogPage />, { route: '/blog' });
     await waitFor(() => expect(articlesText().length).toBeGreaterThan(0));
-    const cover = document.querySelector('a img') as HTMLImageElement;
+    const cover = document.querySelector('article img') as HTMLImageElement;
 
     fireEvent.error(cover);
 
@@ -118,7 +118,7 @@ describe('BlogPage cards and labels', () => {
     expect(await screen.findByText('NOVO')).toBeInTheDocument();
     expect(screen.getAllByText('English').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Português').length).toBeGreaterThan(0);
-    const covers = Array.from(document.querySelectorAll<HTMLImageElement>('a img'));
+    const covers = Array.from(document.querySelectorAll<HTMLImageElement>('article img'));
     expect(covers.some((cover) => cover.src.startsWith('data:image/svg+xml'))).toBe(true);
   });
 
@@ -277,7 +277,7 @@ describe('BlogPage third party content', () => {
     renderWithProviders(<BlogPage />, { route: '/blog' });
     await waitFor(() => expect(screen.getAllByText(/Artigo de teste/).length).toBeGreaterThan(0));
 
-    const covers = Array.from(document.querySelectorAll('a img'));
+    const covers = Array.from(document.querySelectorAll('article img'));
     expect(covers.length).toBeGreaterThan(0);
     for (const cover of covers) {
       expect(cover).toHaveAttribute('referrerpolicy', 'no-referrer');

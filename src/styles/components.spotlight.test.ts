@@ -30,12 +30,23 @@ describe('components.css spotlight card', () => {
     expect(glow).toMatch(/radial-gradient\([^)]*at var\(--mx, 50%\) var\(--my, 50%\), var\(--vn-spot-color\), transparent 70%\)/)
   })
 
-  it('spins the ring with vn-spin for 4s only on hover and focus within', () => {
-    const spinning = blockBody(gated, '.vn-spotlight:hover::before,\n  .vn-spotlight:focus-within::before')
+  it('spins the ring with vn-spin for 4s only on hover and on a keyboard focus within (:has(:focus-visible))', () => {
+    const onHover = blockBody(gated, '.vn-spotlight:hover::before')
+    const onKeyboardFocus = blockBody(gated, '.vn-spotlight:has(:focus-visible)::before')
 
-    expect(spinning).toContain('animation: vn-spin 4s linear infinite')
-    expect(spinning).toMatch(/opacity:\s*1/)
-    expect(gated.match(/vn-spin/g)).toHaveLength(1)
+    for (const spinning of [onHover, onKeyboardFocus]) {
+      expect(spinning).toContain('animation: vn-spin 4s linear infinite')
+      expect(spinning).toMatch(/opacity:\s*1/)
+    }
+    expect(gated.match(/vn-spin/g)).toHaveLength(2)
+  })
+
+  it('keeps the hover and the :has focus in two rules: a browser without :has would drop a shared list, and the hover must stay', () => {
+    expect(css).not.toMatch(/\.vn-spotlight:hover::before\s*,/)
+  })
+
+  it('never spins on :focus-within: a link inside the card (the featured article) would keep the ring going after a click', () => {
+    expect(css).not.toContain('.vn-spotlight:focus-within')
   })
 
   it('documents the ring spin as the second exception to compositor only animation, right at the rule', () => {
@@ -54,7 +65,7 @@ describe('components.css spotlight card', () => {
     )
 
     expect(outsideGate).not.toMatch(/animation[^;]*vn-spin/)
-    expect(spinningRules).toEqual(['.vn-spotlight:hover::before,\n  .vn-spotlight:focus-within::before'])
+    expect(spinningRules).toEqual(['.vn-spotlight:hover::before', '.vn-spotlight:has(:focus-visible)::before'])
   })
 
   it('shows the spotlight glow on hover', () => {

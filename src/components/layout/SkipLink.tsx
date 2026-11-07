@@ -13,7 +13,9 @@ export function SkipLink() {
     if (!main) return;
 
     event.preventDefault();
-    main.focus();
+    requestAnimationFrame(() => {
+      main.focus();
+    });
   };
 
   return (

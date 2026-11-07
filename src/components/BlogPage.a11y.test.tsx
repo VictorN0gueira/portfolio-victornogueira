@@ -176,13 +176,13 @@ describe('BlogPage article cards', () => {
   it('marks English article text as English and leaves the Portuguese text unmarked', async () => {
     await renderLoaded();
 
-    const englishLink = screen.getByRole('link', { name: 'Article in English' });
-    const title = within(englishLink).getByText('Article in English');
-    const summary = within(englishLink).getByText('An English summary');
+    const englishCard = screen.getByRole('link', { name: 'Article in English' }).closest('article') as HTMLElement;
+    const title = within(englishCard).getByText('Article in English');
+    const summary = within(englishCard).getByText('An English summary');
     expect(title.closest('[lang]')).toHaveAttribute('lang', 'en');
     expect(summary.closest('[lang]')).toHaveAttribute('lang', 'en');
     expect(
-      within(screen.getByRole('link', { name: 'Artigo de teste 2' }))
+      within(screen.getByRole('link', { name: 'Artigo de teste 2' }).closest('article') as HTMLElement)
         .getByText('Resumo do artigo 2')
         .closest('[lang]'),
     ).toBeNull();

@@ -140,7 +140,8 @@ export function findEnviarMisuse(source: string): string[] {
 
   for (const statement of statements) {
     if (!ENVIAR.test(statement)) continue;
-    if (DOES_SOMETHING.test(statement) || isInlineEvaluateThatActs(statement)) misuse.push(statement.trim().slice(0, 80));
+    if (DOES_SOMETHING.test(statement) || isInlineEvaluateThatActs(statement))
+      misuse.push(statement.trim().slice(0, 80));
     const name = BINDING.exec(statement)?.[1];
     if (name) names.add(name);
   }
@@ -343,7 +344,8 @@ describe('findUnguardedSpecs', () => {
   });
 
   it('leaves a spec that never touches the form alone', () => {
-    const plain = "import { test, expect } from '@playwright/test';\ntest('x', async ({ page }) => { await page.goto('/sobre'); });";
+    const plain =
+      "import { test, expect } from '@playwright/test';\ntest('x', async ({ page }) => { await page.goto('/sobre'); });";
 
     expect(findUnguardedSpecs({ 'plain.spec.ts': plain })).toEqual([]);
   });
@@ -366,15 +368,19 @@ describe('findUnguardedSpecs', () => {
 });
 
 describe('findSpecsWithoutGuard', () => {
-  const guarded = "import { expect, test } from './n8nGuard';\ntest('x', async ({ page }) => { await page.goto('/sobre'); });";
-  const plain = "import { expect, test } from '@playwright/test';\ntest('x', async ({ page }) => { await page.goto('/sobre'); });";
+  const guarded =
+    "import { expect, test } from './n8nGuard';\ntest('x', async ({ page }) => { await page.goto('/sobre'); });";
+  const plain =
+    "import { expect, test } from '@playwright/test';\ntest('x', async ({ page }) => { await page.goto('/sobre'); });";
 
   it('flags a spec that shows no sign of the form but has no guard either', () => {
     expect(findSpecsWithoutGuard({ 'a.spec.ts': plain }, [])).toEqual(['a.spec.ts']);
   });
 
   it('accepts a guarded spec and a spec of the allow list', () => {
-    expect(findSpecsWithoutGuard({ 'a.spec.ts': guarded, 'share-preview.spec.ts': plain }, ['share-preview.spec.ts'])).toEqual([]);
+    expect(
+      findSpecsWithoutGuard({ 'a.spec.ts': guarded, 'share-preview.spec.ts': plain }, ['share-preview.spec.ts']),
+    ).toEqual([]);
   });
 
   it('still flags a spec that takes test from both places', () => {
@@ -389,14 +395,19 @@ describe('findFormAccessInAllowListed', () => {
     expect(findFormAccessInAllowListed("await page.request.get('/');")).toEqual([]);
   });
 
-  it.each(["await page.goto('/');", "await page.getByLabel('Nome').fill('a');", "await request.post('/x');"])('flags %s', (line) => {
-    expect(findFormAccessInAllowListed(line)).toHaveLength(1);
-  });
+  it.each(["await page.goto('/');", "await page.getByLabel('Nome').fill('a');", "await request.post('/x');"])(
+    'flags %s',
+    (line) => {
+      expect(findFormAccessInAllowListed(line)).toHaveLength(1);
+    },
+  );
 });
 
 describe('findFilesNamingTheHost', () => {
   it('flags a file that names the host and is not allowed to', () => {
-    expect(findFilesNamingTheHost({ 'a.ts': `const url = 'https://${N8N_HOST}/x';`, 'b.ts': 'const x = 1;' }, [])).toEqual(['a.ts']);
+    expect(
+      findFilesNamingTheHost({ 'a.ts': `const url = 'https://${N8N_HOST}/x';`, 'b.ts': 'const x = 1;' }, []),
+    ).toEqual(['a.ts']);
   });
 
   it('accepts the files of the allow list', () => {
@@ -424,7 +435,7 @@ describe('the hosts the network guard answers itself', () => {
 
   it('hold the hosts the pages still load from and no more: the blog image allow list, the feeds, and no minio', () => {
     expect([...MOCKED_IMAGE_HOSTS]).toEqual([...BLOG_IMAGE_HOSTS]);
-    expect([...MOCKED_FEED_HOSTS]).toEqual(['dev.to', 'www.tabnews.com.br', 'qpcwoioflaxiasmcdfbd.supabase.co']);
+    expect([...MOCKED_FEED_HOSTS]).toEqual(['dev.to', 'www.tabnews.com.br', 'db.vnone.com.br']);
     expect(MOCKED_HOSTS.some((host) => host.includes('minio'))).toBe(false);
   });
 });
@@ -433,7 +444,8 @@ describe('findEnviarMisuse', () => {
   const declare = "const send = form.getByRole('button', { name: 'Enviar', exact: true });";
 
   it('accepts the known read of a record of controls that has Enviar, and no more', () => {
-    const source = "const controls: Record<string, Locator> = { Enviar: form.getByRole('button', { name: 'Enviar' }) };\nfor (const [name, control] of Object.entries(controls)) { await control.boundingBox(); }";
+    const source =
+      "const controls: Record<string, Locator> = { Enviar: form.getByRole('button', { name: 'Enviar' }) };\nfor (const [name, control] of Object.entries(controls)) { await control.boundingBox(); }";
 
     expect(findEnviarMisuse(source)).toEqual([]);
   });
@@ -456,34 +468,67 @@ await expect(send).toBeVisible();`;
 
   // Each way of pressing Enviar that a plain look at `send.click(` would miss.
   it.each([
-    ['a click', `${declare}
-await send.click();`],
-    ['a tap', `${declare}
-await send.tap();`],
-    ['the locator handed to a helper', `${declare}
-await press(send);`],
-    ['the locator handed to the pill helper of the specs', `${declare}
-await choosePillOption(page, send, 'x');`],
+    [
+      'a click',
+      `${declare}
+await send.click();`,
+    ],
+    [
+      'a tap',
+      `${declare}
+await send.tap();`,
+    ],
+    [
+      'the locator handed to a helper',
+      `${declare}
+await press(send);`,
+    ],
+    [
+      'the locator handed to the pill helper of the specs',
+      `${declare}
+await choosePillOption(page, send, 'x');`,
+    ],
     ['an inline press', "await form.getByRole('button', { name: 'Enviar' }).press('Enter');"],
     ['a helper on an inline locator', "await press(form.getByRole('button', { name: 'Enviar' }));"],
-    ['a rename and a click', `${declare}
+    [
+      'a rename and a click',
+      `${declare}
 const again = send;
-await again.click();`],
-    ['a keyboard press on the locator', `${declare}
-await send.press('Enter');`],
+await again.click();`,
+    ],
+    [
+      'a keyboard press on the locator',
+      `${declare}
+await send.press('Enter');`,
+    ],
     ['a regular expression name in lower case', "await form.getByRole('button', { name: /enviar/i }).click();"],
-    ['the same through a constant', "const again = form.getByRole('button', { name: /enviar/i });\nawait again.click();"],
+    [
+      'the same through a constant',
+      "const again = form.getByRole('button', { name: /enviar/i });\nawait again.click();",
+    ],
     ['a lower case string name', "await form.getByRole('button', { name: 'enviar' }).click();"],
     ['a submit button selector', "await form.locator('button[type=submit]').click();"],
     ['a quoted submit button selector', `await form.locator('button[type="submit"]').tap();`],
     ['Enter on the keyboard', "await page.keyboard.press('Enter');"],
-    ['Enter on a field', "await field.press(\"Enter\");"],
-    ['a click inside evaluate', `${declare}
-await send.evaluate((el) => el.click());`],
-    ['a dispatched event inside evaluate', `${declare}
-await send.evaluate((el) => { el.dispatchEvent(new Event('click')); });`],
-    ['a submit inside evaluate on an inline locator', "await form.getByRole('button', { name: 'Enviar' }).evaluate((el) => el.form.requestSubmit());"],
-    ['a click on a record of controls that has Enviar', "const controls = { Enviar: form.getByRole('button', { name: 'Enviar' }) };\nawait controls.Enviar.click();"],
+    ['Enter on a field', 'await field.press("Enter");'],
+    [
+      'a click inside evaluate',
+      `${declare}
+await send.evaluate((el) => el.click());`,
+    ],
+    [
+      'a dispatched event inside evaluate',
+      `${declare}
+await send.evaluate((el) => { el.dispatchEvent(new Event('click')); });`,
+    ],
+    [
+      'a submit inside evaluate on an inline locator',
+      "await form.getByRole('button', { name: 'Enviar' }).evaluate((el) => el.form.requestSubmit());",
+    ],
+    [
+      'a click on a record of controls that has Enviar',
+      "const controls = { Enviar: form.getByRole('button', { name: 'Enviar' }) };\nawait controls.Enviar.click();",
+    ],
   ])('flags %s', (_label, source) => {
     expect(findEnviarMisuse(source).length).toBeGreaterThan(0);
   });
@@ -500,7 +545,10 @@ describe('findSubmitInHelpers', () => {
   });
 
   it.each([
-    ['a helper that names Enviar', `${pillHelper}export const send = (p) => p.getByRole('button', { name: 'Enviar' });`],
+    [
+      'a helper that names Enviar',
+      `${pillHelper}export const send = (p) => p.getByRole('button', { name: 'Enviar' });`,
+    ],
     ['a helper that fills a field', `${pillHelper}export const f = (p) => p.getByLabel('Nome').fill('a');`],
     ['a helper that clicks something else', `${pillHelper}export const c = (p) => p.getByRole('button').click();`],
     ['a helper that submits the form', `${pillHelper}export const s = (p) => p.locator('form').requestSubmit();`],

@@ -15,7 +15,7 @@ interface ArticleCoverProps {
 
 // The cover grows 5% under the pointer and on keyboard focus of the card: a transform, and only where motion is welcome.
 const COVER_HOVER_CLASSES =
-  'transition-transform duration-500 ease-out group-hover:scale-105 group-focus-visible:scale-105';
+  'transition-transform duration-500 ease-out group-hover:scale-105 group-has-[a:focus-visible]:scale-105';
 
 interface CoverImageProps {
   cover: string | undefined;

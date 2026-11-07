@@ -156,8 +156,9 @@ describe('the origins the code contacts', () => {
     const origins = new Set<string>();
     for (const file of sourceFilesWithFetch()) for (const origin of fetchedOrigins(read(file))) origins.add(origin);
 
-    // The edge function of the blog, dev.to and TabNews are the third party origins the client reads from.
-    expect(origins.size).toBeGreaterThanOrEqual(3);
+    // The scanner resolves constants in the same file only: SUPABASE_URL is imported from constants.ts so only
+    // dev.to and TabNews origins appear here, but both must be covered by connect-src.
+    expect(origins.size).toBeGreaterThanOrEqual(2);
     expect([...origins].filter((origin) => !connectSources.includes(origin))).toEqual([]);
     for (const file of sourceFilesWithFetch()) expect(read(file), file).not.toContain('gnews.io');
   });

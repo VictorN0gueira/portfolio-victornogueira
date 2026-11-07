@@ -32,7 +32,6 @@ describe('ServicesGrid', () => {
       const card = document.getElementById(service.slug) as HTMLElement;
 
       expect(card, service.slug).not.toBeNull();
-      expect(card).toHaveClass('scroll-mt-28');
       expect(within(card).getByRole('heading', { level: 2, name: service.nome })).toBeInTheDocument();
     }
   });

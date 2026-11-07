@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+/** After being hidden this long the hook asks for fresh articles once the tab is visible again. */
+export const STALE_TAB_RETURN_MS = 30 * 60 * 1000;
 import { getNewsArticles, type NewsArticle, type NewsOrigin } from '../../utils/newsService';
 import { blogCopy } from './blogCopy';
 
@@ -70,6 +73,23 @@ export function useBlogNews(): BlogNews {
     startLoad(false);
     return () => currentLoad.current?.abort();
   }, [startLoad]);
+
+  // Refresh once after the tab has been hidden for 30+ minutes (stale data).
+  const hiddenAt = useRef<number | null>(null);
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        hiddenAt.current = Date.now();
+      } else if (hiddenAt.current !== null && Date.now() - hiddenAt.current >= STALE_TAB_RETURN_MS) {
+        hiddenAt.current = null;
+        refresh();
+      } else {
+        hiddenAt.current = null;
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [refresh]);
 
   return { articles, isLoading, error, origin, refresh };
 }

@@ -1,4 +1,4 @@
-import { useId, type FormEvent } from 'react';
+import { useId, useRef, type FormEvent } from 'react';
 import { ContactForm } from '../../components/ContactForm';
 import { Container } from '../../components/ui/Container';
 import { Heading } from '../../components/ui/Heading';
@@ -7,6 +7,7 @@ import { RevealGroup, RevealItem } from '../../components/ui/Reveal';
 import { ScanGrid } from '../../components/ui/ScanGrid';
 import { Section } from '../../components/ui/Section';
 import { homeCopy } from '../../data/homeCopy';
+import { useRevealTabbedTextarea } from './useRevealTabbedTextarea';
 
 /** The id of the message field is the prefix of the form and this ending (ContactMessage builds it from contactIds). */
 const MESSAGE_ID_SUFFIX = '-mensagem';
@@ -42,6 +43,9 @@ export function ContactFormSection({ prefillMessage, prefillNonce, onMessageEdit
   const handleInput = (event: FormEvent<HTMLDivElement>) => {
     if (event.target instanceof HTMLTextAreaElement && event.target.id.endsWith(MESSAGE_ID_SUFFIX)) onMessageEdit?.();
   };
+  // Tab into the message shows the whole box, not only its first line (the browser's own scroll stops there).
+  const panelRef = useRef<HTMLDivElement>(null);
+  useRevealTabbedTextarea(panelRef);
 
   return (
     <Section id={SECTION_ID} tone="cream" labelledBy={headingId}>
@@ -55,6 +59,7 @@ export function ContactFormSection({ prefillMessage, prefillNonce, onMessageEdit
           </RevealItem>
           <RevealItem className="min-w-0">
             <div
+              ref={panelRef}
               data-contact-panel=""
               onInput={handleInput}
               className="relative isolate overflow-hidden rounded-shell bg-vn-black p-3 text-vn-white xs:p-4 md:p-8"

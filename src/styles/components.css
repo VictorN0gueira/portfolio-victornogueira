@@ -24,6 +24,49 @@
   }
 }
 
+/*
+ * A card whose link is its title (a stretched link): the card wears the ink ring while the keyboard has the link, never for
+ * a click. The focus stop is the title, a box that always fits between the header and the floating buttons, where a card
+ * taller than the window (a phone on its side) could never be clear of them. The title is underlined as well: at 400% zoom or
+ * in a short window the card is bigger than the viewport and its ring is out of sight, so the underline says where the
+ * focus is (a text decoration also survives forced colors).
+ */
+@utility vn-focus-ring-ink-card {
+  &:has(a:focus-visible) {
+    outline: 2px solid var(--color-vn-ink);
+    outline-offset: 2px;
+  }
+
+  &:has(a:focus-visible) h3 {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+  }
+}
+
+/*
+ * The link of such a card: its ::after covers the card (the nearest positioned ancestor), so a click anywhere on it opens the
+ * article, and the ring is the card's. A browser without :has keeps the ring on the link itself.
+ */
+@utility vn-stretched-link {
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-vn-ink);
+    outline-offset: 2px;
+  }
+
+  @supports selector(:has(*)) {
+    &:focus-visible {
+      outline: none;
+    }
+  }
+}
+
 /* Chrome gradient text. */
 @utility vn-chrome-text {
   background: linear-gradient(135deg, #ffffff 0%, #c7c7c7 45%, #8a8a8a 100%);
@@ -186,10 +229,17 @@
   /*
    * The spin animates --vn-angle, which repaints every frame, so it is
    * the second documented exception to compositor only animation, next to the accordion.
-   * It runs only on hover and focus within, and only inside this gate (fine pointer, motion allowed).
+   * It runs only on hover and focus within, and only inside this gate (fine pointer, motion allowed). The focus is a
+   * keyboard one (:has(:focus-visible), not :focus-within): the featured article of the blog holds its link inside the
+   * spotlight, and a mouse click on it must not keep the ring spinning until the link blurs.
    */
-  .vn-spotlight:hover::before,
-  .vn-spotlight:focus-within::before {
+  .vn-spotlight:hover::before {
+    opacity: 1;
+    animation: vn-spin 4s linear infinite;
+  }
+
+  /* A rule of its own: a browser without :has drops a whole rule whose list holds a selector it cannot parse, and the hover above must survive that. */
+  .vn-spotlight:has(:focus-visible)::before {
     opacity: 1;
     animation: vn-spin 4s linear infinite;
   }
@@ -517,6 +567,11 @@
   }
 
   :focus-visible {
+    outline-width: 3px !important;
+  }
+
+  /* The ring of a card whose link is its title is the card's, matched through :has: the rule above never reaches it. */
+  .vn-focus-ring-ink-card:has(a:focus-visible) {
     outline-width: 3px !important;
   }
 }

@@ -46,13 +46,13 @@ Nenhuma. O site compila e roda sem `.env`. Tudo que começa com `VITE_` vai para
 - O processo mestre do nginx roda como root, como na imagem oficial. Trocar para `nginx-unprivileged` (porta 8080) muda a porta e o proxy, por isso fica como decisão do dono.
 - GitHub Pages (opcional, só manual): `.github/workflows/deploy.yml` roda o CI e publica o build com `GITHUB_PAGES=true`, e exige o Pages ativado no repositório. As Pages não enviam cabeçalhos, então a política de segurança vai como `<meta>`. O CI da `main` roda em todo push pelo `ci.yml`.
 
+## Supabase
+
+Artigos do blog renovados a cada 3h pelo `news-sync.yml` e leads copiados pelo n8n, tudo em `db.vnone.com.br`. Runbook, migrações e setup do n8n: [docs/supabase.md](docs/supabase.md).
+
 ## Os webhooks nunca são chamados em teste
 
-O formulário de contato envia direto para dois webhooks do n8n, e é por eles que um lead chega ao dono do negócio. Por isso:
-
-- Nenhum teste chama o n8n de verdade. O Vitest rejeita qualquer `fetch` sem stub, e todo spec do Playwright importa `test` de `e2e/n8nGuard.ts`, que aborta o que não for do próprio site.
-- As URLs e o formato do payload em `src/lib/contact.ts` não mudam sem combinar com o n8n.
-
+Nenhum teste chama o n8n de verdade. As URLs e o payload de `src/lib/contact.ts` não mudam sem combinar com o n8n.
 ## Plano e especificação
 
 - Especificação: `docs/superpowers/specs/2026-10-26-redesign-vn-one-design.md`
